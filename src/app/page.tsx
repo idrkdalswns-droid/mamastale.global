@@ -21,6 +21,9 @@ export default function Home() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showNoTickets, setShowNoTickets] = useState(false);
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCopied, setReferralCopied] = useState(false);
+  const [referralApplied, setReferralApplied] = useState(false);
   const { completedScenes, reset, restoreFromStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -36,14 +39,57 @@ export default function Home() {
     }
   }, [authLoading, user, restoreFromStorage, screen]);
 
-  // Detect payment success from URL param
+  // Detect URL params: payment success + referral code
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
       setShowPaymentSuccess(true);
+    }
+    // Save referral code to localStorage
+    const ref = params.get("ref");
+    if (ref) {
+      try { localStorage.setItem("mamastale_ref", ref.trim().toUpperCase()); } catch {}
+    }
+    // Clean URL
+    if (params.get("payment") || ref) {
       window.history.replaceState({}, "", "/");
     }
   }, []);
+
+  // Auto-apply referral code after login
+  useEffect(() => {
+    if (authLoading || !user || referralApplied) return;
+    try {
+      const savedRef = localStorage.getItem("mamastale_ref");
+      if (!savedRef) return;
+      localStorage.removeItem("mamastale_ref");
+      setReferralApplied(true);
+      fetch("/api/referral", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralCode: savedRef }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            // Re-fetch ticket balance to show updated count
+            fetch("/api/tickets")
+              .then((r) => r.ok ? r.json() : null)
+              .then((d) => { if (d) setTicketsRemaining(d.remaining ?? 0); });
+          }
+        })
+        .catch(() => {});
+    } catch {}
+  }, [authLoading, user, referralApplied]);
+
+  // Fetch my referral code for logged-in users
+  useEffect(() => {
+    if (!user) { setReferralCode(null); return; }
+    fetch("/api/referral")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.code) setReferralCode(data.code); })
+      .catch(() => {});
+  }, [user]);
 
   // Fetch ticket balance for logged-in users
   useEffect(() => {
@@ -317,6 +363,42 @@ export default function Home() {
                 🌍 커뮤니티
               </Link>
             </div>
+          )}
+
+          {/* Referral link for logged-in users */}
+          {user && referralCode && (
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}?ref=${referralCode}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  setReferralCopied(true);
+                  setTimeout(() => setReferralCopied(false), 2000);
+                }).catch(() => {
+                  // Fallback: use share API on mobile
+                  if (navigator.share) {
+                    navigator.share({
+                      title: "mamastale 추천",
+                      text: "엄마의 이야기가 아이의 동화가 되는 곳, mamastale을 추천합니다!",
+                      url,
+                    });
+                  }
+                });
+              }}
+              className="w-full mt-2 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.97]"
+              style={{
+                background: referralCopied
+                  ? "rgba(127,191,176,0.15)"
+                  : "rgba(224,122,95,0.08)",
+                color: referralCopied ? "#5A9E8F" : "#E07A5F",
+                border: referralCopied
+                  ? "1.5px solid rgba(127,191,176,0.3)"
+                  : "1.5px solid rgba(224,122,95,0.2)",
+              }}
+            >
+              {referralCopied
+                ? "✅ 추천 링크가 복사되었어요!"
+                : "🎁 친구 추천하고 무료 티켓 받기"}
+            </button>
           )}
 
           {/* Footer disclaimer */}
