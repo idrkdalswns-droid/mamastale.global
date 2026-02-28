@@ -3,6 +3,16 @@ import { z } from "zod";
 
 export const runtime = "edge";
 
+/** Escape HTML special characters to prevent XSS in generated HTML */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const pdfRequestSchema = z.object({
   scenes: z.array(
     z.object({
@@ -29,8 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { scenes, title, authorName } = parsed.data;
-    const storyTitle = title || "나의 치유 동화";
-    const author = authorName || "어머니";
+    const storyTitle = escapeHtml(title || "나의 치유 동화");
+    const author = escapeHtml(authorName || "어머니");
     const createdAt = new Date().toLocaleDateString("ko-KR");
 
     // Generate printable HTML (user can print as PDF from browser)
@@ -69,8 +79,8 @@ export async function POST(request: NextRequest) {
       (scene) => `
   <div class="scene">
     <div class="scene-number">Scene ${scene.sceneNumber}</div>
-    <h2>${scene.title}</h2>
-    <p>${scene.text}</p>
+    <h2>${escapeHtml(scene.title)}</h2>
+    <p>${escapeHtml(scene.text)}</p>
   </div>`
     )
     .join("")}
