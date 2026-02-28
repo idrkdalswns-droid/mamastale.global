@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 24h
+      // No maxAge → session cookie (expires when browser closes)
     });
     return res;
   }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       secure: true,
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
+      // No maxAge → session cookie (expires when browser closes)
     });
 
     return response;
