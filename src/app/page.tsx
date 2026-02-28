@@ -104,10 +104,26 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col relative overflow-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="h-dvh bg-cream flex flex-col relative overflow-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Background hero image */}
+      <Image
+        src="/images/hero.jpg"
+        alt=""
+        fill
+        priority
+        className="object-cover object-top pointer-events-none"
+        style={{ opacity: 0.13 }}
+      />
+      {/* Gradient overlay for readability */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, rgba(253,249,244,0.5) 0%, rgba(253,249,244,0.85) 35%, rgba(253,249,244,0.97) 60%, rgba(253,249,244,1) 80%)",
+        }}
+      />
+
       <WatercolorBlob top={-80} right={-100} size={280} color="rgba(232,168,124,0.07)" />
       <WatercolorBlob bottom={100} left={-80} size={240} color="rgba(184,216,208,0.08)" />
-      <WatercolorBlob top="35%" right={-40} size={180} color="rgba(200,184,216,0.06)" />
 
       {/* Top navigation bar */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
@@ -158,165 +174,142 @@ export default function Home() {
         )}
       </div>
 
+      {/* Main content — fills remaining space, no scroll */}
       <div
-        className="flex-1 flex flex-col justify-start px-8 pt-6 relative z-[1] transition-all duration-1000 overflow-y-auto"
+        className="flex-1 flex flex-col justify-between px-8 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
           transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
         }}
       >
-        {/* Welcome message for logged-in users */}
-        {user && !authLoading && (
-          <div className="mb-6 px-4 py-3 rounded-2xl bg-mint/20 border border-mint/30">
-            <p className="text-sm text-brown font-light">
-              🌿 <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 다시 오신 것을 환영합니다
+        {/* Top section: title + description */}
+        <div className="pt-4">
+          {/* Welcome message for logged-in users */}
+          {user && !authLoading && (
+            <div className="mb-4 px-4 py-2.5 rounded-2xl bg-mint/20 border border-mint/30">
+              <p className="text-sm text-brown font-light">
+                🌿 <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 환영합니다
+              </p>
+            </div>
+          )}
+
+          <h1 className="font-serif text-[36px] font-bold text-brown tracking-tight leading-[1.15] mb-2">
+            mamastale
+          </h1>
+
+          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-5 tracking-wide">
+            나의 이야기가 아이의 동화가 되다
+          </p>
+
+          {/* Description card */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
+            <p className="text-[13px] text-brown-light leading-7 font-sans font-light break-keep">
+              엄마의 삶이 아이를 위한{" "}
+              <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
+              가 됩니다.
+              <br />
+              따뜻한 대화를 나누며 4단계 치유 여정을 체험하고,
+              아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
           </div>
-        )}
 
-        <h1 className="font-serif text-[38px] font-bold text-brown tracking-tight leading-[1.15] mb-2.5">
-          mamastale
-        </h1>
-
-        <p className="font-serif text-base text-brown-light font-normal leading-relaxed mb-8 tracking-wide">
-          나의 이야기가 아이의 동화가 되다
-        </p>
-
-        {/* Hero illustration */}
-        <div className="relative mx-auto mb-8 w-full max-w-[280px]">
-          <div
-            className="rounded-[28px] overflow-hidden"
-            style={{
-              boxShadow: "0 12px 40px rgba(196,149,106,0.15)",
-              border: "3px solid rgba(255,255,255,0.6)",
-            }}
-          >
-            <Image
-              src="/images/hero.jpg"
-              alt="엄마가 아이에게 동화를 읽어주는 수채화 일러스트"
-              width={280}
-              height={500}
-              className="w-full h-auto"
-              priority
-            />
-          </div>
-          {/* Soft glow behind the image */}
-          <div
-            className="absolute -inset-4 -z-10 rounded-[36px]"
-            style={{
-              background: "radial-gradient(ellipse at center, rgba(224,122,95,0.08) 0%, transparent 70%)",
-            }}
-          />
-        </div>
-
-        {/* Description card */}
-        <div className="bg-white/55 backdrop-blur-xl rounded-[22px] p-6 border border-brown-pale/10 mb-8">
-          <p className="text-sm text-brown-light leading-8 font-sans font-light break-keep">
-            엄마의 삶이 아이를 위한{" "}
-            <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
-            가 됩니다.
-            <br /><br />
-            따뜻한 대화를 나누며 4단계 치유 여정을 체험하고,
-            아이에게 들려줄 나만의 동화를 만들어 보세요.
-          </p>
-        </div>
-
-        {/* Phase pills */}
-        <div className="grid grid-cols-2 gap-2 mb-9">
-          {Object.values(PHASES).map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-[14px]"
-              style={{
-                background: `${p.accent}0D`,
-                border: `1px solid ${p.accent}18`,
-              }}
-            >
-              <span className="text-base flex-shrink-0">{p.icon}</span>
-              <div>
-                <div
-                  className="text-xs font-semibold font-sans leading-tight"
-                  style={{ color: p.text }}
-                >
-                  {p.name}
-                </div>
-                <div
-                  className="text-[10px] font-sans font-light"
-                  style={{ color: p.text, opacity: 0.55 }}
-                >
-                  {p.theory}
+          {/* Phase pills — compact */}
+          <div className="grid grid-cols-2 gap-1.5 mb-5">
+            {Object.values(PHASES).map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-2 px-3 py-2 rounded-[12px]"
+                style={{
+                  background: `${p.accent}0D`,
+                  border: `1px solid ${p.accent}18`,
+                }}
+              >
+                <span className="text-sm flex-shrink-0">{p.icon}</span>
+                <div>
+                  <div
+                    className="text-[11px] font-semibold font-sans leading-tight"
+                    style={{ color: p.text }}
+                  >
+                    {p.name}
+                  </div>
+                  <div
+                    className="text-[9px] font-sans font-light"
+                    style={{ color: p.text, opacity: 0.55 }}
+                  >
+                    {p.theory}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Ticket balance display for logged-in users */}
-        {user && ticketsRemaining !== null && (
-          <div className="flex items-center justify-center gap-2 mb-4 px-4 py-2.5 rounded-2xl bg-white/50 border border-brown-pale/10">
-            <span className="text-sm">🎫</span>
-            <span className="text-xs text-brown font-medium">
-              남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span>
-            </span>
-            {ticketsRemaining <= 0 && (
+        {/* Bottom section: ticket + CTA + links */}
+        <div className="pb-4">
+          {/* Ticket balance display for logged-in users */}
+          {user && ticketsRemaining !== null && (
+            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
+              <span className="text-sm">🎫</span>
+              <span className="text-xs text-brown font-medium">
+                남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span>
+              </span>
+              {ticketsRemaining <= 0 && (
+                <Link
+                  href="/pricing"
+                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
+                >
+                  구매하기
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* CTA button */}
+          <button
+            onClick={handleStartStory}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {user ? "새 동화 만들기" : "체험 시작하기"}
+          </button>
+
+          {/* Quick links for logged-in users */}
+          {user && !authLoading && (
+            <div className="flex gap-3 mt-3">
               <Link
-                href="/pricing"
-                className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
+                href="/library"
+                className="flex-1 py-2.5 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
+                style={{
+                  background: "rgba(127,191,176,0.12)",
+                  color: "#5A9E8F",
+                  border: "1.5px solid rgba(127,191,176,0.25)",
+                }}
               >
-                구매하기
+                📚 내 서재
               </Link>
-            )}
-          </div>
-        )}
+              <Link
+                href="/community"
+                className="flex-1 py-2.5 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
+                style={{
+                  background: "rgba(200,184,216,0.12)",
+                  color: "#6D4C91",
+                  border: "1.5px solid rgba(200,184,216,0.25)",
+                }}
+              >
+                🌍 커뮤니티
+              </Link>
+            </div>
+          )}
 
-        {/* CTA buttons */}
-        <button
-          onClick={handleStartStory}
-          className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97]"
-          style={{
-            background: "linear-gradient(135deg, #E07A5F, #D4836B)",
-            boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-          }}
-        >
-          {user ? "새 동화 만들기" : "체험 시작하기"}
-        </button>
-
-        {/* Quick links for logged-in users */}
-        {user && !authLoading && (
-          <div className="flex gap-3 mt-4">
-            <Link
-              href="/library"
-              className="flex-1 py-3 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
-              style={{
-                background: "rgba(127,191,176,0.12)",
-                color: "#5A9E8F",
-                border: "1.5px solid rgba(127,191,176,0.25)",
-              }}
-            >
-              📚 내 서재
-            </Link>
-            <Link
-              href="/community"
-              className="flex-1 py-3 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
-              style={{
-                background: "rgba(200,184,216,0.12)",
-                color: "#6D4C91",
-                border: "1.5px solid rgba(200,184,216,0.25)",
-              }}
-            >
-              🌍 커뮤니티
-            </Link>
-          </div>
-        )}
-      </div>
-
-      <div className="px-8 py-4 pb-6 text-center relative z-[1]">
-        <p className="text-[11px] text-brown-pale leading-relaxed font-sans font-light">
-          본 서비스는 실제 의료 행위를 대체하지 않습니다
-          <br />
-          베타 테스트 · 체험 후 피드백을 남겨주세요
-        </p>
+          {/* Footer disclaimer */}
+          <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
+            본 서비스는 실제 의료 행위를 대체하지 않습니다 · 베타 테스트
+          </p>
+        </div>
       </div>
 
       {/* No Tickets Modal */}
