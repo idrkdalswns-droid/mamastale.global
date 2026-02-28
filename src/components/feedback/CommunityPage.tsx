@@ -107,7 +107,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
               </div>
               <div className="w-[1px] bg-brown-pale/20" />
               <div className="text-center">
-                <div className="text-2xl font-serif font-bold text-mint-deep">10</div>
+                <div className="text-2xl font-serif font-bold text-mint-deep">{completedScenes.length || "—"}</div>
                 <div className="text-[10px] text-brown-light font-light mt-1">동화 장면</div>
               </div>
               <div className="w-[1px] bg-brown-pale/20" />
