@@ -30,16 +30,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  const protectedPaths = ["/dashboard", "/library"];
+  const isProtected = protectedPaths.some((p) =>
+    request.nextUrl.pathname.startsWith(p)
+  );
+
+  const authPaths = ["/login", "/signup"];
+  const isAuthPage = authPaths.some((p) =>
+    request.nextUrl.pathname.startsWith(p)
+  );
+
   try {
     // Refresh session
     const { data: { user } } = await supabase.auth.getUser();
 
     // Protected routes — redirect to login if not authenticated
-    const protectedPaths = ["/dashboard", "/library"];
-    const isProtected = protectedPaths.some((p) =>
-      request.nextUrl.pathname.startsWith(p)
-    );
-
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
@@ -47,17 +52,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // If logged in and visiting auth pages, redirect to home
-    const authPaths = ["/login", "/signup"];
-    const isAuthPage = authPaths.some((p) =>
-      request.nextUrl.pathname.startsWith(p)
-    );
-
     if (isAuthPage && user) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   } catch (e) {
-    // If auth check fails, allow the request through
     console.error("Middleware auth check failed:", e);
+    // Fail-closed for protected routes — redirect to login on error
+    if (isProtected) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    // Non-protected routes: allow through (fail-open for public pages)
   }
 
   return response;
@@ -65,6 +71,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|auth/callback|login|signup).*)",
+    // Include login/signup so logged-in user redirect works
+    // Exclude static assets, api webhooks
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks).*)",
   ],
 };

@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
+
+// ─── Timestamp tolerance: 5 minutes ───
+const TIMESTAMP_TOLERANCE_SEC = 300;
+
+// ─── Event ID deduplication (per-isolate, in-memory) ───
+const processedEvents = new Map<string, number>();
+const DEDUP_TTL_MS = 600_000; // 10 minutes
+
+function isEventProcessed(eventId: string): boolean {
+  const now = Date.now();
+  // Lazy cleanup
+  if (processedEvents.size > 500) {
+    for (const [id, ts] of processedEvents) {
+      if (now - ts > DEDUP_TTL_MS) processedEvents.delete(id);
+    }
+  }
+  if (processedEvents.has(eventId)) return true;
+  processedEvents.set(eventId, now);
+  return false;
+}
 
 // Simple HMAC-based signature verification for Edge Runtime
 async function verifyStripeSignature(
@@ -15,6 +36,14 @@ async function verifyStripeSignature(
     const signature = pairs.find((p) => p.startsWith("v1="))?.split("=").slice(1).join("=");
 
     if (!timestamp || !signature) return false;
+
+    // ─── Timestamp tolerance check ───
+    const eventTime = parseInt(timestamp, 10);
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (Math.abs(currentTime - eventTime) > TIMESTAMP_TOLERANCE_SEC) {
+      console.error("[Stripe] Webhook timestamp too old:", currentTime - eventTime, "seconds");
+      return false;
+    }
 
     const signedPayload = `${timestamp}.${payload}`;
     const key = await crypto.subtle.importKey(
@@ -50,6 +79,13 @@ export async function POST(request: NextRequest) {
   }
 
   const event = JSON.parse(body);
+
+  // ─── Event ID idempotency check ───
+  if (event.id && isEventProcessed(event.id)) {
+    console.log(`[Stripe] Duplicate event skipped: ${event.id}`);
+    return NextResponse.json({ received: true });
+  }
+
   const supabase = createServiceRoleClient();
 
   switch (event.type) {
@@ -63,22 +99,8 @@ export async function POST(request: NextRequest) {
           ? parseInt(session.metadata.ticket_count)
           : 1;
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("free_stories_remaining")
-          .eq("id", userId)
-          .single();
-
-        if (profile) {
-          await supabase
-            .from("profiles")
-            .update({
-              free_stories_remaining:
-                (profile.free_stories_remaining || 0) + ticketCount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", userId);
-        }
+        // ─── Atomic ticket increment ───
+        await incrementTickets(supabase, userId, ticketCount);
 
         await supabase.from("subscriptions").insert({
           user_id: userId,

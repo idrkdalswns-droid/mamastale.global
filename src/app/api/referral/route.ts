@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
 
@@ -101,7 +102,18 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { referralCode } = await request.json();
+  // Safe JSON parsing
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "잘못된 요청 형식입니다." },
+      { status: 400 }
+    );
+  }
+
+  const { referralCode } = body;
   if (!referralCode || typeof referralCode !== "string") {
     return NextResponse.json({ error: "추천 코드가 필요합니다." }, { status: 400 });
   }
@@ -151,31 +163,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "추천 적용에 실패했습니다." }, { status: 500 });
   }
 
-  // 4. 추천인에게 티켓 +1
-  await admin
-    .from("profiles")
-    .update({
-      free_stories_remaining: (referrer.free_stories_remaining || 0) + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", referrer.id);
+  // 4. 추천인에게 티켓 +1 (atomic)
+  await incrementTickets(admin, referrer.id, 1);
 
-  // 5. 신규 가입자에게도 티켓 +1
-  const { data: myProfile } = await admin
-    .from("profiles")
-    .select("free_stories_remaining")
-    .eq("id", user.id)
-    .single();
-
-  if (myProfile) {
-    await admin
-      .from("profiles")
-      .update({
-        free_stories_remaining: (myProfile.free_stories_remaining || 0) + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-  }
+  // 5. 신규 가입자에게도 티켓 +1 (atomic)
+  await incrementTickets(admin, user.id, 1);
 
   return NextResponse.json({
     success: true,

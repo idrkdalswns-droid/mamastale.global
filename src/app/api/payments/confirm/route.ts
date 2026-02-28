@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
+
+// ─── Valid prices (server-side source of truth) ───
+const VALID_PRICES: Record<number, number> = {
+  2000: 1,  // ₩2,000 = 1 ticket
+  8000: 5,  // ₩8,000 = 5 tickets
+};
 
 function getSupabaseClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -45,10 +52,30 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { paymentKey, orderId, amount } = await request.json();
+    // Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "잘못된 요청 형식입니다." },
+        { status: 400 }
+      );
+    }
+
+    const { paymentKey, orderId, amount } = body;
 
     if (!paymentKey || !orderId || !amount) {
       return NextResponse.json({ error: "Invalid payment data" }, { status: 400 });
+    }
+
+    // ─── Server-side price validation ───
+    const numericAmount = Number(amount);
+    if (!VALID_PRICES[numericAmount]) {
+      return NextResponse.json(
+        { error: "유효하지 않은 결제 금액입니다." },
+        { status: 400 }
+      );
     }
 
     // Confirm payment with Toss Payments API
@@ -59,51 +86,43 @@ export async function POST(request: NextRequest) {
         "Authorization": `Basic ${encryptedKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ paymentKey, orderId, amount }),
+      body: JSON.stringify({ paymentKey, orderId, amount: numericAmount }),
     });
 
     const confirmData = await confirmRes.json();
 
     if (!confirmRes.ok) {
-      console.error("[Toss] Payment confirmation failed:", confirmData);
+      console.error("[Toss] Payment confirmation failed:", confirmData?.code);
       return NextResponse.json(
         { error: confirmData.message || "결제 확인에 실패했습니다." },
         { status: 400 }
       );
     }
 
-    // Determine ticket count based on amount
-    let ticketCount = 1;
-    if (amount >= 8000) {
-      ticketCount = 5;
+    // ─── Use Toss-confirmed amount (not client-supplied) ───
+    const confirmedAmount = confirmData.totalAmount;
+    const ticketCount = VALID_PRICES[confirmedAmount];
+
+    if (!ticketCount) {
+      console.error("[Toss] Unexpected confirmed amount:", confirmedAmount);
+      return NextResponse.json(
+        { error: "결제 금액이 유효하지 않습니다." },
+        { status: 400 }
+      );
     }
 
-    // Credit tickets to user's profile
-    const { data: profile } = await sb.client
-      .from("profiles")
-      .select("free_stories_remaining")
-      .eq("id", user.id)
-      .single();
-
-    const currentTickets = profile?.free_stories_remaining ?? 0;
-
-    await sb.client
-      .from("profiles")
-      .update({
-        free_stories_remaining: currentTickets + ticketCount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    // ─── Atomic ticket increment ───
+    const newTotal = await incrementTickets(sb.client, user.id, ticketCount);
 
     console.log(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
-      `user=${user.id}, tickets +${ticketCount}, total=${currentTickets + ticketCount}`
+      `user=${user.id}, tickets +${ticketCount}, total=${newTotal}`
     );
 
     return NextResponse.json({
       success: true,
       ticketsAdded: ticketCount,
-      ticketsTotal: currentTickets + ticketCount,
+      ticketsTotal: newTotal,
     });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);

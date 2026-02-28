@@ -12,8 +12,41 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ─── Require authentication ───
+  let userId: string | null = null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (supabaseUrl && supabaseKey) {
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll() {},
+      },
+    });
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || null;
+  }
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: "로그인이 필요합니다." },
+      { status: 401 }
+    );
+  }
+
   try {
-    const { priceType } = await request.json();
+    // Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "잘못된 요청 형식입니다." },
+        { status: 400 }
+      );
+    }
+
+    const { priceType } = body;
 
     const priceId =
       priceType === "bundle"
@@ -25,21 +58,6 @@ export async function POST(request: NextRequest) {
         { error: "상품 정보가 설정되지 않았습니다." },
         { status: 400 }
       );
-    }
-
-    // Get current user for metadata
-    let userId: string | null = null;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createServerClient(supabaseUrl, supabaseKey, {
-        cookies: {
-          getAll() { return request.cookies.getAll(); },
-          setAll() {},
-        },
-      });
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
     }
 
     const ticketCount = priceType === "bundle" ? 5 : 1;
@@ -56,11 +74,9 @@ export async function POST(request: NextRequest) {
     params.append("success_url", `${appUrl}/?payment=success`);
     params.append("cancel_url", `${appUrl}/pricing?payment=canceled`);
     params.append("locale", "ko");
-    // Pass user info so webhook can credit tickets
-    if (userId) {
-      params.append("metadata[user_id]", userId);
-      params.append("metadata[ticket_count]", String(ticketCount));
-    }
+    // Always pass user info (userId is guaranteed non-null here)
+    params.append("metadata[user_id]", userId);
+    params.append("metadata[ticket_count]", String(ticketCount));
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
@@ -74,9 +90,9 @@ export async function POST(request: NextRequest) {
     const session = await response.json();
 
     if (!response.ok) {
-      console.error("Stripe API error:", session);
+      console.error("Stripe API error:", session?.error?.type);
       return NextResponse.json(
-        { error: `Stripe 오류: ${session?.error?.message || JSON.stringify(session)}` },
+        { error: `결제 오류가 발생했습니다. 다시 시도해 주세요.` },
         { status: 500 }
       );
     }
@@ -86,7 +102,7 @@ export async function POST(request: NextRequest) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error("Checkout error:", errMsg);
     return NextResponse.json(
-      { error: `결제 오류: ${errMsg}` },
+      { error: "결제 오류가 발생했습니다. 다시 시도해 주세요." },
       { status: 500 }
     );
   }

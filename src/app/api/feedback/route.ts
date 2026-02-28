@@ -16,7 +16,17 @@ const feedbackSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "잘못된 요청 형식입니다." },
+        { status: 400 }
+      );
+    }
+
     const parsed = feedbackSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -28,8 +38,13 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // Always log feedback
-    console.log("[Feedback received]", JSON.stringify(data, null, 2));
+    // Log feedback summary (no PII)
+    console.log("[Feedback received]", {
+      hasEmpathy: !!data.empathy,
+      hasInsight: !!data.insight,
+      hasOverall: !!data.overall,
+      hasFreeText: !!data.free,
+    });
 
     // Try to save to Supabase if configured
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,7 +74,7 @@ export async function POST(request: NextRequest) {
         });
       } catch (dbErr) {
         // DB save failed — log but don't fail the request
-        console.warn("[Feedback DB save failed]", dbErr);
+        console.warn("[Feedback DB save failed]", dbErr instanceof Error ? dbErr.message : "Unknown");
       }
     }
 

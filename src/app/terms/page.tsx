@@ -22,8 +22,8 @@ export default function TermsPage() {
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제4조 (이용 요금)</h2>
           <p>무료 체험: 1회 완전한 동화 창작 가능<br/>
-          동화 1권 티켓: ₩1,000 / 1권<br/>
-          5권 묶음 패키지: ₩4,000 / 5권 (20% 할인)<br/>
+          동화 1권 티켓: ₩2,000 / 1권<br/>
+          5권 묶음 패키지: ₩8,000 / 5권 (20% 할인)<br/>
           티켓은 소멸 기한이 없으며, 결제는 Stripe를 통해 처리됩니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제5조 (저작권)</h2>
