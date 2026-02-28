@@ -23,9 +23,10 @@ interface StoryViewerProps {
   title?: string;
   authorName?: string;
   onBack?: () => void;
+  embedded?: boolean; // true when used inside another page (no min-h-dvh)
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, onBack, embedded }: StoryViewerProps) {
   const [currentScene, setCurrentScene] = useState(0);
 
   const scene = scenes[currentScene];
@@ -34,7 +35,7 @@ export function StoryViewer({ scenes, title, authorName, onBack }: StoryViewerPr
   const isLast = currentScene === scenes.length - 1;
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col font-sans">
+    <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
         <div className="flex items-center justify-between px-4 py-3">

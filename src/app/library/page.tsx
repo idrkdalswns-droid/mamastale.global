@@ -72,7 +72,14 @@ export default function LibraryPage() {
         ) : error ? (
           <div className="text-center py-20">
             <div className="text-3xl mb-3">😕</div>
-            <p className="text-sm text-brown-light font-light">{error}</p>
+            <p className="text-sm text-brown-light font-light mb-4">{error}</p>
+            <button
+              onClick={() => { setError(""); setLoading(true); fetchStories(); }}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
+              style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
+            >
+              다시 시도
+            </button>
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">

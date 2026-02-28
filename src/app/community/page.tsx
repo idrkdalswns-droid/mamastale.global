@@ -19,6 +19,7 @@ interface CommunityStory {
 export default function CommunityBrowsePage() {
   const [stories, setStories] = useState<CommunityStory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [sort, setSort] = useState<"recent" | "popular">("recent");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -26,13 +27,14 @@ export default function CommunityBrowsePage() {
   const fetchStories = async (sortBy: string, pageNum: number, append = false) => {
     try {
       setLoading(true);
+      setError("");
       const res = await fetch(`/api/community?sort=${sortBy}&page=${pageNum}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setStories(prev => append ? [...prev, ...data.stories] : data.stories);
       setHasMore(data.hasMore);
     } catch {
-      // ignore
+      if (!append) setError("동화 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }
@@ -102,6 +104,18 @@ export default function CommunityBrowsePage() {
           <div className="text-center py-20">
             <div className="text-3xl mb-3 animate-pulse">🌍</div>
             <p className="text-sm text-brown-light font-light">불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="text-3xl mb-3">😕</div>
+            <p className="text-sm text-brown-light font-light mb-4">{error}</p>
+            <button
+              onClick={() => fetchStories(sort, 1)}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
+              style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
+            >
+              다시 시도
+            </button>
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">

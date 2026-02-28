@@ -24,7 +24,9 @@ export function StoryCard({
   likeCount,
 }: StoryCardProps) {
   const firstScene = scenes?.[0];
-  const previewText = firstScene?.text?.slice(0, 80) || "";
+  const fullText = firstScene?.text || "";
+  const previewText = fullText.slice(0, 80);
+  const isTruncated = fullText.length > 80;
   const sceneCount = scenes?.length || 0;
   const date = new Date(createdAt).toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -60,7 +62,7 @@ export function StoryCard({
 
       {previewText && (
         <p className="text-xs text-brown-light font-light leading-relaxed line-clamp-2 mb-3">
-          {previewText}...
+          {previewText}{isTruncated && "..."}
         </p>
       )}
 

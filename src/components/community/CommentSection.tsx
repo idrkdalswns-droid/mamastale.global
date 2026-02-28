@@ -19,6 +19,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
   const [alias, setAlias] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     fetch(`/api/community/${storyId}/comments`)
@@ -30,6 +31,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
   const submitComment = async () => {
     if (!newComment.trim() || loading) return;
     setLoading(true);
+    setSubmitError("");
     try {
       const res = await fetch(`/api/community/${storyId}/comments`, {
         method: "POST",
@@ -41,7 +43,12 @@ export function CommentSection({ storyId }: CommentSectionProps) {
       });
 
       if (res.status === 401) {
-        alert("댓글을 작성하려면 로그인이 필요합니다.");
+        setSubmitError("댓글을 작성하려면 로그인이 필요합니다.");
+        return;
+      }
+
+      if (!res.ok) {
+        setSubmitError("댓글 등록에 실패했습니다.");
         return;
       }
 
@@ -53,7 +60,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
         setShowForm(false);
       }
     } catch {
-      // ignore
+      setSubmitError("네트워크 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -92,6 +99,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
             placeholder="별명 (선택)"
+            maxLength={20}
             className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none mb-2"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
           />
@@ -101,9 +109,13 @@ export function CommentSection({ storyId }: CommentSectionProps) {
             placeholder="따뜻한 댓글을 남겨주세요..."
             maxLength={500}
             rows={3}
-            className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none resize-none mb-2"
+            className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none resize-none mb-1"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
           />
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] text-brown-pale">{newComment.length}/500</span>
+            {submitError && <span className="text-[10px] text-red-500">{submitError}</span>}
+          </div>
           <button
             onClick={submitComment}
             disabled={loading || !newComment.trim()}

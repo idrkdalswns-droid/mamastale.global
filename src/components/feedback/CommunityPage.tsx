@@ -156,6 +156,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                   value={alias}
                   onChange={(e) => setAlias(e.target.value)}
                   placeholder="별명 (예: 따뜻한 엄마)"
+                  maxLength={20}
                   className="w-full px-4 py-2.5 rounded-xl text-sm font-sans outline-none mb-3"
                   style={{
                     background: "rgba(255,255,255,0.6)",

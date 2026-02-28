@@ -87,6 +87,7 @@ export default function CommunityStoryPage() {
           title={story.title || "치유 동화"}
           authorName={story.author_alias || "익명의 엄마"}
           onBack={() => router.push("/community")}
+          embedded
         />
       </div>
 
