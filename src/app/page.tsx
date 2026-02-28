@@ -179,17 +179,17 @@ export default function Home() {
         </h1>
 
         <p className="font-serif text-base text-brown-light font-normal leading-relaxed mb-10 tracking-wide">
-          나의 과거가 아이의 동화가 되다
+          나의 이야기가 아이의 동화가 되다
         </p>
 
         {/* Description card */}
         <div className="bg-white/55 backdrop-blur-xl rounded-[22px] p-6 border border-brown-pale/10 mb-8">
           <p className="text-sm text-brown-light leading-8 font-sans font-light break-keep">
-            엄마의 상처와 이야기가{" "}
+            엄마의 삶이 아이를 위한{" "}
             <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
             가 됩니다.
             <br /><br />
-            AI 상담사와 대화하며 4단계 치유 여정을 체험하고,
+            따뜻한 대화를 나누며 4단계 치유 여정을 체험하고,
             아이에게 들려줄 나만의 동화를 만들어 보세요.
           </p>
         </div>

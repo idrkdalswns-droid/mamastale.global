@@ -23,15 +23,25 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
 
       if (!res.ok) throw new Error("PDF generation failed");
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `mamastale-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const html = await res.text();
+
+      // Open print-ready HTML in a new window for PDF save
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+      } else {
+        // Fallback: download as HTML file
+        const blob = new Blob([html], { type: "text/html; charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `mamastale-${Date.now()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       console.error("PDF download error:", err);
       alert("PDF 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");

@@ -7,12 +7,14 @@ interface ChatInputProps {
   onSend: (text: string) => void;
   isLoading: boolean;
   phase: number;
+  disabled?: boolean;
 }
 
 export default function ChatInput({
   onSend,
   isLoading,
   phase,
+  disabled = false,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -27,13 +29,13 @@ export default function ChatInput({
   }, []);
 
   const handleSend = useCallback(() => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || disabled) return;
     const text = input.trim();
     setInput("");
     if (taRef.current) taRef.current.style.height = "auto";
     onSend(text);
     setTimeout(() => taRef.current?.focus(), 150);
-  }, [input, isLoading, onSend]);
+  }, [input, isLoading, disabled, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -45,7 +47,7 @@ export default function ChatInput({
     [handleSend]
   );
 
-  const isDisabled = !input.trim() || isLoading;
+  const isDisabled = !input.trim() || isLoading || disabled;
 
   return (
     <div
@@ -76,7 +78,8 @@ export default function ChatInput({
           onBlur={(e) => {
             e.target.style.borderColor = `${p.accent}22`;
           }}
-          placeholder="이야기를 들려주세요..."
+          disabled={disabled}
+          placeholder={disabled ? "회원가입 후 계속 대화할 수 있어요" : "이야기를 들려주세요..."}
           rows={1}
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
           style={{
