@@ -128,14 +128,14 @@ export default function LoginPage() {
         </div>
 
         <button
-          onClick={handleGoogleLogin}
-          className="w-full py-3.5 rounded-full text-sm font-medium text-brown-light active:scale-[0.97] transition-transform"
+          disabled
+          className="w-full py-3.5 rounded-full text-sm font-medium text-brown-pale transition-transform opacity-50 cursor-not-allowed"
           style={{
-            background: "rgba(255,255,255,0.7)",
-            border: "1.5px solid rgba(196,149,106,0.2)",
+            background: "rgba(255,255,255,0.5)",
+            border: "1.5px solid rgba(196,149,106,0.1)",
           }}
         >
-          🔐 Google로 시작하기
+          🔐 Google 로그인 (준비 중)
         </button>
 
         <div className="text-center mt-6">
