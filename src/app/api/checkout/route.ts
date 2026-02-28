@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 
 export const runtime = "edge";
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
-  : null;
-
 export async function POST(request: NextRequest) {
-  if (!stripe) {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
     return NextResponse.json(
       { error: "결제 시스템이 아직 설정되지 않았습니다." },
       { status: 503 }
@@ -18,7 +14,6 @@ export async function POST(request: NextRequest) {
   try {
     const { priceType } = await request.json();
 
-    // Map price type to Stripe Price ID
     const priceId =
       priceType === "bundle"
         ? process.env.STRIPE_BUNDLE_PRICE_ID
@@ -31,21 +26,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mamastale-global.pages.dev";
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: `${appUrl}/?payment=success`,
-      cancel_url: `${appUrl}/pricing?payment=canceled`,
-      locale: "ko",
+    // Use Stripe REST API directly (Edge compatible)
+    const params = new URLSearchParams();
+    params.append("mode", "payment");
+    params.append("payment_method_types[0]", "card");
+    params.append("line_items[0][price]", priceId);
+    params.append("line_items[0][quantity]", "1");
+    params.append("success_url", `${appUrl}/?payment=success`);
+    params.append("cancel_url", `${appUrl}/pricing?payment=canceled`);
+    params.append("locale", "ko");
+
+    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${secretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
     });
+
+    const session = await response.json();
+
+    if (!response.ok) {
+      console.error("Stripe API error:", session);
+      return NextResponse.json(
+        { error: "결제 세션 생성에 실패했습니다." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

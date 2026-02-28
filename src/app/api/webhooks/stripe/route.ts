@@ -1,41 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
-  : null;
+// Simple HMAC-based signature verification for Edge Runtime
+async function verifyStripeSignature(
+  payload: string,
+  sigHeader: string,
+  secret: string
+): Promise<boolean> {
+  try {
+    const pairs = sigHeader.split(",");
+    const timestamp = pairs.find((p) => p.startsWith("t="))?.split("=")[1];
+    const signature = pairs.find((p) => p.startsWith("v1="))?.split("=").slice(1).join("=");
+
+    if (!timestamp || !signature) return false;
+
+    const signedPayload = `${timestamp}.${payload}`;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signedPayload));
+    const expectedSig = Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    return expectedSig === signature;
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
 
-  if (!stripe) {
-    return NextResponse.json(
-      { error: "Stripe is not configured" },
-      { status: 503 }
-    );
-  }
-
   if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error("Stripe webhook verification failed:", err);
+  const isValid = await verifyStripeSignature(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  if (!isValid) {
+    console.error("Stripe webhook verification failed");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  const event = JSON.parse(body);
   const supabase = createServiceRoleClient();
 
   switch (event.type) {
     case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       console.log("[Stripe] Checkout completed:", session.id);
 
       if (supabase && session.metadata?.user_id) {
@@ -44,7 +63,6 @@ export async function POST(request: NextRequest) {
           ? parseInt(session.metadata.ticket_count)
           : 1;
 
-        // Get current profile
         const { data: profile } = await supabase
           .from("profiles")
           .select("free_stories_remaining")
@@ -52,7 +70,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (profile) {
-          // Add purchased tickets
           await supabase
             .from("profiles")
             .update({
@@ -63,10 +80,9 @@ export async function POST(request: NextRequest) {
             .eq("id", userId);
         }
 
-        // Record purchase in subscriptions
         await supabase.from("subscriptions").insert({
           user_id: userId,
-          stripe_customer_id: (session.customer as string) || null,
+          stripe_customer_id: session.customer || null,
           plan: "premium",
           status: "active",
           updated_at: new Date().toISOString(),
@@ -75,11 +91,10 @@ export async function POST(request: NextRequest) {
       break;
     }
     case "customer.subscription.updated": {
-      const sub = event.data.object as Stripe.Subscription;
+      const sub = event.data.object;
       console.log("[Stripe] Subscription updated:", sub.id, sub.status);
 
       if (supabase) {
-        // Extract period from subscription items (Stripe v20+ API)
         const periodStart = sub.items?.data?.[0]?.current_period_start;
         const periodEnd = sub.items?.data?.[0]?.current_period_end;
 
@@ -100,7 +115,7 @@ export async function POST(request: NextRequest) {
       break;
     }
     case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription;
+      const sub = event.data.object;
       console.log("[Stripe] Subscription canceled:", sub.id);
 
       if (supabase) {
