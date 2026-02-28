@@ -238,15 +238,16 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
               동화 1권 티켓 · ₩2,000<br />
               다른 상처, 다른 은유, 새로운 치유 동화가 탄생합니다
             </p>
-            <button
-              className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+            <Link
+              href="/pricing"
+              className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97] no-underline"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #D4836B)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >
               🎫 동화 1권 티켓 구매 · ₩2,000
-            </button>
+            </Link>
           </div>
         </div>
 

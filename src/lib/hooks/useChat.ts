@@ -220,8 +220,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const snapshot = JSON.parse(raw);
-      // Only restore if saved within last 2 hours
-      if (Date.now() - snapshot.savedAt > 2 * 60 * 60 * 1000) {
+      // Only restore if saved within last 24 hours (allows time for email verification)
+      if (Date.now() - snapshot.savedAt > 24 * 60 * 60 * 1000) {
         localStorage.removeItem(STORAGE_KEY);
         return false;
       }

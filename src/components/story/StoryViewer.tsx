@@ -30,6 +30,31 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
   const [currentScene, setCurrentScene] = useState(0);
   const [copied, setCopied] = useState(false);
 
+  // Guard: empty scenes array — show friendly empty state instead of crashing
+  if (!scenes || scenes.length === 0) {
+    return (
+      <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col items-center justify-center px-8 font-sans`}>
+        <div className="text-5xl mb-4">📖</div>
+        <h2 className="font-serif text-xl text-brown font-bold mb-3">동화가 아직 준비되지 않았어요</h2>
+        <p className="text-sm text-brown-light font-light text-center leading-relaxed mb-6 break-keep">
+          동화 장면이 생성되지 않았습니다.<br />대화를 조금 더 이어가 주세요.
+        </p>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="px-6 py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+            }}
+          >
+            {onBackLabel || "← 뒤로가기"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   const scene = scenes[currentScene];
   const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
   const isFirst = currentScene === 0;
