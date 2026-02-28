@@ -97,9 +97,10 @@ export default function Home() {
   }, [user]);
 
   // Fetch ticket balance for logged-in users
+  // Re-fetches when returning to landing (e.g. after completing a story)
   useEffect(() => {
-    if (!user) {
-      setTicketsRemaining(null);
+    if (!user || screen !== "landing") {
+      if (!user) setTicketsRemaining(null);
       return;
     }
     fetch("/api/tickets")
@@ -108,7 +109,7 @@ export default function Home() {
         if (data) setTicketsRemaining(data.remaining ?? 0);
       })
       .catch(() => {});
-  }, [user, showPaymentSuccess]); // re-fetch after payment success
+  }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
 
   // Handle "새 동화 만들기" click with ticket check
   const handleStartStory = () => {
