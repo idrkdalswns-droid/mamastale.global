@@ -1,0 +1,116 @@
+"use client";
+
+import { useState } from "react";
+import { PHASES } from "@/lib/constants/phases";
+import { useSettingsStore, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
+import type { FontSize } from "@/lib/hooks/useSettings";
+
+interface PhaseHeaderProps {
+  currentPhase: number;
+  visitedPhases: number[];
+  isTransitioning: boolean;
+}
+
+export default function PhaseHeader({
+  currentPhase,
+  visitedPhases,
+  isTransitioning,
+}: PhaseHeaderProps) {
+  const p = PHASES[currentPhase];
+  const { fontSize, setFontSize } = useSettingsStore();
+  const [showSettings, setShowSettings] = useState(false);
+
+  const sizes: FontSize[] = ["small", "medium", "large"];
+
+  return (
+    <div
+      className="sticky top-0 z-[100] border-b border-black/[0.04]"
+      style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }}
+    >
+      <div className="px-4 pt-2.5 pb-2 relative">
+        {/* Progress bars */}
+        <div className="flex gap-1 mb-2 justify-center">
+          {Object.values(PHASES).map((ph) => (
+            <div
+              key={ph.id}
+              className="h-[3px] rounded-sm transition-all duration-500 ease-in-out"
+              style={{
+                width: ph.id === currentPhase ? 36 : 20,
+                background:
+                  ph.id === currentPhase
+                    ? ph.accent
+                    : visitedPhases.includes(ph.id) && ph.id < currentPhase
+                      ? `${ph.accent}55`
+                      : "rgba(0,0,0,0.05)",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Phase info */}
+        <div
+          className="flex items-center justify-center gap-2 transition-opacity duration-300"
+          style={{ opacity: isTransitioning ? 0 : 1 }}
+        >
+          <span className="text-base">{p.icon}</span>
+          <div>
+            <div
+              className="text-xs font-semibold leading-tight"
+              style={{ color: p.text }}
+            >
+              Phase {p.id} · {p.name}
+            </div>
+            <div
+              className="text-[10px] font-light opacity-50"
+              style={{ color: p.text }}
+            >
+              {p.theory}
+            </div>
+          </div>
+        </div>
+
+        {/* Font size toggle button */}
+        <button
+          onClick={() => setShowSettings((v) => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity"
+          aria-label="글씨 크기 설정"
+          style={{ fontSize: 14 }}
+        >
+          가
+        </button>
+
+        {/* Font size popup */}
+        {showSettings && (
+          <div
+            className="absolute right-2 top-full mt-1 bg-white rounded-xl shadow-lg border border-black/5 p-2 flex gap-1.5 z-[110]"
+            style={{ minWidth: 140 }}
+          >
+            {sizes.map((s) => (
+              <button
+                key={s}
+                onClick={() => {
+                  setFontSize(s);
+                  setShowSettings(false);
+                }}
+                className="flex-1 py-1.5 rounded-lg text-center transition-all"
+                style={{
+                  fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,
+                  background: fontSize === s ? p.accent : "transparent",
+                  color: fontSize === s ? "#fff" : "#8B7355",
+                  fontWeight: fontSize === s ? 600 : 400,
+                }}
+              >
+                {FONT_SIZE_LABELS[s]}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
