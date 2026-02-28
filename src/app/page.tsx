@@ -113,6 +113,9 @@ export default function Home() {
 
   // Handle "새 동화 만들기" click with ticket check
   const handleStartStory = () => {
+    // Block clicks while ticket balance is still loading for logged-in users
+    // (prevents bypassing ticket check by clicking before API responds)
+    if (user && ticketsRemaining === null) return;
     if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
       setShowNoTickets(true);
       return;
