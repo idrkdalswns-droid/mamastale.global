@@ -81,6 +81,7 @@ export default function ChatInput({
           disabled={disabled}
           placeholder={disabled ? "회원가입 후 계속 대화할 수 있어요" : "이야기를 들려주세요..."}
           rows={1}
+          maxLength={5000}
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
           style={{
             border: `1.5px solid ${p.accent}22`,

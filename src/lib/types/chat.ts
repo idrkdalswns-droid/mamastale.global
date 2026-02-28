@@ -4,6 +4,8 @@ export interface Message {
   content: string;
   phase?: number;
   createdAt?: string;
+  /** True for client-side error messages (not sent to API) */
+  isError?: boolean;
 }
 
 export interface ChatSession {

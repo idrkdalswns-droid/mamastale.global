@@ -79,10 +79,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ messages: updatedMessages, isLoading: true });
 
     try {
-      const apiMessages = updatedMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Filter out client-side error messages before sending to API
+      const apiMessages = updatedMessages
+        .filter((m) => !m.isError)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -188,6 +191,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         role: "assistant",
         content: errMessage,
         phase: state.currentPhase,
+        isError: true,
       };
       set((s) => ({ messages: [...s.messages, errorMsg] }));
     } finally {
