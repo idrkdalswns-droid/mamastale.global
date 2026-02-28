@@ -63,10 +63,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { title, scenes, sessionId, metadata, isPublic, authorAlias } = await request.json();
+    // Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
+
+    const { title, scenes, sessionId, metadata, isPublic, authorAlias } = body;
 
     // Atomic ticket check & deduction — prevents race condition
-    // Uses RPC if available, otherwise falls back to check-then-update
     let ticketsAfter = 0;
 
     const { data: profile } = await sb.client
@@ -104,23 +111,49 @@ export async function POST(request: NextRequest) {
 
     ticketsAfter = updatedProfile.free_stories_remaining;
 
-    // Save the story after ticket deduction succeeded
-    const { data, error } = await sb.client
+    // Validate session_id: must be a valid UUID or null
+    // Client sends "session_${Date.now()}" which is NOT a UUID → skip FK
+    const isValidUUID = sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
+
+    // Build insert object — base columns only (always exist in DB)
+    const storyInsert: Record<string, unknown> = {
+      user_id: user.id,
+      session_id: isValidUUID ? sessionId : null,
+      title: title || "나의 치유 동화",
+      scenes,
+      metadata: metadata || {},
+      status: "completed",
+    };
+
+    // Community columns (is_public, author_alias) require 002_community migration
+    // Only include if explicitly requested — graceful fallback if columns missing
+    const hasCommunityFields = isPublic !== undefined || authorAlias;
+    if (hasCommunityFields) {
+      storyInsert.is_public = isPublic || false;
+      storyInsert.author_alias = authorAlias || null;
+    }
+
+    // Try insert
+    let insertResult = await sb.client
       .from("stories")
-      .insert({
-        user_id: user.id,
-        session_id: sessionId || null,
-        title: title || "나의 치유 동화",
-        scenes,
-        metadata: metadata || {},
-        status: "completed",
-        is_public: isPublic || false,
-        author_alias: authorAlias || null,
-      })
+      .insert(storyInsert)
       .select("id")
       .single();
 
-    if (error) {
+    // If insert failed and we had community columns, retry without them
+    // (community migration may not be applied yet)
+    if (insertResult.error && hasCommunityFields) {
+      console.warn("[Stories] Retrying without community columns:", insertResult.error.message);
+      delete storyInsert.is_public;
+      delete storyInsert.author_alias;
+      insertResult = await sb.client
+        .from("stories")
+        .insert(storyInsert)
+        .select("id")
+        .single();
+    }
+
+    if (insertResult.error || !insertResult.data) {
       // Rollback ticket deduction on story save failure
       await sb.client
         .from("profiles")
@@ -129,10 +162,11 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[Stories] Insert failed:", insertResult.error?.message);
+      return NextResponse.json({ error: insertResult.error?.message || "저장 실패" }, { status: 500 });
     }
 
-    return NextResponse.json({ id: data.id, ticketsRemaining: ticketsAfter });
+    return NextResponse.json({ id: insertResult.data.id, ticketsRemaining: ticketsAfter });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

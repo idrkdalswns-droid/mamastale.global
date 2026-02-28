@@ -27,7 +27,7 @@ export default function Home() {
   const [referralCopied, setReferralCopied] = useState(false);
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
-  const { completedScenes, reset, restoreFromStorage } = useChatStore();
+  const { completedScenes, sessionId: chatSessionId, reset, restoreFromStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
@@ -153,7 +153,7 @@ export default function Home() {
   }
 
   if (screen === "feedback") {
-    return <FeedbackWizard onRestart={() => setScreen("community")} />;
+    return <FeedbackWizard sessionId={chatSessionId} onRestart={() => setScreen("community")} />;
   }
 
   if (screen === "community") {

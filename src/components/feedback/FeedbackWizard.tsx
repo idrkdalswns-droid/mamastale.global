@@ -22,9 +22,10 @@ const faces = [
 
 interface FeedbackWizardProps {
   onRestart: () => void;
+  sessionId?: string;
 }
 
-export function FeedbackWizard({ onRestart }: FeedbackWizardProps) {
+export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
   const [step, setStep] = useState(0);
   const [ratings, setRatings] = useState<Record<string, number | string>>({});
   const [freeText, setFreeText] = useState("");
@@ -47,6 +48,7 @@ export function FeedbackWizard({ onRestart }: FeedbackWizardProps) {
     const feedbackData = {
       ...ratings,
       ...(freeText.trim() ? { free: freeText } : {}),
+      ...(sessionId ? { sessionId } : {}),
     };
 
     try {
