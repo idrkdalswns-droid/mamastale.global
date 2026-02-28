@@ -24,8 +24,9 @@ export default function AccessPage() {
         // Redirect to original URL (preserves ?ref= params) or home
         const params = new URLSearchParams(window.location.search);
         const next = params.get("next") || "/";
-        // Security: only allow relative paths (prevent open redirect)
-        window.location.href = next.startsWith("/") ? next : "/";
+        // Security: only allow relative paths (prevent open redirect + protocol-relative //evil.com)
+        const safe = next.startsWith("/") && !next.startsWith("//");
+        window.location.href = safe ? next : "/";
       } else {
         const data = await res.json();
         setError(data.error || "보안 키가 올바르지 않습니다.");
