@@ -11,9 +11,11 @@ interface PDFDownloadButtonProps {
 
 export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleDownload = async () => {
     setLoading(true);
+    setError(false);
     try {
       const res = await fetch("/api/story/generate-pdf", {
         method: "POST",
@@ -44,7 +46,8 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
       }
     } catch (err) {
       console.error("PDF download error:", err);
-      alert("PDF 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setError(true);
+      setTimeout(() => setError(false), 3000);
     } finally {
       setLoading(false);
     }
@@ -54,15 +57,20 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
     <button
       onClick={handleDownload}
       disabled={loading}
-      className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+      className="w-full py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
       style={{
-        background: loading
-          ? "#C0B0A0"
-          : "linear-gradient(135deg, #E07A5F, #D4836B)",
-        boxShadow: loading ? "none" : "0 4px 16px rgba(224,122,95,0.3)",
+        background: error
+          ? "rgba(239,68,68,0.08)"
+          : loading
+          ? "rgba(196,149,106,0.08)"
+          : "rgba(196,149,106,0.08)",
+        color: error ? "#EF4444" : "#8B6F55",
+        border: error
+          ? "1.5px solid rgba(239,68,68,0.2)"
+          : "1.5px solid rgba(196,149,106,0.2)",
       }}
     >
-      {loading ? "PDF 생성 중..." : "📥 PDF 다운로드"}
+      {error ? "⚠️ PDF 생성 실패 · 다시 시도" : loading ? "PDF 생성 중..." : "📥 PDF 다운로드"}
     </button>
   );
 }

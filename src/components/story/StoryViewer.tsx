@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
 import type { Scene } from "@/lib/types/story";
 
 const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
@@ -196,6 +197,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
                 📤 공유하기
               </button>
             </div>
+            {/* PDF Download */}
+            <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />
             {/* Continue to next step — only in main flow where onBackLabel is set */}
             {onBack && onBackLabel && (
               <button
