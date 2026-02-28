@@ -4,24 +4,33 @@ import { CookieConsent } from "@/components/layout/CookieConsent";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "mamastale — 나의 과거가 아이의 동화가 되다",
+  metadataBase: new URL("https://mamastale-global.pages.dev"),
+  title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
   description:
-    "AI 상담사와 대화하며 4단계 치유 여정을 체험하고, 아이에게 들려줄 나만의 동화를 만들어 보세요. 엄마의 상처가 세상에 하나뿐인 동화가 됩니다.",
+    "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
   keywords: [
     "마마스테일",
     "엄마엄마동화",
     "산후우울증",
     "양육 번아웃",
     "치유 동화",
-    "AI 상담",
     "내러티브 테라피",
+    "치유 상담",
   ],
   openGraph: {
-    title: "mamastale — 나의 과거가 아이의 동화가 되다",
+    title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
     description:
-      "AI 상담사와 대화하며 엄마만의 치유 동화를 만들어 보세요.",
+      "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
     type: "website",
     locale: "ko_KR",
+    images: [
+      {
+        url: "/images/hero.jpg",
+        width: 600,
+        height: 1067,
+        alt: "엄마와 아이가 함께 동화책을 읽는 수채화 일러스트",
+      },
+    ],
   },
 };
 

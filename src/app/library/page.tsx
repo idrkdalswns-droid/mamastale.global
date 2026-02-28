@@ -88,7 +88,7 @@ export default function LibraryPage() {
               아직 완성한 동화가 없어요
             </h3>
             <p className="text-sm text-brown-light font-light mb-6 leading-relaxed">
-              AI 상담사와 대화하며<br />
+              따뜻한 대화를 나누며<br />
               나만의 치유 동화를 만들어 보세요
             </p>
             <Link
