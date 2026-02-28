@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { PHASES } from "@/lib/constants/phases";
 import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
@@ -158,7 +159,7 @@ export default function Home() {
       </div>
 
       <div
-        className="flex-1 flex flex-col justify-center px-8 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col justify-start px-8 pt-6 relative z-[1] transition-all duration-1000 overflow-y-auto"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -178,9 +179,36 @@ export default function Home() {
           mamastale
         </h1>
 
-        <p className="font-serif text-base text-brown-light font-normal leading-relaxed mb-10 tracking-wide">
+        <p className="font-serif text-base text-brown-light font-normal leading-relaxed mb-8 tracking-wide">
           나의 이야기가 아이의 동화가 되다
         </p>
+
+        {/* Hero illustration */}
+        <div className="relative mx-auto mb-8 w-full max-w-[280px]">
+          <div
+            className="rounded-[28px] overflow-hidden"
+            style={{
+              boxShadow: "0 12px 40px rgba(196,149,106,0.15)",
+              border: "3px solid rgba(255,255,255,0.6)",
+            }}
+          >
+            <Image
+              src="/images/hero.jpg"
+              alt="엄마가 아이에게 동화를 읽어주는 수채화 일러스트"
+              width={280}
+              height={500}
+              className="w-full h-auto"
+              priority
+            />
+          </div>
+          {/* Soft glow behind the image */}
+          <div
+            className="absolute -inset-4 -z-10 rounded-[36px]"
+            style={{
+              background: "radial-gradient(ellipse at center, rgba(224,122,95,0.08) 0%, transparent 70%)",
+            }}
+          />
+        </div>
 
         {/* Description card */}
         <div className="bg-white/55 backdrop-blur-xl rounded-[22px] p-6 border border-brown-pale/10 mb-8">
