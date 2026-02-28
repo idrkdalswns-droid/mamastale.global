@@ -92,6 +92,18 @@ export async function POST(request: NextRequest) {
     const confirmData = await confirmRes.json();
 
     if (!confirmRes.ok) {
+      // Handle already-confirmed payments gracefully (e.g., user refreshed success page)
+      // Toss returns ALREADY_PROCESSED_PAYMENT when payment was already confirmed.
+      // Return success WITHOUT incrementing tickets again to prevent double-charge.
+      if (confirmData?.code === "ALREADY_PROCESSED_PAYMENT") {
+        const ticketCount = VALID_PRICES[numericAmount] || 1;
+        return NextResponse.json({
+          success: true,
+          ticketsAdded: ticketCount,
+          alreadyProcessed: true,
+        });
+      }
+
       console.error("[Toss] Payment confirmation failed:", confirmData?.code);
       return NextResponse.json(
         { error: confirmData.message || "결제 확인에 실패했습니다." },

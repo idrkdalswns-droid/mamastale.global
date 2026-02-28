@@ -37,6 +37,8 @@ function PaymentSuccessContent() {
         if (res.ok && data.success) {
           setTicketsAdded(data.ticketsAdded || 1);
           setStatus("success");
+          // Clean URL params to prevent double-confirmation on browser refresh
+          window.history.replaceState({}, "", "/payment/success");
         } else {
           setStatus("error");
           setErrorMsg(data.error || "결제 확인에 실패했습니다.");
