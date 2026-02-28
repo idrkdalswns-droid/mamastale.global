@@ -31,15 +31,19 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
   const [freeText, setFreeText] = useState("");
   const [done, setDone] = useState(false);
   const [show, setShow] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
 
   const rate = (key: string, val: number) => {
+    if (transitioning) return; // Prevent double-tap skipping questions
     setRatings((prev) => ({ ...prev, [key]: val }));
+    setTransitioning(true);
     // LOW-6 fix: show selection briefly before transitioning
     setTimeout(() => {
       setShow(false);
       setTimeout(() => {
-        setStep((s) => s + 1);
+        setStep((s) => Math.min(s + 1, questions.length - 1));
         setShow(true);
+        setTransitioning(false);
       }, 250);
     }, 400);
   };
@@ -142,7 +146,8 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                 <button
                   key={i}
                   onClick={() => rate(q.key, i + 1)}
-                  className="flex flex-col items-center gap-1.5 py-3.5 px-1.5 rounded-2xl cursor-pointer min-w-[56px] transition-all active:scale-[0.92]"
+                  disabled={transitioning}
+                  className="flex flex-col items-center gap-1.5 py-3.5 px-1.5 rounded-2xl cursor-pointer min-w-[56px] transition-all active:scale-[0.92] disabled:pointer-events-none"
                   style={{
                     border:
                       ratings[q.key] === i + 1
