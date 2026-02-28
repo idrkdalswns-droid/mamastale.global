@@ -35,18 +35,51 @@ export function StoryViewer({ scenes, title, authorName, onBack, embedded }: Sto
   const isLast = currentScene === scenes.length - 1;
   const storyTitle = title || "나의 치유 동화";
 
-  // Build full story text for copy/share
+  // Build full story text for copy/share — 동화 대본 형식
   const buildStoryText = useCallback(() => {
-    const header = `📖 ${storyTitle}\n${"━".repeat(16)}\n\n`;
+    const divider = "─".repeat(32);
+    const thinDivider = "- ".repeat(16);
+
+    const header = [
+      divider,
+      "",
+      `  ${storyTitle}`,
+      "",
+      `  글 · ${authorName || "어머니"}`,
+      "",
+      divider,
+    ].join("\n");
+
     const body = scenes
       .map((s) => {
         const si = sceneStructure[s.sceneNumber];
-        return `${si?.emoji || "📖"} Scene ${String(s.sceneNumber).padStart(2, "0")} · ${si?.label || ""}\n「${s.title}」\n\n${s.text}`;
+        const label = si?.label || "";
+        return [
+          "",
+          `  제 ${s.sceneNumber} 장  ${label}`,
+          `  ${thinDivider.trim()}`,
+          `  ${s.title}`,
+          "",
+          s.text
+            .split("\n")
+            .map((line) => `  ${line}`)
+            .join("\n"),
+          "",
+        ].join("\n");
       })
-      .join("\n\n─────\n\n");
-    const footer = `\n\n${"━".repeat(16)}\n✨ mamastale에서 만든 세상에 하나뿐인 동화\nhttps://mamastale-global.pages.dev`;
-    return header + body + footer;
-  }, [scenes, storyTitle]);
+      .join("\n");
+
+    const footer = [
+      divider,
+      "",
+      "  mamastale에서 만든 세상에 하나뿐인 동화",
+      "  https://mamastale-global.pages.dev",
+      "",
+      divider,
+    ].join("\n");
+
+    return header + "\n" + body + "\n" + footer;
+  }, [scenes, storyTitle, authorName]);
 
   const handleCopy = useCallback(async () => {
     try {
