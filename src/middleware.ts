@@ -30,29 +30,34 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    // Refresh session
+    const { data: { user } } = await supabase.auth.getUser();
 
-  // Protected routes — redirect to login if not authenticated
-  const protectedPaths = ["/dashboard"];
-  const isProtected = protectedPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+    // Protected routes — redirect to login if not authenticated
+    const protectedPaths = ["/dashboard"];
+    const isProtected = protectedPaths.some((p) =>
+      request.nextUrl.pathname.startsWith(p)
+    );
 
-  if (isProtected && !user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+    if (isProtected && !user) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
 
-  // If logged in and visiting auth pages, redirect to home
-  const authPaths = ["/login", "/signup"];
-  const isAuthPage = authPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+    // If logged in and visiting auth pages, redirect to home
+    const authPaths = ["/login", "/signup"];
+    const isAuthPage = authPaths.some((p) =>
+      request.nextUrl.pathname.startsWith(p)
+    );
 
-  if (isAuthPage && user) {
-    return NextResponse.redirect(new URL("/", request.url));
+    if (isAuthPage && user) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  } catch (e) {
+    // If auth check fails, allow the request through
+    console.error("Middleware auth check failed:", e);
   }
 
   return response;
