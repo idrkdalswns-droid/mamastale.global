@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
@@ -14,7 +14,18 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
   const [shared, setShared] = useState(false);
   const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
+  const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const { completedScenes, completedStoryId, storySaved } = useChatStore();
+
+  // Fetch ticket balance to show context-aware next-story CTA
+  useEffect(() => {
+    fetch("/api/tickets")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) setTicketsRemaining(data.remaining ?? 0);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleShare = async () => {
     if (!completedScenes.length) return;
@@ -221,7 +232,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
           </div>
         </div>
 
-        {/* Next story CTA */}
+        {/* Next story CTA — context-aware based on ticket balance */}
         <div
           className="rounded-2xl p-5 mb-4"
           style={{
@@ -234,30 +245,51 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
             <h3 className="font-serif text-[15px] font-semibold text-brown mb-1.5">
               또 다른 동화를 만들어 볼까요?
             </h3>
-            <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
-              동화 1권 티켓 · ₩2,000<br />
-              다른 상처, 다른 은유, 새로운 치유 동화가 탄생합니다
-            </p>
-            <Link
-              href="/pricing"
-              className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97] no-underline"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              🎫 동화 1권 티켓 구매 · ₩2,000
-            </Link>
+            {ticketsRemaining !== null && ticketsRemaining > 0 ? (
+              <>
+                <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
+                  남은 티켓 <span className="text-coral font-semibold">{ticketsRemaining}장</span>으로<br />
+                  다른 상처, 다른 은유, 새로운 치유 동화를 만들어 보세요
+                </p>
+                <button
+                  onClick={onRestart}
+                  className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97]"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                    boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  📖 새 동화 만들기
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
+                  동화 1권 티켓 · ₩2,000<br />
+                  다른 상처, 다른 은유, 새로운 치유 동화가 탄생합니다
+                </p>
+                <Link
+                  href="/pricing"
+                  className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97] no-underline"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                    boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  🎫 동화 1권 티켓 구매 · ₩2,000
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Restart */}
+        {/* Back to home */}
         <button
           onClick={onRestart}
           className="w-full py-3.5 rounded-full text-sm font-normal text-brown-pale transition-all active:scale-[0.97] mb-4"
           style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
         >
-          처음부터 다시 체험하기
+          홈으로 돌아가기
         </button>
 
         {/* Footer */}
