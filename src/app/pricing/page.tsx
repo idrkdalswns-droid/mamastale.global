@@ -103,7 +103,7 @@ export default function PricingPage() {
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
       <WatercolorBlob bottom={100} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 
-      <div className="relative z-[1]">
+      <div className="relative z-[1] max-w-lg mx-auto">
         <div className="text-center mb-10">
           <Link href="/" className="font-serif text-2xl font-bold text-brown no-underline">
             mamastale

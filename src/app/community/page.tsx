@@ -56,7 +56,7 @@ export default function CommunityBrowsePage() {
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(200,184,216,0.07)" />
       <WatercolorBlob bottom={100} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 
-      <div className="relative z-[1]">
+      <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
