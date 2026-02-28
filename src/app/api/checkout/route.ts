@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mamastale-global.pages.dev";
+    // Use request origin for reliable URL (works on all environments)
+    const appUrl = new URL(request.url).origin;
 
     // Use Stripe REST API directly (Edge compatible)
     const params = new URLSearchParams();
