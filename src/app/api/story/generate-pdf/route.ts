@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer } from "@react-pdf/renderer";
-import { StoryPDFDocument } from "@/lib/pdf/generator";
 import { z } from "zod";
+
+export const runtime = "edge";
 
 const pdfRequestSchema = z.object({
   scenes: z.array(
@@ -29,21 +29,62 @@ export async function POST(request: NextRequest) {
     }
 
     const { scenes, title, authorName } = parsed.data;
+    const storyTitle = title || "나의 치유 동화";
+    const author = authorName || "어머니";
+    const createdAt = new Date().toLocaleDateString("ko-KR");
 
-    const pdfBuffer = await renderToBuffer(
-      StoryPDFDocument({
-        title: title || "나의 치유 동화",
-        scenes,
-        authorName: authorName || "어머니",
-        createdAt: new Date().toLocaleDateString("ko-KR"),
-      })
-    );
+    // Generate printable HTML (user can print as PDF from browser)
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>${storyTitle}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Serif KR', serif; color: #333; background: #fff; }
+    .cover { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 40px; background: linear-gradient(135deg, #fef3c7, #fde68a, #fbbf24); }
+    .cover h1 { font-size: 2.5rem; color: #92400e; margin-bottom: 16px; }
+    .cover .author { font-size: 1.2rem; color: #a16207; }
+    .cover .date { font-size: 0.9rem; color: #b45309; margin-top: 8px; }
+    .cover .emoji { font-size: 4rem; margin-bottom: 24px; }
+    .scene { padding: 40px; page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+    .scene:last-child { page-break-after: avoid; }
+    .scene-number { font-size: 0.85rem; color: #d97706; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+    .scene h2 { font-size: 1.6rem; color: #92400e; margin-bottom: 24px; border-bottom: 2px solid #fbbf24; padding-bottom: 8px; }
+    .scene p { font-size: 1.1rem; line-height: 2; color: #44403c; white-space: pre-wrap; }
+    .footer { text-align: center; padding: 40px; color: #a8a29e; font-size: 0.85rem; }
+    @media print { .cover, .scene { min-height: auto; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="emoji">📖✨</div>
+    <h1>${storyTitle}</h1>
+    <div class="author">글 · ${author}</div>
+    <div class="date">${createdAt}</div>
+  </div>
+  ${scenes
+    .map(
+      (scene) => `
+  <div class="scene">
+    <div class="scene-number">Scene ${scene.sceneNumber}</div>
+    <h2>${scene.title}</h2>
+    <p>${scene.text}</p>
+  </div>`
+    )
+    .join("")}
+  <div class="footer">
+    <p>MammasTale · 엄마의 치유 동화</p>
+    <p>이 동화는 AI와 함께 만든 특별한 이야기입니다.</p>
+  </div>
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`;
 
-    const uint8 = new Uint8Array(pdfBuffer);
-    return new Response(uint8, {
+    return new Response(html, {
       headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="mamastale-story.pdf"`,
+        "Content-Type": "text/html; charset=utf-8",
       },
     });
   } catch (error) {

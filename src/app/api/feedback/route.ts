@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+export const runtime = "edge";
+
 const feedbackSchema = z.object({
   empathy: z.number().min(1).max(5).optional(),
   insight: z.number().min(1).max(5).optional(),

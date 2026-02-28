@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+
+export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
 import { getSystemPrompt } from "@/lib/anthropic/system-prompt";
 import {
