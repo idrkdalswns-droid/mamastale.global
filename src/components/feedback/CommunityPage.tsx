@@ -262,7 +262,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
         {/* Footer */}
         <div className="text-center mt-2">
           <p className="text-[10px] text-brown-pale leading-relaxed">
-            mamastale · 나의 과거가 아이의 동화가 되다
+            mamastale · 나의 이야기가 아이의 동화가 되다
           </p>
         </div>
       </div>

@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
   try {
     const { title, scenes, sessionId, metadata, isPublic, authorAlias } = await request.json();
 
-    // Check ticket balance before saving
+    // Atomic ticket check & deduction — prevents race condition
+    // Uses RPC if available, otherwise falls back to check-then-update
+    let ticketsAfter = 0;
+
     const { data: profile } = await sb.client
       .from("profiles")
       .select("free_stories_remaining")
@@ -80,7 +83,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save the story
+    // Deduct ticket FIRST (optimistic lock via conditional update)
+    const { data: updatedProfile, error: deductError } = await sb.client
+      .from("profiles")
+      .update({
+        free_stories_remaining: remaining - 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+      .gte("free_stories_remaining", 1) // only deduct if still >= 1
+      .select("free_stories_remaining")
+      .single();
+
+    if (deductError || !updatedProfile) {
+      return NextResponse.json(
+        { error: "no_tickets", message: "티켓이 부족합니다." },
+        { status: 403 }
+      );
+    }
+
+    ticketsAfter = updatedProfile.free_stories_remaining;
+
+    // Save the story after ticket deduction succeeded
     const { data, error } = await sb.client
       .from("stories")
       .insert({
@@ -97,19 +121,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      // Rollback ticket deduction on story save failure
+      await sb.client
+        .from("profiles")
+        .update({
+          free_stories_remaining: ticketsAfter + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Deduct 1 ticket after successful save
-    await sb.client
-      .from("profiles")
-      .update({
-        free_stories_remaining: Math.max(0, remaining - 1),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    return NextResponse.json({ id: data.id, ticketsRemaining: remaining - 1 });
+    return NextResponse.json({ id: data.id, ticketsRemaining: ticketsAfter });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

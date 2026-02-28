@@ -22,10 +22,11 @@ interface StoryViewerProps {
   title?: string;
   authorName?: string;
   onBack?: () => void;
+  onBackLabel?: string; // custom label for the back button (e.g. "피드백 남기기")
   embedded?: boolean; // true when used inside another page (no min-h-dvh)
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, embedded }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, embedded }: StoryViewerProps) {
   const [currentScene, setCurrentScene] = useState(0);
   const [copied, setCopied] = useState(false);
 
@@ -90,7 +91,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, embedded }: Sto
         <div className="flex items-center justify-between px-4 py-3">
           {onBack && (
             <button onClick={onBack} className="text-sm text-brown-light">
-              ← 뒤로
+              {onBackLabel || "← 뒤로"}
             </button>
           )}
           <div className="text-center flex-1">

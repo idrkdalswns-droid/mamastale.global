@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 
 export const runtime = "edge";
@@ -25,9 +26,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Save to Supabase when DB is connected
-    // For now, log feedback for collection
-    console.log("[Feedback received]", JSON.stringify(parsed.data, null, 2));
+    const data = parsed.data;
+
+    // Always log feedback
+    console.log("[Feedback received]", JSON.stringify(data, null, 2));
+
+    // Try to save to Supabase if configured
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (url && key) {
+      try {
+        const supabase = createServerClient(url, key, {
+          cookies: {
+            getAll() { return request.cookies.getAll(); },
+            setAll() {},
+          },
+        });
+
+        // Get user if logged in (optional)
+        const { data: { user } } = await supabase.auth.getUser();
+
+        await supabase.from("feedback").insert({
+          user_id: user?.id || null,
+          session_id: data.sessionId || null,
+          empathy: data.empathy || null,
+          insight: data.insight || null,
+          metaphor: data.metaphor || null,
+          story: data.story || null,
+          overall: data.overall || null,
+          free_text: data.free || null,
+        });
+      } catch (dbErr) {
+        // DB save failed — log but don't fail the request
+        console.warn("[Feedback DB save failed]", dbErr);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch {

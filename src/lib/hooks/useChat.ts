@@ -126,9 +126,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Save completed story to database
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0) {
         try {
-          const storyTitle = data.scenes[0]?.title
-            ? `${data.scenes[0].title}의 이야기`
-            : "나의 치유 동화";
+          const storyTitle = "나의 치유 동화";
           const saveRes = await fetch("/api/stories", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
