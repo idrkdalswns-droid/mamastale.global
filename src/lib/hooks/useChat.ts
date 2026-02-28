@@ -134,8 +134,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : s.completedScenes,
       }));
 
-      // Save completed story to database
-      if (data.isStoryComplete && data.scenes && data.scenes.length > 0) {
+      // Save completed story to database (guard against duplicate saves)
+      if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved) {
         try {
           const storyTitle = "나의 치유 동화";
           const saveRes = await fetch("/api/stories", {
