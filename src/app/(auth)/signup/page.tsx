@@ -13,6 +13,25 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const handleKakaoSignup = async () => {
+    const supabase = createClient();
+    if (!supabase) {
+      setError("로그인 서비스를 준비 중입니다.");
+      return;
+    }
+
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: {
+        redirectTo: `${window.location.origin}/api/auth/callback`,
+      },
+    });
+
+    if (authError) {
+      setError("카카오 로그인에 실패했습니다. 다시 시도해 주세요.");
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -89,6 +108,28 @@ export default function SignupPage() {
         <div className="text-center mb-10">
           <h1 className="font-serif text-3xl font-bold text-brown mb-2">mamastale</h1>
           <p className="text-sm text-brown-light font-light">새로운 여정을 시작하세요</p>
+        </div>
+
+        <button
+          onClick={handleKakaoSignup}
+          className="w-full py-3.5 rounded-full text-sm font-medium transition-transform active:scale-[0.97] mb-4"
+          style={{
+            background: "#FEE500",
+            color: "#3C1E1E",
+          }}
+        >
+          <span className="inline-flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E">
+              <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.22 4.66 6.62l-.96 3.56c-.08.3.26.54.52.37l4.24-2.82c.5.06 1.02.09 1.54.09 5.52 0 10-3.58 10-7.9S17.52 3 12 3z"/>
+            </svg>
+            카카오로 3초 만에 시작하기
+          </span>
+        </button>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="flex-1 h-[1px] bg-brown-pale/20" />
+          <span className="text-[11px] text-brown-pale">또는 이메일로 가입</span>
+          <div className="flex-1 h-[1px] bg-brown-pale/20" />
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">

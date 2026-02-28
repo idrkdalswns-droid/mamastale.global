@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { createClient } from "@/lib/supabase/client";
 import { PHASES } from "@/lib/constants/phases";
 import PhaseHeader from "./PhaseHeader";
 import PhaseTransition from "./PhaseTransition";
@@ -116,23 +117,45 @@ export function ChatPage({ onComplete }: ChatPageProps) {
             <button
               onClick={() => {
                 persistToStorage();
-                router.push("/signup");
+                const supabase = createClient();
+                if (supabase) {
+                  supabase.auth.signInWithOAuth({
+                    provider: "kakao",
+                    options: {
+                      redirectTo: `${window.location.origin}/api/auth/callback`,
+                    },
+                  });
+                }
               }}
-              className="block w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
+              className="block w-full py-3.5 rounded-full text-sm font-medium transition-transform active:scale-[0.97] mb-3"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                background: "#FEE500",
+                color: "#3C1E1E",
               }}
             >
-              회원가입하고 대화 이어가기
+              <span className="inline-flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E">
+                  <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.22 4.66 6.62l-.96 3.56c-.08.3.26.54.52.37l4.24-2.82c.5.06 1.02.09 1.54.09 5.52 0 10-3.58 10-7.9S17.52 3 12 3z"/>
+                </svg>
+                카카오로 3초 만에 이어가기
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                persistToStorage();
+                router.push("/signup");
+              }}
+              className="block w-full py-3 rounded-full text-sm font-light text-brown-mid transition-all"
+              style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+            >
+              이메일로 회원가입
             </button>
             <button
               onClick={() => {
                 persistToStorage();
                 router.push("/login");
               }}
-              className="block w-full py-3 rounded-full text-sm font-light text-brown-mid transition-all"
-              style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+              className="block w-full py-2.5 text-xs font-light text-brown-pale transition-all"
             >
               이미 계정이 있으신가요? 로그인
             </button>
