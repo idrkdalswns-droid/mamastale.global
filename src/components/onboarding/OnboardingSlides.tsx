@@ -52,6 +52,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
 
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
       {/* Progress dots */}
       <div className="flex gap-1.5 justify-center pt-5">
         {slides.map((_, i) => (
@@ -118,6 +119,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         )}
       </div>
       <div className="h-3" />
+      </div>
     </div>
   );
 }
