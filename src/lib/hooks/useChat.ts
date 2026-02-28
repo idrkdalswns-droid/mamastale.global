@@ -182,8 +182,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (err) {
+      // Show API error messages (Korean) as-is, but replace raw browser errors
+      // (e.g. "Failed to fetch", "Load failed") with a friendly Korean message
       const errMessage =
-        err instanceof Error && err.message && !err.message.includes("API request failed")
+        err instanceof Error && err.message && /[가-힣]/.test(err.message)
           ? err.message
           : "네트워크에 문제가 생겼어요. 잠시 후 다시 이야기해 주세요.";
       const errorMsg: Message = {
