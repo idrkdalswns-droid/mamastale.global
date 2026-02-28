@@ -540,43 +540,20 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => {
-                setShowReferralWelcome(false);
-                const supabase = createClient();
-                if (supabase) {
-                  supabase.auth.signInWithOAuth({
-                    provider: "kakao",
-                    options: {
-                      redirectTo: `${window.location.origin}/`,
-                      scopes: "profile_nickname,profile_image",
-                    },
-                  });
-                }
-              }}
-              className="block w-full py-3.5 rounded-full text-sm font-medium transition-transform active:scale-[0.97] mb-2"
+              disabled
+              className="block w-full py-3.5 rounded-full text-sm font-medium opacity-50 cursor-not-allowed mb-2"
               style={{ background: "#FEE500", color: "#3C1E1E" }}
             >
               <span className="inline-flex items-center gap-2">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="#3C1E1E">
                   <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.22 4.66 6.62l-.96 3.56c-.08.3.26.54.52.37l4.24-2.82c.5.06 1.02.09 1.54.09 5.52 0 10-3.58 10-7.9S17.52 3 12 3z"/>
                 </svg>
-                카카오로 3초 만에 시작하기
+                카카오로 시작하기 (준비중)
               </span>
             </button>
             <button
-              onClick={() => {
-                setShowReferralWelcome(false);
-                const supabase = createClient();
-                if (supabase) {
-                  supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: {
-                      redirectTo: `${window.location.origin}/`,
-                    },
-                  });
-                }
-              }}
-              className="block w-full py-3 rounded-full text-sm font-medium transition-transform active:scale-[0.97] mb-2"
+              disabled
+              className="block w-full py-3 rounded-full text-sm font-medium opacity-50 cursor-not-allowed mb-2"
               style={{ background: "#fff", color: "#444", border: "1.5px solid rgba(0,0,0,0.1)" }}
             >
               <span className="inline-flex items-center gap-2">
@@ -586,7 +563,7 @@ export default function Home() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                Google로 시작하기
+                Google로 시작하기 (준비중)
               </span>
             </button>
             <button
