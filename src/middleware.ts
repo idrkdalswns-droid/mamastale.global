@@ -24,7 +24,13 @@ export async function middleware(request: NextRequest) {
       if (isApiRoute) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
       }
-      return NextResponse.redirect(new URL("/access", request.url));
+      // Preserve original URL (including ?ref= query params) for redirect after access
+      const originalPath = pathname + (request.nextUrl.search || "");
+      const accessUrl = new URL("/access", request.url);
+      if (originalPath !== "/") {
+        accessUrl.searchParams.set("next", originalPath);
+      }
+      return NextResponse.redirect(accessUrl);
     }
 
     // Already verified — skip access page
