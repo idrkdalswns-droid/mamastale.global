@@ -122,7 +122,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
                   supabase.auth.signInWithOAuth({
                     provider: "kakao",
                     options: {
-                      redirectTo: `${window.location.origin}/auth/callback`,
+                      redirectTo: `${window.location.origin}/`,
                       scopes: "profile_nickname,profile_image",
                     },
                   });
@@ -145,7 +145,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
                 if (supabase) {
                   supabase.auth.signInWithOAuth({
                     provider: "google",
-                    options: { redirectTo: `${window.location.origin}/auth/callback` },
+                    options: { redirectTo: `${window.location.origin}/` },
                   });
                 }
               }}
