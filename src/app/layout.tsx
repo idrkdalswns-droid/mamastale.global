@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="ko" style={{ colorScheme: "light" }}>
       <head>
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
           <script
