@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { PHASES } from "@/lib/constants/phases";
@@ -17,8 +17,22 @@ type ScreenState = "landing" | "onboarding" | "chat" | "story" | "feedback" | "c
 export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
   const [show, setShow] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const { completedScenes, reset } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
+
+  // Detect payment success from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setShowPaymentSuccess(true);
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
+
+  const closePaymentModal = useCallback(() => {
+    setShowPaymentSuccess(false);
+  }, []);
 
   // Trigger landing fade-in (HIGH-2 fix: moved to useEffect)
   useEffect(() => {
@@ -233,6 +247,54 @@ export default function Home() {
           베타 테스트 · 체험 후 피드백을 남겨주세요
         </p>
       </div>
+
+      {/* Payment Success Modal */}
+      {showPaymentSuccess && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-8 text-center"
+            style={{
+              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div className="text-[56px] mb-4">🌷</div>
+            <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
+              감사합니다, 어머니
+            </h2>
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
+              티켓 구매가 완료되었어요.
+            </p>
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+              이제 아이를 위한 아름다운<br />
+              <span className="text-coral font-medium">세상에 하나뿐인 치유 동화</span>를<br />
+              만들어 볼까요?
+            </p>
+            <button
+              onClick={() => {
+                closePaymentModal();
+                setScreen("onboarding");
+              }}
+              className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+              }}
+            >
+              지금 바로 동화 만들기
+            </button>
+            <button
+              onClick={closePaymentModal}
+              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
+            >
+              나중에 할게요
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
