@@ -30,16 +30,20 @@ interface OnboardingSlidesProps {
 export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
   const [idx, setIdx] = useState(0);
   const [anim, setAnim] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
 
   const go = (next: boolean) => {
+    if (transitioning) return; // Prevent multi-tap skipping/crash
+    setTransitioning(true);
     setAnim(false);
     setTimeout(() => {
       if (next) {
-        setIdx((i) => i + 1);
+        setIdx((i) => Math.min(i + 1, slides.length - 1));
       } else {
         onDone();
       }
       setAnim(true);
+      setTransitioning(false);
     }, 250);
   };
 
@@ -93,7 +97,8 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
       <div className="px-8 pb-5">
         <button
           onClick={() => go(!isLast)}
-          className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97]"
+          disabled={transitioning}
+          className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 disabled:pointer-events-none"
           style={{
             background: `linear-gradient(135deg, ${s.accent}, ${s.accent}CC)`,
             boxShadow: `0 6px 24px ${s.accent}30`,
@@ -105,7 +110,8 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
         {!isLast && (
           <button
             onClick={onDone}
-            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5"
+            disabled={transitioning}
+            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 disabled:opacity-40"
           >
             건너뛰기
           </button>
