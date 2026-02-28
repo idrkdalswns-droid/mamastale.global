@@ -52,16 +52,17 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       console.error("Stripe API error:", session);
       return NextResponse.json(
-        { error: "결제 세션 생성에 실패했습니다." },
+        { error: `Stripe 오류: ${session?.error?.message || JSON.stringify(session)}` },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ url: session.url });
-  } catch (error) {
-    console.error("Checkout error:", error);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("Checkout error:", errMsg);
     return NextResponse.json(
-      { error: "결제 세션 생성에 실패했습니다." },
+      { error: `결제 오류: ${errMsg}` },
       { status: 500 }
     );
   }
