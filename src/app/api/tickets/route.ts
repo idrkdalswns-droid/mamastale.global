@@ -1,32 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const response = NextResponse.next();
-  return {
-    client: createServerClient(url, key, {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }),
-    response,
-  };
-}
-
 // GET: Check remaining tickets for current user
 export async function GET(request: NextRequest) {
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -46,7 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({
+  return sb.applyCookies(NextResponse.json({
     remaining: profile?.free_stories_remaining ?? 0,
-  });
+  }));
 }

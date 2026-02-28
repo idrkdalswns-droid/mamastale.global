@@ -44,7 +44,9 @@ function LoginForm() {
       }
 
       // Redirect to original page (or home) after login
-      window.location.href = redirectTo.startsWith("/") ? redirectTo : "/";
+      // Security: block protocol-relative URLs (//evil.com) to prevent open redirect
+      const safe = redirectTo.startsWith("/") && !redirectTo.startsWith("//");
+      window.location.href = safe ? redirectTo : "/";
     } catch {
       setError("로그인에 실패했습니다. 다시 시도해 주세요.");
     } finally {

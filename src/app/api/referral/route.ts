@@ -1,29 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
-
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const response = NextResponse.next();
-  return {
-    client: createServerClient(url, key, {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }),
-    response,
-  };
-}
 
 function getServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -50,7 +30,7 @@ function generateCode(): string {
 
 // GET /api/referral — 내 추천 코드 조회 (없으면 생성)
 export async function GET(request: NextRequest) {
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
   const { data: { user } } = await sb.client.auth.getUser();
@@ -96,7 +76,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/referral — 추천 코드 적용 (가입 후 호출)
 export async function POST(request: NextRequest) {
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
   const { data: { user } } = await sb.client.auth.getUser();

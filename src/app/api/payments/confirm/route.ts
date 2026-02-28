@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
@@ -9,27 +9,6 @@ const VALID_PRICES: Record<number, number> = {
   2000: 1,  // ₩2,000 = 1 ticket
   8000: 5,  // ₩8,000 = 5 tickets
 };
-
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const response = NextResponse.next();
-  return {
-    client: createServerClient(url, key, {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }),
-    response,
-  };
-}
 
 export async function POST(request: NextRequest) {
   const tossSecretKey = process.env.TOSS_SECRET_KEY;
@@ -41,7 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Authenticate user
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -131,11 +110,11 @@ export async function POST(request: NextRequest) {
       `user=${user.id}, tickets +${ticketCount}, total=${newTotal}`
     );
 
-    return NextResponse.json({
+    return sb.applyCookies(NextResponse.json({
       success: true,
       ticketsAdded: ticketCount,
       ticketsTotal: newTotal,
-    });
+    }));
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error("[Toss] Confirm error:", errMsg);

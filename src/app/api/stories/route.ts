@@ -1,32 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const response = NextResponse.next();
-  return {
-    client: createServerClient(url, key, {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }),
-    response,
-  };
-}
-
 // GET: List user's stories
 export async function GET(request: NextRequest) {
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -47,12 +26,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ stories: stories || [] });
+  return sb.applyCookies(NextResponse.json({ stories: stories || [] }));
 }
 
 // POST: Save a new story (with ticket check & deduction)
 export async function POST(request: NextRequest) {
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -166,7 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: insertResult.error?.message || "저장 실패" }, { status: 500 });
     }
 
-    return NextResponse.json({ id: insertResult.data.id, ticketsRemaining: ticketsAfter });
+    return sb.applyCookies(NextResponse.json({ id: insertResult.data.id, ticketsRemaining: ticketsAfter }));
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

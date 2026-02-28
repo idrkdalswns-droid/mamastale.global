@@ -1,28 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
-
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const response = NextResponse.next();
-  return {
-    client: createServerClient(url, key, {
-      cookies: {
-        getAll() { return request.cookies.getAll(); },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }),
-    response,
-  };
-}
 
 export async function GET(
   request: NextRequest,
@@ -30,7 +9,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -51,7 +30,7 @@ export async function GET(
     return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ story });
+  return sb.applyCookies(NextResponse.json({ story }));
 }
 
 // PATCH: Update story (e.g., share to community)
@@ -61,7 +40,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
 
-  const sb = getSupabaseClient(request);
+  const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -93,7 +72,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

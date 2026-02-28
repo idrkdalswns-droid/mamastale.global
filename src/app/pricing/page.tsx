@@ -153,7 +153,7 @@ export default function PricingPage() {
           <ul className="space-y-2.5 mb-5">
             {[
               "첫 1회 완전한 동화 창작 체험",
-              "4단계 AI 치유 대화 (공감 → 질문 → 은유 → 동화)",
+              "4단계 치유 대화 (공감 → 질문 → 은유 → 동화)",
               "10장면 동화 완성",
               "PDF 다운로드",
             ].map((f, i) => (
@@ -204,7 +204,7 @@ export default function PricingPage() {
 
           <ul className="space-y-2.5 mb-5">
             {[
-              "4단계 AI 치유 대화 전 과정 1회",
+              "4단계 치유 대화 전 과정 1회",
               "새로운 상처, 새로운 은유, 새로운 동화",
               "10장면 동화 완성 + PDF 다운로드",
               "티켓은 소멸 기한 없음",
