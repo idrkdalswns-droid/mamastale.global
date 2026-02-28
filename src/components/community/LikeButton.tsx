@@ -27,7 +27,9 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
       const res = await fetch(`/api/community/${storyId}/like`, { method: "POST" });
 
       if (res.status === 401) {
-        alert("좋아요를 누르려면 로그인이 필요합니다.");
+        // Redirect to login with return URL so user comes back after login
+        const returnPath = window.location.pathname;
+        window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
         return;
       }
 

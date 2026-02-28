@@ -114,7 +114,19 @@ export function CommentSection({ storyId }: CommentSectionProps) {
           />
           <div className="flex justify-between items-center mb-2">
             <span className="text-[10px] text-brown-pale">{newComment.length}/500</span>
-            {submitError && <span className="text-[10px] text-red-500">{submitError}</span>}
+            {submitError && (
+              <span className="text-[10px] text-red-500">
+                {submitError}
+                {submitError.includes("로그인") && (
+                  <a
+                    href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/community")}`}
+                    className="text-coral font-medium ml-1.5 no-underline"
+                  >
+                    로그인 →
+                  </a>
+                )}
+              </span>
+            )}
           </div>
           <button
             onClick={submitComment}
