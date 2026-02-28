@@ -49,6 +49,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
       if (data.comment) {
         setComments((prev) => [...prev, data.comment]);
         setNewComment("");
+        setAlias("");
         setShowForm(false);
       }
     } catch {

@@ -26,11 +26,12 @@ export async function GET(
     return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
 
-  // Increment view count
-  await supabase
-    .from("stories")
-    .update({ view_count: (story.view_count || 0) + 1 })
-    .eq("id", id);
+  // Atomic view count increment (no race condition)
+  await supabase.rpc("increment_story_counter", {
+    p_story_id: id,
+    p_column: "view_count",
+    p_delta: 1,
+  });
 
   return NextResponse.json({ story });
 }

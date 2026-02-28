@@ -41,22 +41,21 @@ export async function POST(
     .eq("story_id", storyId)
     .single();
 
+  // Use service role for atomic counter updates
+  const { createServiceRoleClient } = await import("@/lib/supabase/server");
+  const serviceClient = createServiceRoleClient();
+
   if (existing) {
     // Unlike
     await supabase.from("likes").delete().eq("id", existing.id);
 
-    // Decrement counter
-    const { data: story } = await supabase
-      .from("stories")
-      .select("like_count")
-      .eq("id", storyId)
-      .single();
-
-    if (story) {
-      await supabase
-        .from("stories")
-        .update({ like_count: Math.max(0, (story.like_count || 1) - 1) })
-        .eq("id", storyId);
+    // Atomic decrement
+    if (serviceClient) {
+      await serviceClient.rpc("increment_story_counter", {
+        p_story_id: storyId,
+        p_column: "like_count",
+        p_delta: -1,
+      });
     }
 
     return NextResponse.json({ liked: false });
@@ -67,18 +66,13 @@ export async function POST(
       story_id: storyId,
     });
 
-    // Increment counter
-    const { data: story } = await supabase
-      .from("stories")
-      .select("like_count")
-      .eq("id", storyId)
-      .single();
-
-    if (story) {
-      await supabase
-        .from("stories")
-        .update({ like_count: (story.like_count || 0) + 1 })
-        .eq("id", storyId);
+    // Atomic increment
+    if (serviceClient) {
+      await serviceClient.rpc("increment_story_counter", {
+        p_story_id: storyId,
+        p_column: "like_count",
+        p_delta: 1,
+      });
     }
 
     return NextResponse.json({ liked: true });

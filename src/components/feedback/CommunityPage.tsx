@@ -12,34 +12,57 @@ interface CommunityPageProps {
 export function CommunityPage({ onRestart }: CommunityPageProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [shared, setShared] = useState(false);
+  const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
-  const { completedScenes } = useChatStore();
+  const { completedScenes, completedStoryId, storySaved } = useChatStore();
 
   const handleShare = async () => {
     if (!completedScenes.length) return;
     setIsSharing(true);
+    setShareError("");
     try {
-      // First save story if not saved, then update to public
-      const title = completedScenes[0]?.title
-        ? `${completedScenes[0].title}의 이야기`
-        : "나의 치유 동화";
+      let res: Response;
 
-      const res = await fetch("/api/stories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          scenes: completedScenes,
-          isPublic: true,
-          authorAlias: alias.trim() || "익명의 엄마",
-        }),
-      });
+      if (completedStoryId && storySaved) {
+        // Story already saved — just update to public (no duplicate)
+        res = await fetch(`/api/stories/${completedStoryId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            isPublic: true,
+            authorAlias: alias.trim() || "익명의 엄마",
+          }),
+        });
+      } else {
+        // Story not yet saved — create new public story
+        const title = completedScenes[0]?.title
+          ? `${completedScenes[0].title}의 이야기`
+          : "나의 치유 동화";
+
+        res = await fetch("/api/stories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            scenes: completedScenes,
+            isPublic: true,
+            authorAlias: alias.trim() || "익명의 엄마",
+          }),
+        });
+      }
+
+      if (res.status === 401) {
+        setShareError("커뮤니티 공유는 로그인이 필요합니다.");
+        return;
+      }
 
       if (res.ok) {
         setShared(true);
+      } else {
+        setShareError("공유에 실패했습니다. 다시 시도해 주세요.");
       }
     } catch {
-      // ignore
+      setShareError("네트워크 오류가 발생했습니다.");
     } finally {
       setIsSharing(false);
     }
@@ -140,6 +163,9 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                     color: "#444",
                   }}
                 />
+                {shareError && (
+                  <p className="text-xs text-red-500 font-light mb-2">{shareError}</p>
+                )}
                 <button
                   onClick={handleShare}
                   disabled={isSharing}

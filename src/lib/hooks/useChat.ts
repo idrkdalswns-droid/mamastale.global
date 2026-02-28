@@ -14,6 +14,8 @@ interface ChatState {
   storyDone: boolean;
   completedStoryId: string | null;
   completedScenes: Scene[];
+  storySaved: boolean;
+  storySaveError: string | null;
 
   initSession: (sessionId: string) => void;
   sendMessage: (text: string) => Promise<void>;
@@ -46,6 +48,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   storyDone: false,
   completedStoryId: null,
   completedScenes: [],
+  storySaved: false,
+  storySaveError: null,
 
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
@@ -125,7 +129,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           const storyTitle = data.scenes[0]?.title
             ? `${data.scenes[0].title}의 이야기`
             : "나의 치유 동화";
-          await fetch("/api/stories", {
+          const saveRes = await fetch("/api/stories", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -134,8 +138,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
               sessionId: state.sessionId || undefined,
             }),
           });
+
+          if (saveRes.ok) {
+            const saveData = await saveRes.json();
+            set({
+              storySaved: true,
+              storySaveError: null,
+              completedStoryId: saveData.id || get().completedStoryId,
+            });
+          } else if (saveRes.status === 401) {
+            // Anonymous user — story not saved to DB
+            set({
+              storySaved: false,
+              storySaveError: "login_required",
+            });
+          } else {
+            set({
+              storySaved: false,
+              storySaveError: "save_failed",
+            });
+          }
         } catch {
-          // Silently fail — story is still viewable in current session
+          set({
+            storySaved: false,
+            storySaveError: "save_failed",
+          });
           console.warn("Failed to save story to database");
         }
       }
@@ -169,5 +196,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       storyDone: false,
       completedStoryId: null,
       completedScenes: [],
+      storySaved: false,
+      storySaveError: null,
     }),
 }));

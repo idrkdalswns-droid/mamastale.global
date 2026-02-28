@@ -78,21 +78,14 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Increment comment count
+    // Atomic comment count increment (no race condition)
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
-      const { data: story } = await serviceClient
-        .from("stories")
-        .select("comment_count")
-        .eq("id", storyId)
-        .single();
-
-      if (story) {
-        await serviceClient
-          .from("stories")
-          .update({ comment_count: (story.comment_count || 0) + 1 })
-          .eq("id", storyId);
-      }
+      await serviceClient.rpc("increment_story_counter", {
+        p_story_id: storyId,
+        p_column: "comment_count",
+        p_delta: 1,
+      });
     }
 
     return NextResponse.json({ comment: data });

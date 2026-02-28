@@ -25,13 +25,15 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
     setLoading(true);
     try {
       const res = await fetch(`/api/community/${storyId}/like`, { method: "POST" });
-      const data = await res.json();
 
       if (res.status === 401) {
         alert("좋아요를 누르려면 로그인이 필요합니다.");
         return;
       }
 
+      if (!res.ok) return;
+
+      const data = await res.json();
       setLiked(data.liked);
       setCount((c) => (data.liked ? c + 1 : Math.max(0, c - 1)));
     } catch {
