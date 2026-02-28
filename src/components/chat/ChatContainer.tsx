@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { PHASES } from "@/lib/constants/phases";
-import Link from "next/link";
 import PhaseHeader from "./PhaseHeader";
 import PhaseTransition from "./PhaseTransition";
 import MessageBubble from "./MessageBubble";
@@ -30,7 +30,10 @@ export function ChatPage({ onComplete }: ChatPageProps) {
     completedStoryId,
     sendMessage,
     initSession,
+    persistToStorage,
   } = useChatStore();
+
+  const router = useRouter();
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -107,27 +110,32 @@ export function ChatPage({ onComplete }: ChatPageProps) {
               대화가 마음에 드시나요?
             </h3>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-5 break-keep">
-              더 대화를 지속하길 원하시는 경우<br />
-              <span className="text-coral font-medium">회원가입을 통해 티켓 1장을 무료로</span><br />
-              받아보세요.
+              회원가입 후 <span className="text-coral font-medium">지금 대화를 이어서</span><br />
+              나만의 치유 동화를 완성할 수 있어요.
             </p>
-            <Link
-              href="/signup"
-              className="block w-full py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97] mb-3"
+            <button
+              onClick={() => {
+                persistToStorage();
+                router.push("/signup");
+              }}
+              className="block w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #D4836B)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >
-              무료 회원가입하기
-            </Link>
-            <Link
-              href="/login"
-              className="block w-full py-3 rounded-full text-sm font-light text-brown-mid no-underline transition-all"
+              회원가입하고 대화 이어가기
+            </button>
+            <button
+              onClick={() => {
+                persistToStorage();
+                router.push("/login");
+              }}
+              className="block w-full py-3 rounded-full text-sm font-light text-brown-mid transition-all"
               style={{ border: "1px solid rgba(196,149,106,0.2)" }}
             >
               이미 계정이 있으신가요? 로그인
-            </Link>
+            </button>
           </div>
         </div>
       )}

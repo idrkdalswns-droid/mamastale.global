@@ -21,8 +21,20 @@ export default function Home() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showNoTickets, setShowNoTickets] = useState(false);
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
-  const { completedScenes, reset } = useChatStore();
+  const { completedScenes, reset, restoreFromStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
+
+  // Auto-restore chat after signup/login
+  // If user just signed up/logged in and has saved chat state → resume chat
+  useEffect(() => {
+    if (authLoading || screen !== "landing") return;
+    if (!user) return;
+
+    const restored = restoreFromStorage();
+    if (restored) {
+      setScreen("chat");
+    }
+  }, [authLoading, user, restoreFromStorage, screen]);
 
   // Detect payment success from URL param
   useEffect(() => {

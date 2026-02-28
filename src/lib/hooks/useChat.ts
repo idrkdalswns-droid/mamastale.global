@@ -4,6 +4,8 @@ import { create } from "zustand";
 import type { Message, ChatApiResponse } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
 
+const STORAGE_KEY = "mamastale_chat_state";
+
 interface ChatState {
   sessionId: string;
   messages: Message[];
@@ -21,6 +23,12 @@ interface ChatState {
   sendMessage: (text: string) => Promise<void>;
   setTransitioning: (v: boolean) => void;
   reset: () => void;
+  /** Save current chat state to localStorage (for signup resume) */
+  persistToStorage: () => void;
+  /** Restore chat state from localStorage. Returns true if restored. */
+  restoreFromStorage: () => boolean;
+  /** Clear saved state from localStorage */
+  clearStorage: () => void;
 }
 
 let msgCounter = 0;
@@ -189,7 +197,63 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setTransitioning: (v: boolean) => set({ isTransitioning: v }),
 
-  reset: () =>
+  persistToStorage: () => {
+    try {
+      const s = get();
+      const snapshot = {
+        sessionId: s.sessionId,
+        messages: s.messages,
+        currentPhase: s.currentPhase,
+        visitedPhases: s.visitedPhases,
+        storyDone: s.storyDone,
+        completedScenes: s.completedScenes,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // localStorage not available
+    }
+  },
+
+  restoreFromStorage: () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const snapshot = JSON.parse(raw);
+      // Only restore if saved within last 2 hours
+      if (Date.now() - snapshot.savedAt > 2 * 60 * 60 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+      set({
+        sessionId: snapshot.sessionId || "",
+        messages: snapshot.messages || makeInitialMessages(),
+        currentPhase: snapshot.currentPhase || 1,
+        visitedPhases: snapshot.visitedPhases || [1],
+        storyDone: snapshot.storyDone || false,
+        completedScenes: snapshot.completedScenes || [],
+        isLoading: false,
+        isTransitioning: false,
+        storySaved: false,
+        storySaveError: null,
+      });
+      localStorage.removeItem(STORAGE_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  clearStorage: () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+  },
+
+  reset: () => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
     set({
       sessionId: "",
       messages: makeInitialMessages(),
@@ -202,5 +266,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       completedScenes: [],
       storySaved: false,
       storySaveError: null,
-    }),
+    });
+  },
 }));
