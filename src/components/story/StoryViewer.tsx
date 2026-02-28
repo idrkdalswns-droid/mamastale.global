@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Scene } from "@/lib/types/story";
-import { PDFDownloadButton } from "./PDFDownloadButton";
 
 const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
   1: { label: "도입", emoji: "🌅", bgClass: "bg-[#EEF6F3]" },
@@ -28,11 +27,61 @@ interface StoryViewerProps {
 
 export function StoryViewer({ scenes, title, authorName, onBack, embedded }: StoryViewerProps) {
   const [currentScene, setCurrentScene] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const scene = scenes[currentScene];
   const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
   const isFirst = currentScene === 0;
   const isLast = currentScene === scenes.length - 1;
+  const storyTitle = title || "나의 치유 동화";
+
+  // Build full story text for copy/share
+  const buildStoryText = useCallback(() => {
+    const header = `📖 ${storyTitle}\n${"━".repeat(16)}\n\n`;
+    const body = scenes
+      .map((s) => {
+        const si = sceneStructure[s.sceneNumber];
+        return `${si?.emoji || "📖"} Scene ${String(s.sceneNumber).padStart(2, "0")} · ${si?.label || ""}\n「${s.title}」\n\n${s.text}`;
+      })
+      .join("\n\n─────\n\n");
+    const footer = `\n\n${"━".repeat(16)}\n✨ mamastale에서 만든 세상에 하나뿐인 동화\nhttps://mamastale-global.pages.dev`;
+    return header + body + footer;
+  }, [scenes, storyTitle]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(buildStoryText());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = buildStoryText();
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [buildStoryText]);
+
+  const handleShare = useCallback(async () => {
+    const text = buildStoryText();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: storyTitle,
+          text,
+        });
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      // Fallback: copy instead
+      handleCopy();
+    }
+  }, [buildStoryText, storyTitle, handleCopy]);
 
   return (
     <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>
@@ -95,27 +144,54 @@ export function StoryViewer({ scenes, title, authorName, onBack, embedded }: Sto
 
       {/* Navigation */}
       <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl border-t border-black/[0.04] px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
-        <div className="flex gap-3">
-          <button
-            onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
-            disabled={isFirst}
-            className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all"
-            style={{
-              border: "1.5px solid rgba(196,149,106,0.25)",
-              color: isFirst ? "#D0C8C0" : "#8B6F55",
-              background: "transparent",
-            }}
-          >
-            ← 이전 장면
-          </button>
-
-          {isLast ? (
-            <PDFDownloadButton
-              scenes={scenes}
-              title={title || "나의 치유 동화"}
-              authorName={authorName}
-            />
-          ) : (
+        {isLast ? (
+          <div className="space-y-2.5">
+            {/* Share & Copy actions */}
+            <div className="flex gap-2.5">
+              <button
+                onClick={handleCopy}
+                className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
+                style={{
+                  background: copied ? "rgba(127,191,176,0.15)" : "rgba(127,191,176,0.1)",
+                  color: copied ? "#3D8B7A" : "#5A9E8F",
+                  border: "1.5px solid rgba(127,191,176,0.3)",
+                }}
+              >
+                {copied ? "✓ 복사됨!" : "📋 전체 복사"}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+                }}
+              >
+                📤 공유하기
+              </button>
+            </div>
+            {/* Back to previous scene */}
+            <button
+              onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
+              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
+            >
+              ← 이전 장면
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
+              disabled={isFirst}
+              className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all"
+              style={{
+                border: "1.5px solid rgba(196,149,106,0.25)",
+                color: isFirst ? "#D0C8C0" : "#8B6F55",
+                background: "transparent",
+              }}
+            >
+              ← 이전 장면
+            </button>
             <button
               onClick={() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1))}
               className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
@@ -126,8 +202,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, embedded }: Sto
             >
               다음 장면 →
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
