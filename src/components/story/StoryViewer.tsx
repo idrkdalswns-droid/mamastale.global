@@ -114,30 +114,32 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
     <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
-        <div className="flex items-center justify-between px-4 py-3">
-          {onBack && (
-            <button onClick={onBack} className="text-sm text-brown-light">
-              {onBackLabel || "← 뒤로"}
-            </button>
-          )}
-          <div className="text-center flex-1">
-            <div className="text-[10px] text-brown-mid tracking-[2px] font-medium">
-              {currentScene + 1} / {scenes.length}
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between px-4 py-3">
+            {onBack && (
+              <button onClick={onBack} className="text-sm text-brown-light">
+                {onBackLabel || "← 뒤로"}
+              </button>
+            )}
+            <div className="text-center flex-1">
+              <div className="text-[10px] text-brown-mid tracking-[2px] font-medium">
+                {currentScene + 1} / {scenes.length}
+              </div>
             </div>
+            <div className="w-12" />
           </div>
-          <div className="w-12" />
-        </div>
-        {/* Progress */}
-        <div className="flex gap-0.5 px-4 pb-2">
-          {scenes.map((_, i) => (
-            <div
-              key={i}
-              className="h-[3px] flex-1 rounded-full transition-all duration-300"
-              style={{
-                background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
-              }}
-            />
-          ))}
+          {/* Progress */}
+          <div className="flex gap-0.5 px-4 pb-2">
+            {scenes.map((_, i) => (
+              <div
+                key={i}
+                className="h-[3px] flex-1 rounded-full transition-all duration-300"
+                style={{
+                  background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -149,7 +151,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
-          className={`flex-1 flex flex-col px-6 py-8 ${info.bgClass}`}
+          className={`flex-1 flex flex-col px-6 py-8 ${info.bgClass} max-w-3xl mx-auto w-full`}
         >
           <div className="mb-6">
             <span className="text-3xl">{info.emoji}</span>
@@ -170,7 +172,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl border-t border-black/[0.04] px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
+      <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+        <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
         {isLast ? (
           <div className="space-y-2.5">
             {/* Share & Copy actions */}
@@ -246,6 +249,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

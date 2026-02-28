@@ -104,6 +104,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
 
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
       {/* Progress */}
       <div className="pt-5 px-6 text-center">
         <div className="text-[10px] text-brown-mid tracking-[3px] font-medium mb-3">
@@ -198,6 +199,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
         >
           피드백 건너뛰기
         </button>
+      </div>
       </div>
     </div>
   );

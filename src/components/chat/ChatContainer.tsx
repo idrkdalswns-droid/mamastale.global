@@ -83,14 +83,16 @@ export function ChatPage({ onComplete }: ChatPageProps) {
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-3.5 pt-4 pb-[150px]"
+        className="flex-1 overflow-y-auto"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {messages.map((m) => (
-          <MessageBubble key={m.id || m.content.slice(0, 20)} message={m} currentPhase={currentPhase} />
-        ))}
+        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]">
+          {messages.map((m) => (
+            <MessageBubble key={m.id || m.content.slice(0, 20)} message={m} currentPhase={currentPhase} />
+          ))}
 
-        {isLoading && <TypingIndicator phase={currentPhase} />}
+          {isLoading && <TypingIndicator phase={currentPhase} />}
+        </div>
       </div>
 
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}

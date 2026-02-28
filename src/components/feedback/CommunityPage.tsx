@@ -85,7 +85,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
       <WatercolorBlob bottom={80} left={-60} size={200} color="rgba(184,216,208,0.08)" />
       <WatercolorBlob top="40%" left={-40} size={160} color="rgba(200,184,216,0.06)" />
 
-      <div className="flex-1 flex flex-col px-7 py-8 relative z-[1]">
+      <div className="flex-1 flex flex-col px-7 py-8 relative z-[1] max-w-2xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-[48px] mb-4">🎉</div>
