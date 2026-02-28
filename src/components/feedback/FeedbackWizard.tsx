@@ -82,10 +82,13 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
 
           <button
             onClick={onRestart}
-            className="w-full py-4 rounded-full bg-transparent text-brown-pale text-sm font-sans font-normal cursor-pointer mt-2"
-            style={{ border: "1.5px solid rgba(196,149,106,0.3)" }}
+            className="w-full py-4 rounded-full text-white text-sm font-sans font-medium cursor-pointer mt-2 active:scale-[0.97] transition-transform"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+            }}
           >
-            처음부터 다시 체험하기
+            계속하기 →
           </button>
         </div>
       </div>
