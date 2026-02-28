@@ -121,7 +121,10 @@ export function ChatPage({ onComplete }: ChatPageProps) {
                 if (supabase) {
                   supabase.auth.signInWithOAuth({
                     provider: "kakao",
-                    options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+                    options: {
+                      redirectTo: `${window.location.origin}/api/auth/callback`,
+                      scopes: "profile_nickname,profile_image",
+                    },
                   });
                 }
               }}

@@ -24,6 +24,7 @@ export default function SignupPage() {
       provider,
       options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
+        ...(provider === "kakao" && { scopes: "profile_nickname,profile_image" }),
       },
     });
 
