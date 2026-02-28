@@ -7,6 +7,32 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
+  const pathname = request.nextUrl.pathname;
+
+  // ─── Site Access Gate ───
+  // Set SITE_ACCESS_KEY env var to enable (Cloudflare dashboard)
+  // Remove or leave empty to disable the gate
+  const accessKey = process.env.SITE_ACCESS_KEY;
+  if (accessKey) {
+    const isAccessPage = pathname === "/access";
+    const isVerifyApi = pathname === "/api/verify-access";
+    const isApiRoute = pathname.startsWith("/api/");
+    const hasAccess = request.cookies.get("site-access")?.value === "verified";
+
+    if (!hasAccess && !isAccessPage && !isVerifyApi) {
+      // Block API routes with 403, redirect pages to /access
+      if (isApiRoute) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL("/access", request.url));
+    }
+
+    // Already verified — skip access page
+    if (hasAccess && isAccessPage) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
   // Skip auth check if Supabase is not configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return response;
@@ -31,14 +57,10 @@ export async function middleware(request: NextRequest) {
   );
 
   const protectedPaths = ["/dashboard", "/library"];
-  const isProtected = protectedPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   const authPaths = ["/login", "/signup"];
-  const isAuthPage = authPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+  const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
 
   try {
     // Refresh session
@@ -47,7 +69,7 @@ export async function middleware(request: NextRequest) {
     // Protected routes — redirect to login if not authenticated
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -57,13 +79,12 @@ export async function middleware(request: NextRequest) {
     }
   } catch (e) {
     console.error("Middleware auth check failed:", e);
-    // Fail-closed for protected routes — redirect to login on error
+    // Fail-closed for protected routes
     if (isProtected) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    // Non-protected routes: allow through (fail-open for public pages)
   }
 
   return response;
@@ -71,8 +92,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Include login/signup so logged-in user redirect works
-    // Exclude static assets, api webhooks
     "/((?!_next/static|_next/image|favicon.ico|api/webhooks).*)",
   ],
 };
