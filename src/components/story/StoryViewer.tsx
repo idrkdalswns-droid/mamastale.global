@@ -196,8 +196,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
                 📤 공유하기
               </button>
             </div>
-            {/* Continue to next step (feedback) */}
-            {onBack && (
+            {/* Continue to next step — only in main flow where onBackLabel is set */}
+            {onBack && onBackLabel && (
               <button
                 onClick={onBack}
                 className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"

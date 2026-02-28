@@ -5,6 +5,7 @@ export const runtime = "edge";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
+import { useAuth } from "@/lib/hooks/useAuth";
 import type { Scene } from "@/lib/types/story";
 
 interface StoryData {
@@ -17,6 +18,7 @@ interface StoryData {
 export default function LibraryStoryPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [story, setStory] = useState<StoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -67,6 +69,7 @@ export default function LibraryStoryPage() {
     <StoryViewer
       scenes={story.scenes}
       title={story.title || "나의 치유 동화"}
+      authorName={user?.user_metadata?.name || undefined}
       onBack={() => router.push("/library")}
     />
   );
