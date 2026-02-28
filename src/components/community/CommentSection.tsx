@@ -11,9 +11,10 @@ interface Comment {
 
 interface CommentSectionProps {
   storyId: string;
+  onCommentAdded?: () => void;
 }
 
-export function CommentSection({ storyId }: CommentSectionProps) {
+export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [alias, setAlias] = useState("");
@@ -58,6 +59,7 @@ export function CommentSection({ storyId }: CommentSectionProps) {
         setNewComment("");
         setAlias("");
         setShowForm(false);
+        onCommentAdded?.();
       }
     } catch {
       setSubmitError("네트워크 오류가 발생했습니다.");

@@ -106,7 +106,7 @@ export default function CommunityStoryPage() {
               color: "#8B6F55",
             }}
           >
-            💬 <span>{story.comment_count || 0}</span>
+            💬 <span>{story.comment_count ?? 0}</span>
           </button>
         </div>
       </div>
@@ -114,7 +114,14 @@ export default function CommunityStoryPage() {
       {/* Comments panel */}
       {showComments && (
         <div className="bg-cream border-t border-black/[0.04]">
-          <CommentSection storyId={story.id} />
+          <CommentSection
+            storyId={story.id}
+            onCommentAdded={() =>
+              setStory((prev) =>
+                prev ? { ...prev, comment_count: (prev.comment_count || 0) + 1 } : null
+              )
+            }
+          />
         </div>
       )}
     </div>
