@@ -111,7 +111,7 @@ export default function PricingPage() {
             <div className="text-3xl mb-2">🎫</div>
             <h3 className="font-serif text-lg text-brown font-semibold">동화 1권 티켓</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
-              <span className="font-serif text-3xl font-bold text-brown">₩1,000</span>
+              <span className="font-serif text-3xl font-bold text-brown">₩2,000</span>
               <span className="text-sm text-brown-light font-light">/1권</span>
             </div>
             <p className="text-xs text-brown-pale mt-1">커피 한 잔 값으로 새로운 동화를</p>
@@ -141,7 +141,7 @@ export default function PricingPage() {
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            {loadingType === "ticket" ? "결제 페이지 이동 중..." : "🎫 티켓 구매하기 · ₩1,000"}
+            {loadingType === "ticket" ? "결제 페이지 이동 중..." : "🎫 티켓 구매하기 · ₩2,000"}
           </button>
         </div>
 
@@ -157,10 +157,10 @@ export default function PricingPage() {
             <div className="text-3xl mb-2">✨</div>
             <h3 className="font-serif text-lg text-brown font-semibold">5권 묶음 패키지</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
-              <span className="font-serif text-3xl font-bold text-brown">₩4,000</span>
+              <span className="font-serif text-3xl font-bold text-brown">₩8,000</span>
               <span className="text-sm text-brown-light font-light">/5권</span>
             </div>
-            <p className="text-xs text-coral mt-1 font-medium">20% 할인 · 1권당 ₩800</p>
+            <p className="text-xs text-coral mt-1 font-medium">20% 할인 · 1권당 ₩1,600</p>
           </div>
 
           <ul className="space-y-2.5 mb-5">
@@ -187,7 +187,7 @@ export default function PricingPage() {
               border: "1.5px solid rgba(109,76,145,0.3)",
             }}
           >
-            {loadingType === "bundle" ? "결제 페이지 이동 중..." : "✨ 5권 묶음 구매 · ₩4,000"}
+            {loadingType === "bundle" ? "결제 페이지 이동 중..." : "✨ 5권 묶음 구매 · ₩8,000"}
           </button>
         </div>
 

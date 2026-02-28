@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { PHASES } from "@/lib/constants/phases";
 import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
@@ -9,6 +10,7 @@ import { StoryViewer } from "@/components/story/StoryViewer";
 import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
 import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 type ScreenState = "landing" | "onboarding" | "chat" | "story" | "feedback" | "community";
 
@@ -16,6 +18,7 @@ export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
   const [show, setShow] = useState(false);
   const { completedScenes, reset } = useChatStore();
+  const { user, loading: authLoading, signOut } = useAuth();
 
   // Trigger landing fade-in (HIGH-2 fix: moved to useEffect)
   useEffect(() => {
@@ -66,6 +69,55 @@ export default function Home() {
       <WatercolorBlob bottom={100} left={-80} size={240} color="rgba(184,216,208,0.08)" />
       <WatercolorBlob top="35%" right={-40} size={180} color="rgba(200,184,216,0.06)" />
 
+      {/* Top navigation bar */}
+      <div className="flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
+        <span className="text-[11px] text-brown-mid font-sans font-medium tracking-[2px] px-3 py-1.5 rounded-full bg-brown-pale/10 border border-brown-pale/15">
+          BETA
+        </span>
+        {!authLoading && (
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Link
+                  href="/library"
+                  className="text-xs text-brown-mid font-medium no-underline hover:text-coral transition-colors"
+                >
+                  내 서재
+                </Link>
+                <Link
+                  href="/community"
+                  className="text-xs text-brown-mid font-medium no-underline hover:text-coral transition-colors"
+                >
+                  커뮤니티
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="text-xs text-brown-pale font-light"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-xs text-brown-mid font-medium no-underline"
+                >
+                  로그인
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-xs text-white font-medium no-underline px-3 py-1.5 rounded-full"
+                  style={{ background: "linear-gradient(135deg, #E07A5F, #D4836B)" }}
+                >
+                  회원가입
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       <div
         className="flex-1 flex flex-col justify-center px-8 relative z-[1] transition-all duration-1000"
         style={{
@@ -74,12 +126,14 @@ export default function Home() {
           transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
         }}
       >
-        {/* Beta badge */}
-        <div className="inline-flex self-start px-3.5 py-1.5 rounded-full bg-brown-pale/10 border border-brown-pale/15 mb-6">
-          <span className="text-[11px] text-brown-mid font-sans font-medium tracking-[2px]">
-            BETA TEST
-          </span>
-        </div>
+        {/* Welcome message for logged-in users */}
+        {user && !authLoading && (
+          <div className="mb-6 px-4 py-3 rounded-2xl bg-mint/20 border border-mint/30">
+            <p className="text-sm text-brown font-light">
+              🌿 <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 다시 오신 것을 환영합니다
+            </p>
+          </div>
+        )}
 
         <h1 className="font-serif text-[38px] font-bold text-brown tracking-tight leading-[1.15] mb-2.5">
           mamastale
@@ -131,7 +185,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* CTA button */}
+        {/* CTA buttons */}
         <button
           onClick={() => setScreen("onboarding")}
           className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97]"
@@ -140,8 +194,36 @@ export default function Home() {
             boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
           }}
         >
-          체험 시작하기
+          {user ? "새 동화 만들기" : "체험 시작하기"}
         </button>
+
+        {/* Quick links for logged-in users */}
+        {user && !authLoading && (
+          <div className="flex gap-3 mt-4">
+            <Link
+              href="/library"
+              className="flex-1 py-3 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
+              style={{
+                background: "rgba(127,191,176,0.12)",
+                color: "#5A9E8F",
+                border: "1.5px solid rgba(127,191,176,0.25)",
+              }}
+            >
+              📚 내 서재
+            </Link>
+            <Link
+              href="/community"
+              className="flex-1 py-3 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
+              style={{
+                background: "rgba(200,184,216,0.12)",
+                color: "#6D4C91",
+                border: "1.5px solid rgba(200,184,216,0.25)",
+              }}
+            >
+              🌍 커뮤니티
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="px-8 py-4 pb-6 text-center relative z-[1]">

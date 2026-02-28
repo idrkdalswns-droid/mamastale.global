@@ -118,6 +118,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ? data.scenes
             : s.completedScenes,
       }));
+
+      // Save completed story to database
+      if (data.isStoryComplete && data.scenes && data.scenes.length > 0) {
+        try {
+          const storyTitle = data.scenes[0]?.title
+            ? `${data.scenes[0].title}의 이야기`
+            : "나의 치유 동화";
+          await fetch("/api/stories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: storyTitle,
+              scenes: data.scenes,
+              sessionId: state.sessionId || undefined,
+            }),
+          });
+        } catch {
+          // Silently fail — story is still viewable in current session
+          console.warn("Failed to save story to database");
+        }
+      }
     } catch (err) {
       const errMessage =
         err instanceof Error && err.message && !err.message.includes("API request failed")
