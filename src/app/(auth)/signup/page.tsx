@@ -23,7 +23,7 @@ export default function SignupPage() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
         ...(provider === "kakao" && { scopes: "profile_nickname,profile_image" }),
       },
     });
@@ -53,7 +53,7 @@ export default function SignupPage() {
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 

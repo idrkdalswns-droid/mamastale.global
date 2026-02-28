@@ -547,7 +547,7 @@ export default function Home() {
                   supabase.auth.signInWithOAuth({
                     provider: "kakao",
                     options: {
-                      redirectTo: `${window.location.origin}/api/auth/callback`,
+                      redirectTo: `${window.location.origin}/auth/callback`,
                       scopes: "profile_nickname,profile_image",
                     },
                   });
@@ -571,7 +571,7 @@ export default function Home() {
                   supabase.auth.signInWithOAuth({
                     provider: "google",
                     options: {
-                      redirectTo: `${window.location.origin}/api/auth/callback`,
+                      redirectTo: `${window.location.origin}/auth/callback`,
                     },
                   });
                 }
