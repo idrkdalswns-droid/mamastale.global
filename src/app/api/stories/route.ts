@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ stories: stories || [] });
 }
 
-// POST: Save a new story
+// POST: Save a new story (with ticket check & deduction)
 export async function POST(request: NextRequest) {
   const sb = getSupabaseClient(request);
   if (!sb) {
@@ -65,6 +65,22 @@ export async function POST(request: NextRequest) {
   try {
     const { title, scenes, sessionId, metadata, isPublic, authorAlias } = await request.json();
 
+    // Check ticket balance before saving
+    const { data: profile } = await sb.client
+      .from("profiles")
+      .select("free_stories_remaining")
+      .eq("id", user.id)
+      .single();
+
+    const remaining = profile?.free_stories_remaining ?? 0;
+    if (remaining <= 0) {
+      return NextResponse.json(
+        { error: "no_tickets", message: "티켓이 부족합니다." },
+        { status: 403 }
+      );
+    }
+
+    // Save the story
     const { data, error } = await sb.client
       .from("stories")
       .insert({
@@ -84,7 +100,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ id: data.id });
+    // Deduct 1 ticket after successful save
+    await sb.client
+      .from("profiles")
+      .update({
+        free_stories_remaining: Math.max(0, remaining - 1),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    return NextResponse.json({ id: data.id, ticketsRemaining: remaining - 1 });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

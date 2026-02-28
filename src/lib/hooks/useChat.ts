@@ -152,6 +152,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
               storySaved: false,
               storySaveError: "login_required",
             });
+          } else if (saveRes.status === 403) {
+            // No tickets remaining
+            set({
+              storySaved: false,
+              storySaveError: "no_tickets",
+            });
           } else {
             set({
               storySaved: false,

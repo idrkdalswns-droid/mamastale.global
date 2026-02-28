@@ -18,6 +18,8 @@ export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
   const [show, setShow] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [showNoTickets, setShowNoTickets] = useState(false);
+  const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const { completedScenes, reset } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -29,6 +31,29 @@ export default function Home() {
       window.history.replaceState({}, "", "/");
     }
   }, []);
+
+  // Fetch ticket balance for logged-in users
+  useEffect(() => {
+    if (!user) {
+      setTicketsRemaining(null);
+      return;
+    }
+    fetch("/api/tickets")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) setTicketsRemaining(data.remaining ?? 0);
+      })
+      .catch(() => {});
+  }, [user, showPaymentSuccess]); // re-fetch after payment success
+
+  // Handle "새 동화 만들기" click with ticket check
+  const handleStartStory = () => {
+    if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
+      setShowNoTickets(true);
+      return;
+    }
+    setScreen("onboarding");
+  };
 
   const closePaymentModal = useCallback(() => {
     setShowPaymentSuccess(false);
@@ -199,9 +224,27 @@ export default function Home() {
           ))}
         </div>
 
+        {/* Ticket balance display for logged-in users */}
+        {user && ticketsRemaining !== null && (
+          <div className="flex items-center justify-center gap-2 mb-4 px-4 py-2.5 rounded-2xl bg-white/50 border border-brown-pale/10">
+            <span className="text-sm">🎫</span>
+            <span className="text-xs text-brown font-medium">
+              남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span>
+            </span>
+            {ticketsRemaining <= 0 && (
+              <Link
+                href="/pricing"
+                className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
+              >
+                구매하기
+              </Link>
+            )}
+          </div>
+        )}
+
         {/* CTA buttons */}
         <button
-          onClick={() => setScreen("onboarding")}
+          onClick={handleStartStory}
           className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97]"
           style={{
             background: "linear-gradient(135deg, #E07A5F, #D4836B)",
@@ -247,6 +290,49 @@ export default function Home() {
           베타 테스트 · 체험 후 피드백을 남겨주세요
         </p>
       </div>
+
+      {/* No Tickets Modal */}
+      {showNoTickets && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl p-8 text-center"
+            style={{
+              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div className="text-[56px] mb-4">🎫</div>
+            <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
+              티켓이 필요해요
+            </h2>
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+              동화를 만들려면 티켓이 필요합니다.<br />
+              티켓을 구매하고 나만의<br />
+              <span className="text-coral font-medium">치유 동화</span>를 만들어 보세요.
+            </p>
+            <Link
+              href="/pricing"
+              onClick={() => setShowNoTickets(false)}
+              className="block w-full py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97] mb-3"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+              }}
+            >
+              티켓 구매하기
+            </Link>
+            <button
+              onClick={() => setShowNoTickets(false)}
+              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Payment Success Modal */}
       {showPaymentSuccess && (

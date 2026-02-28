@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "edge";
 
@@ -26,6 +27,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current user for metadata
+    let userId: string | null = null;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createServerClient(supabaseUrl, supabaseKey, {
+        cookies: {
+          getAll() { return request.cookies.getAll(); },
+          setAll() {},
+        },
+      });
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id || null;
+    }
+
+    const ticketCount = priceType === "bundle" ? 5 : 1;
+
     // Use request origin for reliable URL (works on all environments)
     const appUrl = new URL(request.url).origin;
 
@@ -38,6 +56,11 @@ export async function POST(request: NextRequest) {
     params.append("success_url", `${appUrl}/?payment=success`);
     params.append("cancel_url", `${appUrl}/pricing?payment=canceled`);
     params.append("locale", "ko");
+    // Pass user info so webhook can credit tickets
+    if (userId) {
+      params.append("metadata[user_id]", userId);
+      params.append("metadata[ticket_count]", String(ticketCount));
+    }
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
