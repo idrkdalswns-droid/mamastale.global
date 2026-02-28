@@ -96,8 +96,8 @@ export function ChatPage({ onComplete }: ChatPageProps) {
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
       {!storyDone && !guestLimitReached && <PhaseRuleHint phase={currentPhase} />}
 
-      {/* Guest turn limit reached — signup prompt */}
-      {guestLimitReached && !storyDone && (
+      {/* Guest turn limit reached — signup prompt (wait for last response before showing) */}
+      {guestLimitReached && !storyDone && !isLoading && (
         <div className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]">
           <div
             className="mx-4 w-full max-w-sm rounded-3xl p-7 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"

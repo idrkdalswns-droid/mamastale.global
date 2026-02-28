@@ -196,6 +196,19 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
                 📤 공유하기
               </button>
             </div>
+            {/* Continue to next step (feedback) */}
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #8B6AAF, #A084C4)",
+                  boxShadow: "0 4px 16px rgba(139,106,175,0.3)",
+                }}
+              >
+                {onBackLabel || "다음 단계 →"}
+              </button>
+            )}
             {/* Back to previous scene */}
             <button
               onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
