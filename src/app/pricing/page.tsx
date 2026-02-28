@@ -1,30 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { useAuth } from "@/lib/hooks/useAuth";
+
+declare global {
+  interface Window {
+    TossPayments?: (clientKey: string) => {
+      payment: (opts: { customerKey: string }) => {
+        requestPayment: (params: {
+          method: string;
+          amount: { currency: string; value: number };
+          orderId: string;
+          orderName: string;
+          successUrl: string;
+          failUrl: string;
+        }) => Promise<void>;
+      };
+    };
+  }
+}
 
 export default function PricingPage() {
   const [loadingType, setLoadingType] = useState<string | null>(null);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [error, setError] = useState("");
+  const { user, loading: authLoading } = useAuth();
+  const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
+  const sdkLoadedRef = useRef(false);
+
+  // Check if SDK loaded
+  useEffect(() => {
+    if (window.TossPayments) {
+      setSdkReady(true);
+      sdkLoadedRef.current = true;
+    }
+  }, []);
 
   const handleCheckout = async (priceType: "ticket" | "bundle") => {
-    setLoadingType(priceType);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceType }),
-      });
-      const data = await res.json();
+    setError("");
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert(data.error || "결제 페이지로 이동할 수 없습니다.");
+    // Must be logged in to purchase
+    if (!user) {
+      setError("티켓을 구매하려면 로그인이 필요합니다.");
+      return;
+    }
+
+    if (!tossClientKey) {
+      setError("결제 시스템이 아직 설정되지 않았습니다.");
+      return;
+    }
+
+    if (!sdkReady || !window.TossPayments) {
+      setError("결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
+    setLoadingType(priceType);
+
+    try {
+      const amount = priceType === "bundle" ? 8000 : 2000;
+      const orderName = priceType === "bundle" ? "동화 5권 묶음 패키지" : "동화 1권 티켓";
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      const tossPayments = window.TossPayments(tossClientKey);
+      const payment = tossPayments.payment({ customerKey: user.id });
+
+      await payment.requestPayment({
+        method: "CARD",
+        amount: { currency: "KRW", value: amount },
+        orderId,
+        orderName,
+        successUrl: `${window.location.origin}/payment/success`,
+        failUrl: `${window.location.origin}/payment/fail`,
+      });
+    } catch (err) {
+      // User cancelled or error
+      const errMsg = err instanceof Error ? err.message : "";
+      if (!errMsg.includes("PAY_PROCESS_CANCELED")) {
+        setError("결제 중 오류가 발생했습니다. 다시 시도해 주세요.");
       }
-    } catch {
-      alert("결제 시스템에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setLoadingType(null);
     }
@@ -32,6 +90,16 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-dvh bg-cream px-6 py-12 relative overflow-hidden">
+      {/* Toss Payments SDK */}
+      <Script
+        src="https://js.tosspayments.com/v2/standard"
+        strategy="afterInteractive"
+        onLoad={() => {
+          setSdkReady(true);
+          sdkLoadedRef.current = true;
+        }}
+      />
+
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
       <WatercolorBlob bottom={100} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 
@@ -48,6 +116,23 @@ export default function PricingPage() {
             커피 한 잔 값으로 새로운 치유 동화를
           </p>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+            <p className="text-xs text-red-600 text-center">{error}</p>
+            {!user && !authLoading && (
+              <div className="text-center mt-2">
+                <Link
+                  href="/login"
+                  className="text-xs text-coral font-medium no-underline"
+                >
+                  로그인하기 →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Free Trial */}
         <div
@@ -134,14 +219,14 @@ export default function PricingPage() {
 
           <button
             onClick={() => handleCheckout("ticket")}
-            disabled={loadingType === "ticket"}
+            disabled={!!loadingType}
             className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #D4836B)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            {loadingType === "ticket" ? "결제 페이지 이동 중..." : "🎫 티켓 구매하기 · ₩2,000"}
+            {loadingType === "ticket" ? "결제 창 여는 중..." : "🎫 티켓 구매하기 · ₩2,000"}
           </button>
         </div>
 
@@ -179,7 +264,7 @@ export default function PricingPage() {
 
           <button
             onClick={() => handleCheckout("bundle")}
-            disabled={loadingType === "bundle"}
+            disabled={!!loadingType}
             className="w-full py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "transparent",
@@ -187,7 +272,7 @@ export default function PricingPage() {
               border: "1.5px solid rgba(109,76,145,0.3)",
             }}
           >
-            {loadingType === "bundle" ? "결제 페이지 이동 중..." : "✨ 5권 묶음 구매 · ₩8,000"}
+            {loadingType === "bundle" ? "결제 창 여는 중..." : "✨ 5권 묶음 구매 · ₩8,000"}
           </button>
         </div>
 
