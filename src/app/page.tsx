@@ -112,13 +112,13 @@ export default function Home() {
         fill
         priority
         className="object-cover object-top pointer-events-none"
-        style={{ opacity: 0.13 }}
+        style={{ opacity: 0.22 }}
       />
-      {/* Gradient overlay for readability */}
+      {/* Gradient overlay for readability — lighter at top to show image */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "linear-gradient(180deg, rgba(253,249,244,0.5) 0%, rgba(253,249,244,0.85) 35%, rgba(253,249,244,0.97) 60%, rgba(253,249,244,1) 80%)",
+          background: "linear-gradient(180deg, rgba(253,249,244,0.3) 0%, rgba(253,249,244,0.65) 30%, rgba(253,249,244,0.92) 55%, rgba(253,249,244,1) 75%)",
         }}
       />
 
@@ -126,7 +126,7 @@ export default function Home() {
       <WatercolorBlob bottom={100} left={-80} size={240} color="rgba(184,216,208,0.08)" />
 
       {/* Top navigation bar */}
-      <div className="flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
+      <div className="max-w-md mx-auto w-full flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
         <span className="text-[11px] text-brown-mid font-sans font-medium tracking-[2px] px-3 py-1.5 rounded-full bg-brown-pale/10 border border-brown-pale/15">
           BETA
         </span>
@@ -174,9 +174,9 @@ export default function Home() {
         )}
       </div>
 
-      {/* Main content — fills remaining space, no scroll */}
+      {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col justify-between px-8 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-8 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -184,7 +184,7 @@ export default function Home() {
         }}
       >
         {/* Top section: title + description */}
-        <div className="pt-4">
+        <div>
           {/* Welcome message for logged-in users */}
           {user && !authLoading && (
             <div className="mb-4 px-4 py-2.5 rounded-2xl bg-mint/20 border border-mint/30">
@@ -246,7 +246,7 @@ export default function Home() {
         </div>
 
         {/* Bottom section: ticket + CTA + links */}
-        <div className="pb-4">
+        <div>
           {/* Ticket balance display for logged-in users */}
           {user && ticketsRemaining !== null && (
             <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
