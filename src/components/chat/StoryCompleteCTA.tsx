@@ -17,6 +17,9 @@ export default function StoryCompleteCTA({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="동화 완성"
       style={{ background: "rgba(253,249,244,0.85)", backdropFilter: "blur(12px)" }}
     >
       <motion.div

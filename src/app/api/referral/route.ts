@@ -9,9 +9,11 @@ export const runtime = "edge";
 // 6자리 랜덤 추천 코드 생성
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 혼동 문자 제외 (0/O, 1/I)
+  const randomBytes = new Uint8Array(6);
+  crypto.getRandomValues(randomBytes);
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomBytes[i] % chars.length];
   }
   return code;
 }
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
     if (insertError.code === "23505") {
       return NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 });
     }
-    console.error("[Referral] Insert error:", insertError.message);
+    console.error("[Referral] Insert error: code=", insertError.code);
     return NextResponse.json({ error: "추천 적용에 실패했습니다." }, { status: 500 });
   }
 

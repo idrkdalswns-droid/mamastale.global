@@ -90,9 +90,12 @@ export default function RootLayout({
         )}
       </head>
       <body className="bg-cream antialiased">
-        <div className="max-w-[430px] mx-auto min-h-dvh relative overflow-hidden">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
+          본문으로 건너뛰기
+        </a>
+        <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-hidden">
           {children}
-        </div>
+        </main>
         <CookieConsent />
         <Toaster
           position="top-center"

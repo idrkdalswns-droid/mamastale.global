@@ -86,7 +86,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
         className="flex-1 overflow-y-auto"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]">
+        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
           {messages.map((m) => (
             <MessageBubble key={m.id || m.content.slice(0, 20)} message={m} currentPhase={currentPhase} />
           ))}

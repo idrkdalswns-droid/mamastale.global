@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
       console.error("[Toss] Payment confirmation failed:", confirmData?.code);
       return NextResponse.json(
-        { error: confirmData.message || "결제 확인에 실패했습니다." },
+        { error: "결제 확인에 실패했습니다." },
         { status: 400 }
       );
     }
@@ -161,8 +161,7 @@ export async function POST(request: NextRequest) {
       ticketsTotal: newTotal,
     }));
   } catch (error) {
-    const errMsg = error instanceof Error ? error.message : String(error);
-    console.error("[Toss] Confirm error:", errMsg);
+    console.error("[Toss] Confirm error:", error instanceof Error ? error.name : "Unknown");
     return NextResponse.json(
       { error: "결제 확인 중 오류가 발생했습니다." },
       { status: 500 }

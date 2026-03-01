@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 // CA-7: Import shared isValidUUID instead of inline regex
-import { getClientIP, isValidUUID } from "@/lib/utils/validation";
+import { getClientIP, isValidUUID, sanitizeText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
           metaphor_rating: data.metaphor || null,
           story_rating: data.story || null,
           overall_rating: data.overall || null,
-          free_text: data.free || null,
+          free_text: data.free ? sanitizeText(data.free.trim()) : null,
         });
       } catch (dbErr) {
         // DB save failed — log but don't fail the request
-        console.warn("[Feedback DB save failed]", dbErr instanceof Error ? dbErr.message : "Unknown");
+        console.warn("[Feedback DB save failed]", dbErr instanceof Error ? dbErr.name : "Unknown");
       }
     }
 

@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     // Log error message only (no PII, no full stack)
-    console.error("Chat API error:", error instanceof Error ? error.message : "Unknown error");
+    console.error("Chat API error:", error instanceof Error ? error.name : "Unknown");
 
     if (error instanceof Error && "status" in error) {
       const status = (error as { status: number }).status;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
 import type { FontSize } from "@/lib/hooks/useSettings";
@@ -19,6 +19,19 @@ export default function PhaseHeader({
   const p = PHASES[currentPhase];
   const { fontSize, setFontSize } = useSettingsStore();
   const [showSettings, setShowSettings] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  // Close popup on Escape or click outside
+  useEffect(() => {
+    if (!showSettings) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowSettings(false); };
+    const handleClick = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) setShowSettings(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("mousedown", handleClick);
+    return () => { document.removeEventListener("keydown", handleKey); document.removeEventListener("mousedown", handleClick); };
+  }, [showSettings]);
 
   const sizes: FontSize[] = ["small", "medium", "large"];
 
@@ -81,6 +94,7 @@ export default function PhaseHeader({
           onClick={() => setShowSettings((v) => !v)}
           className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
           aria-label="글씨 크기 설정"
+          aria-expanded={showSettings}
           style={{ fontSize: 14 }}
         >
           가
@@ -89,6 +103,8 @@ export default function PhaseHeader({
         {/* Font size popup */}
         {showSettings && (
           <div
+            ref={popupRef}
+            role="menu"
             className="absolute right-2 top-full mt-1 bg-white rounded-xl shadow-lg border border-black/5 p-2 flex gap-1.5 z-[110]"
             style={{ minWidth: 140 }}
           >

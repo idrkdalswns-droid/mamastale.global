@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     .single();
 
   if (error) {
-    console.error("[Tickets] DB error:", error.message);
+    console.error("[Tickets] DB error: code=", error.code);
     return NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 });
   }
 

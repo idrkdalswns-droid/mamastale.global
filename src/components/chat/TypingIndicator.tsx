@@ -41,6 +41,9 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
         {/* Bouncing dots bubble */}
         <div
           className="flex gap-[5px] px-[18px] py-[13px]"
+          role="status"
+          aria-live="polite"
+          aria-label="답변 생성 중"
           style={{
             background: "rgba(255,255,255,0.75)",
             borderRadius: "20px 20px 20px 5px",

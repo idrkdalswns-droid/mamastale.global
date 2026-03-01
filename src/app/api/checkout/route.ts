@@ -111,8 +111,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : String(error);
-    console.error("Checkout error:", errMsg);
+    console.error("Checkout error:", error instanceof Error ? error.name : "Unknown");
     return NextResponse.json(
       { error: "결제 오류가 발생했습니다. 다시 시도해 주세요." },
       { status: 500 }

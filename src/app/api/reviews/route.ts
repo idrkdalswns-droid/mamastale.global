@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[Reviews] Insert error:", error.message);
+      console.error("[Reviews] Insert error: code=", error.code);
       return NextResponse.json({ error: "후기 등록에 실패했습니다." }, { status: 500 });
     }
 

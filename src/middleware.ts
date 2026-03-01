@@ -124,11 +124,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
   } catch (e) {
-    console.error("Middleware auth check failed:", e);
+    console.error("Middleware auth check failed:", e instanceof Error ? e.name : "Unknown");
     // Fail-closed for protected routes
     if (isProtected) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/community", "/pricing", "/feature-requests"];
+      if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
+        loginUrl.searchParams.set("redirect", pathname);
+      }
       return NextResponse.redirect(loginUrl);
     }
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { sanitizeText } from "@/lib/utils/validation";
+import { sanitizeText, containsProfanity, isValidUUID } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -9,6 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
@@ -41,6 +45,10 @@ export async function PATCH(
 ) {
   const { id } = await params;
 
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
+
   const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
@@ -63,7 +71,13 @@ export async function PATCH(
 
     // Only allow specific fields to be updated
     if (typeof body.isPublic === "boolean") updates.is_public = body.isPublic;
-    if (typeof body.authorAlias === "string") updates.author_alias = body.authorAlias || null;
+    if (typeof body.authorAlias === "string") {
+      const safeAlias = sanitizeText(body.authorAlias.trim().slice(0, 50));
+      if (safeAlias && containsProfanity(safeAlias)) {
+        return NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 });
+      }
+      updates.author_alias = safeAlias || null;
+    }
     if (typeof body.title === "string") updates.title = sanitizeText(body.title.trim().slice(0, 200));
     if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
       const validScenes = body.scenes.every(

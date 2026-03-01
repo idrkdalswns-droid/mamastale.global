@@ -170,7 +170,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between px-4 py-3">
             {onBack && (
-              <button onClick={onBack} className="text-sm text-brown-light">
+              <button onClick={onBack} className="text-sm text-brown-light min-h-[44px] flex items-center">
                 {onBackLabel || "← 뒤로"}
               </button>
             )}
@@ -216,12 +216,16 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               <button
                 key={i}
                 onClick={() => setCurrentScene(i)}
-                className="h-[6px] flex-1 rounded-full transition-all duration-300 cursor-pointer"
-                style={{
-                  background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
-                }}
+                className="flex-1 min-h-[44px] flex items-center cursor-pointer"
                 aria-label={`장면 ${i + 1}로 이동`}
-              />
+              >
+                <div
+                  className="h-[6px] w-full rounded-full transition-all duration-300"
+                  style={{
+                    background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
+                  }}
+                />
+              </button>
             ))}
           </div>
         </div>

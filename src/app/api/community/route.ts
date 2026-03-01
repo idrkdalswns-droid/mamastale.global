@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     .eq("is_public", true)
     .eq("status", "completed");
 
-  if (topic) {
+  if (topic && topic.length <= 50) {
     query = query.eq("topic", topic);
   }
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const { data: stories, count, error } = await query;
 
   if (error) {
-    console.error("[Community] List error:", error.message);
+    console.error("[Community] List error: code=", error.code);
     return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
   }
 

@@ -142,7 +142,7 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error("[Comments] Insert error:", error.message);
+      console.error("[Comments] Insert error: code=", error.code);
       return NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 });
     }
 
@@ -155,7 +155,7 @@ export async function POST(
         p_delta: 1,
       });
       if (rpcError) {
-        console.error("[Comments] Counter increment failed:", rpcError.message);
+        console.error("[Comments] Counter increment failed: code=", rpcError.code);
       }
     }
 
