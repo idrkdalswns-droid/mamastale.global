@@ -9,28 +9,53 @@ const CHILD_AGE_OPTIONS = [
   { value: "6-8", label: "6~8세 (초등 저학년)" },
 ];
 
-const slides = [
+interface Slide {
+  step: number; // 0 = no step badge
+  persona: string;
+  icon: string;
+  accent: string;
+  title: string;
+  body: string;
+}
+
+const slides: Slide[] = [
   {
+    step: 1,
+    persona: "공감적 치유자",
     icon: "🫧",
     accent: "#7FBFB0",
-    title: "마음을 쏟아내세요",
-    body: "어떤 감정이든 괜찮아요.\n판단 없이 따뜻한 대화로\n어머니의 이야기에 귀 기울입니다.\n\n약 15~20분이면 충분해요",
+    title: "먼저, 편안하게\n마음을 열어주세요",
+    body: "가장 먼저 만나는 건\n어떤 이야기든 판단 없이 들어주는\n따뜻한 대화 상대예요.\n\n오래 참아온 감정도, 꺼내기 어려운 이야기도\n여기선 있는 그대로 괜찮아요.",
   },
   {
-    icon: "✨",
-    accent: "#6D4C91",
-    title: "상처가 동화로",
-    body: "어머니의 경험 속 아픔이\n아이를 위한 세상에 하나뿐인\n치유 동화로 다시 태어납니다.",
-  },
-  {
-    icon: "💬",
+    step: 2,
+    persona: "소크라테스식 철학자",
+    icon: "🌿",
     accent: "#E07A5F",
-    title: "소중한 목소리를 들려주세요",
-    body: "체험 후 간단한 피드백을 남겨주시면\n더 따뜻한 서비스를 만드는 데\n큰 힘이 됩니다.",
+    title: "굳어진 마음에\n새 빛이 들어와요",
+    body: "부드러운 질문 하나가\n오랫동안 당연하다고 여겼던 생각에\n작은 틈을 만들어 줍니다.\n\n'정말 나만의 잘못이었을까?'\n함께 천천히 풀어가요.",
   },
   {
-    icon: "🌱",
+    step: 3,
+    persona: "은유의 마법사",
+    icon: "✨",
+    accent: "#8B6AAF",
+    title: "아픔이 이야기 속\n캐릭터가 돼요",
+    body: "어머니의 감정과 경험이\n은유라는 마법을 만나\n동화 속 캐릭터로 다시 태어납니다.\n\n내 이야기이지만, 내가 아닌\n새로운 존재로.",
+  },
+  {
+    step: 4,
+    persona: "동화 편집장",
+    icon: "📖",
     accent: "#C4956A",
+    title: "세상에 하나뿐인\n동화가 완성돼요",
+    body: "아이의 눈높이에 맞춘\n10장면의 치유 동화가 만들어집니다.\n\n어머니의 상처가\n아이를 위한 사랑의 이야기로.\n\n약 15~20분이면 충분해요",
+  },
+  {
+    step: 0,
+    persona: "",
+    icon: "🌱",
+    accent: "#7FBFB0",
     title: "시작하기 전에",
     body: "_childAge_", // special marker — rendered as custom form below
   },
@@ -96,8 +121,24 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           transform: anim ? "none" : "translateY(10px)",
         }}
       >
+        {/* Step badge — only for persona slides */}
+        {s.step > 0 && (
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium tracking-wide mb-5"
+            style={{
+              background: `${s.accent}12`,
+              color: s.accent,
+              border: `1px solid ${s.accent}20`,
+            }}
+          >
+            <span>STEP {s.step}</span>
+            <span style={{ opacity: 0.4 }}>·</span>
+            <span>{s.persona}</span>
+          </div>
+        )}
+
         <div
-          className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[40px] mb-8"
+          className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[40px] mb-7"
           style={{
             background: `${s.accent}10`,
             border: `1px solid ${s.accent}15`,
@@ -106,7 +147,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           {s.icon}
         </div>
 
-        <h2 className="font-serif text-[22px] text-brown font-semibold mb-4 leading-tight">
+        <h2 className="font-serif text-[22px] text-brown font-semibold mb-5 leading-[1.5] whitespace-pre-line">
           {s.title}
         </h2>
 
