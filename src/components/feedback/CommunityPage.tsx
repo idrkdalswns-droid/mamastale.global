@@ -114,7 +114,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
         >
           <div className="text-center mb-4">
             <div className="text-[10px] text-brown-mid tracking-[3px] font-medium mb-3">
-              YOUR JOURNEY
+              나의 여정
             </div>
             <div className="flex justify-center gap-6">
               <div className="text-center">

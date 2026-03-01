@@ -39,6 +39,7 @@ export default function CommunityStoryClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showComments, setShowComments] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -128,17 +129,42 @@ export default function CommunityStoryClient() {
       <div className="bg-cream border-t border-black/[0.04] px-4 py-3">
         <div className="flex items-center justify-between">
           <LikeButton storyId={story.id} initialCount={story.like_count || 0} />
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium"
-            style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "1.5px solid rgba(196,149,106,0.15)",
-              color: "#8B6F55",
-            }}
-          >
-            댓글 <span>{story.comment_count ?? 0}</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                const url = `${window.location.origin}/community/${story.id}`;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({ title: story.title || "치유 동화", url });
+                  } catch { /* user cancelled */ }
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  setShareCopied(true);
+                  setTimeout(() => setShareCopied(false), 2000);
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all"
+              style={{
+                background: shareCopied ? "rgba(127,191,176,0.12)" : "rgba(255,255,255,0.6)",
+                border: shareCopied ? "1.5px solid rgba(127,191,176,0.3)" : "1.5px solid rgba(196,149,106,0.15)",
+                color: shareCopied ? "#5A9E8F" : "#8B6F55",
+              }}
+            >
+              {shareCopied ? "✓ 복사됨" : "공유"}
+            </button>
+            <button
+              onClick={() => setShowComments(!showComments)}
+              aria-expanded={showComments}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                border: "1.5px solid rgba(196,149,106,0.15)",
+                color: "#8B6F55",
+              }}
+            >
+              댓글 <span>{story.comment_count ?? 0}</span>
+            </button>
+          </div>
         </div>
       </div>
 

@@ -119,6 +119,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
         </h3>
         <button
           onClick={() => setShowForm(!showForm)}
+          aria-expanded={showForm}
           className="text-xs text-coral font-medium"
         >
           {showForm ? "취소" : "댓글 작성"}
@@ -133,6 +134,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
             placeholder="별명 (선택)"
+            aria-label="댓글 별명"
             maxLength={20}
             className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none mb-2"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
