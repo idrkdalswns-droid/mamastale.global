@@ -21,6 +21,20 @@ interface CommunityStoryData {
   created_at: string;
 }
 
+/** Author testimonials — matched by author_alias from sample stories */
+const AUTHOR_TESTIMONIALS: Record<string, string> = {
+  "준우맘":
+    "이 동화를 만들면서 그동안 혼자 삼키던 감정을 처음으로 꺼내볼 수 있었어요. 완성된 동화를 준우에게 읽어줬더니 \"엄마 이야기야?\"라며 꼭 안아주더라고요. 아이가 제 마음을 알아준 것 같아서 정말 많이 울었습니다.",
+  "서연이네":
+    "두 아이 재우고 새벽에 혼자 대화를 나눴는데, 마치 오랜 친구와 이야기하는 것 같았어요. 동화 속 지친 별이 쉼터를 찾는 이야기가 바로 저의 이야기더라고요. 서연이가 매일 밤 이 동화를 읽어달라고 합니다.",
+  "하준맘":
+    "시댁 문제는 누구에게도 말하기 어려운 이야기였는데, 동화라는 형태로 풀어내니까 마음이 한결 편해졌어요. 하준이에게 이 동화를 읽어주며 서로 다른 것도 아름다울 수 있다고 이야기해줬습니다.",
+  "지우맘":
+    "경력단절 후 '나는 뭘 하는 사람이지' 매일 고민했는데, 동화를 만들면서 제 경험이 결코 헛되지 않았다는 걸 깨달았어요. 지우가 동화 속 나비를 보며 \"엄마처럼 예뻐!\"라고 했을 때 눈물이 나더라고요.",
+  "시우맘":
+    "첫 아이를 낳고 자존감이 바닥이었는데, 동화 속 거울 이야기가 제 마음을 그대로 비춰줬어요. 시우가 크면 이 동화를 함께 읽으며 엄마가 얼마나 너를 사랑했는지 전해주고 싶어요.",
+};
+
 export default function CommunityStoryPage() {
   const params = useParams();
   const router = useRouter();
@@ -46,8 +60,7 @@ export default function CommunityStoryPage() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
         <div className="text-center">
-          <div className="text-3xl mb-3 animate-pulse">📖</div>
-          <p className="text-sm text-brown-light font-light">불러오는 중...</p>
+          <div className="text-sm text-brown-light font-light animate-pulse">불러오는 중...</div>
         </div>
       </div>
     );
@@ -57,7 +70,6 @@ export default function CommunityStoryPage() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
         <div className="text-center">
-          <div className="text-3xl mb-3">😕</div>
           <p className="text-sm text-brown-light font-light mb-4">{error}</p>
           <button
             onClick={() => router.push("/community")}
@@ -71,13 +83,15 @@ export default function CommunityStoryPage() {
     );
   }
 
+  const testimonial = story.author_alias ? AUTHOR_TESTIMONIALS[story.author_alias] : null;
+
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Story info bar */}
       <div className="bg-white/80 backdrop-blur-xl px-4 py-2.5 flex items-center justify-between text-xs text-brown-light border-b border-black/[0.04]">
         <span>{story.author_alias || "익명의 엄마"}</span>
         <div className="flex gap-3">
-          <span>👁 {story.view_count}</span>
+          <span>조회 {story.view_count}</span>
         </div>
       </div>
 
@@ -92,10 +106,25 @@ export default function CommunityStoryPage() {
         />
       </div>
 
+      {/* Author testimonial */}
+      {testimonial && (
+        <div className="bg-cream px-5 py-5 border-t border-black/[0.04]">
+          <div
+            className="rounded-2xl p-4"
+            style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(196,149,106,0.1)" }}
+          >
+            <p className="text-xs font-medium text-brown mb-2">
+              {story.author_alias}님의 한마디
+            </p>
+            <p className="text-[13px] text-brown-light leading-7 font-light break-keep">
+              &ldquo;{testimonial}&rdquo;
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Social actions bar */}
-      <div
-        className="bg-cream border-t border-black/[0.04] px-4 py-3"
-      >
+      <div className="bg-cream border-t border-black/[0.04] px-4 py-3">
         <div className="flex items-center justify-between">
           <LikeButton storyId={story.id} initialCount={story.like_count || 0} />
           <button
@@ -107,7 +136,7 @@ export default function CommunityStoryPage() {
               color: "#8B6F55",
             }}
           >
-            💬 <span>{story.comment_count ?? 0}</span>
+            댓글 <span>{story.comment_count ?? 0}</span>
           </button>
         </div>
       </div>

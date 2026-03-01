@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface LikeButtonProps {
@@ -8,47 +8,87 @@ interface LikeButtonProps {
   initialCount: number;
 }
 
+const GUEST_LIKES_KEY = "mamastale_guest_likes";
+
+function getGuestLikes(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(GUEST_LIKES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveGuestLike(storyId: string) {
+  try {
+    const likes = getGuestLikes();
+    if (!likes.includes(storyId)) {
+      likes.push(storyId);
+      localStorage.setItem(GUEST_LIKES_KEY, JSON.stringify(likes));
+    }
+  } catch {}
+}
+
 export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
+    // Check guest likes first (localStorage)
+    const guestLikes = getGuestLikes();
+    if (guestLikes.includes(storyId)) {
+      setLiked(true);
+      setIsGuest(true);
+      return;
+    }
+
+    // Check authenticated like status
     fetch(`/api/community/${storyId}/like`)
       .then((res) => res.json())
-      .then((data) => setLiked(data.liked))
+      .then((data) => {
+        setLiked(data.liked);
+        if (data.guest) setIsGuest(true);
+      })
       .catch(() => {});
   }, [storyId]);
 
-  const toggleLike = async () => {
+  const toggleLike = useCallback(async () => {
     if (loading) return;
+    if (liked && isGuest) return; // Guest cannot unlike
+
     setLoading(true);
     try {
       const res = await fetch(`/api/community/${storyId}/like`, { method: "POST" });
-
-      if (res.status === 401) {
-        // Redirect to login with return URL so user comes back after login
-        const returnPath = window.location.pathname;
-        window.location.href = `/login?redirect=${encodeURIComponent(returnPath)}`;
+      if (!res.ok && res.status !== 200) {
+        // Fallback: if something went wrong, just stop
         return;
       }
 
-      if (!res.ok) return;
-
       const data = await res.json();
-      setLiked(data.liked);
-      setCount((c) => (data.liked ? c + 1 : Math.max(0, c - 1)));
+
+      if (data.guest) {
+        // Guest like — save to localStorage
+        saveGuestLike(storyId);
+        setLiked(true);
+        setIsGuest(true);
+        setCount((c) => c + 1);
+      } else {
+        // Authenticated toggle
+        setLiked(data.liked);
+        setCount((c) => (data.liked ? c + 1 : Math.max(0, c - 1)));
+      }
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, liked, isGuest, storyId]);
 
   return (
     <button
       onClick={toggleLike}
-      disabled={loading}
+      disabled={loading || (liked && isGuest)}
       className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-[0.95]"
       style={{
         background: liked ? "rgba(224,122,95,0.1)" : "rgba(255,255,255,0.6)",
@@ -63,8 +103,9 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
           animate={{ scale: 1 }}
           exit={{ scale: 0.5 }}
           transition={{ duration: 0.2 }}
+          className="text-base"
         >
-          {liked ? "❤️" : "🤍"}
+          {liked ? "\u2665" : "\u2661"}
         </motion.span>
       </AnimatePresence>
       <span>{count}</span>

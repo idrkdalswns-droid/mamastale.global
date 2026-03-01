@@ -16,7 +16,7 @@ function getSupabaseClient(request: NextRequest) {
   });
 }
 
-// POST: Toggle like (add or remove)
+// POST: Toggle like (authenticated) or guest like (no auth)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -29,11 +29,22 @@ export async function POST(
   }
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Guest like — just increment counter, no DB record
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+    const { createServiceRoleClient } = await import("@/lib/supabase/server");
+    const serviceClient = createServiceRoleClient();
+    if (serviceClient) {
+      await serviceClient.rpc("increment_story_counter", {
+        p_story_id: storyId,
+        p_column: "like_count",
+        p_delta: 1,
+      });
+    }
+    return NextResponse.json({ liked: true, guest: true });
   }
 
-  // Check if already liked
+  // Authenticated user — toggle like
   const { data: existing } = await supabase
     .from("likes")
     .select("id")
@@ -93,7 +104,8 @@ export async function GET(
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ liked: false });
+    // Guest — like status tracked by client localStorage
+    return NextResponse.json({ liked: false, guest: true });
   }
 
   const { data } = await supabase

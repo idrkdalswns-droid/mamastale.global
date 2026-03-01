@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 
 const reviews = [
   {
@@ -41,8 +42,8 @@ const reviews = [
 function StarRating({ count }: { count: number }) {
   return (
     <span className="text-sm tracking-wider" aria-label={`별점 ${count}점`}>
-      {"★".repeat(count)}
-      {"☆".repeat(5 - count)}
+      {"\u2605".repeat(count)}
+      {"\u2606".repeat(5 - count)}
     </span>
   );
 }
@@ -66,7 +67,7 @@ export default function ReviewsPage() {
           mamastale을 경험한 부모님들의 솔직한 후기입니다.
         </p>
 
-        {/* Review cards */}
+        {/* Featured review cards */}
         <div className="space-y-5">
           {reviews.map((r) => (
             <div
@@ -93,6 +94,9 @@ export default function ReviewsPage() {
             </div>
           ))}
         </div>
+
+        {/* User review section (client component) */}
+        <ReviewSection />
 
         {/* CTA */}
         <div className="mt-10 text-center">
