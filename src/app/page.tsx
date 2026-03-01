@@ -509,6 +509,12 @@ export default function Home() {
           <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
             본 서비스는 실제 의료 행위를 대체하지 않습니다
           </p>
+          <a
+            href="/feature-requests"
+            className="block text-[10px] text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2"
+          >
+            개발 요청 보드
+          </a>
         </div>
       </div>
 
