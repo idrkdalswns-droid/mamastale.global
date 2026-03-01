@@ -4,6 +4,34 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
+// ─── View count deduplication (per-IP per-story, per-isolate) ───
+const VIEW_DEDUP_WINDOW = 300_000; // 5 minutes
+const viewDedupMap = new Map<string, number>();
+
+function shouldCountView(ip: string, storyId: string): boolean {
+  const now = Date.now();
+  // Lazy cleanup
+  if (viewDedupMap.size > 500) {
+    for (const [k, ts] of viewDedupMap) {
+      if (now - ts > VIEW_DEDUP_WINDOW) viewDedupMap.delete(k);
+    }
+  }
+  const key = `${ip}:${storyId}`;
+  const lastView = viewDedupMap.get(key);
+  if (lastView && now - lastView < VIEW_DEDUP_WINDOW) return false;
+  viewDedupMap.set(key, now);
+  return true;
+}
+
+function getClientIP(request: NextRequest): string {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,7 +44,7 @@ function createAnonClient() {
 
 // GET: Fetch a single public story
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -37,14 +65,17 @@ export async function GET(
     return NextResponse.json({ error: "Story not found" }, { status: 404 });
   }
 
-  // Atomic view count increment — uses service role for RPC
-  const serviceClient = createServiceRoleClient();
-  if (serviceClient) {
-    await serviceClient.rpc("increment_story_counter", {
-      p_story_id: id,
-      p_column: "view_count",
-      p_delta: 1,
-    });
+  // Atomic view count increment — deduplicated per IP per story (5min window)
+  const ip = getClientIP(request);
+  if (shouldCountView(ip, id)) {
+    const serviceClient = createServiceRoleClient();
+    if (serviceClient) {
+      await serviceClient.rpc("increment_story_counter", {
+        p_story_id: id,
+        p_column: "view_count",
+        p_delta: 1,
+      });
+    }
   }
 
   return NextResponse.json({ story });

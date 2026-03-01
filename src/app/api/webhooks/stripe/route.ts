@@ -105,12 +105,25 @@ export async function POST(request: NextRequest) {
           ? parseInt(session.metadata.ticket_count)
           : 1;
 
+        // ─── DB-level idempotency: check if this session was already processed ───
+        const { data: existingSub } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("stripe_customer_id", session.id)
+          .maybeSingle();
+
+        if (existingSub) {
+          console.log(`[Stripe] Session ${session.id} already processed, skipping`);
+          break;
+        }
+
         // ─── Atomic ticket increment ───
         await incrementTickets(supabase, userId, ticketCount);
 
         await supabase.from("subscriptions").insert({
           user_id: userId,
-          stripe_customer_id: session.customer || null,
+          stripe_customer_id: session.id,
           plan: "premium",
           status: "active",
           updated_at: new Date().toISOString(),

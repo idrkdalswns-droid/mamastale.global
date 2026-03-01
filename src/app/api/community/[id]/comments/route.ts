@@ -46,7 +46,8 @@ const PROFANITY_LIST = [
 ];
 
 function containsProfanity(text: string): boolean {
-  const normalized = text.replace(/\s/g, "").toLowerCase();
+  // Strip whitespace AND special characters to prevent bypass via "시.발", "병_신" etc.
+  const normalized = text.replace(/[\s\.\,\!\?\-\_\*\#\@\/\\]/g, "").toLowerCase();
   return PROFANITY_LIST.some((word) => normalized.includes(word));
 }
 
@@ -102,7 +103,15 @@ export async function POST(
   }
 
   try {
-    const { content, authorAlias } = await request.json();
+    // Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
+
+    const { content, authorAlias } = body;
 
     if (!content?.trim()) {
       return NextResponse.json({ error: "댓글 내용을 입력해 주세요" }, { status: 400 });

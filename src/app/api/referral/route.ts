@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 });
   }
 
-  // 3. 추천 기록 생성
+  // 3. 추천 기록 생성 (unique constraint on referred_id prevents race condition)
   const { error: insertError } = await admin
     .from("referrals")
     .insert({
@@ -140,6 +140,11 @@ export async function POST(request: NextRequest) {
     });
 
   if (insertError) {
+    // Handle duplicate insert from race condition (unique constraint violation)
+    if (insertError.code === "23505") {
+      return NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 });
+    }
+    console.error("[Referral] Insert error:", insertError.message);
     return NextResponse.json({ error: "추천 적용에 실패했습니다." }, { status: 500 });
   }
 

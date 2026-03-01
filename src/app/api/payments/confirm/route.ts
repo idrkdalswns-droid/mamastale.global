@@ -84,16 +84,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Confirm payment with Toss Payments API
+    // Confirm payment with Toss Payments API (10s timeout)
     const encryptedKey = btoa(`${tossSecretKey}:`);
-    const confirmRes = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${encryptedKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ paymentKey, orderId, amount: numericAmount }),
-    });
+    const tossAbort = new AbortController();
+    const tossTimeout = setTimeout(() => tossAbort.abort(), 10_000);
+
+    let confirmRes: Response;
+    try {
+      confirmRes = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
+        method: "POST",
+        headers: {
+          "Authorization": `Basic ${encryptedKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ paymentKey, orderId, amount: numericAmount }),
+        signal: tossAbort.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(tossTimeout);
+      if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
+        console.error("[Toss] Payment confirmation timed out for order:", orderId);
+        return NextResponse.json(
+          { error: "결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요." },
+          { status: 504 }
+        );
+      }
+      throw fetchErr;
+    }
+    clearTimeout(tossTimeout);
 
     const confirmData = await confirmRes.json();
 

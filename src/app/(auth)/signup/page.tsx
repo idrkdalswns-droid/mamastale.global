@@ -13,28 +13,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleOAuthSignup = async (provider: "kakao" | "google") => {
-    const supabase = createClient();
-    if (!supabase) {
-      setError("로그인 서비스를 준비 중입니다.");
-      return;
-    }
-
-    const { error: authError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/`,
-        ...(provider === "kakao" && { scopes: "profile_nickname,profile_image" }),
-      },
-    });
-
-    if (authError) {
-      setError(provider === "kakao"
-        ? "카카오 로그인에 실패했습니다. 다시 시도해 주세요."
-        : "Google 로그인에 실패했습니다. 다시 시도해 주세요."
-      );
-    }
-  };
+  // OAuth signup handlers — to be enabled when Kakao/Google providers are configured
+  // const handleOAuthSignup = async (provider: "kakao" | "google") => { ... };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +60,7 @@ export default function SignupPage() {
     return (
       <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
         <div className="text-center max-w-sm">
-          <div className="text-5xl mb-4">📬</div>
+          <div className="text-5xl mb-4" style={{ color: "#E07A5F" }}>&#9993;</div>
           <h2 className="font-serif text-xl text-brown font-semibold mb-3">
             이메일을 확인해 주세요
           </h2>
