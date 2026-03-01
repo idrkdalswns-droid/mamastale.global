@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isValidUUID } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -8,6 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: storyId } = await params;
+
+  if (!isValidUUID(storyId)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -36,7 +41,7 @@ export async function POST(
     }
 
     const { commentId } = body;
-    if (!commentId) {
+    if (!commentId || !isValidUUID(commentId)) {
       return NextResponse.json({ error: "commentId 필요" }, { status: 400 });
     }
 

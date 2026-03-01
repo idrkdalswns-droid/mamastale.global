@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { isValidUUID, sanitizeText, containsProfanity } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -27,36 +28,16 @@ function getAuthClient(request: NextRequest) {
   });
 }
 
-/** Strip angle brackets and javascript: protocol */
-function sanitizeText(input: string): string {
-  return input
-    .replace(/[<>]/g, "")
-    .replace(/javascript:/gi, "")
-    .trim();
-}
-
-/** Korean profanity filter */
-const PROFANITY_LIST = [
-  "시발", "씨발", "씨벌", "ㅅㅂ", "ㅆㅂ",
-  "병신", "ㅂㅅ", "지랄", "ㅈㄹ",
-  "닥쳐", "꺼져", "새끼", "개새끼",
-  "좆", "ㅈ같", "존나", "ㅈㄴ",
-  "씹", "개같은", "미친년", "미친놈",
-  "ㅄ", "ㅗ", "꼴값",
-];
-
-function containsProfanity(text: string): boolean {
-  // Strip whitespace AND special characters to prevent bypass via "시.발", "병_신" etc.
-  const normalized = text.replace(/[\s\.\,\!\?\-\_\*\#\@\/\\]/g, "").toLowerCase();
-  return PROFANITY_LIST.some((word) => normalized.includes(word));
-}
-
 // GET: List comments for a story (only if story is public)
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: storyId } = await params;
+
+  if (!isValidUUID(storyId)) {
+    return NextResponse.json({ comments: [] });
+  }
 
   const supabase = createAnonClient();
   if (!supabase) {
@@ -92,6 +73,10 @@ export async function POST(
 ) {
   const { id: storyId } = await params;
 
+  if (!isValidUUID(storyId)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
   const supabase = getAuthClient(request);
   if (!supabase) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
@@ -100,6 +85,20 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+  }
+
+  // Verify story is public before allowing comments
+  const anonClient = createAnonClient();
+  if (anonClient) {
+    const { data: story } = await anonClient
+      .from("stories")
+      .select("id")
+      .eq("id", storyId)
+      .eq("is_public", true)
+      .single();
+    if (!story) {
+      return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
+    }
   }
 
   try {

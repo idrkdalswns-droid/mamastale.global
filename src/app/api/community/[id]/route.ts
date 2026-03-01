@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -23,15 +24,6 @@ function shouldCountView(ip: string, storyId: string): boolean {
   return true;
 }
 
-function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -48,6 +40,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
 
   const supabase = createAnonClient();
   if (!supabase) {

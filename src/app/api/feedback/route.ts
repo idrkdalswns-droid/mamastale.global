@@ -1,8 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
+import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// ─── Rate limiting (per-IP, per-isolate) ───
+const FEEDBACK_RATE_WINDOW = 300_000; // 5 minutes
+const FEEDBACK_RATE_LIMIT = 5; // max 5 feedback submissions per 5 min
+const feedbackRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkFeedbackRateLimit(ip: string): boolean {
+  const now = Date.now();
+  if (feedbackRateMap.size > 300) {
+    for (const [k, v] of feedbackRateMap) {
+      if (now > v.resetAt) feedbackRateMap.delete(k);
+    }
+  }
+  const entry = feedbackRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    feedbackRateMap.set(ip, { count: 1, resetAt: now + FEEDBACK_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= FEEDBACK_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 const feedbackSchema = z.object({
   empathy: z.number().min(1).max(5).optional(),
@@ -15,6 +38,15 @@ const feedbackSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const ip = getClientIP(request);
+  if (!checkFeedbackRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "피드백은 5분에 5건까지 등록 가능합니다." },
+      { status: 429 }
+    );
+  }
+
   try {
     // Safe JSON parsing
     let body;
