@@ -147,8 +147,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // IL-03: DB-level idempotency — store orderId before incrementing tickets
+    // Uses profiles.metadata to track processed orders (no extra table needed)
+    const { data: profile } = await sb.client
+      .from("profiles")
+      .select("metadata")
+      .eq("id", user.id)
+      .single();
+
+    const metadata = (profile?.metadata as Record<string, unknown>) || {};
+    const processedOrderIds = (metadata.processed_orders as string[]) || [];
+    if (processedOrderIds.includes(orderId)) {
+      return sb.applyCookies(NextResponse.json({
+        success: true, ticketsAdded: ticketCount, alreadyProcessed: true,
+      }));
+    }
+
     // ─── Atomic ticket increment ───
     const newTotal = await incrementTickets(sb.client, user.id, ticketCount);
+
+    // Record orderId in profile metadata to prevent cross-isolate double processing
+    const updatedOrders = [...processedOrderIds.slice(-19), orderId]; // Keep last 20
+    await sb.client
+      .from("profiles")
+      .update({ metadata: { ...metadata, processed_orders: updatedOrders } })
+      .eq("id", user.id);
 
     console.log(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +

@@ -58,8 +58,13 @@ export default function PrivacyPage() {
               </tr>
               <tr className="border-b border-brown-pale/10">
                 <td className="py-2">Stripe</td>
-                <td className="py-2">결제 처리</td>
+                <td className="py-2">결제 처리 (해외)</td>
                 <td className="py-2">미국</td>
+              </tr>
+              <tr className="border-b border-brown-pale/10">
+                <td className="py-2">Toss Payments</td>
+                <td className="py-2">결제 처리 (한국 시장)</td>
+                <td className="py-2">한국</td>
               </tr>
               <tr className="border-b border-brown-pale/10">
                 <td className="py-2">Google</td>

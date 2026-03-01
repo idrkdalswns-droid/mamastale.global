@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
@@ -51,9 +52,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 
-  // JP-02: Require authentication for PDF generation
-  const authHeader = request.headers.get("cookie");
-  if (!authHeader) {
+  // IL-01: Proper Supabase session validation (not just cookie existence)
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+  const { data: { user } } = await sb.client.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 

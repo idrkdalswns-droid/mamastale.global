@@ -45,6 +45,18 @@ export async function POST(
       return NextResponse.json({ error: "commentId 필요" }, { status: 400 });
     }
 
+    // IL-11: Verify comment belongs to the specified story
+    const { data: comment } = await supabase
+      .from("comments")
+      .select("id")
+      .eq("id", commentId)
+      .eq("story_id", storyId)
+      .maybeSingle();
+
+    if (!comment) {
+      return NextResponse.json({ error: "댓글을 찾을 수 없습니다." }, { status: 404 });
+    }
+
     // Insert report (ignore duplicate via ON CONFLICT)
     await supabase
       .from("comment_reports")

@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
     params.append("metadata[user_id]", userId);
     params.append("metadata[ticket_count]", String(ticketCount));
 
-    // UK-6: Idempotency-Key prevents duplicate sessions on network retry
-    const idempotencyKey = `checkout_${userId}_${Date.now()}`;
+    // IL-04: Stable idempotency key per user+product+minute (prevents duplicate sessions)
+    const idempotencyKey = `checkout_${userId}_${priceType}_${Math.floor(Date.now() / 60000)}`;
 
     const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
