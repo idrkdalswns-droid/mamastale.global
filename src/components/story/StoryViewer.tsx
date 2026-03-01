@@ -243,17 +243,6 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
             {/* Share & Copy actions */}
             <div className="flex gap-2.5">
               <button
-                onClick={handleCopy}
-                className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
-                style={{
-                  background: copied ? "rgba(127,191,176,0.15)" : "rgba(127,191,176,0.1)",
-                  color: copied ? "#3D8B7A" : "#5A9E8F",
-                  border: "1.5px solid rgba(127,191,176,0.3)",
-                }}
-              >
-                {copied ? "✓ 복사됨!" : "📋 전체 복사"}
-              </button>
-              <button
                 onClick={handleShare}
                 className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
                 style={{
@@ -262,6 +251,17 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
                 }}
               >
                 📤 공유하기
+              </button>
+              <button
+                onClick={handleCopy}
+                className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
+                style={{
+                  background: copied ? "rgba(127,191,176,0.15)" : "rgba(127,191,176,0.1)",
+                  color: copied ? "#3D8B7A" : "#5A9E8F",
+                  border: "1.5px solid rgba(127,191,176,0.3)",
+                }}
+              >
+                {copied ? "✓ 복사됨 · 붙여넣기 해보세요" : "📋 전체 복사"}
               </button>
             </div>
             {/* PDF Download */}
