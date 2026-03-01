@@ -87,12 +87,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
           content: m.content,
         }));
 
+      // Read child age from localStorage (set during onboarding)
+      let childAge: string | undefined;
+      try { childAge = localStorage.getItem("mamastale_child_age") || undefined; } catch {}
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: apiMessages,
           sessionId: state.sessionId,
+          childAge,
         }),
       });
 

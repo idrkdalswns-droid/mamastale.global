@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 
+const CHILD_AGE_OPTIONS = [
+  { value: "", label: "선택 안함" },
+  { value: "0-2", label: "0~2세 (영아)" },
+  { value: "3-5", label: "3~5세 (유아)" },
+  { value: "6-8", label: "6~8세 (초등 저학년)" },
+];
+
 const slides = [
   {
     icon: "🫧",
@@ -21,6 +28,12 @@ const slides = [
     title: "소중한 목소리를 들려주세요",
     body: "체험 후 간단한 피드백을 남겨주시면\n더 따뜻한 서비스를 만드는 데\n큰 힘이 됩니다.",
   },
+  {
+    icon: "🌱",
+    accent: "#C4956A",
+    title: "시작하기 전에",
+    body: "_childAge_", // special marker — rendered as custom form below
+  },
 ];
 
 interface OnboardingSlidesProps {
@@ -31,6 +44,14 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
   const [idx, setIdx] = useState(0);
   const [anim, setAnim] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
+  const [childAge, setChildAge] = useState("");
+
+  const saveAndDone = () => {
+    try {
+      if (childAge) localStorage.setItem("mamastale_child_age", childAge);
+    } catch {}
+    onDone();
+  };
 
   const go = (next: boolean) => {
     if (transitioning) return; // Prevent multi-tap skipping/crash
@@ -40,7 +61,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
       if (next) {
         setIdx((i) => Math.min(i + 1, slides.length - 1));
       } else {
-        onDone();
+        saveAndDone();
       }
       setAnim(true);
       setTransitioning(false);
@@ -89,9 +110,48 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           {s.title}
         </h2>
 
-        <p className="text-sm text-brown-light leading-8 font-light whitespace-pre-line break-keep">
-          {s.body}
-        </p>
+        {s.body === "_childAge_" ? (
+          <div className="w-full max-w-xs space-y-5">
+            {/* Child age selector */}
+            <div>
+              <label className="block text-xs text-brown-pale font-light mb-2 text-left">
+                아이의 연령대 (선택)
+              </label>
+              <select
+                value={childAge}
+                onChange={(e) => setChildAge(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl text-sm bg-white/70 border border-brown-pale/15 text-brown outline-none"
+                aria-label="자녀 연령대 선택"
+              >
+                {CHILD_AGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-brown-pale font-light mt-1.5 text-left">
+                동화의 언어 수준이 아이 연령에 맞게 조절됩니다
+              </p>
+            </div>
+
+            {/* Informed consent note */}
+            <div
+              className="rounded-xl p-4 text-left"
+              style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.15)" }}
+            >
+              <p className="text-xs text-brown-light leading-6 font-light break-keep">
+                이 대화는 깊은 감정을 다룰 수 있습니다.
+                현재 심리적으로 많이 힘드신 상황이라면
+                전문 상담을 먼저 권합니다.
+              </p>
+              <p className="text-[10px] text-brown-pale font-light mt-2">
+                자살예방상담전화 1393 (24시간)
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-brown-light leading-8 font-light whitespace-pre-line break-keep">
+            {s.body}
+          </p>
+        )}
       </div>
 
       {/* Buttons */}
@@ -110,7 +170,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
 
         {!isLast && (
           <button
-            onClick={onDone}
+            onClick={saveAndDone}
             disabled={transitioning}
             className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 disabled:opacity-40"
           >

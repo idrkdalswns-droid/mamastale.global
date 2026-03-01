@@ -22,6 +22,7 @@ const chatRequestSchema = z.object({
     })
   ).max(60),  // Hard limit: prevent unbounded payload growth
   sessionId: z.string().optional(),
+  childAge: z.enum(["0-2", "3-5", "6-8", ""]).optional(),
 });
 
 // ─── Rate Limiting (per-isolate, in-memory) ───
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages } = parsed.data;
+    const { messages, childAge } = parsed.data;
 
     // ─── Server-side guest turn limit ───
     if (!isAuthenticated) {
@@ -146,7 +147,17 @@ export async function POST(request: NextRequest) {
     }
 
     const anthropic = getAnthropicClient();
-    const systemPrompt = getSystemPrompt("ko");
+    let systemPrompt = getSystemPrompt("ko");
+
+    // Append child age context to system prompt if provided
+    if (childAge) {
+      const ageLabels: Record<string, string> = {
+        "0-2": "0~2세 (영아)",
+        "3-5": "3~5세 (유아)",
+        "6-8": "6~8세 (초등 저학년)",
+      };
+      systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge] || childAge}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
+    }
 
     const response = await callAnthropicWithRetry(anthropic, {
       model: "claude-sonnet-4-20250514",

@@ -66,10 +66,12 @@ export default function PhaseHeader({
               Phase {p.id} · {p.name}
             </div>
             <div
-              className="text-[10px] font-light opacity-50"
+              className="text-[10px] font-light opacity-50 flex items-center gap-1.5"
               style={{ color: p.text }}
             >
-              {p.theory}
+              <span>{p.theory}</span>
+              <span className="inline-block w-0.5 h-0.5 rounded-full bg-current opacity-40" />
+              <span>{p.id <= 2 ? "~10분" : p.id === 3 ? "~5분" : "~5분"}</span>
             </div>
           </div>
         </div>

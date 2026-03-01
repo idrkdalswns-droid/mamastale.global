@@ -30,6 +30,7 @@ interface StoryViewerProps {
 export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, embedded }: StoryViewerProps) {
   const [currentScene, setCurrentScene] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [motherMessage, setMotherMessage] = useState("");
 
   // Guard: empty scenes array — show friendly empty state instead of crashing
   if (!scenes || scenes.length === 0) {
@@ -175,6 +176,46 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
           <p className="font-serif text-[15px] text-brown leading-[2.4] break-keep whitespace-pre-wrap">
             {scene.text}
           </p>
+
+          {/* "아이에게 전하는 한마디" — only on the last scene */}
+          {isLast && (
+            <div className="mt-8 space-y-4">
+              <div
+                className="rounded-2xl p-4"
+                style={{ background: "rgba(196,149,106,0.06)", border: "1px solid rgba(196,149,106,0.12)" }}
+              >
+                <label className="block text-xs text-brown-mid font-medium mb-2">
+                  아이에게 전하고 싶은 한마디 (선택)
+                </label>
+                <textarea
+                  value={motherMessage}
+                  onChange={(e) => setMotherMessage(e.target.value)}
+                  placeholder="사랑하는 우리 아이에게..."
+                  maxLength={200}
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm font-serif bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none resize-none leading-relaxed"
+                  aria-label="아이에게 전하는 한마디"
+                />
+                <p className="text-[10px] text-brown-pale font-light text-right mt-1">
+                  {motherMessage.length}/200
+                </p>
+              </div>
+
+              {/* Self-care message */}
+              <div
+                className="rounded-2xl p-4 text-center"
+                style={{ background: "rgba(127,191,176,0.06)", border: "1px solid rgba(127,191,176,0.12)" }}
+              >
+                <p className="text-xs text-brown-light leading-6 font-light break-keep">
+                  오늘 많은 감정을 꺼내주셨어요.
+                  <br />
+                  따뜻한 차 한 잔, 좋아하는 음악, 짧은 산책 등
+                  <br />
+                  작은 돌봄의 시간을 가져보세요.
+                </p>
+              </div>
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 
