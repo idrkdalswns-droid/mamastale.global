@@ -213,7 +213,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
           <button
             onClick={saveAndDone}
             disabled={transitioning}
-            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 disabled:opacity-40"
+            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30"
           >
             건너뛰기
           </button>

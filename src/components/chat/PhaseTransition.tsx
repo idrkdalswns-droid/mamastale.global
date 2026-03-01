@@ -68,7 +68,7 @@ export default function PhaseTransition({
                 border: `1px solid ${p?.accent}25`,
               }}
             >
-              PHASE {phase}
+              STEP {phase} / 4
             </div>
 
             {/* Friendly transition message */}

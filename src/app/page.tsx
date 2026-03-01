@@ -177,7 +177,7 @@ export default function Home() {
     return (
       <StoryViewer
         scenes={completedScenes}
-        title="나의 치유 동화"
+        title={completedScenes[0]?.title || "나의 치유 동화"}
         authorName={user?.user_metadata?.name || undefined}
         onBack={() => setScreen("feedback")}
         onBackLabel="피드백 남기기 →"
