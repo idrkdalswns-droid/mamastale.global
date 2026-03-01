@@ -19,7 +19,7 @@ const chatRequestSchema = z.object({
       role: z.enum(["user", "assistant"]),
       content: z.string().min(1).max(5000),
     })
-  ),
+  ).max(60),  // Hard limit: prevent unbounded payload growth
   sessionId: z.string().optional(),
 });
 

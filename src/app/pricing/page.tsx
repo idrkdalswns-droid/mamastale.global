@@ -65,7 +65,9 @@ export default function PricingPage() {
     try {
       const amount = priceType === "bundle" ? 8000 : 2000;
       const orderName = priceType === "bundle" ? "동화 5권 묶음 패키지" : "동화 1권 티켓";
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const randomBytes = crypto.getRandomValues(new Uint8Array(6));
+      const randomPart = Array.from(randomBytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 8);
+      const orderId = `order_${Date.now()}_${randomPart}`;
 
       const tossPayments = window.TossPayments(tossClientKey);
       const payment = tossPayments.payment({ customerKey: user.id });

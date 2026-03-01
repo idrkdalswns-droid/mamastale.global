@@ -57,6 +57,24 @@ export async function POST(request: NextRequest) {
     const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
     const authorAlias = typeof body.authorAlias === "string" ? body.authorAlias.trim().slice(0, 50) : null;
 
+    // ─── Validate scenes BEFORE ticket deduction ───
+    if (!Array.isArray(scenes) || scenes.length === 0) {
+      return NextResponse.json({ error: "동화 장면 데이터가 필요합니다." }, { status: 400 });
+    }
+    if (scenes.length > 20) {
+      return NextResponse.json({ error: "장면 수가 너무 많습니다." }, { status: 400 });
+    }
+    const validScenes = scenes.every(
+      (s: unknown) =>
+        typeof s === "object" && s !== null &&
+        typeof (s as Record<string, unknown>).sceneNumber === "number" &&
+        typeof (s as Record<string, unknown>).title === "string" &&
+        typeof (s as Record<string, unknown>).text === "string"
+    );
+    if (!validScenes) {
+      return NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 });
+    }
+
     // Atomic ticket check & deduction — prevents race condition
     let ticketsAfter = 0;
 

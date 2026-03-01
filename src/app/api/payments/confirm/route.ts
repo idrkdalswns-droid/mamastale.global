@@ -10,6 +10,23 @@ const VALID_PRICES: Record<number, number> = {
   8000: 5,  // ₩8,000 = 5 tickets
 };
 
+// ─── Order ID deduplication (per-isolate, in-memory) ───
+const processedOrders = new Map<string, number>();
+const ORDER_DEDUP_TTL_MS = 600_000; // 10 minutes
+
+function isOrderProcessed(orderId: string): boolean {
+  const now = Date.now();
+  // Lazy cleanup
+  if (processedOrders.size > 500) {
+    for (const [id, ts] of processedOrders) {
+      if (now - ts > ORDER_DEDUP_TTL_MS) processedOrders.delete(id);
+    }
+  }
+  if (processedOrders.has(orderId)) return true;
+  processedOrders.set(orderId, now);
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   const tossSecretKey = process.env.TOSS_SECRET_KEY;
   if (!tossSecretKey) {
@@ -46,6 +63,16 @@ export async function POST(request: NextRequest) {
 
     if (!paymentKey || !orderId || !amount) {
       return NextResponse.json({ error: "Invalid payment data" }, { status: 400 });
+    }
+
+    // ─── Server-side idempotency guard ───
+    if (isOrderProcessed(orderId)) {
+      const ticketCount = VALID_PRICES[Number(amount)] || 1;
+      return sb.applyCookies(NextResponse.json({
+        success: true,
+        ticketsAdded: ticketCount,
+        alreadyProcessed: true,
+      }));
     }
 
     // ─── Server-side price validation ───
