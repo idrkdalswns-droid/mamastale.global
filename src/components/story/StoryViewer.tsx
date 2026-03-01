@@ -152,15 +152,17 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
             </div>
             <div className="w-12" />
           </div>
-          {/* Progress */}
+          {/* Progress — tappable to jump between scenes */}
           <div className="flex gap-0.5 px-4 pb-2">
             {scenes.map((_, i) => (
-              <div
+              <button
                 key={i}
-                className="h-[3px] flex-1 rounded-full transition-all duration-300"
+                onClick={() => setCurrentScene(i)}
+                className="h-[6px] flex-1 rounded-full transition-all duration-300 cursor-pointer"
                 style={{
                   background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
                 }}
+                aria-label={`장면 ${i + 1}로 이동`}
               />
             ))}
           </div>
