@@ -56,7 +56,8 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID &&
+          /^G-[A-Z0-9]+$/.test(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) && (
           <>
             <script
               async

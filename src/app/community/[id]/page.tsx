@@ -46,14 +46,18 @@ export default function CommunityStoryPage() {
   useEffect(() => {
     if (!params.id) return;
 
-    fetch(`/api/community/${params.id}`)
+    const controller = new AbortController();
+    fetch(`/api/community/${params.id}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
         return res.json();
       })
       .then((data) => setStory(data.story))
-      .catch(() => setError("동화를 찾을 수 없습니다."))
+      .catch((err) => {
+        if (err?.name !== "AbortError") setError("동화를 찾을 수 없습니다.");
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [params.id]);
 
   if (loading) {

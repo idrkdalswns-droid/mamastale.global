@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sort = searchParams.get("sort") || "recent";
   const topic = searchParams.get("topic") || "";
-  const page = parseInt(searchParams.get("page") || "1");
+  const rawPage = parseInt(searchParams.get("page") || "1");
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const limit = 12;
   const offset = (page - 1) * limit;
 

@@ -44,13 +44,15 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
     }
 
     // Check authenticated like status
-    fetch(`/api/community/${storyId}/like`)
+    const controller = new AbortController();
+    fetch(`/api/community/${storyId}/like`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setLiked(data.liked);
         if (data.guest) setIsGuest(true);
       })
       .catch(() => {});
+    return () => controller.abort();
   }, [storyId]);
 
   const toggleLike = useCallback(async () => {
@@ -60,8 +62,8 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
     setLoading(true);
     try {
       const res = await fetch(`/api/community/${storyId}/like`, { method: "POST" });
-      if (!res.ok && res.status !== 200) {
-        // Fallback: if something went wrong, just stop
+      if (!res.ok) {
+        // 429 = rate limited, other errors silently ignored
         return;
       }
 

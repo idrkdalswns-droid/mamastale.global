@@ -50,11 +50,13 @@ export function ReviewSection() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    fetch("/api/reviews")
+    const controller = new AbortController();
+    fetch("/api/reviews", { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => setReviews(data.reviews || []))
       .catch(() => {})
       .finally(() => setFetchingReviews(false));
+    return () => controller.abort();
   }, []);
 
   const handleSubmit = async () => {
