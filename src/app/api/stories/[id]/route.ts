@@ -51,7 +51,13 @@ export async function PATCH(
   }
 
   try {
-    const body = await request.json();
+    // Safe JSON parsing (KR-T1 fix)
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
     const updates: Record<string, unknown> = {};
 
     // Only allow specific fields to be updated

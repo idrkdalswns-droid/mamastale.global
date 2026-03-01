@@ -70,7 +70,9 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
       .map((s, i) => `\n${i + 1} 페이지\n\n${s.text}\n`)
       .join("\n");
 
-    const footer = `\nmamastale에서 만든 세상에 하나뿐인 동화\nhttps://mamastale-global.pages.dev`;
+    // KR-T3: Use dynamic origin instead of hardcoded URL
+    const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
+    const footer = `\nmamastale에서 만든 세상에 하나뿐인 동화\n${siteUrl}`;
 
     return header + body + footer;
   }, [scenes, storyTitle, authorName]);

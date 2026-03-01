@@ -48,12 +48,16 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
     }, 400);
   };
 
-  const submitFree = async () => {
+  // KR-J2: Extract submit logic so partial ratings can be saved on skip
+  const submitFeedback = async (includeFreeText = true) => {
     const feedbackData = {
       ...ratings,
-      ...(freeText.trim() ? { free: freeText } : {}),
+      ...(includeFreeText && freeText.trim() ? { free: freeText } : {}),
       ...(sessionId ? { sessionId } : {}),
     };
+
+    // Only send if there's at least one rating
+    if (Object.keys(ratings).length === 0 && !freeText.trim()) return;
 
     try {
       await fetch("/api/feedback", {
@@ -64,7 +68,10 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
     } catch {
       // Silently fail - feedback is non-critical
     }
+  };
 
+  const submitFree = async () => {
+    await submitFeedback(true);
     setDone(true);
   };
 
@@ -194,7 +201,11 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
 
       <div className="px-7 pb-7 text-center">
         <button
-          onClick={() => setDone(true)}
+          onClick={() => {
+            // KR-J2: Submit any partial ratings before skipping
+            submitFeedback(false);
+            setDone(true);
+          }}
           className="bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 px-4"
         >
           피드백 건너뛰기

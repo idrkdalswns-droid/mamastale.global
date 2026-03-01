@@ -12,6 +12,7 @@ import {
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
+import { getClientIP } from "@/lib/utils/validation";
 
 const chatRequestSchema = z.object({
   messages: z.array(
@@ -47,15 +48,6 @@ function checkRateLimit(key: string, limit: number): boolean {
   if (entry.count >= limit) return false;
   entry.count++;
   return true;
-}
-
-function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
 }
 
 /** Simple retry with exponential backoff for transient errors */

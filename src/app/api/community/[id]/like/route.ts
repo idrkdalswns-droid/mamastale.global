@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ─── Guest like rate limiting (per-IP, per-isolate) ───
 const GUEST_LIKE_WINDOW = 60_000; // 1 minute
@@ -27,15 +26,6 @@ function checkGuestLikeLimit(ip: string): boolean {
   return true;
 }
 
-function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
 function getSupabaseClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -56,8 +46,8 @@ export async function POST(
 ) {
   const { id: storyId } = await params;
 
-  // Validate storyId is a UUID
-  if (!UUID_RE.test(storyId)) {
+  // Validate storyId is a UUID (KR-T2: use shared validator)
+  if (!isValidUUID(storyId)) {
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
   }
 
@@ -143,7 +133,7 @@ export async function GET(
 ) {
   const { id: storyId } = await params;
 
-  if (!UUID_RE.test(storyId)) {
+  if (!isValidUUID(storyId)) {
     return NextResponse.json({ liked: false });
   }
 

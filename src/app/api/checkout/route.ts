@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
 
     const { priceType } = body;
 
+    // KR-S1: Validate priceType against allowlist
+    if (priceType !== "ticket" && priceType !== "bundle") {
+      return NextResponse.json(
+        { error: "잘못된 상품 유형입니다." },
+        { status: 400 }
+      );
+    }
+
     const priceId =
       priceType === "bundle"
         ? process.env.STRIPE_BUNDLE_PRICE_ID

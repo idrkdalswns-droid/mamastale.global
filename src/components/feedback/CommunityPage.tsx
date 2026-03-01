@@ -18,13 +18,18 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
   const { completedScenes, completedStoryId, storySaved } = useChatStore();
 
   // Fetch ticket balance to show context-aware next-story CTA
+  // KR-J1: AbortController for cleanup on unmount
   useEffect(() => {
-    fetch("/api/tickets")
+    const controller = new AbortController();
+    fetch("/api/tickets", { signal: controller.signal })
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
         if (data) setTicketsRemaining(data.remaining ?? 0);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (err?.name !== "AbortError") { /* silent */ }
+      });
+    return () => controller.abort();
   }, []);
 
   const handleShare = async () => {
