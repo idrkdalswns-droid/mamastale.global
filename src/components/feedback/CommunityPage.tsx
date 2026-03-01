@@ -172,6 +172,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                   value={alias}
                   onChange={(e) => setAlias(e.target.value)}
                   placeholder="별명 (예: 따뜻한 엄마)"
+                  aria-label="커뮤니티 공유 별명"
                   maxLength={20}
                   className="w-full px-4 py-2.5 rounded-xl text-sm font-sans outline-none mb-3"
                   style={{
