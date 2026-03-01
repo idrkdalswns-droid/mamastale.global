@@ -155,6 +155,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                   key={i}
                   onClick={() => rate(q.key, i + 1)}
                   disabled={transitioning}
+                  aria-label={`${f.lb} (${i + 1}점)`}
                   className="flex flex-col items-center gap-1.5 py-3.5 px-1.5 rounded-2xl cursor-pointer min-w-[56px] transition-all active:scale-[0.92] disabled:pointer-events-none"
                   style={{
                     border:

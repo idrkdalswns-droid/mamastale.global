@@ -57,7 +57,7 @@ export default function LibraryPage() {
           </div>
           <Link
             href="/"
-            className="text-xs text-brown-mid font-light no-underline"
+            className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             ← 홈
           </Link>

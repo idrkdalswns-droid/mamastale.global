@@ -187,9 +187,9 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
                 전문 상담을 먼저 권합니다.
               </p>
               <p className="text-[10px] text-brown-pale font-light mt-2 leading-5">
-                자살예방상담전화 1393 (24시간)
+                자살예방상담전화 <a href="tel:1393" className="underline font-medium text-brown-light">1393</a> (24시간)
                 <br />
-                해외 거주 시 988 Suicide & Crisis Lifeline (미국)
+                해외 거주 시 <a href="tel:988" className="underline font-medium text-brown-light">988</a> Suicide & Crisis Lifeline (미국)
               </p>
             </div>
           </div>
