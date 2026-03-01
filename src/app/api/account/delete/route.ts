@@ -5,10 +5,22 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 export const runtime = "edge";
 
 // GDPR Art. 17: Right to Erasure
+// JP-06: Require confirmation body to prevent CSRF-style abuse
 export async function DELETE(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  // JP-06: Require explicit confirmation in request body
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "확인 정보가 필요합니다." }, { status: 400 });
+  }
+  if (body?.confirm !== "DELETE_MY_ACCOUNT") {
+    return NextResponse.json({ error: "삭제 확인이 필요합니다. confirm: 'DELETE_MY_ACCOUNT'를 전송해 주세요." }, { status: 400 });
   }
 
   const { data: { user } } = await sb.client.auth.getUser();
@@ -24,9 +36,15 @@ export async function DELETE(request: NextRequest) {
   const userId = user.id;
 
   try {
-    // Delete all user data in dependency order
+    // JP-04: Delete ALL user data in dependency order (all tables)
+    await serviceClient.from("comment_reports").delete().eq("reporter_id", userId);
+    await serviceClient.from("likes").delete().eq("user_id", userId);
+    await serviceClient.from("feedback").delete().eq("user_id", userId);
     await serviceClient.from("comments").delete().eq("user_id", userId);
     await serviceClient.from("stories").delete().eq("user_id", userId);
+    await serviceClient.from("referrals").delete().eq("referrer_id", userId);
+    await serviceClient.from("referrals").delete().eq("referred_id", userId);
+    await serviceClient.from("subscriptions").delete().eq("user_id", userId);
     await serviceClient.from("profiles").delete().eq("id", userId);
 
     // Delete auth user

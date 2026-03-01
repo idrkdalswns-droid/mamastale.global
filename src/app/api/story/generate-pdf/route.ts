@@ -51,6 +51,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 
+  // JP-02: Require authentication for PDF generation
+  const authHeader = request.headers.get("cookie");
+  if (!authHeader) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
   try {
     // CA-10: Safe JSON parsing
     let body;
@@ -122,9 +128,13 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`;
 
+    // JP-14: Return with security headers
     return new Response(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'",
       },
     });
   } catch (error) {

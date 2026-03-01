@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, FONT_SIZE_MAP } from "@/lib/hooks/useSettings";
 import type { Message } from "@/lib/types/chat";
@@ -10,6 +9,7 @@ interface MessageBubbleProps {
   currentPhase: number;
 }
 
+// JP-09: CSS animation instead of framer-motion for simple fade+slide
 export default function MessageBubble({
   message,
   currentPhase,
@@ -19,12 +19,10 @@ export default function MessageBubble({
   const fontSize = useSettingsStore((s) => s.fontSize);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="flex mb-3.5"
+    <div
+      className="flex mb-3.5 animate-fade-slide-in"
       style={{ justifyContent: isUser ? "flex-end" : "flex-start" }}
+      aria-label={isUser ? "내 메시지" : "상담사 메시지"}
     >
       {/* Assistant avatar */}
       {!isUser && (
@@ -63,8 +61,10 @@ export default function MessageBubble({
           border: isUser ? "none" : "1px solid rgba(255,255,255,0.5)",
         }}
       >
+        {/* JP-11: Screen reader speaker identification */}
+        <span className="sr-only">{isUser ? "나:" : "상담사:"}</span>
         {message.content}
       </div>
-    </motion.div>
+    </div>
   );
 }

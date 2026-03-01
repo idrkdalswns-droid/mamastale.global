@@ -130,3 +130,12 @@
     color: rgb(var(--brown)) !important;
   }
 }
+
+/* JP-09: CSS animation for message bubbles (replaces framer-motion) */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-in {
+  animation: fadeSlideIn 0.35s ease-out forwards;
+}
