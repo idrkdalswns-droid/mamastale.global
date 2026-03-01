@@ -95,6 +95,21 @@ export function ChatPage({ onComplete }: ChatPageProps) {
         </div>
       </div>
 
+      {/* Guest turn counter — show remaining free messages */}
+      {isGuest && !guestLimitReached && !storyDone && userMsgCount > 0 && (
+        <div className="absolute top-[70px] right-3 z-[60]">
+          <div
+            className="px-2.5 py-1 rounded-full text-[10px] font-medium"
+            style={{
+              background: userMsgCount >= 2 ? "rgba(224,122,95,0.12)" : "rgba(0,0,0,0.04)",
+              color: userMsgCount >= 2 ? "#E07A5F" : "#999",
+            }}
+          >
+            무료 체험 {userMsgCount}/{GUEST_TURN_LIMIT}
+          </div>
+        </div>
+      )}
+
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
       {!storyDone && !guestLimitReached && <PhaseRuleHint phase={currentPhase} />}
 

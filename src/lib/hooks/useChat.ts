@@ -34,14 +34,26 @@ interface ChatState {
 let msgCounter = 0;
 const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
 
-const INITIAL_MSG_CONTENT =
-  "안녕하세요, 어머니.\n\n이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n오늘 어머니의 마음은 어떠신가요?";
+const AGE_LABELS: Record<string, string> = {
+  "0-2": "어린 아이를 돌보시느라",
+  "3-5": "한창 호기심 많은 아이를 키우시느라",
+  "6-8": "초등학교에 들어간 아이를 돌보시느라",
+};
+
+function buildInitialMessage(): string {
+  let childAge = "";
+  try { childAge = localStorage?.getItem("mamastale_child_age") || ""; } catch {}
+  const ageNote = childAge && AGE_LABELS[childAge]
+    ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
+    : "";
+  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n오늘 어머니의 마음은 어떠신가요?`;
+}
 
 const makeInitialMessages = (): Message[] => [
   {
     id: genId("init"),
     role: "assistant",
-    content: INITIAL_MSG_CONTENT,
+    content: buildInitialMessage(),
     phase: 1,
   },
 ];

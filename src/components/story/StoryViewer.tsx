@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
+
+const MOTHER_MSG_KEY = "mamastale_mother_message";
 import type { Scene } from "@/lib/types/story";
 
 const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
@@ -30,7 +32,17 @@ interface StoryViewerProps {
 export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, embedded }: StoryViewerProps) {
   const [currentScene, setCurrentScene] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [motherMessage, setMotherMessage] = useState("");
+  const [motherMessage, setMotherMessage] = useState(() => {
+    try { return localStorage.getItem(MOTHER_MSG_KEY) || ""; } catch { return ""; }
+  });
+
+  // Persist mother message to localStorage
+  useEffect(() => {
+    try {
+      if (motherMessage) localStorage.setItem(MOTHER_MSG_KEY, motherMessage);
+      else localStorage.removeItem(MOTHER_MSG_KEY);
+    } catch {}
+  }, [motherMessage]);
 
   // Guard: empty scenes array — show friendly empty state instead of crashing
   if (!scenes || scenes.length === 0) {
@@ -71,12 +83,16 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
       .map((s, i) => `\n${i + 1} 페이지\n\n${s.text}\n`)
       .join("\n");
 
+    const motherMsg = motherMessage.trim()
+      ? `\n\n💌 아이에게 전하는 한마디\n${motherMessage.trim()}\n`
+      : "";
+
     // KR-T3: Use dynamic origin instead of hardcoded URL
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
     const footer = `\nmamastale에서 만든 세상에 하나뿐인 동화\n${siteUrl}`;
 
-    return header + body + footer;
-  }, [scenes, storyTitle, authorName]);
+    return header + body + motherMsg + footer;
+  }, [scenes, storyTitle, authorName, motherMessage]);
 
   const handleCopy = useCallback(async () => {
     try {

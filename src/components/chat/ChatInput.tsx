@@ -20,6 +20,13 @@ export default function ChatInput({
   const taRef = useRef<HTMLTextAreaElement>(null);
   const p = PHASES[phase];
 
+  const PHASE_PLACEHOLDERS: Record<number, string> = {
+    1: "오늘의 마음을 편하게 이야기해 주세요...",
+    2: "떠오르는 생각을 자유롭게 적어주세요...",
+    3: "어떤 캐릭터가 떠오르시나요?",
+    4: "동화에 담고 싶은 이야기를 적어주세요...",
+  };
+
   const resize = useCallback(() => {
     const el = taRef.current;
     if (el) {
@@ -82,7 +89,7 @@ export default function ChatInput({
           }}
           disabled={disabled}
           aria-label="메시지 입력"
-          placeholder={disabled ? "회원가입 후 계속 대화할 수 있어요" : "이야기를 들려주세요..."}
+          placeholder={disabled ? "회원가입 후 계속 대화할 수 있어요" : PHASE_PLACEHOLDERS[phase] || "이야기를 들려주세요..."}
           rows={1}
           maxLength={5000}
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
