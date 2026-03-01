@@ -25,7 +25,9 @@ export function ConsentGatedScripts() {
   if (!consented) return null;
 
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const rawAdsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  // KR-16: Validate AdSense client ID format before injecting into script URL
+  const adsenseId = rawAdsenseId && /^ca-pub-\d+$/.test(rawAdsenseId) ? rawAdsenseId : null;
 
   return (
     <>

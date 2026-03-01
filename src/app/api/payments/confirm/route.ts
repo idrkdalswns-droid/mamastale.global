@@ -173,9 +173,11 @@ export async function POST(request: NextRequest) {
       .update({ metadata: { ...metadata, processed_orders: updatedOrders } })
       .eq("id", user.id);
 
+    // KR-04: Mask user ID in logs to prevent PII leakage
+    const maskedUserId = user.id.slice(0, 8) + "…";
     console.log(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
-      `user=${user.id}, tickets +${ticketCount}, total=${newTotal}`
+      `user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
     );
 
     return sb.applyCookies(NextResponse.json({

@@ -108,9 +108,15 @@ export async function POST(request: NextRequest) {
 
       if (supabase && session.metadata?.user_id) {
         const userId = session.metadata.user_id;
-        const ticketCount = session.metadata?.ticket_count
+        // KR-05: Validate metadata values
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+          console.error("[Stripe] Invalid user_id in metadata");
+          break;
+        }
+        const rawTicketCount = session.metadata?.ticket_count
           ? parseInt(session.metadata.ticket_count)
           : 1;
+        const ticketCount = Math.min(Math.max(rawTicketCount, 1), 5);
 
         // ─── DB-level idempotency: check if this session was already processed ───
         const { data: existingSub } = await supabase

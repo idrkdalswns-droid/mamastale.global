@@ -94,6 +94,7 @@ export default function CommunityBrowsePage() {
             <button
               key={t.key}
               onClick={() => setTopic(t.key)}
+              aria-pressed={topic === t.key}
               className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
                 topic === t.key
                   ? "bg-brown text-white"
@@ -109,6 +110,7 @@ export default function CommunityBrowsePage() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setSort("recent")}
+            aria-pressed={sort === "recent"}
             className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
               sort === "recent"
                 ? "bg-coral text-white"
@@ -119,6 +121,7 @@ export default function CommunityBrowsePage() {
           </button>
           <button
             onClick={() => setSort("popular")}
+            aria-pressed={sort === "popular"}
             className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
               sort === "popular"
                 ? "bg-coral text-white"

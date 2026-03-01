@@ -16,7 +16,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 function PaymentFailContent() {
   const searchParams = useSearchParams();
-  const errorCode = searchParams.get("code") || "";
+  const rawCode = searchParams.get("code") || "";
+  // KR-11: Validate errorCode format (alphanumeric + underscore only) to prevent XSS/injection
+  const errorCode = /^[A-Z0-9_]{1,60}$/.test(rawCode) ? rawCode : "";
   // Security: use predefined messages only (prevent phishing via URL params)
   const errorMessage = ERROR_MESSAGES[errorCode] || "결제가 취소되었거나 실패했습니다.";
 
