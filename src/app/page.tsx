@@ -219,9 +219,9 @@ export default function Home() {
 
       {/* Top navigation bar */}
       <div className="max-w-md mx-auto w-full flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
-        <span className="text-[11px] text-brown-mid font-sans font-medium tracking-[2px] px-3 py-1.5 rounded-full bg-brown-pale/10 border border-brown-pale/15">
-          BETA
-        </span>
+        <Link href="/" className="font-serif text-sm font-bold text-brown tracking-wide no-underline">
+          mamastale
+        </Link>
         {!authLoading && (
           <div className="flex items-center gap-3">
             {user ? (
@@ -304,6 +304,32 @@ export default function Home() {
               따뜻한 대화를 나누며 4단계 치유 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
+          </div>
+
+          {/* Quick browse links */}
+          <div className="flex gap-2 mb-4">
+            <Link
+              href="/reviews"
+              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              style={{
+                background: "rgba(224,122,95,0.08)",
+                color: "#E07A5F",
+                border: "1px solid rgba(224,122,95,0.12)",
+              }}
+            >
+              💬 후기 보기
+            </Link>
+            <Link
+              href="/community"
+              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              style={{
+                background: "rgba(109,76,145,0.08)",
+                color: "#6D4C91",
+                border: "1px solid rgba(109,76,145,0.12)",
+              }}
+            >
+              📖 샘플 동화
+            </Link>
           </div>
 
           {/* Phase pills — compact */}
@@ -436,7 +462,7 @@ export default function Home() {
 
           {/* Footer disclaimer */}
           <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
-            본 서비스는 실제 의료 행위를 대체하지 않습니다 · 베타 테스트
+            본 서비스는 실제 의료 행위를 대체하지 않습니다
           </p>
         </div>
       </div>
