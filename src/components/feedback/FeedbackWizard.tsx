@@ -206,7 +206,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
             submitFeedback(false);
             setDone(true);
           }}
-          className="bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 px-4"
+          className="bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 px-4 underline underline-offset-2 decoration-brown-pale/40"
         >
           피드백 건너뛰기
         </button>

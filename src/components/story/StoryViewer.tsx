@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
 import { useSwipe } from "@/lib/hooks/useSwipe";
 
-const MOTHER_MSG_KEY = "mamastale_mother_message";
 import type { Scene } from "@/lib/types/story";
 
 const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
@@ -61,17 +60,19 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     });
   }, []);
 
+  // S2-04: Scope mother message per story (title-based key) to prevent cross-story leakage
+  const motherMsgKey = title ? `mamastale_mother_msg_${title.slice(0, 40)}` : "mamastale_mother_message";
   const [motherMessage, setMotherMessage] = useState(() => {
-    try { return localStorage.getItem(MOTHER_MSG_KEY) || ""; } catch { return ""; }
+    try { return localStorage.getItem(motherMsgKey) || ""; } catch { return ""; }
   });
 
   // Persist mother message to localStorage
   useEffect(() => {
     try {
-      if (motherMessage) localStorage.setItem(MOTHER_MSG_KEY, motherMessage);
-      else localStorage.removeItem(MOTHER_MSG_KEY);
+      if (motherMessage) localStorage.setItem(motherMsgKey, motherMessage);
+      else localStorage.removeItem(motherMsgKey);
     } catch {}
-  }, [motherMessage]);
+  }, [motherMessage, motherMsgKey]);
 
   // Guard: empty scenes array — show friendly empty state instead of crashing
   if (!scenes || scenes.length === 0) {
