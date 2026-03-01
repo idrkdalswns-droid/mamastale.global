@@ -183,8 +183,10 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
                 현재 심리적으로 많이 힘드신 상황이라면
                 전문 상담을 먼저 권합니다.
               </p>
-              <p className="text-[10px] text-brown-pale font-light mt-2">
+              <p className="text-[10px] text-brown-pale font-light mt-2 leading-5">
                 자살예방상담전화 1393 (24시간)
+                <br />
+                해외 거주 시 988 Suicide & Crisis Lifeline (미국)
               </p>
             </div>
           </div>
