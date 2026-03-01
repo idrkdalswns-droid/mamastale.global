@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     const parsed = chatRequestSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid request format" },
+        { error: "잘못된 요청 형식입니다." },
         { status: 400 }
       );
     }

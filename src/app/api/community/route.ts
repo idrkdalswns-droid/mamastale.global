@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "recent";
   const topic = searchParams.get("topic") || "";
   const rawPage = parseInt(searchParams.get("page") || "1");
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  // FI-4: Cap page number to prevent wasteful deep pagination
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.min(rawPage, 100) : 1;
   const limit = 12;
   const offset = (page - 1) * limit;
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
+// FI-5: Static import instead of dynamic import in hot path
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
@@ -68,7 +70,6 @@ export async function POST(
       );
     }
 
-    const { createServiceRoleClient } = await import("@/lib/supabase/server");
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
       await serviceClient.rpc("increment_story_counter", {
@@ -89,7 +90,6 @@ export async function POST(
     .single();
 
   // Use service role for atomic counter updates
-  const { createServiceRoleClient } = await import("@/lib/supabase/server");
   const serviceClient = createServiceRoleClient();
 
   if (existing) {

@@ -8,6 +8,7 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { PHASES } from "@/lib/constants/phases";
 import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
 import { ChatPage } from "@/components/chat/ChatContainer";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
 import { CommunityPage } from "@/components/feedback/CommunityPage";
@@ -162,8 +163,13 @@ export default function Home() {
   }
 
   // CRITICAL-2 fix: chat completes → story viewer (not directly to feedback)
+  // FI-6: ErrorBoundary wraps ChatPage to catch rendering errors gracefully
   if (screen === "chat") {
-    return <ChatPage onComplete={() => setScreen("story")} />;
+    return (
+      <ErrorBoundary>
+        <ChatPage onComplete={() => setScreen("story")} />
+      </ErrorBoundary>
+    );
   }
 
   // New: Story viewing screen between chat and feedback
@@ -203,6 +209,7 @@ export default function Home() {
         alt=""
         fill
         priority
+        sizes="100vw"
         className="object-cover object-top pointer-events-none"
         style={{ opacity: 0.22 }}
       />

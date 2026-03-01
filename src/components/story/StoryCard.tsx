@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import type { Scene } from "@/lib/types/story";
 
@@ -15,7 +16,8 @@ interface StoryCardProps {
   likeCount?: number;
 }
 
-export function StoryCard({
+// FI-2: Memoize to prevent unnecessary re-renders in list contexts
+export const StoryCard = memo(function StoryCard({
   title,
   scenes,
   createdAt,
@@ -89,4 +91,4 @@ export function StoryCard({
       </div>
     </Link>
   );
-}
+});
