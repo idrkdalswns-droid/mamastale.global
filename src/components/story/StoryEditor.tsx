@@ -246,7 +246,10 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
               ) : (
                 <span />
               )}
-              <span className="text-[10px] text-brown-pale font-light">
+              <span
+                className="text-[10px] font-light transition-colors"
+                style={{ color: scene.text.length >= 480 ? "#E07A5F" : scene.text.length >= 450 ? "#C4956A" : undefined }}
+              >
                 {scene.text.length}/500
               </span>
             </div>

@@ -76,7 +76,7 @@ export default function PhaseHeader({
               className="text-xs font-semibold leading-tight"
               style={{ color: p.text }}
             >
-              Phase {p.id} · {p.name}
+              {p.id}단계 · {p.name}
             </div>
             <div
               className="text-[10px] font-light opacity-50 flex items-center gap-1.5"

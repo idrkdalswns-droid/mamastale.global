@@ -83,8 +83,8 @@ export default function CommunityBrowsePage() {
               다른 엄마들의 치유 동화를 읽어보세요
             </p>
           </div>
-          <Link href="/" className="text-xs text-brown-mid font-light no-underline">
-            홈
+          <Link href="/" className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center">
+            ← 홈
           </Link>
         </div>
 

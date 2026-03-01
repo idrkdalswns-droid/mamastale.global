@@ -115,7 +115,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
       {/* Progress */}
       <div className="pt-5 px-6 text-center">
         <div className="text-[10px] text-brown-mid tracking-[3px] font-medium mb-3">
-          FEEDBACK · {step + 1}/{questions.length}
+          피드백 · {step + 1}/{questions.length}
         </div>
         <div className="flex gap-1 justify-center">
           {questions.map((_, i) => (

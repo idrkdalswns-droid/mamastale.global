@@ -88,7 +88,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
       >
         <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
           {messages.map((m) => (
-            <MessageBubble key={m.id || m.content.slice(0, 20)} message={m} currentPhase={currentPhase} />
+            <MessageBubble key={m.id || `msg_${m.role}_${m.content.slice(0, 20)}_${messages.indexOf(m)}`} message={m} currentPhase={currentPhase} />
           ))}
 
           {isLoading && <TypingIndicator phase={currentPhase} />}
@@ -137,28 +137,32 @@ export function ChatPage({ onComplete }: ChatPageProps) {
               회원가입 후 <span className="text-coral font-medium">지금 대화를 이어서</span><br />
               나만의 치유 동화를 완성할 수 있어요.
             </p>
-            {/* S1-03: "곧 지원" 안내 — disabled OAuth 버튼 대신 간결한 텍스트 */}
-            <p className="text-[11px] text-brown-pale font-light text-center mb-3">
-              카카오 · Google 로그인은 곧 지원됩니다
-            </p>
+            {/* S7-03: Primary CTA style for signup — conversion critical */}
             <button
               onClick={() => {
                 persistToStorage();
                 router.push("/signup");
               }}
-              className="block w-full py-2.5 text-xs font-light text-brown-mid transition-all"
+              className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+              }}
             >
-              이메일로 회원가입
+              회원가입하고 이어서 만들기
             </button>
             <button
               onClick={() => {
                 persistToStorage();
                 router.push("/login");
               }}
-              className="block w-full py-2 text-xs font-light text-brown-pale transition-all"
+              className="block w-full py-2.5 text-xs font-light text-brown-mid transition-all"
             >
-              이미 계정이 있으신가요? 로그인
+              이미 계정이 있으신가요? <span className="text-coral font-medium">로그인</span>
             </button>
+            <p className="text-[10px] text-brown-pale font-light text-center mt-2">
+              카카오 · Google 로그인은 곧 지원됩니다
+            </p>
           </div>
         </div>
       )}

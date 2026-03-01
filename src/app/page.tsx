@@ -402,7 +402,7 @@ export default function Home() {
                     {p.name}
                   </div>
                   <div
-                    className="text-[9px] font-sans font-light"
+                    className="text-[10px] font-sans font-light"
                     style={{ color: p.text, opacity: 0.55 }}
                   >
                     {p.theory}

@@ -319,7 +319,7 @@ export default function PricingPage() {
         <AdBanner slot="pricing-bottom" format="horizontal" />
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-brown-mid font-light no-underline">
+          <Link href="/" className="text-sm text-brown-mid font-light no-underline inline-flex items-center justify-center min-h-[44px] px-4">
             ← 홈으로 돌아가기
           </Link>
         </div>
