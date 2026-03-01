@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   // OAuth signup handlers — to be enabled when Kakao/Google providers are configured
   // const handleOAuthSignup = async (provider: "kakao" | "google") => { ... };
@@ -177,10 +178,26 @@ export default function SignupPage() {
 
           {error && <p className="text-xs text-coral text-center">{error}</p>}
 
+          {/* GR-6: Affirmative consent checkbox */}
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded accent-coral"
+              required
+            />
+            <span className="text-[11px] text-brown-light leading-relaxed">
+              <Link href="/terms" className="underline">이용약관</Link> 및{" "}
+              <Link href="/privacy" className="underline">개인정보처리방침</Link>에
+              동의합니다. 대화 내용이 AI 동화 생성을 위해 처리됨을 이해합니다.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-full text-white text-sm font-medium active:scale-[0.97] transition-transform"
+            disabled={loading || !consent}
+            className="w-full py-3.5 rounded-full text-white text-sm font-medium active:scale-[0.97] transition-transform disabled:opacity-50"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #D4836B)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
@@ -189,11 +206,6 @@ export default function SignupPage() {
             {loading ? "가입 중..." : "무료로 시작하기"}
           </button>
         </form>
-
-        <p className="text-[11px] text-brown-pale text-center mt-4 leading-relaxed">
-          가입 시 <Link href="/terms" className="underline">이용약관</Link> 및{" "}
-          <Link href="/privacy" className="underline">개인정보처리방침</Link>에 동의합니다
-        </p>
 
         <div className="text-center mt-6">
           <Link href="/login" className="text-sm text-brown-mid font-light no-underline">

@@ -12,11 +12,13 @@ export function CookieConsent() {
 
   const accept = () => {
     localStorage.setItem("mamastale-cookie-consent", "accepted");
+    window.dispatchEvent(new Event("cookie-consent-changed"));
     setVisible(false);
   };
 
   const decline = () => {
     localStorage.setItem("mamastale-cookie-consent", "declined");
+    window.dispatchEvent(new Event("cookie-consent-changed"));
     setVisible(false);
   };
 

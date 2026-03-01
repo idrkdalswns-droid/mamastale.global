@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "react-hot-toast";
 import { CookieConsent } from "@/components/layout/CookieConsent";
+import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -62,32 +63,7 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem("mamastale_theme");var d=t==="dark"||(t==null&&matchMedia("(prefers-color-scheme:dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
           }}
         />
-        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID && (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}`}
-            crossOrigin="anonymous"
-          />
-        )}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID &&
-          /^G-[A-Z0-9]+$/.test(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) && (
-          <>
-            <script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-            />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-                `,
-              }}
-            />
-          </>
-        )}
+        {/* GR-4/GR-5: GA/AdSense moved to ConsentGatedScripts — loaded only after cookie consent */}
       </head>
       <body className="bg-cream antialiased">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
@@ -96,6 +72,7 @@ export default function RootLayout({
         <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-hidden">
           {children}
         </main>
+        <ConsentGatedScripts />
         <CookieConsent />
         <Toaster
           position="top-center"
