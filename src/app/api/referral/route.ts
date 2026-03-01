@@ -99,6 +99,12 @@ export async function POST(request: NextRequest) {
   }
 
   const code = referralCode.trim().toUpperCase();
+
+  // UK-4: Validate referral code format (6 chars, alphanumeric only)
+  if (code.length !== 6 || !/^[A-Z0-9]{6}$/.test(code)) {
+    return NextResponse.json({ error: "유효하지 않은 추천 코드 형식입니다." }, { status: 400 });
+  }
+
   const admin = getServiceRoleClient();
   if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
 

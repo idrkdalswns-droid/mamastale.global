@@ -31,10 +31,15 @@ const PROFANITY_LIST = [
 
 /**
  * Check if text contains Korean profanity.
+ * UK-1: NFC normalize + strip zero-width chars to prevent Unicode bypass.
  * Strips whitespace AND special characters to prevent bypass via "시.발", "병_신" etc.
  */
 export function containsProfanity(text: string): boolean {
-  const normalized = text.replace(/[\s\.\,\!\?\-\_\*\#\@\/\\]/g, "").toLowerCase();
+  const normalized = text
+    .normalize("NFC")
+    .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "") // zero-width & invisible chars
+    .replace(/[\s\.\,\!\?\-\_\*\#\@\/\\~`'"(){}[\]:;<>|+=%^&]/g, "")
+    .toLowerCase();
   return PROFANITY_LIST.some((word) => normalized.includes(word));
 }
 

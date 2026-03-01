@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
+import { containsProfanity, sanitizeText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -54,8 +55,21 @@ export async function POST(request: NextRequest) {
 
     const { scenes, sessionId, metadata, isPublic } = body;
     // Server-side input sanitization: enforce max lengths, strip HTML
-    const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
-    const authorAlias = typeof body.authorAlias === "string" ? body.authorAlias.trim().slice(0, 50) : null;
+    const title = typeof body.title === "string" ? sanitizeText(body.title.trim().slice(0, 200)) : "";
+    const authorAlias = typeof body.authorAlias === "string" ? sanitizeText(body.authorAlias.trim().slice(0, 50)) : null;
+
+    // UK-2/UK-3: Profanity check on title and alias (visible in community)
+    if (title && containsProfanity(title)) {
+      return NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 });
+    }
+    if (authorAlias && containsProfanity(authorAlias)) {
+      return NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 });
+    }
+
+    // UK-5: Limit metadata size to prevent DB bloat
+    if (metadata && JSON.stringify(metadata).length > 10_000) {
+      return NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 });
+    }
 
     // ─── Validate scenes BEFORE ticket deduction ───
     if (!Array.isArray(scenes) || scenes.length === 0) {

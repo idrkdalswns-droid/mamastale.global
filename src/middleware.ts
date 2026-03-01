@@ -101,7 +101,10 @@ export async function middleware(request: NextRequest) {
     // Protected routes — redirect to login if not authenticated
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      // UK-7: Only allow local path redirects (prevent open redirect)
+      if (pathname.startsWith("/") && !pathname.startsWith("//")) {
+        loginUrl.searchParams.set("redirect", pathname);
+      }
       return NextResponse.redirect(loginUrl);
     }
 
