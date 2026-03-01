@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
 
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
     }
 
-    const { title, scenes, sessionId, metadata, isPublic, authorAlias } = body;
+    const { scenes, sessionId, metadata, isPublic } = body;
+    // Server-side input sanitization: enforce max lengths, strip HTML
+    const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+    const authorAlias = typeof body.authorAlias === "string" ? body.authorAlias.trim().slice(0, 50) : null;
 
     // Atomic ticket check & deduction — prevents race condition
     let ticketsAfter = 0;
@@ -133,16 +137,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (insertResult.error || !insertResult.data) {
-      // Rollback ticket deduction on story save failure
-      await sb.client
-        .from("profiles")
-        .update({
-          free_stories_remaining: ticketsAfter + 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      // Atomic rollback: +1 ticket back (prevents overwriting concurrent changes)
+      await incrementTickets(sb.client, user.id, 1);
       console.error("[Stories] Insert failed:", insertResult.error?.message);
-      return NextResponse.json({ error: insertResult.error?.message || "저장 실패" }, { status: 500 });
+      return NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 });
     }
 
     return sb.applyCookies(NextResponse.json({ id: insertResult.data.id, ticketsRemaining: ticketsAfter }));

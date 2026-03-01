@@ -69,7 +69,8 @@ export async function PATCH(
       .eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[Stories] Update error:", error.message);
+      return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 });
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));

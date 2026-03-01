@@ -4,10 +4,21 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 
+// Map Toss error codes to safe, predefined Korean messages
+const ERROR_MESSAGES: Record<string, string> = {
+  PAY_PROCESS_CANCELED: "결제가 취소되었습니다.",
+  PAY_PROCESS_ABORTED: "결제가 중단되었습니다.",
+  REJECT_CARD_COMPANY: "카드사에서 거절되었습니다. 다른 카드를 사용해 주세요.",
+  EXCEED_MAX_DAILY_PAYMENT_COUNT: "일일 결제 횟수를 초과했습니다.",
+  EXCEED_MAX_PAYMENT_AMOUNT: "결제 한도를 초과했습니다.",
+  NOT_AVAILABLE_PAYMENT: "사용할 수 없는 결제 수단입니다.",
+};
+
 function PaymentFailContent() {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("code") || "";
-  const errorMessage = searchParams.get("message") || "결제가 취소되었거나 실패했습니다.";
+  // Security: use predefined messages only (prevent phishing via URL params)
+  const errorMessage = ERROR_MESSAGES[errorCode] || "결제가 취소되었거나 실패했습니다.";
 
   return (
     <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
