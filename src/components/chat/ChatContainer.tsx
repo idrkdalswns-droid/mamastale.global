@@ -115,7 +115,13 @@ export function ChatPage({ onComplete }: ChatPageProps) {
 
       {/* Guest turn limit reached — signup prompt (wait for last response before showing) */}
       {guestLimitReached && !storyDone && !isLoading && (
-        <div className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]">
+        <div
+          className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="회원가입 안내"
+          onKeyDown={(e) => { if (e.key === "Escape") router.push("/"); }}
+        >
           <div
             className="mx-4 w-full max-w-sm rounded-3xl p-7 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"
             style={{

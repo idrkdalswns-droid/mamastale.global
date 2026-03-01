@@ -187,14 +187,14 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => adjustFont(-2)}
-                className="w-6 h-6 rounded-full text-[10px] font-medium text-brown-pale active:scale-90 transition-transform"
+                className="w-11 h-11 rounded-full text-[10px] font-medium text-brown-pale active:scale-90 transition-transform flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
                 aria-label="글꼴 작게"
               >
                 A-
               </button>
               <button
                 onClick={() => adjustFont(2)}
-                className="w-6 h-6 rounded-full text-[12px] font-medium text-brown-mid active:scale-90 transition-transform"
+                className="w-11 h-11 rounded-full text-[12px] font-medium text-brown-mid active:scale-90 transition-transform flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
                 aria-label="글꼴 크게"
               >
                 A+
@@ -202,7 +202,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               {onEdit && (
                 <button
                   onClick={onEdit}
-                  className="w-6 h-6 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1"
+                  className="w-11 h-11 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
                   aria-label="동화 수정"
                 >
                   ✏️

@@ -79,7 +79,7 @@ export default function PhaseHeader({
         {/* Font size toggle button */}
         <button
           onClick={() => setShowSettings((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity"
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
           aria-label="글씨 크기 설정"
           style={{ fontSize: 14 }}
         >

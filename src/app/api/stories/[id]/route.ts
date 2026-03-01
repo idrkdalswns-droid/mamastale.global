@@ -87,7 +87,7 @@ export async function PATCH(
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("[Stories] Update error:", error.message);
+      console.error("[Stories] Update error: code=", error.code);
       return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 });
     }
 

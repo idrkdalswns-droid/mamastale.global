@@ -44,13 +44,19 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
       10: "교훈 2",
     };
 
-    scenes.push({
-      sceneNumber: sceneNum,
-      title: titles[sceneNum] || `장면 ${sceneNum}`,
-      text: block,
-      imagePrompt,
-    });
+    // Validate sceneNumber is within expected range (1-10)
+    if (sceneNum >= 1 && sceneNum <= 10 && !scenes.some((s) => s.sceneNumber === sceneNum)) {
+      scenes.push({
+        sceneNumber: sceneNum,
+        title: titles[sceneNum] || `장면 ${sceneNum}`,
+        text: block,
+        imagePrompt,
+      });
+    }
   }
+
+  // Sort by sceneNumber to ensure correct order
+  scenes.sort((a, b) => a.sceneNumber - b.sceneNumber);
 
   return scenes;
 }

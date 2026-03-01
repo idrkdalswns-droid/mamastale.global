@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap');
+/* Fonts loaded via <link> in layout.tsx for non-blocking preconnect */
 
 @layer base {
   * {
@@ -77,6 +77,18 @@
     -webkit-appearance: none;
     -webkit-tap-highlight-color: transparent;
     font-family: inherit;
+  }
+
+  /* Accessibility: visible focus ring for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid rgb(var(--coral) / 0.6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid rgb(var(--coral) / 0.6);
+    outline-offset: 2px;
   }
 
   textarea::placeholder {

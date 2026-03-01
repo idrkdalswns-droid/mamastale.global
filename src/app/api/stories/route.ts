@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[Stories] List error:", error.message);
+    console.error("[Stories] List error: code=", error.code);
     return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
   }
 
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     if (insertResult.error || !insertResult.data) {
       // Atomic rollback: +1 ticket back (prevents overwriting concurrent changes)
       await incrementTickets(sb.client, user.id, 1);
-      console.error("[Stories] Insert failed:", insertResult.error?.message);
+      console.error("[Stories] Insert failed: code=", insertResult.error?.code);
       return NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 });
     }
 

@@ -11,11 +11,18 @@ export function isValidUUID(value: string): boolean {
 }
 
 // ─── Text sanitization ───
-/** Strip angle brackets and javascript: protocol */
+/** Encode HTML entities and strip dangerous protocols */
 export function sanitizeText(input: string): string {
   return input
-    .replace(/[<>]/g, "")
-    .replace(/javascript:/gi, "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/javascript\s*:/gi, "")
+    .replace(/data\s*:/gi, "")
+    .replace(/vbscript\s*:/gi, "")
+    .replace(/on\w+\s*=/gi, "")
     .trim();
 }
 

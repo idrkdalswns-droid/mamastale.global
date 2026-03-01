@@ -14,13 +14,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set(
     "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains"
+    "max-age=31536000; includeSubDomains; preload"
   );
   response.headers.set(
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://js.tosspayments.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://js.tosspayments.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
@@ -30,6 +30,16 @@ export async function middleware(request: NextRequest) {
   );
 
   const pathname = request.nextUrl.pathname;
+
+  // Cache headers for static assets
+  if (pathname.match(/\.(js|css|woff2?|ttf|otf|ico|png|jpg|jpeg|webp|svg|gif)$/)) {
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
+  // No-store for API responses with sensitive data
+  if (pathname.startsWith("/api/")) {
+    response.headers.set("Cache-Control", "no-store, must-revalidate");
+    response.headers.set("X-XSS-Protection", "1; mode=block");
+  }
 
   // ─── Site Access Gate ───
   // Set SITE_ACCESS_KEY env var to enable (Cloudflare dashboard)
@@ -101,8 +111,9 @@ export async function middleware(request: NextRequest) {
     // Protected routes — redirect to login if not authenticated
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
-      // UK-7: Only allow local path redirects (prevent open redirect)
-      if (pathname.startsWith("/") && !pathname.startsWith("//")) {
+      // Strict redirect validation: only allow known local paths (prevent open redirect)
+      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/community", "/pricing", "/feature-requests"];
+      if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
         loginUrl.searchParams.set("redirect", pathname);
       }
       return NextResponse.redirect(loginUrl);

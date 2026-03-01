@@ -136,9 +136,12 @@ export async function POST(request: NextRequest) {
     const { messages, childAge } = parsed.data;
 
     // ─── Server-side guest turn limit ───
+    // Count by total conversation turns (messages / 2), not just user messages,
+    // to prevent bypass via fabricated assistant messages in the array.
     if (!isAuthenticated) {
       const userMsgCount = messages.filter((m) => m.role === "user").length;
-      if (userMsgCount > GUEST_TURN_LIMIT) {
+      const totalTurns = Math.ceil(messages.length / 2);
+      if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
         return NextResponse.json(
           { error: "무료 체험 횟수를 초과했습니다. 회원가입 후 이용해 주세요." },
           { status: 403 }
