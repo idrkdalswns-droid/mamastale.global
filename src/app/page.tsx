@@ -127,6 +127,29 @@ export default function Home() {
     setShowPaymentSuccess(false);
   }, []);
 
+  // ─── Browser history integration (JP-Y12) ───
+  // Push state on screen changes so back button navigates within the flow
+  useEffect(() => {
+    if (screen !== "landing") {
+      window.history.pushState({ screen }, "", "/");
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const prev = e.state?.screen as ScreenState | undefined;
+      if (prev) {
+        setScreen(prev);
+      } else {
+        // No prior state → go to landing
+        setShow(false);
+        setScreen("landing");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // Trigger landing fade-in (HIGH-2 fix: moved to useEffect)
   useEffect(() => {
     if (screen === "landing") {
@@ -337,7 +360,8 @@ export default function Home() {
           {/* CTA button */}
           <button
             onClick={handleStartStory}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97]"
+            disabled={!!user && ticketsRemaining === null && !authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #D4836B)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",

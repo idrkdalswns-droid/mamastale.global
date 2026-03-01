@@ -27,6 +27,7 @@ declare global {
 export default function PricingPage() {
   const [loadingType, setLoadingType] = useState<string | null>(null);
   const [sdkReady, setSdkReady] = useState(false);
+  const [sdkError, setSdkError] = useState(false);
   const [error, setError] = useState("");
   const { user, loading: authLoading } = useAuth();
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
@@ -98,6 +99,9 @@ export default function PricingPage() {
           setSdkReady(true);
           sdkLoadedRef.current = true;
         }}
+        onError={() => {
+          setSdkError(true);
+        }}
       />
 
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
@@ -116,6 +120,15 @@ export default function PricingPage() {
             커피 한 잔 값으로 새로운 치유 동화를
           </p>
         </div>
+
+        {/* SDK load error */}
+        {sdkError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p className="text-xs text-amber-700 text-center">
+              결제 모듈을 불러올 수 없습니다. 광고 차단기를 해제하거나 네트워크 연결을 확인해 주세요.
+            </p>
+          </div>
+        )}
 
         {/* Error message */}
         {error && (

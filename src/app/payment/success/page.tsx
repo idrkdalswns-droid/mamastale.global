@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -10,8 +10,12 @@ function PaymentSuccessContent() {
   const [status, setStatus] = useState<"confirming" | "success" | "error">("confirming");
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketsAdded, setTicketsAdded] = useState(0);
+  const confirmedRef = useRef(false);
 
   useEffect(() => {
+    // Idempotency guard: prevent double-confirm on re-render or refresh
+    if (confirmedRef.current) return;
+
     const paymentKey = searchParams.get("paymentKey");
     const orderId = searchParams.get("orderId");
     const amount = searchParams.get("amount");
@@ -21,6 +25,10 @@ function PaymentSuccessContent() {
       setErrorMsg("결제 정보가 올바르지 않습니다.");
       return;
     }
+
+    // Mark as confirmed and clean URL BEFORE the fetch to prevent race
+    confirmedRef.current = true;
+    window.history.replaceState({}, "", "/payment/success");
 
     // Confirm payment with backend
     fetch("/api/payments/confirm", {
@@ -37,8 +45,6 @@ function PaymentSuccessContent() {
         if (res.ok && data.success) {
           setTicketsAdded(data.ticketsAdded || 1);
           setStatus("success");
-          // Clean URL params to prevent double-confirmation on browser refresh
-          window.history.replaceState({}, "", "/payment/success");
         } else {
           setStatus("error");
           setErrorMsg(data.error || "결제 확인에 실패했습니다.");
