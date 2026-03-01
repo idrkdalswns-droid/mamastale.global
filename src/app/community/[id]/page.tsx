@@ -1,5 +1,8 @@
 "use client";
 
+// Required by Cloudflare Pages for all dynamic routes
+export const runtime = "edge";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
