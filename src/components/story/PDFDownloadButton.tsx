@@ -22,7 +22,7 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(
-        '<html><head><title>PDF 준비 중</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#8B6F55"><p>📖 PDF 준비 중...</p></body></html>'
+        '<html><head><title>동화책 만드는 중</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#8B6F55"><p>📖 동화책을 만들고 있어요...</p></body></html>'
       );
       printWindow.document.close();
     }
@@ -82,7 +82,7 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
           : "1.5px solid rgba(196,149,106,0.2)",
       }}
     >
-      {error ? "⚠️ PDF 생성 실패 · 다시 시도" : loading ? "PDF 생성 중..." : "📥 PDF 다운로드"}
+      {error ? "⚠️ 저장 실패 · 다시 눌러주세요" : loading ? "동화책 만드는 중..." : "📥 동화책 저장하기"}
     </button>
   );
 }

@@ -182,7 +182,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
           </div>
 
           <div className="text-[10px] text-brown-mid tracking-[2px] font-medium mb-2">
-            SCENE {String(scene.sceneNumber).padStart(2, "0")} · {info.label}
+            장면 {String(scene.sceneNumber).padStart(2, "0")} · {info.label}
           </div>
 
           <h2 className="font-serif text-xl text-brown font-bold mb-6 leading-tight">

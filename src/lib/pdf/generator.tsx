@@ -209,7 +209,7 @@ export function StoryPDFDocument({
           >
             <View style={styles.sceneHeader}>
               <Text style={styles.sceneNumber}>
-                SCENE {String(scene.sceneNumber).padStart(2, "0")}
+                장면 {String(scene.sceneNumber).padStart(2, "0")}
               </Text>
               <Text style={[styles.sceneTitle, { color: colors.accent }]}>
                 {scene.title}
