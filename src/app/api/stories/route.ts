@@ -89,6 +89,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 });
     }
 
+    // Sanitize scene content to prevent stored XSS
+    for (const s of scenes as Array<{ sceneNumber: number; title: string; text: string }>) {
+      s.title = sanitizeText(s.title.slice(0, 200));
+      s.text = sanitizeText(s.text.slice(0, 5000));
+    }
+
     // Atomic ticket check & deduction — prevents race condition
     let ticketsAfter = 0;
 

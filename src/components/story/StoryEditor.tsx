@@ -148,17 +148,21 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 <button
                   key={i}
                   onClick={() => setCurrentScene(i)}
-                  className="h-[6px] flex-1 rounded-full transition-all duration-300 cursor-pointer"
-                  style={{
-                    background:
-                      i === currentScene
-                        ? "#E07A5F"
-                        : modified
-                        ? "#E07A5F66"
-                        : "rgba(0,0,0,0.06)",
-                  }}
+                  className="flex-1 min-h-[44px] flex items-center cursor-pointer"
                   aria-label={`장면 ${i + 1}로 이동${modified ? " (수정됨)" : ""}`}
-                />
+                >
+                  <div
+                    className="h-[6px] w-full rounded-full transition-all duration-300"
+                    style={{
+                      background:
+                        i === currentScene
+                          ? "#E07A5F"
+                          : modified
+                          ? "#E07A5F66"
+                          : "rgba(0,0,0,0.06)",
+                    }}
+                  />
+                </button>
               );
             })}
           </div>

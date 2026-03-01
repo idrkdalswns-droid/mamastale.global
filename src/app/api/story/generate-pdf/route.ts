@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// Rate limiting for PDF generation
+const pdfRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkPdfRateLimit(ip: string): boolean {
+  const now = Date.now();
+  if (pdfRateMap.size > 300) {
+    for (const [k, v] of pdfRateMap) { if (now > v.resetAt) pdfRateMap.delete(k); }
+  }
+  const entry = pdfRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    pdfRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false; // 10 per minute
+  entry.count++;
+  return true;
+}
 
 /** Escape HTML special characters to prevent XSS in generated HTML */
 function escapeHtml(unsafe: string): string {
@@ -27,6 +45,12 @@ const pdfRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const ip = getClientIP(request);
+  if (!checkPdfRateLimit(ip)) {
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
   try {
     // CA-10: Safe JSON parsing
     let body;
@@ -104,7 +128,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("PDF generation error:", error);
+    console.error("PDF generation error:", error instanceof Error ? error.name : "Unknown");
     return NextResponse.json(
       { error: "PDF generation failed" },
       { status: 500 }

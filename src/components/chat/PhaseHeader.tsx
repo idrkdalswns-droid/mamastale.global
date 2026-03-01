@@ -116,6 +116,7 @@ export default function PhaseHeader({
                   setShowSettings(false);
                 }}
                 className="flex-1 py-1.5 rounded-lg text-center transition-all"
+                role="menuitem"
                 style={{
                   fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,
                   background: fontSize === s ? p.accent : "transparent",

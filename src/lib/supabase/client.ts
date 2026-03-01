@@ -13,7 +13,7 @@ export function createClient() {
   if (!_client) {
     _client = createBrowserClient(url, key, {
       auth: {
-        flowType: "implicit",
+        flowType: "pkce",
       },
     });
   }

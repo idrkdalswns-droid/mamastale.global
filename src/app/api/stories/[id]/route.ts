@@ -87,7 +87,14 @@ export async function PATCH(
           typeof (s as Record<string, unknown>).title === "string" &&
           typeof (s as Record<string, unknown>).text === "string"
       );
-      if (validScenes) updates.scenes = body.scenes;
+      if (validScenes) {
+        // Sanitize scene content to prevent stored XSS
+        for (const s of body.scenes as Array<{ title: string; text: string }>) {
+          s.title = sanitizeText(s.title.slice(0, 200));
+          s.text = sanitizeText(s.text.slice(0, 5000));
+        }
+        updates.scenes = body.scenes;
+      }
     }
 
     if (Object.keys(updates).length === 0) {

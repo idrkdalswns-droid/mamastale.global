@@ -22,7 +22,7 @@ export default function AuthCallbackPage() {
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          console.error("Auth callback error:", exchangeError.message);
+          console.error("Auth callback error:", exchangeError.name);
           setError(true);
           setTimeout(() => router.push("/login"), 2000);
           return;
