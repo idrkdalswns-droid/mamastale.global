@@ -1,22 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+// CA-4: Use shared service role client instead of local duplicate
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { incrementTickets } from "@/lib/supabase/tickets";
 
 export const runtime = "edge";
-
-function getServiceRoleClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) return null;
-
-  return createServerClient(url, serviceKey, {
-    cookies: {
-      getAll() { return []; },
-      setAll() {},
-    },
-  });
-}
 
 // 6자리 랜덤 추천 코드 생성
 function generateCode(): string {
@@ -56,7 +44,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 코드 생성 (중복 방지 최대 5회 시도)
-  const admin = getServiceRoleClient();
+  const admin = createServiceRoleClient();
   if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
 
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -105,7 +93,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "유효하지 않은 추천 코드 형식입니다." }, { status: 400 });
   }
 
-  const admin = getServiceRoleClient();
+  const admin = createServiceRoleClient();
   if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
 
   // 1. 추천인 찾기

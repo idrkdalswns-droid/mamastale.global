@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+// CA-1/CA-2: Use shared utilities instead of local duplicates
+import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -25,15 +27,6 @@ function checkReviewRateLimit(ip: string): boolean {
   return true;
 }
 
-function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -41,25 +34,6 @@ function createAnonClient() {
   return createServerClient(url, key, {
     cookies: { getAll() { return []; }, setAll() {} },
   });
-}
-
-function sanitizeText(input: string): string {
-  return input.replace(/[<>]/g, "").replace(/javascript:/gi, "").trim();
-}
-
-const PROFANITY_LIST = [
-  "시발", "씨발", "씨벌", "ㅅㅂ", "ㅆㅂ",
-  "병신", "ㅂㅅ", "지랄", "ㅈㄹ",
-  "닥쳐", "꺼져", "새끼", "개새끼",
-  "좆", "ㅈ같", "존나", "ㅈㄴ",
-  "씹", "개같은", "미친년", "미친놈",
-  "ㅄ", "ㅗ", "꼴값",
-];
-
-function containsProfanity(text: string): boolean {
-  // Normalize: remove whitespace, special characters, then check
-  const normalized = text.replace(/[\s\.\,\!\?\-\_\*\#\@\/\\]/g, "").toLowerCase();
-  return PROFANITY_LIST.some((word) => normalized.includes(word));
 }
 
 // GET: List reviews
@@ -142,6 +116,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ review: data });
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 }

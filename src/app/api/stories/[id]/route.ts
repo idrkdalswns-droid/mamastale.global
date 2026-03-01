@@ -16,7 +16,7 @@ export async function GET(
 
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
   const { data: story, error } = await sb.client
@@ -27,7 +27,7 @@ export async function GET(
     .single();
 
   if (error || !story) {
-    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+    return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
   }
 
   return sb.applyCookies(NextResponse.json({ story }));
@@ -47,7 +47,7 @@ export async function PATCH(
 
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
   try {
@@ -65,7 +65,7 @@ export async function PATCH(
     if (typeof body.authorAlias === "string") updates.author_alias = body.authorAlias || null;
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+      return NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 });
     }
 
     const { error } = await sb.client
@@ -81,6 +81,6 @@ export async function PATCH(
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 }

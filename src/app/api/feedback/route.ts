@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
-import { getClientIP } from "@/lib/utils/validation";
+// CA-7: Import shared isValidUUID instead of inline regex
+import { getClientIP, isValidUUID } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -94,14 +95,12 @@ export async function POST(request: NextRequest) {
         // Get user if logged in (optional)
         const { data: { user } } = await supabase.auth.getUser();
 
-        // session_id in DB references sessions(id) as UUID.
-        // Client sends "session_${timestamp}" which is NOT a valid UUID → skip FK.
-        // Column names must match DB schema: empathy_rating, insight_rating, etc.
-        const isValidUUID = data.sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.sessionId);
+        // CA-7: Use shared UUID validator instead of inline regex
+        const validSessionId = data.sessionId && isValidUUID(data.sessionId);
 
         await supabase.from("feedback").insert({
           user_id: user?.id || null,
-          session_id: isValidUUID ? data.sessionId : null,
+          session_id: validSessionId ? data.sessionId : null,
           empathy_rating: data.empathy || null,
           insight_rating: data.insight || null,
           metaphor_rating: data.metaphor || null,
@@ -118,7 +117,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "일시적인 오류가 발생했습니다." },
       { status: 500 }
     );
   }

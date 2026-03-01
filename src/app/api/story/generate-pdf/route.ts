@@ -28,7 +28,13 @@ const pdfRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // CA-10: Safe JSON parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
     const parsed = pdfRequestSchema.safeParse(body);
 
     if (!parsed.success) {
