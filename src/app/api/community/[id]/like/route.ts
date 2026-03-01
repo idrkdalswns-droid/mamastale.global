@@ -94,35 +94,37 @@ export async function POST(
 
   if (existing) {
     // Unlike
-    await supabase.from("likes").delete().eq("id", existing.id);
+    const { error: deleteError } = await supabase.from("likes").delete().eq("id", existing.id);
 
-    // Atomic decrement
-    if (serviceClient) {
-      await serviceClient.rpc("increment_story_counter", {
+    // IN-4: Only decrement counter if delete succeeded (prevents count drift)
+    if (!deleteError && serviceClient) {
+      const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {
         p_story_id: storyId,
         p_column: "like_count",
         p_delta: -1,
       });
+      if (rpcError) console.error("[Like] Decrement failed:", rpcError.message);
     }
 
     return NextResponse.json({ liked: false });
   } else {
     // Like
-    await supabase.from("likes").insert({
+    const { error: insertError } = await supabase.from("likes").insert({
       user_id: user.id,
       story_id: storyId,
     });
 
-    // Atomic increment
-    if (serviceClient) {
-      await serviceClient.rpc("increment_story_counter", {
+    // IN-4: Only increment counter if insert succeeded (prevents count drift on duplicate)
+    if (!insertError && serviceClient) {
+      const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {
         p_story_id: storyId,
         p_column: "like_count",
         p_delta: 1,
       });
+      if (rpcError) console.error("[Like] Increment failed:", rpcError.message);
     }
 
-    return NextResponse.json({ liked: true });
+    return NextResponse.json({ liked: !insertError });
   }
 }
 

@@ -146,14 +146,17 @@ export async function POST(
       return NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 });
     }
 
-    // Atomic comment count increment (no race condition)
+    // IN-6: Atomic comment count increment with error logging
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
-      await serviceClient.rpc("increment_story_counter", {
+      const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {
         p_story_id: storyId,
         p_column: "comment_count",
         p_delta: 1,
       });
+      if (rpcError) {
+        console.error("[Comments] Counter increment failed:", rpcError.message);
+      }
     }
 
     return NextResponse.json({ comment: data });

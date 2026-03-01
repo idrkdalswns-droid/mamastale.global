@@ -35,6 +35,8 @@ export function createServiceRoleClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {
+    // IN-10: Log warning so operators notice missing env var (silent no-ops are dangerous)
+    console.warn("[Supabase] Service role client unavailable — SUPABASE_SERVICE_ROLE_KEY not set");
     return null;
   }
 

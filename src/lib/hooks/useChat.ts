@@ -134,8 +134,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : s.completedScenes,
       }));
 
-      // Save completed story to database (guard against duplicate saves)
+      // IN-7: Save completed story — set storySaved synchronously BEFORE async fetch to prevent race
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved) {
+        set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = "나의 치유 동화";
           const saveRes = await fetch("/api/stories", {
@@ -151,7 +152,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (saveRes.ok) {
             const saveData = await saveRes.json();
             set({
-              storySaved: true,
               storySaveError: null,
               completedStoryId: saveData.id || get().completedStoryId,
             });
@@ -226,18 +226,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const snapshot = JSON.parse(raw);
+
+      // IN-11: Validate restored data shape to prevent corrupted state
+      if (
+        typeof snapshot !== "object" || snapshot === null ||
+        typeof snapshot.savedAt !== "number" ||
+        !Array.isArray(snapshot.messages) ||
+        !snapshot.messages.every(
+          (m: unknown) =>
+            typeof m === "object" && m !== null &&
+            typeof (m as Record<string, unknown>).role === "string" &&
+            typeof (m as Record<string, unknown>).content === "string"
+        )
+      ) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+
       // Only restore if saved within last 24 hours (allows time for email verification)
       if (Date.now() - snapshot.savedAt > 24 * 60 * 60 * 1000) {
         localStorage.removeItem(STORAGE_KEY);
         return false;
       }
+
+      // Validate currentPhase is a valid value
+      const validPhases = [1, 2, 3, 4];
+      const phase = validPhases.includes(snapshot.currentPhase) ? snapshot.currentPhase : 1;
+
       set({
-        sessionId: snapshot.sessionId || "",
-        messages: snapshot.messages || makeInitialMessages(),
-        currentPhase: snapshot.currentPhase || 1,
-        visitedPhases: snapshot.visitedPhases || [1],
-        storyDone: snapshot.storyDone || false,
-        completedScenes: snapshot.completedScenes || [],
+        sessionId: typeof snapshot.sessionId === "string" ? snapshot.sessionId : "",
+        messages: snapshot.messages,
+        currentPhase: phase as 1 | 2 | 3 | 4,
+        visitedPhases: Array.isArray(snapshot.visitedPhases) ? snapshot.visitedPhases : [1],
+        storyDone: snapshot.storyDone === true,
+        completedScenes: Array.isArray(snapshot.completedScenes) ? snapshot.completedScenes : [],
         isLoading: false,
         isTransitioning: false,
         storySaved: false,
@@ -246,6 +268,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       localStorage.removeItem(STORAGE_KEY);
       return true;
     } catch {
+      // IN-11: Clear corrupted data on parse failure
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
       return false;
     }
   },

@@ -21,8 +21,10 @@ export async function incrementTickets(
     // RPC not available — fall through to non-atomic
   }
 
-  // Fallback: non-atomic read-then-update (race condition possible)
-  // Run supabase/migrations/006_ticket_increment.sql to enable atomic mode
+  // IN-1: Fallback uses read-then-update which has race condition.
+  // Log a warning so operators know to deploy the RPC function.
+  console.warn("[Tickets] increment_tickets RPC unavailable — using non-atomic fallback. Deploy 006_ticket_increment.sql to fix.");
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("free_stories_remaining")
@@ -30,7 +32,7 @@ export async function incrementTickets(
     .single();
 
   const currentTickets = profile?.free_stories_remaining ?? 0;
-  const newTotal = currentTickets + count;
+  const newTotal = Math.max(0, currentTickets + count); // IN-1: Prevent negative tickets
 
   await supabase
     .from("profiles")

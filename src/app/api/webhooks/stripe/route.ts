@@ -84,7 +84,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const event = JSON.parse(body);
+  // IN-3: Wrap JSON.parse in try-catch to prevent unhandled exception on malformed payload
+  let event;
+  try {
+    event = JSON.parse(body);
+  } catch {
+    console.error("[Stripe] Webhook body is not valid JSON");
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
 
   // ─── Event ID idempotency check ───
   if (event.id && isEventProcessed(event.id)) {

@@ -46,11 +46,16 @@ export function useAuth() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // IN-9: Await signOut to ensure cookies are cleared before navigating
   const signOut = useCallback(async () => {
     const supabase = createClient();
     if (supabase) {
-      await supabase.auth.signOut();
-      setUser(null);
+      setUser(null); // Optimistic UI update
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Proceed with navigation even if signOut fails
+      }
       window.location.href = "/";
     }
   }, []);
