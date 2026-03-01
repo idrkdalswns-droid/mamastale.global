@@ -3,6 +3,37 @@ import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "edge";
 
+// ─── Rate limiting (per-IP, per-isolate) ───
+const REVIEW_RATE_WINDOW = 300_000; // 5 minutes
+const REVIEW_RATE_LIMIT = 3; // max 3 reviews per 5 minutes per IP
+const reviewRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkReviewRateLimit(ip: string): boolean {
+  const now = Date.now();
+  if (reviewRateMap.size > 300) {
+    for (const [k, v] of reviewRateMap) {
+      if (now > v.resetAt) reviewRateMap.delete(k);
+    }
+  }
+  const entry = reviewRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    reviewRateMap.set(ip, { count: 1, resetAt: now + REVIEW_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= REVIEW_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
+function getClientIP(request: NextRequest): string {
+  return (
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -26,7 +57,8 @@ const PROFANITY_LIST = [
 ];
 
 function containsProfanity(text: string): boolean {
-  const normalized = text.replace(/\s/g, "").toLowerCase();
+  // Normalize: remove whitespace, special characters, then check
+  const normalized = text.replace(/[\s\.\,\!\?\-\_\*\#\@\/\\]/g, "").toLowerCase();
   return PROFANITY_LIST.some((word) => normalized.includes(word));
 }
 
@@ -46,15 +78,32 @@ export async function GET() {
   return NextResponse.json({ reviews: reviews || [] });
 }
 
-// POST: Submit review
+// POST: Submit review (rate-limited)
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const ip = getClientIP(request);
+  if (!checkReviewRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "후기는 5분에 3건까지 등록 가능합니다." },
+      { status: 429 }
+    );
+  }
+
   const supabase = createAnonClient();
   if (!supabase) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
+  // Safe JSON parsing
+  let body;
   try {
-    const { authorAlias, childInfo, stars, content } = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+  }
+
+  try {
+    const { authorAlias, childInfo, stars, content } = body;
 
     if (!content?.trim()) {
       return NextResponse.json({ error: "후기 내용을 입력해 주세요" }, { status: 400 });

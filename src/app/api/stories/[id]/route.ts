@@ -21,7 +21,7 @@ export async function GET(
 
   const { data: story, error } = await sb.client
     .from("stories")
-    .select("*")
+    .select("id, title, scenes, metadata, status, is_public, author_alias, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();

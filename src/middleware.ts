@@ -16,6 +16,18 @@ export async function middleware(request: NextRequest) {
     "Strict-Transport-Security",
     "max-age=31536000; includeSubDomains"
   );
+  response.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://js.tosspayments.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
+      "connect-src 'self' https://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com",
+      "frame-src https://js.stripe.com https://js.tosspayments.com",
+    ].join("; ")
+  );
 
   const pathname = request.nextUrl.pathname;
 

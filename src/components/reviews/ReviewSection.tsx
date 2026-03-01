@@ -45,6 +45,7 @@ export function ReviewSection() {
   const [stars, setStars] = useState(5);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetchingReviews, setFetchingReviews] = useState(true);
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -52,7 +53,8 @@ export function ReviewSection() {
     fetch("/api/reviews")
       .then((res) => res.json())
       .then((data) => setReviews(data.reviews || []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setFetchingReviews(false));
   }, []);
 
   const handleSubmit = async () => {
@@ -207,8 +209,15 @@ export function ReviewSection() {
         </div>
       )}
 
+      {/* Loading state */}
+      {fetchingReviews && (
+        <p className="text-xs text-brown-pale font-light text-center py-4 animate-pulse">
+          후기를 불러오는 중...
+        </p>
+      )}
+
       {/* User reviews list */}
-      {reviews.length > 0 && (
+      {!fetchingReviews && reviews.length > 0 && (
         <div className="space-y-4">
           {reviews.map((r) => (
             <div
