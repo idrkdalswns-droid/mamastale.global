@@ -29,6 +29,8 @@ interface ChatState {
   restoreFromStorage: () => boolean;
   /** Clear saved state from localStorage */
   clearStorage: () => void;
+  /** Update completed scenes (e.g. after user editing) */
+  updateScenes: (scenes: Scene[]) => void;
 }
 
 let msgCounter = 0;
@@ -297,6 +299,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch {
       // ignore
     }
+  },
+
+  updateScenes: (scenes: Scene[]) => {
+    set({ completedScenes: scenes });
   },
 
   reset: () => {

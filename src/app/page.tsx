@@ -10,17 +10,19 @@ import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
 import { ChatPage } from "@/components/chat/ChatContainer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { StoryViewer } from "@/components/story/StoryViewer";
+import { StoryEditor } from "@/components/story/StoryEditor";
 import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
 import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 
-type ScreenState = "landing" | "onboarding" | "chat" | "story" | "feedback" | "community";
+type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "story" | "feedback" | "community";
 
 export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
   const [show, setShow] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showNoTickets, setShowNoTickets] = useState(false);
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
@@ -28,7 +30,7 @@ export default function Home() {
   const [referralCopied, setReferralCopied] = useState(false);
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
-  const { completedScenes, sessionId: chatSessionId, reset, restoreFromStorage } = useChatStore();
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
@@ -162,22 +164,45 @@ export default function Home() {
     return <OnboardingSlides onDone={() => setScreen("chat")} />;
   }
 
-  // CRITICAL-2 fix: chat completes → story viewer (not directly to feedback)
+  // CRITICAL-2 fix: chat completes → editor (then story viewer)
   // FI-6: ErrorBoundary wraps ChatPage to catch rendering errors gracefully
   if (screen === "chat") {
     return (
       <ErrorBoundary>
-        <ChatPage onComplete={() => setScreen("story")} />
+        <ChatPage onComplete={() => setScreen("edit")} />
       </ErrorBoundary>
     );
   }
 
-  // New: Story viewing screen between chat and feedback
+  // Story editor: mom can customize title and scene text
+  if (screen === "edit") {
+    return (
+      <StoryEditor
+        scenes={completedScenes}
+        title={completedScenes[0]?.title || "나의 치유 동화"}
+        onDone={(edited, title) => {
+          updateScenes(edited);
+          setEditedTitle(title);
+          // Silently update saved story in DB if exists
+          if (completedStoryId && completedStoryId.startsWith("story_") === false) {
+            fetch(`/api/stories/${completedStoryId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title, scenes: edited }),
+            }).catch(() => {});
+          }
+          setScreen("story");
+        }}
+      />
+    );
+  }
+
+  // Story viewing screen (read-only) after editing
   if (screen === "story") {
     return (
       <StoryViewer
         scenes={completedScenes}
-        title={completedScenes[0]?.title || "나의 치유 동화"}
+        title={editedTitle || completedScenes[0]?.title || "나의 치유 동화"}
         authorName={user?.user_metadata?.name || undefined}
         onBack={() => setScreen("feedback")}
         onBackLabel="피드백 남기기 →"

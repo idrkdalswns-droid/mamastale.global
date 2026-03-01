@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { sanitizeText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -63,6 +64,17 @@ export async function PATCH(
     // Only allow specific fields to be updated
     if (typeof body.isPublic === "boolean") updates.is_public = body.isPublic;
     if (typeof body.authorAlias === "string") updates.author_alias = body.authorAlias || null;
+    if (typeof body.title === "string") updates.title = sanitizeText(body.title.trim().slice(0, 200));
+    if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
+      const validScenes = body.scenes.every(
+        (s: unknown) =>
+          typeof s === "object" && s !== null &&
+          typeof (s as Record<string, unknown>).sceneNumber === "number" &&
+          typeof (s as Record<string, unknown>).title === "string" &&
+          typeof (s as Record<string, unknown>).text === "string"
+      );
+      if (validScenes) updates.scenes = body.scenes;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 });
