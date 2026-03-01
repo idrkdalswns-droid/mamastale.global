@@ -1,0 +1,9 @@
+# mamastale — robots.txt
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /payment/
+Disallow: /access/
+
+Sitemap: https://mamastale-global.pages.dev/sitemap.xml
