@@ -11,15 +11,58 @@
     padding: 0;
   }
 
+  /* ── FR-010: Color tokens as CSS custom properties ── */
+  :root {
+    --cream: 251 245 236;
+    --paper: 254 247 237;
+    --warm-ivory: 249 241 230;
+    --peach: 232 168 124;
+    --coral: 224 122 95;
+    --mint: 184 216 208;
+    --mint-deep: 127 191 176;
+    --lavender: 200 184 216;
+    --purple: 109 76 145;
+    --brown: 90 62 43;
+    --brown-light: 139 111 85;
+    --brown-mid: 160 128 96;
+    --brown-pale: 196 168 130;
+    --kakao: 254 229 0;
+    --kakao-brown: 60 30 30;
+    --surface: 255 255 255;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --cream: 28 24 20;
+    --paper: 35 30 25;
+    --warm-ivory: 32 27 22;
+    --peach: 210 150 115;
+    --coral: 232 154 130;
+    --mint: 140 200 188;
+    --mint-deep: 90 165 150;
+    --lavender: 180 165 200;
+    --purple: 150 120 185;
+    --brown: 232 213 192;
+    --brown-light: 192 168 136;
+    --brown-mid: 176 149 117;
+    --brown-pale: 122 101 80;
+    --kakao: 254 229 0;
+    --kakao-brown: 60 30 30;
+    --surface: 42 36 30;
+  }
+
   html {
-    color-scheme: light;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
   body {
-    background: #FBF5EC;
+    background: rgb(var(--cream));
     overscroll-behavior: none;
     overflow-x: hidden;
     font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
@@ -39,10 +82,39 @@
   textarea::placeholder {
     color: #bbb;
   }
+  .dark textarea::placeholder {
+    color: #665;
+  }
 
   @media screen and (max-width: 768px) {
     input, textarea, select {
       font-size: 16px !important;
     }
+  }
+
+  /* ── Dark mode: override white-based backgrounds ── */
+  .dark .bg-white { background-color: rgb(var(--surface)) !important; }
+  .dark .bg-white\/50 { background-color: rgb(var(--surface) / 0.5) !important; }
+  .dark .bg-white\/60 { background-color: rgb(var(--surface) / 0.6) !important; }
+  .dark .bg-white\/70 { background-color: rgb(var(--surface) / 0.7) !important; }
+  .dark .bg-white\/80 { background-color: rgb(var(--surface) / 0.8) !important; }
+  .dark .bg-white\/90 { background-color: rgb(var(--surface) / 0.9) !important; }
+  .dark .text-white { color: rgb(240 235 228) !important; }
+
+  /* Dark mode: override scene-specific arbitrary bg colors */
+  .dark .bg-\[\#EEF6F3\] { background-color: #1E2825 !important; }
+  .dark .bg-\[\#FEF7ED\] { background-color: #2A2219 !important; }
+  .dark .bg-\[\#F4EEF8\] { background-color: #231E28 !important; }
+  .dark .bg-\[\#FFF6EE\] { background-color: #2A221A !important; }
+  .dark .bg-\[\#FBF5EC\] { background-color: #1C1814 !important; }
+
+  /* Dark mode: borders */
+  .dark .border-black\/\[0\.04\] { border-color: rgba(255,255,255,0.08) !important; }
+
+  /* Dark mode: inline-style glass backgrounds */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    color: rgb(var(--brown)) !important;
   }
 }

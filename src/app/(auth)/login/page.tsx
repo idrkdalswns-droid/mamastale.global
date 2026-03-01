@@ -137,7 +137,13 @@ function LoginForm() {
         </button>
       </div>
 
-      <div className="text-center mt-6">
+      <div className="text-center mt-4">
+        <Link href="/reset-password" className="text-xs text-brown-pale font-light no-underline">
+          비밀번호를 잊으셨나요?
+        </Link>
+      </div>
+
+      <div className="text-center mt-4">
         <Link href="/signup" className="text-sm text-brown-mid font-light no-underline">
           계정이 없으신가요? <span className="text-coral font-medium">회원가입</span>
         </Link>

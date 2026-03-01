@@ -3,9 +3,10 @@
 // Required by Cloudflare Pages for all dynamic routes
 export const runtime = "edge";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
+import { StoryEditor } from "@/components/story/StoryEditor";
 import { useAuth } from "@/lib/hooks/useAuth";
 import type { Scene } from "@/lib/types/story";
 
@@ -23,6 +24,8 @@ export default function LibraryStoryPage() {
   const [story, setStory] = useState<StoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -37,12 +40,38 @@ export default function LibraryStoryPage() {
       .finally(() => setLoading(false));
   }, [params.id]);
 
-  if (loading) {
+  // FR-007: Save edited story via PATCH API
+  const handleEditDone = useCallback(
+    async (editedScenes: Scene[], editedTitle: string) => {
+      if (!story) return;
+      setSaving(true);
+      try {
+        const res = await fetch(`/api/stories/${story.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: editedTitle, scenes: editedScenes }),
+        });
+        if (res.ok) {
+          setStory((prev) => prev ? { ...prev, title: editedTitle, scenes: editedScenes } : prev);
+        }
+      } catch {
+        // Silently fail — user can try again
+      } finally {
+        setSaving(false);
+        setEditing(false);
+      }
+    },
+    [story]
+  );
+
+  if (loading || saving) {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="text-3xl mb-3 animate-pulse">📖</div>
-          <p className="text-sm text-brown-light font-light">불러오는 중...</p>
+          <p className="text-sm text-brown-light font-light">
+            {saving ? "저장하는 중..." : "불러오는 중..."}
+          </p>
         </div>
       </div>
     );
@@ -66,12 +95,24 @@ export default function LibraryStoryPage() {
     );
   }
 
+  // FR-007: Edit mode
+  if (editing) {
+    return (
+      <StoryEditor
+        scenes={story.scenes}
+        title={story.title}
+        onDone={handleEditDone}
+      />
+    );
+  }
+
   return (
     <StoryViewer
       scenes={story.scenes}
       title={story.title || "나의 치유 동화"}
       authorName={user?.user_metadata?.name || undefined}
       onBack={() => router.push("/library")}
+      onEdit={() => setEditing(true)}
     />
   );
 }

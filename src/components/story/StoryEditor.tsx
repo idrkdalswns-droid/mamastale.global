@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSwipe } from "@/lib/hooks/useSwipe";
 import type { Scene } from "@/lib/types/story";
 
 const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
@@ -39,6 +40,44 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   const isFirst = currentScene === 0;
   const isLast = currentScene === editedScenes.length - 1;
 
+  // FR-001: Swipe gestures
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: useCallback(() => setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1)), [editedScenes.length]),
+    onSwipeRight: useCallback(() => setCurrentScene((p) => Math.max(0, p - 1)), []),
+  });
+
+  // FR-004: Check if any content has been modified
+  const hasAnyChanges =
+    editedTitle !== title ||
+    editedScenes.some(
+      (s, i) => s.title !== originalScenes[i]?.title || s.text !== originalScenes[i]?.text
+    );
+
+  // FR-004: Warn before leaving if there are unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasAnyChanges) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasAnyChanges]);
+
+  // FR-004: Auto-save draft to localStorage every 5 seconds
+  useEffect(() => {
+    if (!hasAnyChanges) return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          "mamastale_editor_draft",
+          JSON.stringify({ title: editedTitle, scenes: editedScenes, savedAt: Date.now() })
+        );
+      } catch {}
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [editedScenes, editedTitle, hasAnyChanges]);
+
   // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
@@ -71,6 +110,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
     scene?.text !== originalScenes[currentScene]?.text;
 
   const handleDone = useCallback(() => {
+    try { localStorage.removeItem("mamastale_editor_draft"); } catch {}
     onDone(editedScenes, editedTitle);
   }, [editedScenes, editedTitle, onDone]);
 
@@ -125,10 +165,11 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
         </div>
       </div>
 
-      {/* Editor Content */}
+      {/* Editor Content — swipeable */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentScene}
+          {...swipeHandlers}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}

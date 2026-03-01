@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
+import { useSwipe } from "@/lib/hooks/useSwipe";
 
 const MOTHER_MSG_KEY = "mamastale_mother_message";
 import type { Scene } from "@/lib/types/story";
@@ -26,12 +27,40 @@ interface StoryViewerProps {
   authorName?: string;
   onBack?: () => void;
   onBackLabel?: string; // custom label for the back button (e.g. "피드백 남기기")
+  onEdit?: () => void; // FR-007: show edit button in header
   embedded?: boolean; // true when used inside another page (no min-h-dvh)
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, embedded }: StoryViewerProps) {
-  const [currentScene, setCurrentScene] = useState(0);
+export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded }: StoryViewerProps) {
+  const sceneStorageKey = title ? `mamastale_last_scene_${title.slice(0, 40)}` : "";
+  const [currentScene, setCurrentScene] = useState(() => {
+    if (!sceneStorageKey) return 0;
+    try {
+      const saved = parseInt(localStorage.getItem(sceneStorageKey) || "0", 10);
+      return saved >= 0 && saved < (scenes?.length || 1) ? saved : 0;
+    } catch { return 0; }
+  });
   const [copied, setCopied] = useState(false);
+
+  // FR-009: Persist last read scene
+  useEffect(() => {
+    if (sceneStorageKey) {
+      try { localStorage.setItem(sceneStorageKey, String(currentScene)); } catch {}
+    }
+  }, [currentScene, sceneStorageKey]);
+
+  // FR-006: Font size control (13/15/17/19px)
+  const [fontSize, setFontSize] = useState(() => {
+    try { return parseInt(localStorage.getItem("mamastale_font_size") || "15", 10); } catch { return 15; }
+  });
+  const adjustFont = useCallback((delta: number) => {
+    setFontSize((prev) => {
+      const next = Math.max(13, Math.min(21, prev + delta));
+      try { localStorage.setItem("mamastale_font_size", String(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   const [motherMessage, setMotherMessage] = useState(() => {
     try { return localStorage.getItem(MOTHER_MSG_KEY) || ""; } catch { return ""; }
   });
@@ -74,6 +103,11 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
   const isFirst = currentScene === 0;
   const isLast = currentScene === scenes.length - 1;
   const storyTitle = title || "나의 치유 동화";
+
+  // FR-001: Swipe gestures for scene navigation
+  const goNext = useCallback(() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1)), [scenes.length]);
+  const goPrev = useCallback(() => setCurrentScene((p) => Math.max(0, p - 1)), []);
+  const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
 
   // Build full story text for copy/share — 깔끔한 페이지 형식
   const buildStoryText = useCallback(() => {
@@ -150,7 +184,31 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
                 {currentScene + 1} / {scenes.length}
               </div>
             </div>
-            <div className="w-12" />
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => adjustFont(-2)}
+                className="w-6 h-6 rounded-full text-[10px] font-medium text-brown-pale active:scale-90 transition-transform"
+                aria-label="글꼴 작게"
+              >
+                A-
+              </button>
+              <button
+                onClick={() => adjustFont(2)}
+                className="w-6 h-6 rounded-full text-[12px] font-medium text-brown-mid active:scale-90 transition-transform"
+                aria-label="글꼴 크게"
+              >
+                A+
+              </button>
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  className="w-6 h-6 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1"
+                  aria-label="동화 수정"
+                >
+                  ✏️
+                </button>
+              )}
+            </div>
           </div>
           {/* Progress — tappable to jump between scenes */}
           <div className="flex gap-0.5 px-4 pb-2">
@@ -169,10 +227,11 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
         </div>
       </div>
 
-      {/* Scene Content */}
+      {/* Scene Content — swipeable */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentScene}
+          {...swipeHandlers}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
@@ -191,7 +250,10 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
             {scene.title}
           </h2>
 
-          <p className="font-serif text-[15px] text-brown leading-[2.4] break-keep whitespace-pre-wrap">
+          <p
+            className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
+            style={{ fontSize }}
+          >
             {scene.text}
           </p>
 

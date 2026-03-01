@@ -16,6 +16,7 @@ import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "story" | "feedback" | "community";
 
@@ -251,9 +252,12 @@ export default function Home() {
 
       {/* Top navigation bar */}
       <div className="max-w-md mx-auto w-full flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
-        <Link href="/" className="font-serif text-sm font-bold text-brown tracking-wide no-underline">
-          mamastale
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="font-serif text-sm font-bold text-brown tracking-wide no-underline">
+            mamastale
+          </Link>
+          <ThemeToggle />
+        </div>
         {!authLoading && (
           <div className="flex items-center gap-3">
             {user ? (

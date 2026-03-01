@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,23 +10,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        cream: "#FBF5EC",
-        paper: "#FEF7ED",
-        "warm-ivory": "#F9F1E6",
-        peach: "#E8A87C",
-        coral: "#E07A5F",
-        mint: "#B8D8D0",
-        "mint-deep": "#7FBFB0",
-        lavender: "#C8B8D8",
-        purple: "#6D4C91",
+        cream: "rgb(var(--cream) / <alpha-value>)",
+        paper: "rgb(var(--paper) / <alpha-value>)",
+        "warm-ivory": "rgb(var(--warm-ivory) / <alpha-value>)",
+        peach: "rgb(var(--peach) / <alpha-value>)",
+        coral: "rgb(var(--coral) / <alpha-value>)",
+        mint: "rgb(var(--mint) / <alpha-value>)",
+        "mint-deep": "rgb(var(--mint-deep) / <alpha-value>)",
+        lavender: "rgb(var(--lavender) / <alpha-value>)",
+        purple: "rgb(var(--purple) / <alpha-value>)",
         brown: {
-          DEFAULT: "#5A3E2B",
-          light: "#8B6F55",
-          mid: "#A08060",
-          pale: "#C4A882",
+          DEFAULT: "rgb(var(--brown) / <alpha-value>)",
+          light: "rgb(var(--brown-light) / <alpha-value>)",
+          mid: "rgb(var(--brown-mid) / <alpha-value>)",
+          pale: "rgb(var(--brown-pale) / <alpha-value>)",
         },
-        kakao: "#FEE500",
-        "kakao-brown": "#3C1E1E",
+        kakao: "rgb(var(--kakao) / <alpha-value>)",
+        "kakao-brown": "rgb(var(--kakao-brown) / <alpha-value>)",
       },
       fontFamily: {
         serif: ["'Nanum Myeongjo'", "'Noto Serif KR'", "Georgia", "serif"],
