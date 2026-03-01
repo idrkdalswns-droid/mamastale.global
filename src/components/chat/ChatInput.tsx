@@ -81,6 +81,7 @@ export default function ChatInput({
             e.target.style.borderColor = `${p.accent}22`;
           }}
           disabled={disabled}
+          aria-label="메시지 입력"
           placeholder={disabled ? "회원가입 후 계속 대화할 수 있어요" : "이야기를 들려주세요..."}
           rows={1}
           maxLength={5000}

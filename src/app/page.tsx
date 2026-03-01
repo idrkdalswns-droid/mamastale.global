@@ -473,11 +473,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* No Tickets Modal */}
+      {/* SG-1: No Tickets Modal — accessible dialog */}
       {showNoTickets && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-6"
           style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="티켓 부족 안내"
+          onKeyDown={(e) => { if (e.key === "Escape") setShowNoTickets(false); }}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-8 text-center"
@@ -515,11 +519,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Payment Success Modal */}
+      {/* SG-1: Payment Success Modal — accessible dialog */}
       {showPaymentSuccess && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-6"
           style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="결제 완료 안내"
+          onKeyDown={(e) => { if (e.key === "Escape") closePaymentModal(); }}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-8 text-center"
@@ -561,11 +569,15 @@ export default function Home() {
           </div>
         </div>
       )}
-      {/* Referral Welcome Modal */}
+      {/* SG-1: Referral Welcome Modal — accessible dialog */}
       {showReferralWelcome && !user && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-6"
           style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="친구 추천 안내"
+          onKeyDown={(e) => { if (e.key === "Escape") setShowReferralWelcome(false); }}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"

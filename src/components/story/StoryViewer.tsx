@@ -124,7 +124,12 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, em
               </button>
             )}
             <div className="text-center flex-1">
-              <div className="text-[10px] text-brown-mid tracking-[2px] font-medium">
+              <div
+                className="text-[10px] text-brown-mid tracking-[2px] font-medium"
+                role="status"
+                aria-live="polite"
+                aria-label={`장면 ${currentScene + 1} / ${scenes.length}`}
+              >
                 {currentScene + 1} / {scenes.length}
               </div>
             </div>

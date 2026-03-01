@@ -23,7 +23,11 @@ export function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[999] px-4 pb-[calc(env(safe-area-inset-bottom,8px)+8px)] animate-fade-up">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[999] px-4 pb-[calc(env(safe-area-inset-bottom,8px)+8px)] animate-fade-up"
+      role="alertdialog"
+      aria-label="쿠키 사용 동의"
+    >
       <div className="max-w-[430px] mx-auto bg-white/95 backdrop-blur-xl rounded-2xl p-4 border border-brown-pale/10 shadow-lg">
         <p className="text-xs text-brown-light font-light leading-relaxed mb-3">
           마마스테일은 더 나은 경험을 위해 쿠키를 사용합니다.{" "}

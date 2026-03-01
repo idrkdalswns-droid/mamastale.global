@@ -136,6 +136,7 @@ export default function SignupPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="이름 (별명도 괜찮아요)"
+            aria-label="이름"
             className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
             style={{
               background: "rgba(255,255,255,0.6)",
@@ -149,6 +150,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="이메일"
+            aria-label="이메일"
             className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
             style={{
               background: "rgba(255,255,255,0.6)",
@@ -162,6 +164,7 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="비밀번호 (6자 이상)"
+            aria-label="비밀번호"
             minLength={6}
             className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
             style={{

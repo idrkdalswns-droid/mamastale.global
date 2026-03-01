@@ -62,6 +62,7 @@ function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="이메일"
+          aria-label="이메일"
           className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
           style={{
             background: "rgba(255,255,255,0.6)",
@@ -75,6 +76,7 @@ function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="비밀번호"
+          aria-label="비밀번호"
           className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
           style={{
             background: "rgba(255,255,255,0.6)",
