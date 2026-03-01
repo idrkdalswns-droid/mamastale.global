@@ -58,7 +58,13 @@ async function verifyStripeSignature(
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    return expectedSig === signature;
+    // Constant-time comparison to prevent timing attacks
+    if (expectedSig.length !== signature.length) return false;
+    let result = 0;
+    for (let i = 0; i < expectedSig.length; i++) {
+      result |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+    }
+    return result === 0;
   } catch {
     return false;
   }

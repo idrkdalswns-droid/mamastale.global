@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[Stories] List error:", error.message);
+    return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
   }
 
   return sb.applyCookies(NextResponse.json({ stories: stories || [] }));

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "edge";
 
+/** Anon-key client for public reads — RLS enforced */
+function createAnonClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createServerClient(url, key, {
+    cookies: { getAll() { return []; }, setAll() {} },
+  });
+}
+
 // GET: List public stories
 export async function GET(request: NextRequest) {
-  const supabase = createServiceRoleClient();
+  const supabase = createAnonClient();
   if (!supabase) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -33,7 +43,8 @@ export async function GET(request: NextRequest) {
   const { data: stories, count, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[Community] List error:", error.message);
+    return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
   }
 
   return NextResponse.json({

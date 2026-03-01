@@ -4,7 +4,17 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
-function getSupabaseClient(request: NextRequest) {
+/** Anon-key client for public reads — RLS enforced */
+function createAnonClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createServerClient(url, key, {
+    cookies: { getAll() { return []; }, setAll() {} },
+  });
+}
+
+function getAuthClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
@@ -17,15 +27,35 @@ function getSupabaseClient(request: NextRequest) {
   });
 }
 
-// GET: List comments for a story
+/** Strip angle brackets and javascript: protocol */
+function sanitizeText(input: string): string {
+  return input
+    .replace(/[<>]/g, "")
+    .replace(/javascript:/gi, "")
+    .trim();
+}
+
+// GET: List comments for a story (only if story is public)
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: storyId } = await params;
 
-  const supabase = createServiceRoleClient();
+  const supabase = createAnonClient();
   if (!supabase) {
+    return NextResponse.json({ comments: [] });
+  }
+
+  // Verify the story is public before returning its comments
+  const { data: story } = await supabase
+    .from("stories")
+    .select("id")
+    .eq("id", storyId)
+    .eq("is_public", true)
+    .single();
+
+  if (!story) {
     return NextResponse.json({ comments: [] });
   }
 
@@ -46,7 +76,7 @@ export async function POST(
 ) {
   const { id: storyId } = await params;
 
-  const supabase = getSupabaseClient(request);
+  const supabase = getAuthClient(request);
   if (!supabase) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
@@ -63,19 +93,26 @@ export async function POST(
       return NextResponse.json({ error: "댓글 내용을 입력해 주세요" }, { status: 400 });
     }
 
+    // Sanitize inputs (strip HTML tags, JS protocol)
+    const safeContent = sanitizeText(content.trim().slice(0, 500));
+    const safeAlias = sanitizeText(
+      (authorAlias || user.user_metadata?.name || "익명").slice(0, 50)
+    );
+
     const { data, error } = await supabase
       .from("comments")
       .insert({
         user_id: user.id,
         story_id: storyId,
-        content: content.trim().slice(0, 500),
-        author_alias: authorAlias || user.user_metadata?.name || "익명",
+        content: safeContent,
+        author_alias: safeAlias,
       })
       .select("id, content, author_alias, created_at")
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[Comments] Insert error:", error.message);
+      return NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 });
     }
 
     // Atomic comment count increment (no race condition)
