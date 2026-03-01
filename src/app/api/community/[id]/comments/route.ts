@@ -35,6 +35,21 @@ function sanitizeText(input: string): string {
     .trim();
 }
 
+/** Korean profanity filter */
+const PROFANITY_LIST = [
+  "시발", "씨발", "씨벌", "ㅅㅂ", "ㅆㅂ",
+  "병신", "ㅂㅅ", "지랄", "ㅈㄹ",
+  "닥쳐", "꺼져", "새끼", "개새끼",
+  "좆", "ㅈ같", "존나", "ㅈㄴ",
+  "씹", "개같은", "미친년", "미친놈",
+  "ㅄ", "ㅗ", "꼴값",
+];
+
+function containsProfanity(text: string): boolean {
+  const normalized = text.replace(/\s/g, "").toLowerCase();
+  return PROFANITY_LIST.some((word) => normalized.includes(word));
+}
+
 // GET: List comments for a story (only if story is public)
 export async function GET(
   _request: NextRequest,
@@ -98,6 +113,14 @@ export async function POST(
     const safeAlias = sanitizeText(
       (authorAlias || user.user_metadata?.name || "익명").slice(0, 50)
     );
+
+    // Profanity check
+    if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
+      return NextResponse.json(
+        { error: "부적절한 표현이 포함되어 있습니다." },
+        { status: 400 }
+      );
+    }
 
     const { data, error } = await supabase
       .from("comments")

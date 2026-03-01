@@ -281,7 +281,7 @@ export default function Home() {
           {user && !authLoading && (
             <div className="mb-4 px-4 py-2.5 rounded-2xl bg-mint/20 border border-mint/30">
               <p className="text-sm text-brown font-light">
-                🌿 <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 환영합니다
+                <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 환영합니다
               </p>
             </div>
           )}
@@ -317,7 +317,7 @@ export default function Home() {
                 border: "1px solid rgba(224,122,95,0.12)",
               }}
             >
-              💬 후기 보기
+              후기 보기
             </Link>
             <Link
               href="/community"
@@ -328,7 +328,7 @@ export default function Home() {
                 border: "1px solid rgba(109,76,145,0.12)",
               }}
             >
-              📖 샘플 동화
+              샘플 동화
             </Link>
           </div>
 
@@ -368,7 +368,6 @@ export default function Home() {
           {/* Ticket balance display for logged-in users */}
           {user && ticketsRemaining !== null && (
             <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
-              <span className="text-sm">🎫</span>
               <span className="text-xs text-brown font-medium">
                 남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span>
               </span>
@@ -408,7 +407,7 @@ export default function Home() {
                   border: "1.5px solid rgba(127,191,176,0.25)",
                 }}
               >
-                📚 내 서재
+                내 서재
               </Link>
               <Link
                 href="/community"
@@ -419,7 +418,7 @@ export default function Home() {
                   border: "1.5px solid rgba(200,184,216,0.25)",
                 }}
               >
-                🌍 커뮤니티
+                커뮤니티
               </Link>
             </div>
           )}
@@ -455,8 +454,8 @@ export default function Home() {
               }}
             >
               {referralCopied
-                ? "✅ 추천 링크가 복사되었어요!"
-                : "🎁 친구 추천하고 무료 티켓 받기"}
+                ? "추천 링크가 복사되었어요!"
+                : "친구 추천하고 무료 티켓 받기"}
             </button>
           )}
 
@@ -480,7 +479,6 @@ export default function Home() {
               boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
             }}
           >
-            <div className="text-[56px] mb-4">🎫</div>
             <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
               티켓이 필요해요
             </h2>
@@ -523,7 +521,6 @@ export default function Home() {
               boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
             }}
           >
-            <div className="text-[56px] mb-4">🌷</div>
             <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
               감사합니다, 어머니
             </h2>
@@ -570,7 +567,6 @@ export default function Home() {
               boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
             }}
           >
-            <div className="text-[56px] mb-3">🎁</div>
             <h2 className="font-serif text-xl font-bold text-brown mb-2 leading-tight">
               친구가 초대했어요!
             </h2>
@@ -585,7 +581,7 @@ export default function Home() {
               style={{ background: "rgba(224,122,95,0.08)", border: "1.5px solid rgba(224,122,95,0.15)" }}
             >
               <p className="text-sm text-brown font-medium leading-relaxed break-keep">
-                🎫 지금 회원가입하시면<br />
+                지금 회원가입하시면<br />
                 <span className="text-coral font-bold text-base">무료 티켓 1장</span>을 드려요!
               </p>
               <p className="text-[11px] text-brown-pale font-light mt-1">

@@ -10,6 +10,7 @@ interface StoryCardProps {
   createdAt: string;
   href: string;
   authorAlias?: string;
+  topic?: string;
   viewCount?: number;
   likeCount?: number;
 }
@@ -20,6 +21,7 @@ export function StoryCard({
   createdAt,
   href,
   authorAlias,
+  topic,
   viewCount,
   likeCount,
 }: StoryCardProps) {
@@ -43,18 +45,14 @@ export function StoryCard({
         border: "1px solid rgba(196,149,106,0.1)",
       }}
     >
-      {/* Scene emoji preview */}
-      <div className="flex gap-1 mb-3">
-        {["🌅", "🌊", "🌱", "☀️", "💛"].map((emoji, i) => (
-          <span
-            key={i}
-            className="text-xs"
-            style={{ opacity: i < Math.ceil(sceneCount / 2) ? 1 : 0.3 }}
-          >
-            {emoji}
-          </span>
-        ))}
-      </div>
+      {topic && (
+        <span
+          className="inline-block px-2 py-0.5 rounded text-[10px] font-medium mb-2"
+          style={{ background: "rgba(196,149,106,0.1)", color: "#8B7355" }}
+        >
+          {topic}
+        </span>
+      )}
 
       <h3 className="font-serif text-sm font-semibold text-brown mb-1.5 leading-tight line-clamp-2">
         {title || "나의 치유 동화"}
@@ -79,13 +77,13 @@ export function StoryCard({
         {viewCount !== undefined && (
           <>
             <span>·</span>
-            <span>👁 {viewCount}</span>
+            <span>조회 {viewCount}</span>
           </>
         )}
         {likeCount !== undefined && likeCount > 0 && (
           <>
             <span>·</span>
-            <span>❤️ {likeCount}</span>
+            <span>공감 {likeCount}</span>
           </>
         )}
       </div>

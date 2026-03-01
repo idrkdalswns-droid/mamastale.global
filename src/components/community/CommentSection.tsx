@@ -21,6 +21,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch(`/api/community/${storyId}/comments`)
@@ -28,6 +29,32 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
       .then((data) => setComments(data.comments || []))
       .catch(() => {});
   }, [storyId]);
+
+  // Load reported comment IDs from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mamastale_reported_comments");
+      if (saved) setReportedIds(new Set(JSON.parse(saved)));
+    } catch {}
+  }, []);
+
+  const reportComment = (commentId: string) => {
+    const updated = new Set(reportedIds);
+    updated.add(commentId);
+    setReportedIds(updated);
+    try {
+      localStorage.setItem(
+        "mamastale_reported_comments",
+        JSON.stringify([...updated])
+      );
+    } catch {}
+    // Server-side report (fire and forget)
+    fetch(`/api/community/${storyId}/comments/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commentId }),
+    }).catch(() => {});
+  };
 
   const submitComment = async () => {
     if (!newComment.trim() || loading) return;
@@ -48,12 +75,12 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
         return;
       }
 
+      const data = await res.json();
       if (!res.ok) {
-        setSubmitError("댓글 등록에 실패했습니다.");
+        setSubmitError(data.error || "댓글 등록에 실패했습니다.");
         return;
       }
 
-      const data = await res.json();
       if (data.comment) {
         setComments((prev) => [...prev, data.comment]);
         setNewComment("");
@@ -83,7 +110,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
     <div className="px-5 py-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-brown">
-          💬 댓글 {comments.length > 0 && `(${comments.length})`}
+          댓글 {comments.length > 0 && `(${comments.length})`}
         </h3>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -124,7 +151,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
                     href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/community")}`}
                     className="text-coral font-medium ml-1.5 no-underline"
                   >
-                    로그인 →
+                    로그인
                   </a>
                 )}
               </span>
@@ -154,13 +181,30 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
               className="rounded-xl p-3"
               style={{ background: "rgba(255,255,255,0.4)" }}
             >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-medium text-brown">
-                  {comment.author_alias || "익명"}
-                </span>
-                <span className="text-[10px] text-brown-pale">
-                  {formatTime(comment.created_at)}
-                </span>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-brown">
+                    {comment.author_alias || "익명"}
+                  </span>
+                  <span className="text-[10px] text-brown-pale">
+                    {formatTime(comment.created_at)}
+                  </span>
+                </div>
+                {reportedIds.has(comment.id) ? (
+                  <span className="text-[10px] text-brown-pale">신고됨</span>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("이 댓글을 신고하시겠습니까?")) {
+                        reportComment(comment.id);
+                      }
+                    }}
+                    className="text-[10px] text-brown-pale hover:text-red-400 transition-colors"
+                  >
+                    신고
+                  </button>
+                )}
               </div>
               <p className="text-xs text-brown-light font-light leading-relaxed">
                 {comment.content}

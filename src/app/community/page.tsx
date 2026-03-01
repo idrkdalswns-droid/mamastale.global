@@ -6,11 +6,21 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { StoryCard } from "@/components/story/StoryCard";
 import type { Scene } from "@/lib/types/story";
 
+const TOPICS = [
+  { key: "", label: "전체" },
+  { key: "산후우울", label: "산후우울" },
+  { key: "양육번아웃", label: "양육번아웃" },
+  { key: "시댁갈등", label: "시댁갈등" },
+  { key: "경력단절", label: "경력단절" },
+  { key: "자존감", label: "자존감" },
+];
+
 interface CommunityStory {
   id: string;
   title: string;
   scenes: Scene[];
   author_alias: string | null;
+  topic: string | null;
   view_count: number;
   like_count: number;
   created_at: string;
@@ -21,14 +31,17 @@ export default function CommunityBrowsePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sort, setSort] = useState<"recent" | "popular">("recent");
+  const [topic, setTopic] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  const fetchStories = async (sortBy: string, pageNum: number, append = false) => {
+  const fetchStories = async (sortBy: string, topicFilter: string, pageNum: number, append = false) => {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`/api/community?sort=${sortBy}&page=${pageNum}`);
+      const params = new URLSearchParams({ sort: sortBy, page: String(pageNum) });
+      if (topicFilter) params.set("topic", topicFilter);
+      const res = await fetch(`/api/community?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setStories(prev => append ? [...prev, ...data.stories] : data.stories);
@@ -41,14 +54,14 @@ export default function CommunityBrowsePage() {
   };
 
   useEffect(() => {
-    fetchStories(sort, 1);
+    fetchStories(sort, topic, 1);
     setPage(1);
-  }, [sort]);
+  }, [sort, topic]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchStories(sort, nextPage, true);
+    fetchStories(sort, topic, nextPage, true);
   };
 
   return (
@@ -64,15 +77,32 @@ export default function CommunityBrowsePage() {
               mamastale
             </Link>
             <h2 className="font-serif text-lg text-brown font-semibold mt-2">
-              🌍 커뮤니티
+              커뮤니티
             </h2>
             <p className="text-xs text-brown-light font-light mt-1">
               다른 엄마들의 치유 동화를 읽어보세요
             </p>
           </div>
           <Link href="/" className="text-xs text-brown-mid font-light no-underline">
-            ← 홈
+            홈
           </Link>
+        </div>
+
+        {/* Topic filter */}
+        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+          {TOPICS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTopic(t.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                topic === t.key
+                  ? "bg-brown text-white"
+                  : "bg-white/50 text-brown-light border border-brown-pale/15"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Sort tabs */}
@@ -102,15 +132,14 @@ export default function CommunityBrowsePage() {
         {/* Stories */}
         {loading && stories.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-3xl mb-3 animate-pulse">🌍</div>
+            <div className="text-sm text-brown-light mb-3 animate-pulse">...</div>
             <p className="text-sm text-brown-light font-light">불러오는 중...</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
-            <div className="text-3xl mb-3">😕</div>
             <p className="text-sm text-brown-light font-light mb-4">{error}</p>
             <button
-              onClick={() => fetchStories(sort, 1)}
+              onClick={() => fetchStories(sort, topic, 1)}
               className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
               style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
             >
@@ -119,12 +148,11 @@ export default function CommunityBrowsePage() {
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-4xl mb-4">🌱</div>
             <h3 className="font-serif text-lg text-brown font-semibold mb-2">
-              아직 공유된 동화가 없어요
+              {topic ? "해당 주제의 동화가 없어요" : "아직 공유된 동화가 없어요"}
             </h3>
             <p className="text-sm text-brown-light font-light leading-relaxed">
-              첫 번째로 동화를 공유해 보세요!
+              {topic ? "다른 주제를 선택해 보세요" : "첫 번째로 동화를 공유해 보세요!"}
             </p>
           </div>
         ) : (
@@ -139,6 +167,7 @@ export default function CommunityBrowsePage() {
                   createdAt={story.created_at}
                   href={`/community/${story.id}`}
                   authorAlias={story.author_alias || "익명의 엄마"}
+                  topic={story.topic || undefined}
                   viewCount={story.view_count}
                   likeCount={story.like_count}
                 />

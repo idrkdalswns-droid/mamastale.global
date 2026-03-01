@@ -22,15 +22,20 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const sort = searchParams.get("sort") || "recent";
+  const topic = searchParams.get("topic") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = 12;
   const offset = (page - 1) * limit;
 
   let query = supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, view_count, like_count, created_at", { count: "exact" })
+    .select("id, title, scenes, author_alias, topic, view_count, like_count, created_at", { count: "exact" })
     .eq("is_public", true)
     .eq("status", "completed");
+
+  if (topic) {
+    query = query.eq("topic", topic);
+  }
 
   if (sort === "popular") {
     query = query.order("like_count", { ascending: false, nullsFirst: false });
