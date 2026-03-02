@@ -115,7 +115,30 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
     onDone(editedScenes, editedTitle);
   }, [editedScenes, editedTitle, onDone]);
 
-  if (!scene) return null;
+  if (!scene) {
+    return (
+      <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 text-center font-sans">
+        <div className="text-4xl mb-4">😢</div>
+        <h2 className="font-serif text-lg font-bold text-brown mb-2">
+          동화 장면을 불러올 수 없어요
+        </h2>
+        <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+          동화 생성 중 문제가 발생했습니다.<br />
+          다시 시도해 주세요.
+        </p>
+        <button
+          onClick={() => window.location.href = "/"}
+          className="px-8 py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+          style={{
+            background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+            boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+          }}
+        >
+          홈으로 돌아가기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans">
