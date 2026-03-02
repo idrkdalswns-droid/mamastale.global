@@ -47,11 +47,17 @@ export default function Home() {
     }
   }, [authLoading, user, restoreFromStorage, screen]);
 
-  // Detect URL params: payment success + referral code
+  // Detect URL params: payment success, referral code, action=start
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
       setShowPaymentSuccess(true);
+    }
+    // Direct start from library or other pages
+    if (params.get("action") === "start") {
+      window.history.replaceState({}, "", "/");
+      setScreen("onboarding");
+      return;
     }
     // Save referral code to localStorage + show welcome popup
     const ref = params.get("ref");
@@ -228,7 +234,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-dvh bg-cream flex flex-col relative overflow-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="min-h-dvh bg-cream flex flex-col relative overflow-x-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       {/* Background hero image */}
       <Image
         src="/images/hero.jpg"

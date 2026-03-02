@@ -69,7 +69,7 @@ export default function RootLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
           본문으로 건너뛰기
         </a>
-        <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-hidden">
+        <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-x-hidden">
           {children}
         </main>
         <ConsentGatedScripts />
