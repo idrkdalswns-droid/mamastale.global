@@ -15,19 +15,24 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+function cookieOptions(request: NextRequest) {
+  const isLocalhost = request.headers.get("host")?.includes("localhost");
+  return {
+    httpOnly: true,
+    secure: !isLocalhost, // secure=false on localhost (HTTP) so cookie actually sets
+    sameSite: "lax" as const,
+    path: "/",
+    // No maxAge → session cookie (expires when browser closes)
+  };
+}
+
 export async function POST(request: NextRequest) {
   const accessKey = process.env.SITE_ACCESS_KEY;
 
   // No access key configured — gate is disabled
   if (!accessKey) {
     const res = NextResponse.json({ success: true });
-    res.cookies.set("site-access", "verified", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      // No maxAge → session cookie (expires when browser closes)
-    });
+    res.cookies.set("site-access", "verified", cookieOptions(request));
     return res;
   }
 
@@ -53,13 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ success: true });
-    response.cookies.set("site-access", "verified", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      // No maxAge → session cookie (expires when browser closes)
-    });
+    response.cookies.set("site-access", "verified", cookieOptions(request));
 
     return response;
   } catch {

@@ -14,7 +14,9 @@ export default function AuthCallbackPage() {
     const handleCallback = async () => {
       const supabase = createClient();
       if (!supabase) {
-        router.push("/");
+        console.error("[AuthCallback] Supabase client unavailable — env vars missing?");
+        setErrorMsg("서비스 연결에 실패했습니다.\n잠시 후 다시 시도해 주세요.");
+        setStatus("error");
         return;
       }
 
@@ -40,9 +42,18 @@ export default function AuthCallbackPage() {
             exchangeError.message.includes("code verifier") ||
             exchangeError.message.includes("both auth code and code verifier");
 
+          const isExpiredError =
+            exchangeError.message.includes("expired") ||
+            exchangeError.message.includes("invalid") ||
+            exchangeError.message.includes("not found");
+
           if (isCodeVerifierError) {
             setErrorMsg(
               "이메일 인증은 완료되었습니다!\n인앱 브라우저에서 열린 것 같아요.\nSafari나 Chrome에서 로그인해 주세요."
+            );
+          } else if (isExpiredError) {
+            setErrorMsg(
+              "인증 링크가 만료되었습니다.\n로그인 페이지에서 로그인하시면\n인증 메일을 다시 받을 수 있어요."
             );
           } else {
             setErrorMsg(

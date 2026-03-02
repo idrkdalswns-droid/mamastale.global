@@ -7,6 +7,11 @@ export function createClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
+    console.error(
+      "[Supabase] Client initialization failed — missing env vars:",
+      !url ? "NEXT_PUBLIC_SUPABASE_URL" : "",
+      !key ? "NEXT_PUBLIC_SUPABASE_ANON_KEY" : ""
+    );
     return null;
   }
 

@@ -13,6 +13,27 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"" | "sending" | "sent" | "error">("");
+
+  const handleResendVerification = async () => {
+    if (!email || resendStatus === "sending") return;
+    setResendStatus("sending");
+    try {
+      const supabase = createClient();
+      if (!supabase) { setResendStatus("error"); return; }
+      const { error: resendErr } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim(),
+      });
+      if (resendErr) {
+        console.error("[Signup] Resend error:", resendErr.message);
+        setResendStatus("error");
+      } else {
+        setResendStatus("sent");
+      }
+    } catch { setResendStatus("error"); }
+  };
 
   // OAuth signup handlers — to be enabled when Kakao/Google providers are configured
   // const handleOAuthSignup = async (provider: "kakao" | "google") => { ... };
@@ -21,37 +42,72 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setShowResend(false);
+    setResendStatus("");
 
     const supabase = createClient();
     if (!supabase) {
-      window.location.href = "/";
+      setError("서비스 연결에 실패했습니다. 페이지를 새로고침해 주세요.");
+      setLoading(false);
       return;
     }
 
+    const trimmedEmail = email.trim().toLowerCase();
+
     try {
-      const { error: authError } = await supabase.auth.signUp({
-        email,
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: trimmedEmail,
         password,
         options: {
-          data: { name },
+          data: { name: name.trim() },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (authError) {
+        console.error("[Signup] Error:", authError.message, authError.status);
+
         if (authError.message.includes("already registered")) {
           setError("이미 가입된 이메일입니다. 로그인을 시도해 주세요.");
         } else if (authError.message.includes("password")) {
           setError("비밀번호는 6자 이상이어야 합니다.");
+        } else if (
+          authError.message.includes("rate") ||
+          authError.message.includes("limit") ||
+          authError.message.includes("exceeded") ||
+          authError.status === 429
+        ) {
+          setError("요청이 너무 많습니다. 1~2분 후 다시 시도해 주세요.");
+        } else if (
+          authError.message.includes("not authorized") ||
+          authError.message.includes("Signups not allowed") ||
+          authError.message.includes("disabled")
+        ) {
+          setError("현재 회원가입이 비활성화되어 있습니다.");
+        } else if (authError.message.includes("invalid") || authError.message.includes("email")) {
+          setError("올바른 이메일 주소를 입력해 주세요.");
         } else {
-          setError("회원가입에 실패했습니다. 다시 시도해 주세요.");
+          setError(`회원가입에 실패했습니다. (${authError.message})`);
         }
         return;
       }
 
+      // FIX: Supabase returns fake success for already-registered users
+      // (to prevent email enumeration). Check identities to detect this.
+      if (
+        data?.user &&
+        (!data.user.identities || data.user.identities.length === 0)
+      ) {
+        console.warn("[Signup] User already exists (identities empty):", trimmedEmail);
+        setError("이미 가입된 이메일입니다. 로그인을 시도하시거나, 아래에서 인증 메일을 다시 받아보세요.");
+        setShowResend(true);
+        return;
+      }
+
       setSuccess(true);
-    } catch {
-      setError("회원가입에 실패했습니다. 다시 시도해 주세요.");
+    } catch (err) {
+      console.error("[Signup] Unexpected error:", err);
+      setError("회원가입에 실패했습니다. 네트워크 연결을 확인하고 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -70,11 +126,29 @@ export default function SignupPage() {
             <br />
             메일의 링크를 클릭하시면 가입이 완료됩니다.
           </p>
-          <p className="text-[11px] text-brown-pale font-light leading-relaxed mb-6">
+          <p className="text-[11px] text-brown-pale font-light leading-relaxed mb-4">
             💡 메일이 보이지 않으면 스팸함을 확인해 주세요.
             <br />
             인증 링크는 같은 브라우저(Safari/Chrome)에서 열어주세요.
           </p>
+
+          {/* Resend button on success screen too */}
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={resendStatus === "sending" || resendStatus === "sent"}
+            className="w-full max-w-xs mx-auto text-xs text-center font-medium py-2.5 rounded-xl transition-all disabled:opacity-50 mb-4"
+            style={{ background: "rgba(224,122,95,0.08)", color: "#E07A5F" }}
+          >
+            {resendStatus === "sent"
+              ? "✓ 인증 메일을 다시 보냈습니다"
+              : resendStatus === "sending"
+              ? "전송 중..."
+              : resendStatus === "error"
+              ? "전송 실패 — 다시 시도"
+              : "인증 메일 다시 보내기"}
+          </button>
+
           <Link
             href="/login"
             className="inline-flex items-center justify-center min-h-[44px] px-8 py-3 rounded-full text-sm font-medium text-white no-underline"
@@ -151,6 +225,23 @@ export default function SignupPage() {
           />
 
           {error && <p className="text-xs text-coral text-center">{error}</p>}
+          {showResend && (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendStatus === "sending" || resendStatus === "sent"}
+              className="w-full text-xs text-center font-medium py-2.5 rounded-xl transition-all disabled:opacity-50"
+              style={{ background: "rgba(224,122,95,0.08)", color: "#E07A5F" }}
+            >
+              {resendStatus === "sent"
+                ? "✓ 인증 메일을 다시 보냈습니다"
+                : resendStatus === "sending"
+                ? "전송 중..."
+                : resendStatus === "error"
+                ? "전송 실패 — 다시 시도"
+                : "인증 메일 다시 보내기"}
+            </button>
+          )}
 
           {/* GR-6: Affirmative consent checkbox */}
           <label className="flex items-start gap-2.5 cursor-pointer">

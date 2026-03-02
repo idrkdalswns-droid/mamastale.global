@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
-      "connect-src 'self' https://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com",
       "frame-src https://js.stripe.com https://js.tosspayments.com",
     ].join("; ")
   );
@@ -55,9 +55,11 @@ export async function middleware(request: NextRequest) {
     const isApiRoute = pathname.startsWith("/api/");
     // Auth callbacks must bypass access gate (email verification links, OAuth callbacks)
     const isAuthCallback = pathname === "/auth/callback" || pathname === "/api/auth/callback";
+    // Auth pages must bypass access gate (users from email links in different browser won't have cookie)
+    const isAuthRoute = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password";
     const hasAccess = request.cookies.get("site-access")?.value === "verified";
 
-    if (!hasAccess && !isAccessPage && !isVerifyApi && !isAuthCallback && !isCrawler) {
+    if (!hasAccess && !isAccessPage && !isVerifyApi && !isAuthCallback && !isAuthRoute && !isCrawler) {
       // Block API routes with 403, redirect pages to /access
       if (isApiRoute) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
