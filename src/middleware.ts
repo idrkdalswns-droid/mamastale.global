@@ -53,9 +53,11 @@ export async function middleware(request: NextRequest) {
     const isAccessPage = pathname === "/access";
     const isVerifyApi = pathname === "/api/verify-access";
     const isApiRoute = pathname.startsWith("/api/");
+    // Auth callbacks must bypass access gate (email verification links, OAuth callbacks)
+    const isAuthCallback = pathname === "/auth/callback" || pathname === "/api/auth/callback";
     const hasAccess = request.cookies.get("site-access")?.value === "verified";
 
-    if (!hasAccess && !isAccessPage && !isVerifyApi && !isCrawler) {
+    if (!hasAccess && !isAccessPage && !isVerifyApi && !isAuthCallback && !isCrawler) {
       // Block API routes with 403, redirect pages to /access
       if (isApiRoute) {
         return NextResponse.json({ error: "Access denied" }, { status: 403 });
@@ -73,6 +75,14 @@ export async function middleware(request: NextRequest) {
     if (hasAccess && isAccessPage) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+  }
+
+  // ─── Safety net: redirect /?code= to /auth/callback ───
+  // Handles legacy email links or misconfigured redirects
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    callbackUrl.searchParams.set("code", request.nextUrl.searchParams.get("code")!);
+    return NextResponse.redirect(callbackUrl);
   }
 
   // Skip auth check if Supabase is not configured

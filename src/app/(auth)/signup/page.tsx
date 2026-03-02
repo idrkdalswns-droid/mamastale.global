@@ -34,7 +34,7 @@ export default function SignupPage() {
         password,
         options: {
           data: { name },
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -65,16 +65,22 @@ export default function SignupPage() {
           <h2 className="font-serif text-xl text-brown font-semibold mb-3">
             이메일을 확인해 주세요
           </h2>
-          <p className="text-sm text-brown-light font-light leading-relaxed mb-6">
+          <p className="text-sm text-brown-light font-light leading-relaxed mb-2">
             <strong>{email}</strong>로 인증 메일을 보내드렸습니다.
             <br />
             메일의 링크를 클릭하시면 가입이 완료됩니다.
           </p>
+          <p className="text-[11px] text-brown-pale font-light leading-relaxed mb-6">
+            💡 메일이 보이지 않으면 스팸함을 확인해 주세요.
+            <br />
+            인증 링크는 같은 브라우저(Safari/Chrome)에서 열어주세요.
+          </p>
           <Link
             href="/login"
-            className="inline-block px-6 py-3 rounded-full text-sm font-medium text-white no-underline"
+            className="inline-flex items-center justify-center min-h-[44px] px-8 py-3 rounded-full text-sm font-medium text-white no-underline"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
             로그인 페이지로
