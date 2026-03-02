@@ -243,13 +243,32 @@ export default function SignupPage() {
             </button>
           )}
 
-          {/* GR-6: Affirmative consent checkbox */}
-          <label className="flex items-start gap-2.5 cursor-pointer">
+          {/* GR-6: Affirmative consent checkbox — large touch target for mobile */}
+          <label
+            className="flex items-start gap-3 cursor-pointer rounded-2xl px-4 py-3.5 transition-all"
+            style={{
+              background: consent ? "rgba(224,122,95,0.08)" : "rgba(255,255,255,0.5)",
+              border: consent ? "1.5px solid rgba(224,122,95,0.3)" : "1.5px solid rgba(196,149,106,0.15)",
+            }}
+          >
+            <div
+              className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all"
+              style={{
+                background: consent ? "#E07A5F" : "rgba(255,255,255,0.8)",
+                border: consent ? "none" : "1.5px solid rgba(196,149,106,0.25)",
+              }}
+            >
+              {consent && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded accent-coral"
+              className="sr-only"
               required
             />
             <span className="text-[11px] text-brown-light leading-relaxed">
@@ -262,13 +281,18 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading || !consent}
-            className="w-full py-3.5 rounded-full text-white text-sm font-medium active:scale-[0.97] transition-transform disabled:opacity-50"
+            className="w-full py-3.5 rounded-full text-white text-sm font-medium active:scale-[0.97] transition-transform"
             style={{
-              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
-              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+              background: consent
+                ? "linear-gradient(135deg, #E07A5F, #D4836B)"
+                : "rgba(196,149,106,0.3)",
+              boxShadow: consent
+                ? "0 6px 20px rgba(224,122,95,0.3)"
+                : "none",
+              opacity: loading ? 0.5 : 1,
             }}
           >
-            {loading ? "가입 중..." : "무료로 시작하기"}
+            {loading ? "가입 중..." : consent ? "무료로 시작하기" : "👆 위 약관에 동의해 주세요"}
           </button>
         </form>
 
