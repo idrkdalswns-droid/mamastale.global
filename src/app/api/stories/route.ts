@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     const storyInsert: Record<string, unknown> = {
       user_id: user.id,
       session_id: isValidUUID ? sessionId : null,
-      title: title || "나의 치유 동화",
+      title: title || "나의 마음 동화",
       scenes,
       metadata: metadata || {},
       status: "completed",

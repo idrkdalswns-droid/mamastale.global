@@ -15,7 +15,7 @@ export default function TermsPage() {
           <p>본 약관은 마마스테일(이하 &quot;서비스&quot;)의 이용 조건 및 절차, 회사와 이용자 간의 권리·의무를 규정합니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제2조 (서비스 내용)</h2>
-          <p>AI 기반 치유적 대화 서비스, 10장면 동화 창작, PDF 다운로드, 피드백 제출 등의 기능을 제공합니다.</p>
+          <p>AI 기반 마음 돌봄 대화 서비스, 10장면 동화 창작, PDF 다운로드, 피드백 제출 등의 기능을 제공합니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제3조 (의료 면책)</h2>
           <p>본 서비스는 의료 행위를 대체하지 않습니다. AI 상담은 참고용이며, 전문 의료 상담이 필요한 경우 반드시 전문가의 도움을 받으시기 바랍니다. 긴급 상황 시 자살예방상담전화 1393, 정신건강위기상담 1577-0199로 연락해 주세요.</p>

@@ -14,9 +14,9 @@ export const metadata: Metadata = {
     "엄마엄마동화",
     "산후우울증",
     "양육 번아웃",
-    "치유 동화",
+    "마음 동화",
     "내러티브 테라피",
-    "치유 상담",
+    "마음 상담",
   ],
   openGraph: {
     title: "mamastale — 엄마의 삶이 아이의 동화가 되다",

@@ -33,7 +33,7 @@ export default function StoryCompleteCTA({
           나의 동화가<br />완성되었어요
         </h2>
         <p className="text-sm text-brown-light font-light leading-relaxed mb-8 break-keep">
-          세상에 하나뿐인 치유 동화를<br />
+          세상에 하나뿐인 마음 동화를<br />
           지금 바로 확인해 보세요
         </p>
         <button

@@ -193,7 +193,7 @@ export function StoryPDFDocument({
       <Page size="A5" style={styles.coverPage}>
         <View style={styles.decorLine} />
         <Text style={styles.coverTitle}>{title}</Text>
-        <Text style={styles.coverSubtitle}>{authorName}의 치유 동화</Text>
+        <Text style={styles.coverSubtitle}>{authorName}의 마음 동화</Text>
         <Text style={styles.coverBrand}>MAMASTALE</Text>
         <Text style={styles.coverDate}>{createdAt}</Text>
       </Page>

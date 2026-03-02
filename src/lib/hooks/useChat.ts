@@ -157,7 +157,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved) {
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
-          const storyTitle = "나의 치유 동화";
+          const storyTitle = "나의 마음 동화";
           const saveRes = await fetch("/api/stories", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

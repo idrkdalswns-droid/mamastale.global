@@ -89,7 +89,7 @@ export default function LibraryPage() {
             </h3>
             <p className="text-sm text-brown-light font-light mb-6 leading-relaxed">
               따뜻한 대화를 나누며<br />
-              나만의 치유 동화를 만들어 보세요
+              나만의 마음 동화를 만들어 보세요
             </p>
             <Link
               href="/?action=start"

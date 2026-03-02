@@ -12,7 +12,7 @@ export interface Phase {
 export const PHASES: Record<number, Phase> = {
   1: {
     id: 1,
-    name: "공감적 치유자",
+    name: "공감적 상담사",
     theory: "있는 그대로 들어줘요",
     icon: "🫧",
     bg: "#EEF6F3",

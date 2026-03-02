@@ -53,7 +53,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
         // Story not yet saved — create new public story
         const title = completedScenes[0]?.title
           ? `${completedScenes[0].title}의 이야기`
-          : "나의 치유 동화";
+          : "나의 마음 동화";
 
         res = await fetch("/api/stories", {
           method: "POST",
@@ -98,7 +98,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
             당신의 동화가<br />완성되었어요
           </h1>
           <p className="text-sm text-brown-light font-light leading-relaxed break-keep">
-            세상에 하나뿐인 치유 동화를<br />
+            세상에 하나뿐인 마음 동화를<br />
             아이에게 들려주세요
           </p>
         </div>
@@ -119,7 +119,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
             <div className="flex justify-center gap-6">
               <div className="text-center">
                 <div className="text-2xl font-serif font-bold text-coral">4</div>
-                <div className="text-[10px] text-brown-light font-light mt-1">치유 단계</div>
+                <div className="text-[10px] text-brown-light font-light mt-1">마음 단계</div>
               </div>
               <div className="w-[1px] bg-brown-pale/20" />
               <div className="text-center">
@@ -255,7 +255,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
               <>
                 <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
                   남은 티켓 <span className="text-coral font-semibold">{ticketsRemaining}장</span>으로<br />
-                  다른 상처, 다른 은유, 새로운 치유 동화를 만들어 보세요
+                  다른 상처, 다른 은유, 새로운 마음 동화를 만들어 보세요
                 </p>
                 <button
                   onClick={onRestart}
@@ -272,7 +272,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
               <>
                 <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
                   동화 1권 티켓 · ₩2,000<br />
-                  다른 상처, 다른 은유, 새로운 치유 동화가 탄생합니다
+                  다른 상처, 다른 은유, 새로운 마음 동화가 탄생합니다
                 </p>
                 <Link
                   href="/pricing"

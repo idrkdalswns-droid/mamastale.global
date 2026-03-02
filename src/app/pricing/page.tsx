@@ -118,7 +118,7 @@ export default function PricingPage() {
           </h2>
           <p className="text-sm text-brown-light font-light leading-relaxed">
             첫 동화는 무료, 그 다음부터는<br />
-            커피 한 잔 값으로 새로운 치유 동화를
+            커피 한 잔 값으로 새로운 마음 동화를
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export default function PricingPage() {
           <ul className="space-y-2.5 mb-5">
             {[
               "첫 1회 완전한 동화 창작 체험",
-              "4단계 치유 대화 (공감 → 질문 → 은유 → 동화)",
+              "4단계 마음 대화 (공감 → 질문 → 은유 → 동화)",
               "10장면 동화 완성",
               "PDF 다운로드",
             ].map((f, i) => (
@@ -218,7 +218,7 @@ export default function PricingPage() {
 
           <ul className="space-y-2.5 mb-5">
             {[
-              "4단계 치유 대화 전 과정 1회",
+              "4단계 마음 대화 전 과정 1회",
               "새로운 상처, 새로운 은유, 새로운 동화",
               "10장면 동화 완성 + PDF 다운로드",
               "티켓은 소멸 기한 없음",
@@ -304,7 +304,7 @@ export default function PricingPage() {
           <div className="space-y-3">
             {[
               { emoji: "💰", text: "구독 부담 없이 필요할 때만 결제" },
-              { emoji: "📖", text: "한 권 한 권이 완전한 치유 여정" },
+              { emoji: "📖", text: "한 권 한 권이 완전한 마음 여정" },
               { emoji: "🎁", text: "소중한 사람에게 티켓 선물 가능" },
               { emoji: "♾️", text: "소멸 기한 없어서 여유롭게 사용" },
             ].map((item, i) => (

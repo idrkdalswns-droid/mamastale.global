@@ -23,11 +23,11 @@ export async function generateMetadata({
   const { id } = await params;
 
   const fallback: Metadata = {
-    title: "치유 동화 | mamastale",
-    description: "엄마의 마음이 담긴 세상에 하나뿐인 치유 동화입니다.",
+    title: "마음 동화 | mamastale",
+    description: "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.",
     openGraph: {
-      title: "치유 동화 | mamastale",
-      description: "엄마의 마음이 담긴 세상에 하나뿐인 치유 동화입니다.",
+      title: "마음 동화 | mamastale",
+      description: "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.",
       type: "article",
     },
   };
@@ -45,14 +45,14 @@ export async function generateMetadata({
 
     if (!story) return fallback;
 
-    const title = story.title || "치유 동화";
+    const title = story.title || "마음 동화";
     const author = story.author_alias || "익명의 엄마";
     const firstScene = Array.isArray(story.scenes) && story.scenes.length > 0
       ? (story.scenes[0] as { text?: string }).text || ""
       : "";
     const description = firstScene.length > 100
       ? firstScene.slice(0, 100) + "..."
-      : firstScene || "엄마의 마음이 담긴 세상에 하나뿐인 치유 동화입니다.";
+      : firstScene || "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.";
 
     return {
       title: `${title} — ${author} | mamastale`,

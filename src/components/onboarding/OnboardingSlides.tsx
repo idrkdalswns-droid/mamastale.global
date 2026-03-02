@@ -21,7 +21,7 @@ interface Slide {
 const slides: Slide[] = [
   {
     step: 1,
-    persona: "공감적 치유자",
+    persona: "공감적 상담사",
     icon: "🫧",
     accent: "#7FBFB0",
     title: "먼저, 편안하게\n마음을 열어주세요",
@@ -49,7 +49,7 @@ const slides: Slide[] = [
     icon: "📖",
     accent: "#C4956A",
     title: "세상에 하나뿐인\n동화가 완성돼요",
-    body: "아이의 눈높이에 맞춘\n10장면의 치유 동화가 만들어집니다.\n\n어머니의 상처가\n아이를 위한 사랑의 이야기로.\n\n약 15~20분이면 충분해요",
+    body: "아이의 눈높이에 맞춘\n10장면의 마음 동화가 만들어집니다.\n\n어머니의 상처가\n아이를 위한 사랑의 이야기로.\n\n약 15~20분이면 충분해요",
   },
   {
     step: 0,

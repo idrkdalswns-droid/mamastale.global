@@ -186,7 +186,7 @@ export default function Home() {
     return (
       <StoryEditor
         scenes={completedScenes}
-        title={completedScenes[0]?.title || "나의 치유 동화"}
+        title={completedScenes[0]?.title || "나의 마음 동화"}
         onDone={(edited, title) => {
           updateScenes(edited);
           setEditedTitle(title);
@@ -209,7 +209,7 @@ export default function Home() {
     return (
       <StoryViewer
         scenes={completedScenes}
-        title={editedTitle || completedScenes[0]?.title || "나의 치유 동화"}
+        title={editedTitle || completedScenes[0]?.title || "나의 마음 동화"}
         authorName={user?.user_metadata?.name || undefined}
         onBack={() => setScreen("feedback")}
         onBackLabel="피드백 남기기 →"
@@ -343,7 +343,7 @@ export default function Home() {
               <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
               가 됩니다.
               <br />
-              따뜻한 대화를 나누며 4단계 치유 여정을 체험하고,
+              따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
           </div>
@@ -556,7 +556,7 @@ export default function Home() {
             <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
               동화를 만들려면 티켓이 필요합니다.<br />
               티켓을 구매하고 나만의<br />
-              <span className="text-coral font-medium">치유 동화</span>를 만들어 보세요.
+              <span className="text-coral font-medium">마음 동화</span>를 만들어 보세요.
             </p>
             <Link
               href="/pricing"
@@ -604,7 +604,7 @@ export default function Home() {
             </p>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
               이제 아이를 위한 아름다운<br />
-              <span className="text-coral font-medium">세상에 하나뿐인 치유 동화</span>를<br />
+              <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
               만들어 볼까요?
             </p>
             <button
@@ -652,7 +652,7 @@ export default function Home() {
             <p className="text-[13px] text-brown-light font-light leading-relaxed mb-4 break-keep">
               <span className="text-coral font-semibold">mamastale</span>은
               엄마의 이야기를 아이를 위한{" "}
-              <span className="text-coral font-medium">세상에 하나뿐인 치유 동화</span>
+              <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>
               로 만들어주는 서비스예요.
             </p>
             <div

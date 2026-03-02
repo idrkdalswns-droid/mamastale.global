@@ -24,7 +24,7 @@ const PHASE_MESSAGES: Record<number, { title: string; subtitle: string }> = {
   },
   4: {
     title: "동화가 완성되어 가요",
-    subtitle: "세상에 하나뿐인 치유의 이야기",
+    subtitle: "세상에 하나뿐인 마음의 이야기",
   },
 };
 

@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           </ul>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">3. 개인정보 이용 목적</h2>
-          <p>서비스 제공 및 개선, 맞춤형 치유 경험 제공, 결제 처리, 고객 지원</p>
+          <p>서비스 제공 및 개선, 맞춤형 마음 돌봄 경험 제공, 결제 처리, 고객 지원</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">4. AI 데이터 처리 안내</h2>
           <p>본 서비스는 동화 생성을 위해 이용자의 대화 내용을 <strong>Anthropic (Claude API)</strong>에 전송합니다. 이는 서비스의 핵심 기능을 제공하기 위해 필수적이며, 회원가입 시 이에 대한 동의를 받고 있습니다.</p>

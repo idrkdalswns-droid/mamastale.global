@@ -135,7 +135,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
             </h3>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-5 break-keep">
               회원가입 후 <span className="text-coral font-medium">지금 대화를 이어서</span><br />
-              나만의 치유 동화를 완성할 수 있어요.
+              나만의 마음 동화를 완성할 수 있어요.
             </p>
             {/* S7-03: Primary CTA style for signup — conversion critical */}
             <button

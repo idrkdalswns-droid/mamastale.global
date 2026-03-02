@@ -109,7 +109,7 @@ export default function LibraryStoryPage() {
   return (
     <StoryViewer
       scenes={story.scenes}
-      title={story.title || "나의 치유 동화"}
+      title={story.title || "나의 마음 동화"}
       authorName={user?.user_metadata?.name || undefined}
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}

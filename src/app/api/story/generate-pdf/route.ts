@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { scenes, title, authorName } = parsed.data;
-    const storyTitle = escapeHtml(title || "나의 치유 동화");
+    const storyTitle = escapeHtml(title || "나의 마음 동화");
     const author = escapeHtml(authorName || "어머니");
     const createdAt = new Date().toLocaleDateString("ko-KR");
 
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     )
     .join("")}
   <div class="footer">
-    <p>MammasTale · 엄마의 치유 동화</p>
+    <p>MammasTale · 엄마의 마음 동화</p>
     <p>이 동화는 AI와 함께 만든 특별한 이야기입니다.</p>
   </div>
   <script>window.onload = function() { window.print(); }</script>

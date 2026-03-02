@@ -103,7 +103,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
   const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
   const isFirst = currentScene === 0;
   const isLast = currentScene === scenes.length - 1;
-  const storyTitle = title || "나의 치유 동화";
+  const storyTitle = title || "나의 마음 동화";
 
   // FR-001: Swipe gestures for scene navigation
   const goNext = useCallback(() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1)), [scenes.length]);

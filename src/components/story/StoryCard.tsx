@@ -57,7 +57,7 @@ export const StoryCard = memo(function StoryCard({
       )}
 
       <h3 className="font-serif text-sm font-semibold text-brown mb-1.5 leading-tight line-clamp-2">
-        {title || "나의 치유 동화"}
+        {title || "나의 마음 동화"}
       </h3>
 
       {previewText && (

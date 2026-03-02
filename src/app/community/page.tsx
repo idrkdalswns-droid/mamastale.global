@@ -80,7 +80,7 @@ export default function CommunityBrowsePage() {
               커뮤니티
             </h2>
             <p className="text-xs text-brown-light font-light mt-1">
-              다른 엄마들의 치유 동화를 읽어보세요
+              다른 엄마들의 마음 동화를 읽어보세요
             </p>
           </div>
           <Link href="/" className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center">

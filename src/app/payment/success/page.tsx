@@ -113,7 +113,7 @@ function PaymentSuccessContent() {
         </p>
         <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
           이제 아이를 위한 아름다운<br />
-          <span className="text-coral font-medium">세상에 하나뿐인 치유 동화</span>를<br />
+          <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
           만들어 볼까요?
         </p>
         <button

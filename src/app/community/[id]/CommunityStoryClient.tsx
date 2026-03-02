@@ -101,7 +101,7 @@ export default function CommunityStoryClient() {
       <div className="flex-1">
         <StoryViewer
           scenes={story.scenes}
-          title={story.title || "치유 동화"}
+          title={story.title || "마음 동화"}
           authorName={story.author_alias || "익명의 엄마"}
           onBack={() => router.push("/community")}
           embedded
@@ -135,7 +135,7 @@ export default function CommunityStoryClient() {
                 const url = `${window.location.origin}/community/${story.id}`;
                 if (navigator.share) {
                   try {
-                    await navigator.share({ title: story.title || "치유 동화", url });
+                    await navigator.share({ title: story.title || "마음 동화", url });
                   } catch { /* user cancelled */ }
                 } else {
                   await navigator.clipboard.writeText(url);
