@@ -31,7 +31,7 @@ const chatRequestSchema = z.object({
 const RATE_WINDOW_MS = 60_000; // 1 minute
 const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
-const GUEST_TURN_LIMIT = 3;   // Server-side guest message limit
+const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client)
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     const response = await callAnthropicWithRetry(anthropic, {
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
+      max_tokens: 4096,
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     // Server-side forward-only enforcement: never go backward
     const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
     const cleanText = stripPhaseTag(rawText);
-    const storyComplete = isStoryComplete(cleanText, phase);
+    const storyComplete = isStoryComplete(cleanText, phase, safePhase);
 
     let storyId: string | undefined;
     let scenes: ReturnType<typeof parseStoryScenes> = [];

@@ -57,7 +57,9 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
       let block = allPhase4Text.slice(startIdx, endIdx).trim();
 
       // Strip the "— description" part after the tag (e.g., "— 문제 상황 소개")
-      block = block.replace(/^[\s—–\-]+[^\n]*\n?/, "").trim();
+      // IMPORTANT: Only strip if line starts with a dash/em-dash, NOT just whitespace
+      // Otherwise we'd delete the first sentence of the scene content
+      block = block.replace(/^[\s]*[—–\-]{1,3}\s*[^\n]*\n?/, "").trim();
 
       // Extract image prompt if present
       let imagePrompt: string | undefined;

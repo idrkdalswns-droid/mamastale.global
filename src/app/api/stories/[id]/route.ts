@@ -4,6 +4,21 @@ import { sanitizeText, containsProfanity, isValidUUID } from "@/lib/utils/valida
 
 export const runtime = "edge";
 
+/** Try cookie auth first, then fallback to Authorization bearer token */
+async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
+  const { data, error } = await sb.client.auth.getUser();
+  if (data.user) return data.user;
+
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const { data: tokenData } = await sb.client.auth.getUser(token);
+    if (tokenData.user) return tokenData.user;
+  }
+
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,7 +34,7 @@ export async function GET(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
@@ -54,7 +69,7 @@ export async function PATCH(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }

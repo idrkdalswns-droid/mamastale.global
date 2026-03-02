@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { StoryEditor } from "@/components/story/StoryEditor";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { createClient } from "@/lib/supabase/client";
 import type { Scene } from "@/lib/types/story";
 
 interface StoryData {
@@ -30,14 +31,28 @@ export default function LibraryStoryPage() {
   useEffect(() => {
     if (!params.id) return;
 
-    fetch(`/api/stories/${params.id}`)
-      .then((res) => {
+    // Include auth token in headers (belt-and-suspenders for cookie issues)
+    (async () => {
+      try {
+        const headers: Record<string, string> = {};
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+        } catch { /* ignore */ }
+
+        const res = await fetch(`/api/stories/${params.id}`, { headers });
         if (!res.ok) throw new Error("Not found");
-        return res.json();
-      })
-      .then((data) => setStory(data.story))
-      .catch(() => setError("동화를 찾을 수 없습니다."))
-      .finally(() => setLoading(false));
+        const data = await res.json();
+        setStory(data.story);
+      } catch {
+        setError("동화를 찾을 수 없습니다.");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [params.id]);
 
   // FR-007: Save edited story via PATCH API
@@ -46,9 +61,17 @@ export default function LibraryStoryPage() {
       if (!story) return;
       setSaving(true);
       try {
+        // Include auth token for cookie fallback
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        } catch { /* ignore */ }
+
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ title: editedTitle, scenes: editedScenes }),
         });
         if (res.ok) {

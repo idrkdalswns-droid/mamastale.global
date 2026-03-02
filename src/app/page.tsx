@@ -212,7 +212,7 @@ export default function Home() {
     return (
       <StoryEditor
         scenes={completedScenes}
-        title={completedScenes[0]?.title || "나의 마음 동화"}
+        title="나의 마음 동화"
         onDone={(edited, title) => {
           updateScenes(edited);
           setEditedTitle(title);
@@ -237,7 +237,7 @@ export default function Home() {
     return (
       <StoryViewer
         scenes={completedScenes}
-        title={editedTitle || completedScenes[0]?.title || "나의 마음 동화"}
+        title={editedTitle || "나의 마음 동화"}
         authorName={user?.user_metadata?.name || undefined}
         onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
         onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}

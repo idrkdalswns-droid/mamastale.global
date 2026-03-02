@@ -31,10 +31,14 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     isTransitioning,
     storyDone,
     completedStoryId,
+    completedScenes,
+    storySaved,
+    storySaveError,
     sendMessage,
     initSession,
     persistToStorage,
     saveDraft,
+    retrySaveStory,
   } = useChatStore();
 
   const router = useRouter();
@@ -188,12 +192,65 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         </div>
       )}
 
-      {/* Story complete CTA */}
-      {storyDone && (
+      {/* Story complete CTA — only show if scenes were actually parsed */}
+      {storyDone && completedScenes.length > 0 && (
         <StoryCompleteCTA
           storyId={completedStoryId || ""}
           onViewStory={onComplete}
         />
+      )}
+
+      {/* Story save error indicator */}
+      {storyDone && storySaveError && !storySaved && (
+        <div className="fixed bottom-[140px] left-1/2 -translate-x-1/2 z-[75] w-[90%] max-w-sm">
+          <div
+            className="rounded-2xl p-4 text-center"
+            style={{ background: "rgba(255,255,255,0.95)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", backdropFilter: "blur(8px)" }}
+          >
+            <p className="text-sm text-brown font-medium mb-2">
+              {storySaveError === "login_required" ? "동화 저장을 위해 로그인이 필요해요" :
+               storySaveError === "no_tickets" ? "티켓이 부족하여 저장할 수 없어요" :
+               "동화 저장에 실패했어요"}
+            </p>
+            <button
+              onClick={() => retrySaveStory()}
+              className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+            >
+              다시 저장하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Story done but no scenes parsed — show error instead of celebration */}
+      {storyDone && completedScenes.length === 0 && !isLoading && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+          style={{ background: "rgba(253,249,244,0.88)", backdropFilter: "blur(14px)" }}
+        >
+          <div className="w-full max-w-sm text-center">
+            <div className="text-[48px] mb-4">😢</div>
+            <h2 className="font-serif text-xl font-bold text-brown mb-2">
+              동화 생성에 문제가 발생했어요
+            </h2>
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+              대화는 잘 마무리되었지만<br />
+              동화 장면을 만들지 못했어요.<br />
+              다시 시도해 주세요.
+            </p>
+            <button
+              onClick={() => onGoHome()}
+              className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+              }}
+            >
+              홈으로 돌아가기
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Input bar — disabled when guest limit reached */}

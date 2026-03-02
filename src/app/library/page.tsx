@@ -6,6 +6,7 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { BookshelfGrid } from "@/components/story/Bookshelf";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
+import { createClient } from "@/lib/supabase/client";
 import type { Scene } from "@/lib/types/story";
 
 interface StoryItem {
@@ -31,7 +32,17 @@ export default function LibraryPage() {
 
   const fetchStories = async () => {
     try {
-      const res = await fetch("/api/stories");
+      // Include auth token in headers (belt-and-suspenders for cookie issues)
+      const headers: Record<string, string> = {};
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch { /* ignore */ }
+
+      const res = await fetch("/api/stories", { headers });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setStories(data.stories || []);
