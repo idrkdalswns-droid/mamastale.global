@@ -379,7 +379,7 @@ export default function Home() {
                 border: "1px solid rgba(109,76,145,0.12)",
               }}
             >
-              샘플 동화
+              커뮤니티
             </Link>
             <Link
               href="/pricing"
@@ -414,8 +414,8 @@ export default function Home() {
                     {p.name}
                   </div>
                   <div
-                    className="text-[10px] font-sans font-light"
-                    style={{ color: p.text, opacity: 0.55 }}
+                    className="text-[10px] font-sans font-normal"
+                    style={{ color: p.text, opacity: 0.7 }}
                   >
                     {p.theory}
                   </div>
@@ -431,7 +431,10 @@ export default function Home() {
           {user && ticketsRemaining !== null && (
             <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
               <span className="text-xs text-brown font-medium">
-                남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span>
+                {ticketsRemaining > 0
+                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
+                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
+                }
               </span>
               {ticketsRemaining <= 0 && (
                 <Link
@@ -465,7 +468,7 @@ export default function Home() {
           {/* Free trial + time hint for non-logged-in users */}
           {!user && !authLoading && (
             <p className="text-[11px] text-brown-pale font-normal text-center mt-2.5 leading-relaxed">
-              회원가입 없이 3회 무료 대화 · 약 15분이면 충분해요
+              회원가입 없이 5회 무료 대화 · 약 15분이면 충분해요
             </p>
           )}
 

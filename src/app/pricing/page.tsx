@@ -125,8 +125,10 @@ export default function PricingPage() {
         {/* SDK load error */}
         {sdkError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
-            <p className="text-xs text-amber-700 text-center">
-              결제 모듈을 불러올 수 없습니다. 광고 차단기를 해제하거나 네트워크 연결을 확인해 주세요.
+            <p className="text-xs text-amber-700 text-center leading-relaxed">
+              결제 창을 불러올 수 없습니다.<br />
+              <strong>해결 방법:</strong> 브라우저 설정에서 콘텐츠 차단기(광고 차단)를 잠시 해제하거나,<br />
+              Wi-Fi/데이터 연결을 확인한 뒤 페이지를 새로고침해 주세요.
             </p>
           </div>
         )}
@@ -288,11 +290,10 @@ export default function PricingPage() {
           <button
             onClick={() => handleCheckout("bundle")}
             disabled={!!loadingType}
-            className="w-full py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-60"
+            className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background: "transparent",
-              color: "#6D4C91",
-              border: "1.5px solid rgba(109,76,145,0.3)",
+              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+              boxShadow: "0 6px 20px rgba(109,76,145,0.25)",
             }}
           >
             {loadingType === "bundle" ? "결제 창 여는 중..." : "✨ 5권 묶음 구매 · ₩8,000"}

@@ -34,16 +34,17 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
     scenes.map((s) => ({ ...s }))
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const scene = editedScenes[currentScene];
   const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
   const isFirst = currentScene === 0;
   const isLast = currentScene === editedScenes.length - 1;
 
-  // FR-001: Swipe gestures
+  // FR-001: Swipe gestures — disabled when text input is focused to prevent accidental navigation
   const swipeHandlers = useSwipe({
-    onSwipeLeft: useCallback(() => setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1)), [editedScenes.length]),
-    onSwipeRight: useCallback(() => setCurrentScene((p) => Math.max(0, p - 1)), []),
+    onSwipeLeft: useCallback(() => { if (!isEditing) setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1)); }, [editedScenes.length, isEditing]),
+    onSwipeRight: useCallback(() => { if (!isEditing) setCurrentScene((p) => Math.max(0, p - 1)); }, [isEditing]),
   });
 
   // FR-004: Check if any content has been modified
@@ -198,6 +199,8 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 type="text"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
+                onFocus={() => setIsEditing(true)}
+                onBlur={() => setIsEditing(false)}
                 maxLength={100}
                 className="w-full px-4 py-3 rounded-xl text-base font-serif font-bold bg-white/70 border border-brown-pale/15 text-brown outline-none"
                 style={{ fontSize: 18 }}
@@ -215,6 +218,8 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
               type="text"
               value={scene.title}
               onChange={(e) => updateScene("title", e.target.value)}
+              onFocus={() => setIsEditing(true)}
+              onBlur={() => setIsEditing(false)}
               maxLength={50}
               className="w-full px-4 py-2.5 rounded-xl text-sm font-serif font-bold bg-white/70 border border-brown-pale/15 text-brown outline-none"
               aria-label="장면 제목"
@@ -230,6 +235,8 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
               ref={textareaRef}
               value={scene.text}
               onChange={(e) => updateScene("text", e.target.value)}
+              onFocus={() => setIsEditing(true)}
+              onBlur={() => setIsEditing(false)}
               maxLength={500}
               className="w-full px-4 py-3 rounded-xl text-[15px] font-serif bg-white/70 border border-brown-pale/15 text-brown outline-none resize-none leading-[2.2] break-keep"
               style={{ minHeight: 120 }}

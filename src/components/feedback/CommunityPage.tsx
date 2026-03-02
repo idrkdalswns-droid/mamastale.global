@@ -187,7 +187,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                 <button
                   onClick={handleShare}
                   disabled={isSharing}
-                  className="w-full py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
+                  className="w-full py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60 mb-2"
                   style={{
                     background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
                     boxShadow: "0 4px 16px rgba(109,76,145,0.25)",
@@ -195,6 +195,9 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                 >
                   {isSharing ? "공유 중..." : "🌍 커뮤니티에 공유하기"}
                 </button>
+                <p className="text-[10px] text-brown-pale font-light">
+                  공유하지 않아도 괜찮아요 — 아래로 스크롤해 주세요
+                </p>
               </>
             )}
           </div>
@@ -271,7 +274,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
             ) : (
               <>
                 <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
-                  동화 1권 티켓 · ₩2,000<br />
+                  커피 한 잔 값으로<br />
                   다른 상처, 다른 은유, 새로운 마음 동화가 탄생합니다
                 </p>
                 <Link
@@ -282,21 +285,34 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                     boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                   }}
                 >
-                  🎫 동화 1권 티켓 구매 · ₩2,000
+                  다음 동화 만들기 · ₩2,000
                 </Link>
               </>
             )}
           </div>
         </div>
 
-        {/* Back to home */}
-        <button
-          onClick={onRestart}
-          className="w-full py-3.5 rounded-full text-sm font-normal text-brown-pale transition-all active:scale-[0.97] mb-4"
-          style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
-        >
-          홈으로 돌아가기
-        </button>
+        {/* Quick links */}
+        <div className="flex gap-2.5 mb-4">
+          <Link
+            href="/library"
+            className="flex-1 py-3 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
+            style={{
+              background: "rgba(127,191,176,0.1)",
+              color: "#5A9E8F",
+              border: "1.5px solid rgba(127,191,176,0.25)",
+            }}
+          >
+            📚 내 서재
+          </Link>
+          <button
+            onClick={onRestart}
+            className="flex-1 py-3 rounded-full text-sm font-normal text-brown-pale transition-all active:scale-[0.97]"
+            style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+          >
+            홈으로
+          </button>
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-2">

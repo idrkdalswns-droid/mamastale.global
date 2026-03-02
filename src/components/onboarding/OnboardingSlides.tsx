@@ -180,7 +180,8 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
                 ))}
               </select>
               <p className="text-[10px] text-brown-pale font-light mt-1.5 text-left">
-                동화의 언어 수준이 아이 연령에 맞게 조절됩니다
+                동화의 언어 수준이 아이 연령에 맞게 조절됩니다<br />
+                자녀가 여러 명이면 동화를 들려줄 아이 기준으로 선택해 주세요
               </p>
             </div>
 

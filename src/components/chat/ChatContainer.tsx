@@ -14,7 +14,7 @@ import ChatInput from "./ChatInput";
 import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
 
-const GUEST_TURN_LIMIT = 3;
+const GUEST_TURN_LIMIT = 5;
 
 interface ChatPageProps {
   onComplete: () => void;
@@ -132,11 +132,15 @@ export function ChatPage({ onComplete }: ChatPageProps) {
           >
             <div className="text-[48px] mb-3">🌿</div>
             <h3 className="font-serif text-lg font-bold text-brown mb-2 leading-tight">
-              대화가 마음에 드시나요?
+              이야기가 깊어지고 있어요
             </h3>
-            <p className="text-sm text-brown-light font-light leading-relaxed mb-5 break-keep">
-              회원가입 후 <span className="text-coral font-medium">지금 대화를 이어서</span><br />
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
+              지금 꺼내주신 마음, 정말 소중합니다.<br />
+              회원가입 후 <span className="text-coral font-medium">이 대화를 그대로 이어서</span><br />
               나만의 마음 동화를 완성할 수 있어요.
+            </p>
+            <p className="text-[11px] text-brown-pale font-light mb-5">
+              대화 내용은 안전하게 보관됩니다
             </p>
             {/* S7-03: Primary CTA style for signup — conversion critical */}
             <button

@@ -74,6 +74,22 @@ const reviews = [
     date: "2025.10.30",
     text: "첫 아이를 낳고 \"좋은 엄마가 맞나\" 매일 불안했어요. 15분 정도의 대화였는데 오랜 친구와 이야기한 것처럼 편했습니다. 아이가 좀 더 크면 이 동화를 함께 읽으며 엄마의 마음을 전해주고 싶어요.",
   },
+  {
+    alias: "다은맘",
+    age: "33세",
+    childAge: "딸 3세",
+    stars: 3,
+    date: "2025.10.18",
+    text: "대화 자체는 정말 좋았는데, 제 이야기와 동화 사이 연결이 조금 아쉬웠어요. 그래도 아이가 동화를 좋아하긴 했어요. 다음에 한 번 더 해볼 생각입니다.",
+  },
+  {
+    alias: "준이맘",
+    age: "40세",
+    childAge: "아들 7세, 딸 4세",
+    stars: 4,
+    date: "2025.10.05",
+    text: "솔직히 AI라서 반신반의했는데 생각보다 깊은 공감을 받았어요. 다만 카카오 로그인이 안 돼서 이메일로 가입해야 하는 게 좀 불편했습니다. 동화 퀄리티는 만족이에요.",
+  },
 ];
 
 function StarRating({ count }: { count: number }) {
@@ -141,7 +157,7 @@ export default function ReviewsPage() {
         <ReviewSection />
 
         {/* CTA */}
-        <div className="mt-10 text-center">
+        <div className="mt-10 text-center space-y-3">
           <Link
             href="/?action=start"
             className="inline-flex items-center justify-center min-h-[44px] px-8 py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97]"
@@ -152,6 +168,14 @@ export default function ReviewsPage() {
           >
             나도 동화 만들어보기
           </Link>
+          <div>
+            <Link
+              href="/community"
+              className="text-xs text-purple font-medium no-underline"
+            >
+              완성된 동화 둘러보기 →
+            </Link>
+          </div>
         </div>
 
         {/* Footer */}

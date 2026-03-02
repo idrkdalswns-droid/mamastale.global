@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [consent, setConsent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendStatus, setResendStatus] = useState<"" | "sending" | "sent" | "error">("");
 
@@ -219,21 +220,31 @@ export default function SignupPage() {
             }}
             required
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호 (6자 이상)"
-            aria-label="비밀번호"
-            minLength={6}
-            className="w-full px-4 py-3.5 rounded-2xl text-sm font-sans outline-none"
-            style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "1.5px solid rgba(196,149,106,0.15)",
-              color: "#444",
-            }}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호 (6자 이상)"
+              aria-label="비밀번호"
+              minLength={6}
+              className="w-full px-4 py-3.5 pr-12 rounded-2xl text-sm font-sans outline-none"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                border: "1.5px solid rgba(196,149,106,0.15)",
+                color: "#444",
+              }}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-brown-pale font-light min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+            >
+              {showPassword ? "숨기기" : "보기"}
+            </button>
+          </div>
 
           {error && <p className="text-xs text-coral text-center">{error}</p>}
           {showResend && (
