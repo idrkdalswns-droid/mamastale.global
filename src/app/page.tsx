@@ -339,6 +339,8 @@ export default function Home() {
           {/* Description card */}
           <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
             <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
+              <span className="text-coral font-semibold">&ldquo;엄마, 엄마 동화 들려줘!&rdquo;</span>
+              <br />
               엄마의 삶이 아이를 위한{" "}
               <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
               가 됩니다.
@@ -346,46 +348,6 @@ export default function Home() {
               따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
-          </div>
-
-          {/* Social proof — multiple testimonials */}
-          <div className="space-y-2 mb-4">
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-            >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;15분 만에 울고 웃으며 동화까지 완성했어요.
-                남편이 &lsquo;이게 네 이야기야?&rsquo;라며 놀라더라고요.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 현정맘 (35세, 아들 4세)
-              </p>
-            </div>
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-            >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;사업하느라 늘 미안했는데, 완성된 동화에 제 이야기가
-                아이 눈높이 모험담으로 바뀌어 있더라고요.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 윤서맘 (41세, 딸 7세)
-              </p>
-            </div>
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-            >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;아동심리 전문가지만 정작 제 감정은 돌보지 못했어요.
-                AI라서 오히려 솔직해질 수 있었습니다.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 서아맘 (38세, 아들 5세)
-              </p>
-            </div>
           </div>
 
           {/* Quick browse links */}
@@ -545,6 +507,47 @@ export default function Home() {
                 : "친구 추천하고 무료 티켓 받기"}
             </button>
           )}
+
+          {/* Social proof — testimonials at bottom */}
+          <div className="space-y-2 mt-6">
+            <p className="text-[11px] text-brown-pale font-medium text-center mb-2">이용자 후기</p>
+            <div
+              className="rounded-2xl px-4 py-3"
+              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
+            >
+              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
+                &ldquo;15분 만에 울고 웃으며 동화까지 완성했어요.
+                남편이 &lsquo;이게 네 이야기야?&rsquo;라며 놀라더라고요.&rdquo;
+              </p>
+              <p className="text-[10px] text-brown-pale font-light mt-1.5">
+                — 현정맘 (35세, 아들 4세)
+              </p>
+            </div>
+            <div
+              className="rounded-2xl px-4 py-3"
+              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
+            >
+              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
+                &ldquo;사업하느라 늘 미안했는데, 완성된 동화에 제 이야기가
+                아이 눈높이 모험담으로 바뀌어 있더라고요.&rdquo;
+              </p>
+              <p className="text-[10px] text-brown-pale font-light mt-1.5">
+                — 윤서맘 (41세, 딸 7세)
+              </p>
+            </div>
+            <div
+              className="rounded-2xl px-4 py-3"
+              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
+            >
+              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
+                &ldquo;아동심리 전문가지만 정작 제 감정은 돌보지 못했어요.
+                AI라서 오히려 솔직해질 수 있었습니다.&rdquo;
+              </p>
+              <p className="text-[10px] text-brown-pale font-light mt-1.5">
+                — 서아맘 (38세, 아들 5세)
+              </p>
+            </div>
+          </div>
 
           {/* Footer disclaimer */}
           <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
