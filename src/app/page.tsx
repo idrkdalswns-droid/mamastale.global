@@ -54,9 +54,16 @@ export default function Home() {
       setShowPaymentSuccess(true);
     }
     // Direct start from library or other pages
+    // IMPORTANT: If user just signed up and has saved chat state, restore it
+    // instead of restarting from onboarding (fixes guest→signup→restore flow)
     if (params.get("action") === "start") {
       window.history.replaceState({}, "", "/");
-      setScreen("onboarding");
+      const restored = restoreFromStorage();
+      if (restored) {
+        setScreen("chat");
+      } else {
+        setScreen("onboarding");
+      }
       return;
     }
     // Save referral code to localStorage + show welcome popup

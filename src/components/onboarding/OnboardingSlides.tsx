@@ -66,14 +66,22 @@ interface OnboardingSlidesProps {
 }
 
 export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
-  const [idx, setIdx] = useState(0);
+  // Returning users skip to age selection slide directly
+  const hasSeenOnboarding = (() => {
+    try { return localStorage.getItem("mamastale_onboarding_done") === "1"; } catch { return false; }
+  })();
+  const [idx, setIdx] = useState(hasSeenOnboarding ? slides.length - 1 : 0);
   const [anim, setAnim] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
-  const [childAge, setChildAge] = useState("");
+  // Restore previous child age selection for returning users
+  const [childAge, setChildAge] = useState(() => {
+    try { return localStorage.getItem("mamastale_child_age") || ""; } catch { return ""; }
+  });
 
   const saveAndDone = () => {
     try {
       if (childAge) localStorage.setItem("mamastale_child_age", childAge);
+      localStorage.setItem("mamastale_onboarding_done", "1");
     } catch {}
     onDone();
   };

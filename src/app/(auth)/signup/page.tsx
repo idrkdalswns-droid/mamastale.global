@@ -283,8 +283,8 @@ export default function SignupPage() {
               required
             />
             <span className="text-[11px] text-brown-light leading-relaxed">
-              <Link href="/terms" className="underline">이용약관</Link> 및{" "}
-              <Link href="/privacy" className="underline">개인정보처리방침</Link>에
+              <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</Link> 및{" "}
+              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">개인정보처리방침</Link>에
               동의합니다. 대화 내용이 AI 동화 생성을 위해 처리됨을 이해합니다.
             </span>
           </label>

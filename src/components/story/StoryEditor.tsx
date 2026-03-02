@@ -280,29 +280,40 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
               </button>
             </div>
           ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
-                disabled={isFirst}
-                className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all"
-                style={{
-                  border: "1.5px solid rgba(196,149,106,0.25)",
-                  color: isFirst ? "#D0C8C0" : "#8B6F55",
-                  background: "transparent",
-                }}
-              >
-                ← 이전 장면
-              </button>
-              <button
-                onClick={() => setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1))}
-                className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
-                style={{
-                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                  boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
-                }}
-              >
-                다음 장면 →
-              </button>
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
+                  disabled={isFirst}
+                  className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all"
+                  style={{
+                    border: "1.5px solid rgba(196,149,106,0.25)",
+                    color: isFirst ? "#D0C8C0" : "#8B6F55",
+                    background: "transparent",
+                  }}
+                >
+                  ← 이전 장면
+                </button>
+                <button
+                  onClick={() => setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1))}
+                  className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                    boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  다음 장면 →
+                </button>
+              </div>
+              {/* Skip editing — for users who just want to read the story as-is */}
+              {!hasAnyChanges && (
+                <button
+                  onClick={handleDone}
+                  className="w-full py-2.5 text-[12px] font-light text-brown-pale underline underline-offset-2 decoration-brown-pale/30"
+                >
+                  수정 없이 바로 보기
+                </button>
+              )}
             </div>
           )}
         </div>

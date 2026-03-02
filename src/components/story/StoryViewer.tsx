@@ -149,11 +149,13 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
 
   const handleShare = useCallback(async () => {
     const text = buildStoryText();
+    const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
     if (navigator.share) {
       try {
         await navigator.share({
           title: storyTitle,
           text,
+          url: siteUrl,
         });
       } catch {
         // User cancelled share
