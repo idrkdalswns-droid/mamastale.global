@@ -3,8 +3,24 @@
 import { create } from "zustand";
 import type { Message, ChatApiResponse } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
+import { createClient } from "@/lib/supabase/client";
 
 const STORAGE_KEY = "mamastale_chat_state";
+
+/** Build headers with auth token for API calls (belt-and-suspenders for edge cookie issues) */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  try {
+    const supabase = createClient();
+    if (supabase) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+    }
+  } catch { /* ignore */ }
+  return headers;
+}
 
 interface ChatState {
   sessionId: string;
@@ -160,9 +176,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = "나의 마음 동화";
+          const authHeaders = await getAuthHeaders();
           const saveRes = await fetch("/api/stories", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: JSON.stringify({
               title: storyTitle,
               scenes: data.scenes,
@@ -302,9 +319,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (state.storySaved || state.completedScenes.length === 0) return false;
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/stories", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify({
           title: "나의 마음 동화",
           scenes: state.completedScenes,

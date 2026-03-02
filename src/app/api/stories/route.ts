@@ -5,6 +5,26 @@ import { containsProfanity, sanitizeText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
+/** Try cookie auth first, then fallback to Authorization bearer token */
+async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
+  const { data, error } = await sb.client.auth.getUser();
+  if (data.user) return data.user;
+
+  // Fallback: Authorization header (handles edge cookie issues)
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const { data: tokenData } = await sb.client.auth.getUser(token);
+    if (tokenData.user) {
+      console.warn("[Stories] Auth resolved via Bearer token fallback (cookie auth failed)");
+      return tokenData.user;
+    }
+  }
+
+  console.error("[Stories] Auth failed: cookie error=", error?.message, "| cookies count=", request.cookies.getAll().length);
+  return null;
+}
+
 // GET: List user's stories
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
@@ -12,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -39,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

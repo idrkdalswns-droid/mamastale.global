@@ -28,6 +28,9 @@ export function createApiSupabaseClient(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
+          // CRITICAL: update request.cookies so refreshed tokens are visible
+          // to subsequent getAll() calls within the same request lifecycle
+          request.cookies.set(name, value);
           pendingCookies.push({ name, value, options });
         });
       },
