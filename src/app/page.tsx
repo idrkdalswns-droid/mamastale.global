@@ -32,28 +32,35 @@ export default function Home() {
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
-  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes, retrySaveStory, storySaved } = useChatStore();
+  const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
-  // Auto-restore chat after signup/login
-  // If user just signed up/logged in and has saved chat state → resume chat
+  // Auto-restore chat after signup/login OR show "이어하기" card for drafts
   useEffect(() => {
     if (authLoading || screen !== "landing") return;
-    if (!user) return;
 
-    const restored = restoreFromStorage();
-    if (restored) {
-      setScreen("chat");
-      // Retry saving story if it was completed but not saved (e.g. auth failed earlier)
-      setTimeout(() => {
-        const s = useChatStore.getState();
-        if (s.completedScenes.length > 0 && !s.storySaved) {
-          retrySaveStory();
-        }
-      }, 1000);
+    const info = getDraftInfo();
+    if (!info) { setDraftInfo(null); return; }
+
+    if (info.source === "auth" && user) {
+      // Auto-restore for login/signup redirect flow
+      const restored = restoreFromStorage();
+      if (restored) {
+        setScreen("chat");
+        setTimeout(() => {
+          const s = useChatStore.getState();
+          if (s.completedScenes.length > 0 && !s.storySaved) {
+            retrySaveStory();
+          }
+        }, 1000);
+      }
+    } else if (info.source === "draft") {
+      // Manual draft — show "이어하기" card (don't auto-restore)
+      setDraftInfo(info);
     }
-  }, [authLoading, user, restoreFromStorage, screen, retrySaveStory]);
+  }, [authLoading, user, restoreFromStorage, screen, retrySaveStory, getDraftInfo]);
 
   // Detect URL params: payment success, referral code, action=start
   useEffect(() => {
@@ -191,7 +198,10 @@ export default function Home() {
   if (screen === "chat") {
     return (
       <ErrorBoundary>
-        <ChatPage onComplete={() => setScreen("edit")} />
+        <ChatPage
+          onComplete={() => setScreen("edit")}
+          onGoHome={() => { setShow(false); setScreen("landing"); }}
+        />
       </ErrorBoundary>
     );
   }
@@ -363,10 +373,50 @@ export default function Home() {
               <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
               가 됩니다.
               <br />
-              AI 상담사와 따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
+              따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
           </div>
+
+          {/* Draft resume card */}
+          {draftInfo && (
+            <div
+              className="rounded-2xl p-4 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
+              style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">📝</span>
+                <div>
+                  <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
+                  <p className="text-[11px] text-brown-pale font-light">
+                    {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const restored = restoreFromStorage();
+                    if (restored) {
+                      setDraftInfo(null);
+                      setScreen("chat");
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+                >
+                  이어서 대화하기
+                </button>
+                <button
+                  onClick={() => { clearStorage(); setDraftInfo(null); }}
+                  className="px-4 py-2.5 rounded-full text-xs font-light text-brown-pale transition-all"
+                  style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Quick browse links */}
           <div className="flex gap-2 mb-4">

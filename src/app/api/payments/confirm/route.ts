@@ -6,8 +6,8 @@ export const runtime = "edge";
 
 // ─── Valid prices (server-side source of truth) ───
 const VALID_PRICES: Record<number, number> = {
-  2000: 1,  // ₩2,000 = 1 ticket
-  8000: 5,  // ₩8,000 = 5 tickets
+  4900: 1,   // ₩4,900 = 1 ticket
+  18900: 5,  // ₩18,900 = 5 tickets
 };
 
 // ─── Order ID deduplication (per-isolate, in-memory) ───

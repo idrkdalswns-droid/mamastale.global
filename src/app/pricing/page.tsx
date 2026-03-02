@@ -63,7 +63,7 @@ export default function PricingPage() {
     setLoadingType(priceType);
 
     try {
-      const amount = priceType === "bundle" ? 8000 : 2000;
+      const amount = priceType === "bundle" ? 18900 : 4900;
       const orderName = priceType === "bundle" ? "동화 5권 묶음 패키지" : "동화 1권 티켓";
       // JP-17: Non-enumerable order ID using crypto.randomUUID()
       const orderId = `order_${crypto.randomUUID()}`;
@@ -212,7 +212,7 @@ export default function PricingPage() {
             <div className="text-3xl mb-2">🎫</div>
             <h3 className="font-serif text-lg text-brown font-semibold">동화 1권 티켓</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
-              <span className="font-serif text-3xl font-bold text-brown">₩2,000</span>
+              <span className="font-serif text-3xl font-bold text-brown">₩4,900</span>
               <span className="text-sm text-brown-light font-light">/1권</span>
             </div>
             <p className="text-xs text-brown-pale mt-1">커피 한 잔 값으로 새로운 동화를</p>
@@ -242,7 +242,7 @@ export default function PricingPage() {
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            {loadingType === "ticket" ? "결제 창 여는 중..." : "🎫 티켓 구매하기 · ₩2,000"}
+            {loadingType === "ticket" ? "결제 창 여는 중..." : "🎫 티켓 구매하기 · ₩4,900"}
           </button>
         </div>
 
@@ -258,8 +258,8 @@ export default function PricingPage() {
             <div className="text-3xl mb-2">✨</div>
             <h3 className="font-serif text-lg text-brown font-semibold">5권 묶음 패키지</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
-              <span className="text-sm text-brown-pale font-light line-through mr-1">₩10,000</span>
-              <span className="font-serif text-3xl font-bold text-brown">₩8,000</span>
+              <span className="text-sm text-brown-pale font-light line-through mr-1">₩24,500</span>
+              <span className="font-serif text-3xl font-bold text-brown">₩18,900</span>
               <span className="text-sm text-brown-light font-light">/5권</span>
             </div>
             <div className="flex items-center justify-center gap-2 mt-1.5">
@@ -267,9 +267,9 @@ export default function PricingPage() {
                 className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
                 style={{ background: "#E07A5F" }}
               >
-                20% OFF
+                23% OFF
               </span>
-              <span className="text-xs text-coral font-medium">1권당 ₩1,600</span>
+              <span className="text-xs text-coral font-medium">1권당 ₩3,780</span>
             </div>
           </div>
 
@@ -296,7 +296,7 @@ export default function PricingPage() {
               boxShadow: "0 6px 20px rgba(109,76,145,0.25)",
             }}
           >
-            {loadingType === "bundle" ? "결제 창 여는 중..." : "✨ 5권 묶음 구매 · ₩8,000"}
+            {loadingType === "bundle" ? "결제 창 여는 중..." : "✨ 5권 묶음 구매 · ₩18,900"}
           </button>
         </div>
 

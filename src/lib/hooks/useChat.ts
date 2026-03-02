@@ -50,6 +50,10 @@ interface ChatState {
   updateScenes: (scenes: Scene[]) => void;
   /** Retry saving story to DB (e.g. after auth is established) */
   retrySaveStory: () => Promise<boolean>;
+  /** Save current chat as a draft (임시 저장) */
+  saveDraft: () => void;
+  /** Check if a saved draft exists (without deleting). Returns info or null. */
+  getDraftInfo: () => { phase: number; messageCount: number; savedAt: number; source: string } | null;
 }
 
 let msgCounter = 0;
@@ -67,7 +71,7 @@ function buildInitialMessage(): string {
   const ageNote = childAge && AGE_LABELS[childAge]
     ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
     : "";
-  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. 어머니의 이야기가 곧 동화의 이야기가 됩니다.\n\n오늘 어머니의 마음은 어떠신가요?`;
+  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. 어머니의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 어머니의 마음은 어떠신가요?`;
 }
 
 const makeInitialMessages = (): Message[] => [
@@ -250,6 +254,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         storyDone: s.storyDone,
         completedScenes: s.completedScenes,
         savedAt: Date.now(),
+        source: "auth", // auth-redirect save (auto-restore on login)
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     } catch {
@@ -353,6 +358,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return false;
     } catch {
       return false;
+    }
+  },
+
+  saveDraft: () => {
+    try {
+      const s = get();
+      const snapshot = {
+        sessionId: s.sessionId,
+        messages: s.messages,
+        currentPhase: s.currentPhase,
+        visitedPhases: s.visitedPhases,
+        turnCountInCurrentPhase: s.turnCountInCurrentPhase,
+        storyDone: s.storyDone,
+        completedScenes: s.completedScenes,
+        savedAt: Date.now(),
+        source: "draft", // manual draft save
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // localStorage not available
+    }
+  },
+
+  getDraftInfo: () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const snapshot = JSON.parse(raw);
+      if (typeof snapshot !== "object" || snapshot === null || typeof snapshot.savedAt !== "number") return null;
+      // Only valid if saved within last 7 days
+      if (Date.now() - snapshot.savedAt > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+      const userMsgCount = Array.isArray(snapshot.messages)
+        ? snapshot.messages.filter((m: { role: string }) => m.role === "user").length
+        : 0;
+      return {
+        phase: snapshot.currentPhase || 1,
+        messageCount: userMsgCount,
+        savedAt: snapshot.savedAt,
+        source: snapshot.source || "auth",
+      };
+    } catch {
+      return null;
     }
   },
 

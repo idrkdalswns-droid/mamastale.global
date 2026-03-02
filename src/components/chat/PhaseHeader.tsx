@@ -9,12 +9,16 @@ interface PhaseHeaderProps {
   currentPhase: number;
   visitedPhases: number[];
   isTransitioning: boolean;
+  onGoHome?: () => void;
+  onSaveDraft?: () => void;
 }
 
 export default function PhaseHeader({
   currentPhase,
   visitedPhases,
   isTransitioning,
+  onGoHome,
+  onSaveDraft,
 }: PhaseHeaderProps) {
   const p = PHASES[currentPhase];
   const { fontSize, setFontSize } = useSettingsStore();
@@ -89,16 +93,40 @@ export default function PhaseHeader({
           </div>
         </div>
 
-        {/* Font size toggle button */}
-        <button
-          onClick={() => setShowSettings((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
-          aria-label="글씨 크기 설정"
-          aria-expanded={showSettings}
-          style={{ fontSize: 14 }}
-        >
-          가
-        </button>
+        {/* Home button (left) */}
+        {onGoHome && (
+          <button
+            onClick={onGoHome}
+            className="absolute left-2 top-1/2 -translate-y-1/2 h-9 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+            aria-label="홈으로 돌아가기"
+            style={{ fontSize: 12 }}
+          >
+            ← 홈
+          </button>
+        )}
+
+        {/* Right buttons (save draft + font size) */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+          {onSaveDraft && (
+            <button
+              onClick={onSaveDraft}
+              className="h-9 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+              aria-label="임시 저장"
+              style={{ fontSize: 11 }}
+            >
+              저장
+            </button>
+          )}
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            className="w-9 h-9 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+            aria-label="글씨 크기 설정"
+            aria-expanded={showSettings}
+            style={{ fontSize: 14 }}
+          >
+            가
+          </button>
+        </div>
 
         {/* Font size popup */}
         {showSettings && (

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { StoryCard } from "@/components/story/StoryCard";
+import { useChatStore } from "@/lib/hooks/useChat";
+import { PHASES } from "@/lib/constants/phases";
 import type { Scene } from "@/lib/types/story";
 
 interface StoryItem {
@@ -18,10 +20,14 @@ export default function LibraryPage() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { getDraftInfo, clearStorage } = useChatStore();
+  const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number } | null>(null);
 
   useEffect(() => {
     fetchStories();
-  }, []);
+    const info = getDraftInfo();
+    if (info) setDraftInfo(info);
+  }, [getDraftInfo]);
 
   const fetchStories = async () => {
     try {
@@ -62,6 +68,40 @@ export default function LibraryPage() {
             ← 홈
           </Link>
         </div>
+
+        {/* Draft in progress */}
+        {draftInfo && (
+          <div
+            className="rounded-2xl p-4 mb-6"
+            style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xl">{PHASES[draftInfo.phase]?.icon || "📝"}</span>
+              <div>
+                <p className="text-sm font-semibold text-brown">진행 중인 대화</p>
+                <p className="text-[11px] text-brown-pale font-light">
+                  {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                href="/?action=start"
+                className="flex-1 py-2.5 rounded-full text-sm font-medium text-white text-center no-underline transition-all active:scale-[0.97]"
+                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+              >
+                이어서 대화하기
+              </Link>
+              <button
+                onClick={() => { clearStorage(); setDraftInfo(null); }}
+                className="px-4 py-2.5 rounded-full text-xs font-light text-brown-pale transition-all"
+                style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (

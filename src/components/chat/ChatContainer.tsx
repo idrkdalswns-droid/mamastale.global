@@ -19,9 +19,10 @@ const GUEST_TURN_LIMIT = 5;
 
 interface ChatPageProps {
   onComplete: () => void;
+  onGoHome: () => void;
 }
 
-export function ChatPage({ onComplete }: ChatPageProps) {
+export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
   const {
     messages,
     currentPhase,
@@ -33,10 +34,13 @@ export function ChatPage({ onComplete }: ChatPageProps) {
     sendMessage,
     initSession,
     persistToStorage,
+    saveDraft,
   } = useChatStore();
 
   const router = useRouter();
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
+  const [showHomeConfirm, setShowHomeConfirm] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,6 +81,19 @@ export function ChatPage({ onComplete }: ChatPageProps) {
         currentPhase={currentPhase}
         visitedPhases={visitedPhases}
         isTransitioning={isTransitioning}
+        onGoHome={() => {
+          const userMsgCount = messages.filter(m => m.role === "user").length;
+          if (userMsgCount > 0 && !storyDone) {
+            setShowHomeConfirm(true);
+          } else {
+            onGoHome();
+          }
+        }}
+        onSaveDraft={() => {
+          saveDraft();
+          setShowSaveToast(true);
+          setTimeout(() => setShowSaveToast(false), 2000);
+        }}
       />
 
       {/* Phase transition overlay */}
@@ -186,6 +203,62 @@ export function ChatPage({ onComplete }: ChatPageProps) {
         phase={currentPhase}
         disabled={guestLimitReached}
       />
+
+      {/* Save draft toast */}
+      {showSaveToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div
+            className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg"
+            style={{ background: "rgba(90,158,143,0.92)", backdropFilter: "blur(8px)" }}
+          >
+            대화가 저장되었어요
+          </div>
+        </div>
+      )}
+
+      {/* Home confirm dialog */}
+      {showHomeConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="홈으로 나가기"
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 text-center"
+            style={{ background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
+          >
+            <h3 className="font-serif text-base font-bold text-brown mb-2">대화를 나가시겠어요?</h3>
+            <p className="text-xs text-brown-light font-light mb-5 leading-relaxed">
+              저장하지 않으면 대화 내용이 사라져요.
+            </p>
+            <button
+              onClick={() => {
+                saveDraft();
+                setShowHomeConfirm(false);
+                onGoHome();
+              }}
+              className="w-full py-3 rounded-full text-sm font-medium text-white mb-2 transition-all active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+            >
+              저장하고 나가기
+            </button>
+            <button
+              onClick={() => { setShowHomeConfirm(false); onGoHome(); }}
+              className="w-full py-2.5 text-xs font-light text-brown-pale"
+            >
+              저장 없이 나가기
+            </button>
+            <button
+              onClick={() => setShowHomeConfirm(false)}
+              className="w-full py-2 text-xs font-light text-brown-pale mt-1"
+            >
+              계속 대화하기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Signup modal — overlays chat without losing context */}
       {showSignupModal && (
