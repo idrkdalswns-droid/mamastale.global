@@ -45,6 +45,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -65,6 +66,17 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isLoading]);
+
+  // When story is done, scroll to bottom so farewell message is visible,
+  // then auto-show celebration after 5 seconds
+  useEffect(() => {
+    if (storyDone && completedScenes.length > 0 && !showCelebration) {
+      const el = scrollRef.current;
+      if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 300);
+      const timer = setTimeout(() => setShowCelebration(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [storyDone, completedScenes, showCelebration]);
 
   const handleSend = useCallback(
     (text: string) => {
@@ -192,8 +204,26 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         </div>
       )}
 
-      {/* Story complete CTA — only show if scenes were actually parsed */}
-      {storyDone && completedScenes.length > 0 && (
+      {/* "다음" button — shown after story is done, before celebration */}
+      {storyDone && completedScenes.length > 0 && !showCelebration && (
+        <div className="sticky bottom-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+          <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
+            <button
+              onClick={() => setShowCelebration(true)}
+              className="w-full py-4 rounded-full text-white text-base font-medium transition-all active:scale-[0.97]"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
+              }}
+            >
+              다음 →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Story complete celebration — only after user reads farewell */}
+      {showCelebration && (
         <StoryCompleteCTA
           storyId={completedStoryId || ""}
           onViewStory={onComplete}
@@ -253,13 +283,15 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         </div>
       )}
 
-      {/* Input bar — disabled when guest limit reached */}
-      <ChatInput
-        onSend={handleSend}
-        isLoading={isLoading}
-        phase={currentPhase}
-        disabled={guestLimitReached}
-      />
+      {/* Input bar — hidden when story is done */}
+      {!storyDone && (
+        <ChatInput
+          onSend={handleSend}
+          isLoading={isLoading}
+          phase={currentPhase}
+          disabled={guestLimitReached}
+        />
+      )}
 
       {/* Save draft toast */}
       {showSaveToast && (

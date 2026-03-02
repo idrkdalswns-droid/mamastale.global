@@ -99,7 +99,8 @@ export default function StoryCompleteCTA({
           className="text-[13px] text-brown-light font-normal leading-relaxed mb-3 break-keep"
         >
           어머니의 이야기가 세상에 하나뿐인<br />
-          마음 동화가 되었습니다
+          마음 동화가 되었습니다.<br />
+          완성된 동화는 내 서재에 저장되어 있어요.
         </motion.p>
 
         <motion.p

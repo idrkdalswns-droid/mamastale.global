@@ -1,6 +1,52 @@
 import type { Scene } from "@/lib/types/story";
 
 /**
+ * Clean markdown artifacts and HTML entities from scene text.
+ * Applied during parsing to ensure clean Korean prose in all downstream consumers
+ * (StoryViewer, StoryEditor, PDF, copy/share).
+ */
+export function cleanSceneText(text: string): string {
+  let cleaned = text;
+
+  // 1. Decode HTML entities FIRST (prevents double-escaping downstream)
+  cleaned = cleaned
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+
+  // 2. Strip horizontal rules (--- or *** or ___)
+  cleaned = cleaned.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "");
+
+  // 3. Strip bold markers ** or __ (must come before italic)
+  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, "$1");
+  cleaned = cleaned.replace(/__(.+?)__/g, "$1");
+
+  // 4. Strip italic markers * or _
+  cleaned = cleaned.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "$1");
+  cleaned = cleaned.replace(/(?<!_)_([^_\n]+?)_(?!_)/g, "$1");
+
+  // 5. Strip strikethrough ~~
+  cleaned = cleaned.replace(/~~(.+?)~~/g, "$1");
+
+  // 6. Strip heading markers (# at start of line)
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
+
+  // 7. Strip inline code backticks
+  cleaned = cleaned.replace(/`([^`]+?)`/g, "$1");
+
+  // 8. Clean excessive whitespace: 3+ blank lines → 2 lines
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+  // 9. Trim
+  cleaned = cleaned.trim();
+
+  return cleaned;
+}
+
+/**
  * Map English section tags (from system prompt) to scene numbers.
  * System prompt format: [INTRO 1], [INTRO 2], [CONFLICT 1], etc.
  */
@@ -73,7 +119,7 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
         scenes.push({
           sceneNumber: sceneNum,
           title: SCENE_TITLES[sceneNum] || `장면 ${sceneNum}`,
-          text: block,
+          text: cleanSceneText(block),
           imagePrompt,
         });
       }
@@ -107,7 +153,7 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
         scenes.push({
           sceneNumber: sceneNum,
           title: SCENE_TITLES[sceneNum] || `장면 ${sceneNum}`,
-          text: block,
+          text: cleanSceneText(block),
           imagePrompt,
         });
       }
@@ -140,7 +186,7 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
         scenes.push({
           sceneNumber: sceneNum,
           title: SCENE_TITLES[sceneNum] || `장면 ${sceneNum}`,
-          text: block,
+          text: cleanSceneText(block),
           imagePrompt,
         });
       }

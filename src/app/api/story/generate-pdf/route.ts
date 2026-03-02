@@ -22,6 +22,16 @@ function checkPdfRateLimit(ip: string): boolean {
   return true;
 }
 
+/** Decode pre-encoded HTML entities (prevents double-escaping) */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'");
+}
+
 /** Escape HTML special characters to prevent XSS in generated HTML */
 function escapeHtml(unsafe: string): string {
   return unsafe
@@ -30,6 +40,11 @@ function escapeHtml(unsafe: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/** Safely prepare text for HTML: decode first, then escape (prevents double-encoding) */
+function safeHtml(text: string): string {
+  return escapeHtml(decodeHtmlEntities(text));
 }
 
 const pdfRequestSchema = z.object({
@@ -84,7 +99,7 @@ export async function POST(request: NextRequest) {
     const author = escapeHtml(authorName || "어머니");
     const createdAt = new Date().toLocaleDateString("ko-KR");
 
-    // Generate printable HTML (user can print as PDF from browser)
+    // Generate printable HTML — 2 pages: cover + all story text
     const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -99,13 +114,12 @@ export async function POST(request: NextRequest) {
     .cover .author { font-size: 1.2rem; color: #a16207; }
     .cover .date { font-size: 0.9rem; color: #b45309; margin-top: 8px; }
     .cover .emoji { font-size: 4rem; margin-bottom: 24px; }
-    .scene { padding: 40px; page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-    .scene:last-child { page-break-after: avoid; }
-    .scene-number { font-size: 0.85rem; color: #d97706; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-    .scene h2 { font-size: 1.6rem; color: #92400e; margin-bottom: 24px; border-bottom: 2px solid #fbbf24; padding-bottom: 8px; }
-    .scene p { font-size: 1.1rem; line-height: 2; color: #44403c; white-space: pre-wrap; }
-    .footer { text-align: center; padding: 40px; color: #a8a29e; font-size: 0.85rem; }
-    @media print { .cover, .scene { min-height: auto; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    .story-content { padding: 40px; page-break-before: always; }
+    .story-content h2 { font-size: 1.6rem; color: #92400e; margin-bottom: 28px; text-align: center; border-bottom: 2px solid #fbbf24; padding-bottom: 12px; }
+    .story-content p { font-size: 1.1rem; line-height: 2.2; color: #44403c; white-space: pre-wrap; margin-bottom: 20px; text-indent: 1em; }
+    .story-content p:last-of-type { margin-bottom: 0; }
+    .footer { text-align: center; padding: 40px; color: #a8a29e; font-size: 0.85rem; margin-top: 40px; border-top: 1px solid #e5e0da; }
+    @media print { .cover { min-height: auto; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
   </style>
 </head>
 <body>
@@ -115,19 +129,13 @@ export async function POST(request: NextRequest) {
     <div class="author">글 · ${author}</div>
     <div class="date">${createdAt}</div>
   </div>
-  ${scenes
-    .map(
-      (scene) => `
-  <div class="scene">
-    <div class="scene-number">Scene ${scene.sceneNumber}</div>
-    <h2>${escapeHtml(scene.title)}</h2>
-    <p>${escapeHtml(scene.text)}</p>
-  </div>`
-    )
-    .join("")}
-  <div class="footer">
-    <p>MammasTale · 엄마의 마음 동화</p>
-    <p>이 동화는 AI와 함께 만든 특별한 이야기입니다.</p>
+  <div class="story-content">
+    <h2>${storyTitle}</h2>
+    ${scenes.map((scene) => `<p>${safeHtml(scene.text)}</p>`).join("\n    ")}
+    <div class="footer">
+      <p>mamastale · 엄마의 마음 동화</p>
+      <p>이 동화는 AI와 함께 만든 특별한 이야기입니다.</p>
+    </div>
   </div>
   <script>window.onload = function() { window.print(); }</script>
 </body>

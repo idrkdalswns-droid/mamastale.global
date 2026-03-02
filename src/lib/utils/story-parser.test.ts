@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStoryScenes } from "./story-parser";
+import { parseStoryScenes, cleanSceneText } from "./story-parser";
 
 // ────────────────────────────────────────────────────────
 // Strategy 1: English section tags (primary — matches system prompt)
@@ -290,5 +290,91 @@ describe("parseStoryScenes — Edge cases", () => {
     const scenes = parseStoryScenes(text);
     // Should still parse the complete scenes
     expect(scenes.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("cleans markdown artifacts from parsed scenes", () => {
+    const text = `
+[INTRO 1] **용감한** 공주가 *아름다운* 마을에 살았어요.
+---
+Tom &amp; Jerry도 있었어요.
+[INTRO 2] 안개가 내려왔어요.
+[CONFLICT 1] 공주는 울었어요.
+`;
+
+    const scenes = parseStoryScenes(text);
+    expect(scenes[0].text).toContain("용감한 공주가 아름다운 마을에 살았어요");
+    expect(scenes[0].text).toContain("Tom & Jerry");
+    expect(scenes[0].text).not.toContain("**");
+    expect(scenes[0].text).not.toContain("&amp;");
+    expect(scenes[0].text).not.toContain("---");
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// cleanSceneText
+// ────────────────────────────────────────────────────────
+
+describe("cleanSceneText", () => {
+  it("strips bold markers **", () => {
+    expect(cleanSceneText("**용감한** 공주")).toBe("용감한 공주");
+  });
+
+  it("strips italic markers *", () => {
+    expect(cleanSceneText("*아름다운* 마을")).toBe("아름다운 마을");
+  });
+
+  it("strips underscore bold __", () => {
+    expect(cleanSceneText("__중요한__ 메시지")).toBe("중요한 메시지");
+  });
+
+  it("strips horizontal rules ---", () => {
+    expect(cleanSceneText("첫 문장\n---\n둘째 문장")).toBe("첫 문장\n\n둘째 문장");
+  });
+
+  it("strips horizontal rules ***", () => {
+    expect(cleanSceneText("첫 문장\n***\n둘째 문장")).toBe("첫 문장\n\n둘째 문장");
+  });
+
+  it("decodes &amp; HTML entity", () => {
+    expect(cleanSceneText("Tom &amp; Jerry")).toBe("Tom & Jerry");
+  });
+
+  it("decodes &lt; and &gt;", () => {
+    expect(cleanSceneText("&lt;div&gt;")).toBe("<div>");
+  });
+
+  it("decodes &quot; and &#039;", () => {
+    expect(cleanSceneText('&quot;hello&quot; &amp; &#039;world&#039;')).toBe('"hello" & \'world\'');
+  });
+
+  it("strips heading markers #", () => {
+    expect(cleanSceneText("## 제목입니다\n본문입니다")).toBe("제목입니다\n본문입니다");
+  });
+
+  it("strips strikethrough ~~", () => {
+    expect(cleanSceneText("~~삭제~~ 유지")).toBe("삭제 유지");
+  });
+
+  it("strips inline code backticks", () => {
+    expect(cleanSceneText("`코드` 텍스트")).toBe("코드 텍스트");
+  });
+
+  it("cleans excessive whitespace", () => {
+    expect(cleanSceneText("첫줄\n\n\n\n둘째줄")).toBe("첫줄\n\n둘째줄");
+  });
+
+  it("handles combined markdown and entities", () => {
+    const input = "**엄마 &amp; 아이**의 이야기\n---\n*새로운* 시작";
+    const result = cleanSceneText(input);
+    expect(result).toContain("엄마 & 아이의 이야기");
+    expect(result).toContain("새로운 시작");
+    expect(result).not.toContain("**");
+    expect(result).not.toContain("&amp;");
+    expect(result).not.toContain("---");
+  });
+
+  it("preserves normal Korean text", () => {
+    const text = "작은 마을에 예쁜 공주가 살고 있었어요.\n공주는 매일 아침 해를 보며 인사했어요.";
+    expect(cleanSceneText(text)).toBe(text);
   });
 });
