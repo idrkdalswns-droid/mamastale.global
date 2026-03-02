@@ -25,10 +25,6 @@ export function SceneCard({ scene, isActive }: SceneCardProps) {
         transform: isActive ? "scale(1.02)" : "scale(1)",
       }}
     >
-      <div className="text-[10px] text-brown-mid tracking-[2px] font-medium mb-2 font-sans">
-        장면 {String(scene.sceneNumber).padStart(2, "0")}
-      </div>
-      <h3 className="font-serif text-base text-brown font-bold mb-3">{scene.title}</h3>
       <p className="font-serif text-sm text-brown leading-[2.2] break-keep whitespace-pre-wrap">
         {scene.text}
       </p>

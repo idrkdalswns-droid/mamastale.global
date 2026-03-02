@@ -5,17 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSwipe } from "@/lib/hooks/useSwipe";
 import type { Scene } from "@/lib/types/story";
 
-const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
-  1: { label: "도입", emoji: "🌅", bgClass: "bg-[#EEF6F3]" },
-  2: { label: "도입", emoji: "🌅", bgClass: "bg-[#EEF6F3]" },
-  3: { label: "갈등", emoji: "🌊", bgClass: "bg-[#FEF7ED]" },
-  4: { label: "갈등", emoji: "🌊", bgClass: "bg-[#FEF7ED]" },
-  5: { label: "시도", emoji: "🌱", bgClass: "bg-[#F4EEF8]" },
-  6: { label: "시도", emoji: "🌱", bgClass: "bg-[#F4EEF8]" },
-  7: { label: "해결", emoji: "☀️", bgClass: "bg-[#FFF6EE]" },
-  8: { label: "해결", emoji: "☀️", bgClass: "bg-[#FFF6EE]" },
-  9: { label: "교훈", emoji: "💛", bgClass: "bg-[#FBF5EC]" },
-  10: { label: "교훈", emoji: "💛", bgClass: "bg-[#FBF5EC]" },
+const sceneStructure: Record<number, { label: string; bgClass: string }> = {
+  1: { label: "도입", bgClass: "bg-[#EEF6F3]" },
+  2: { label: "도입", bgClass: "bg-[#EEF6F3]" },
+  3: { label: "갈등", bgClass: "bg-[#FEF7ED]" },
+  4: { label: "갈등", bgClass: "bg-[#FEF7ED]" },
+  5: { label: "시도", bgClass: "bg-[#F4EEF8]" },
+  6: { label: "시도", bgClass: "bg-[#F4EEF8]" },
+  7: { label: "해결", bgClass: "bg-[#FFF6EE]" },
+  8: { label: "해결", bgClass: "bg-[#FFF6EE]" },
+  9: { label: "교훈", bgClass: "bg-[#FBF5EC]" },
+  10: { label: "교훈", bgClass: "bg-[#FBF5EC]" },
 };
 
 interface StoryEditorProps {
@@ -37,7 +37,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const scene = editedScenes[currentScene];
-  const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
+  const info = sceneStructure[scene?.sceneNumber] || { label: "", bgClass: "bg-cream" };
   const isFirst = currentScene === 0;
   const isLast = currentScene === editedScenes.length - 1;
 
@@ -124,7 +124,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="text-xs text-brown-light font-medium">
-              ✏️ 동화 편집
+              동화 편집
             </div>
             <div className="text-center flex-1">
               <div className="text-[10px] text-brown-mid tracking-[2px] font-medium">
@@ -182,8 +182,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
           className={`flex-1 flex flex-col px-5 py-6 ${info.bgClass} max-w-3xl mx-auto w-full`}
         >
           {/* Scene badge */}
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">{info.emoji}</span>
+          <div className="mb-4">
             <span className="text-[10px] text-brown-mid tracking-[2px] font-medium">
               장면 {String(scene.sceneNumber).padStart(2, "0")} · {info.label}
             </span>

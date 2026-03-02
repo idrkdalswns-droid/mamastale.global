@@ -7,17 +7,13 @@ import { useSwipe } from "@/lib/hooks/useSwipe";
 
 import type { Scene } from "@/lib/types/story";
 
-const sceneStructure: Record<number, { label: string; emoji: string; bgClass: string }> = {
-  1: { label: "도입", emoji: "🌅", bgClass: "bg-[#EEF6F3]" },
-  2: { label: "도입", emoji: "🌅", bgClass: "bg-[#EEF6F3]" },
-  3: { label: "갈등", emoji: "🌊", bgClass: "bg-[#FEF7ED]" },
-  4: { label: "갈등", emoji: "🌊", bgClass: "bg-[#FEF7ED]" },
-  5: { label: "시도", emoji: "🌱", bgClass: "bg-[#F4EEF8]" },
-  6: { label: "시도", emoji: "🌱", bgClass: "bg-[#F4EEF8]" },
-  7: { label: "해결", emoji: "☀️", bgClass: "bg-[#FFF6EE]" },
-  8: { label: "해결", emoji: "☀️", bgClass: "bg-[#FFF6EE]" },
-  9: { label: "교훈", emoji: "💛", bgClass: "bg-[#FBF5EC]" },
-  10: { label: "교훈", emoji: "💛", bgClass: "bg-[#FBF5EC]" },
+/** Page background colors — paired scenes share the same tone */
+const pageBgClass: Record<number, string> = {
+  0: "bg-[#EEF6F3]",
+  1: "bg-[#FEF7ED]",
+  2: "bg-[#F4EEF8]",
+  3: "bg-[#FFF6EE]",
+  4: "bg-[#FBF5EC]",
 };
 
 interface StoryViewerProps {
@@ -25,30 +21,33 @@ interface StoryViewerProps {
   title?: string;
   authorName?: string;
   onBack?: () => void;
-  onBackLabel?: string; // custom label for the back button (e.g. "피드백 남기기")
-  onEdit?: () => void; // FR-007: show edit button in header
-  embedded?: boolean; // true when used inside another page (no min-h-dvh)
+  onBackLabel?: string;
+  onEdit?: () => void;
+  embedded?: boolean;
 }
 
 export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded }: StoryViewerProps) {
-  const sceneStorageKey = title ? `mamastale_last_scene_${title.slice(0, 40)}` : "";
-  const [currentScene, setCurrentScene] = useState(() => {
-    if (!sceneStorageKey) return 0;
+  // ── Pagination: 2 scenes per page ──
+  const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
+
+  const pageStorageKey = title ? `mamastale_last_page_${title.slice(0, 40)}` : "";
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (!pageStorageKey) return 0;
     try {
-      const saved = parseInt(localStorage.getItem(sceneStorageKey) || "0", 10);
-      return saved >= 0 && saved < (scenes?.length || 1) ? saved : 0;
+      const saved = parseInt(localStorage.getItem(pageStorageKey) || "0", 10);
+      return saved >= 0 && saved < totalPages ? saved : 0;
     } catch { return 0; }
   });
   const [copied, setCopied] = useState(false);
 
-  // FR-009: Persist last read scene
+  // Persist last read page
   useEffect(() => {
-    if (sceneStorageKey) {
-      try { localStorage.setItem(sceneStorageKey, String(currentScene)); } catch {}
+    if (pageStorageKey) {
+      try { localStorage.setItem(pageStorageKey, String(currentPage)); } catch {}
     }
-  }, [currentScene, sceneStorageKey]);
+  }, [currentPage, pageStorageKey]);
 
-  // FR-006: Font size control (13/15/17/19px)
+  // Font size control (13/15/17/19/21px)
   const [fontSize, setFontSize] = useState(() => {
     try { return parseInt(localStorage.getItem("mamastale_font_size") || "15", 10); } catch { return 15; }
   });
@@ -60,13 +59,11 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     });
   }, []);
 
-  // S2-04: Scope mother message per story (title-based key) to prevent cross-story leakage
+  // Mother message (last page only)
   const motherMsgKey = title ? `mamastale_mother_msg_${title.slice(0, 40)}` : "mamastale_mother_message";
   const [motherMessage, setMotherMessage] = useState(() => {
     try { return localStorage.getItem(motherMsgKey) || ""; } catch { return ""; }
   });
-
-  // Persist mother message to localStorage
   useEffect(() => {
     try {
       if (motherMessage) localStorage.setItem(motherMsgKey, motherMessage);
@@ -74,11 +71,10 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     } catch {}
   }, [motherMessage, motherMsgKey]);
 
-  // Guard: empty scenes array — show friendly empty state instead of crashing
+  // Guard: empty scenes
   if (!scenes || scenes.length === 0) {
     return (
       <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col items-center justify-center px-8 font-sans`}>
-        <div className="text-5xl mb-4">📖</div>
         <h2 className="font-serif text-xl text-brown font-bold mb-3">동화가 아직 준비되지 않았어요</h2>
         <p className="text-sm text-brown-light font-light text-center leading-relaxed mb-6 break-keep">
           동화 장면이 생성되지 않았습니다.<br />대화를 조금 더 이어가 주세요.
@@ -92,37 +88,40 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
             }}
           >
-            {onBackLabel || "← 뒤로가기"}
+            {onBackLabel || "뒤로가기"}
           </button>
         )}
       </div>
     );
   }
 
-  const scene = scenes[currentScene];
-  const info = sceneStructure[scene?.sceneNumber] || { label: "", emoji: "📖", bgClass: "bg-cream" };
-  const isFirst = currentScene === 0;
-  const isLast = currentScene === scenes.length - 1;
+  const isFirst = currentPage === 0;
+  const isLast = currentPage === totalPages - 1;
   const storyTitle = title || "나의 마음 동화";
 
-  // FR-001: Swipe gestures for scene navigation
-  const goNext = useCallback(() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1)), [scenes.length]);
-  const goPrev = useCallback(() => setCurrentScene((p) => Math.max(0, p - 1)), []);
+  // Get 2 scenes for the current page
+  const pageScenes = useMemo(() => {
+    const startIdx = currentPage * 2;
+    return scenes.slice(startIdx, startIdx + 2);
+  }, [scenes, currentPage]);
+
+  // Swipe gestures
+  const goNext = useCallback(() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1)), [totalPages]);
+  const goPrev = useCallback(() => setCurrentPage((p) => Math.max(0, p - 1)), []);
   const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
 
-  // Build full story text for copy/share — 깔끔한 페이지 형식
+  // Build full story text for copy/share
   const buildStoryText = useCallback(() => {
-    const header = `${storyTitle}\n글 · ${authorName || "어머니"}\n`;
+    const header = `${storyTitle}\n${authorName || "어머니"}\n`;
 
     const body = scenes
-      .map((s, i) => `\n${i + 1} 페이지\n\n${s.text}\n`)
-      .join("\n");
+      .map((s) => `\n${s.text}\n`)
+      .join("");
 
     const motherMsg = motherMessage.trim()
-      ? `\n\n💌 아이에게 전하는 한마디\n${motherMessage.trim()}\n`
+      ? `\n\n아이에게 전하는 한마디\n${motherMessage.trim()}\n`
       : "";
 
-    // KR-T3: Use dynamic origin instead of hardcoded URL
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
     const footer = `\nmamastale에서 만든 세상에 하나뿐인 동화\n${siteUrl}`;
 
@@ -135,7 +134,6 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const ta = document.createElement("textarea");
       ta.value = buildStoryText();
       document.body.appendChild(ta);
@@ -152,19 +150,14 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: storyTitle,
-          text,
-          url: siteUrl,
-        });
-      } catch {
-        // User cancelled share
-      }
+        await navigator.share({ title: storyTitle, text, url: siteUrl });
+      } catch { /* user cancelled */ }
     } else {
-      // Fallback: copy instead
       handleCopy();
     }
   }, [buildStoryText, storyTitle, handleCopy]);
+
+  const bgClass = pageBgClass[currentPage] || "bg-[#FBF5EC]";
 
   return (
     <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>
@@ -174,7 +167,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
           <div className="flex items-center justify-between px-4 py-3">
             {onBack && (
               <button onClick={onBack} className="text-sm text-brown-light min-h-[44px] flex items-center">
-                {onBackLabel || "← 뒤로"}
+                {onBackLabel || "뒤로"}
               </button>
             )}
             <div className="text-center flex-1">
@@ -182,9 +175,9 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 className="text-[10px] text-brown-mid tracking-[2px] font-medium"
                 role="status"
                 aria-live="polite"
-                aria-label={`장면 ${currentScene + 1} / ${scenes.length}`}
+                aria-label={`${currentPage + 1} / ${totalPages} 페이지`}
               >
-                {currentScene + 1} / {scenes.length}
+                {currentPage + 1} / {totalPages}
               </div>
             </div>
             <div className="flex items-center gap-0.5">
@@ -208,24 +201,24 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   className="w-11 h-11 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
                   aria-label="동화 수정"
                 >
-                  ✏️
+                  수정
                 </button>
               )}
             </div>
           </div>
-          {/* Progress — tappable to jump between scenes */}
+          {/* Progress — 5 page segments */}
           <div className="flex gap-0.5 px-4 pb-2">
-            {scenes.map((_, i) => (
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrentScene(i)}
+                onClick={() => setCurrentPage(i)}
                 className="flex-1 min-h-[44px] flex items-center cursor-pointer"
-                aria-label={`장면 ${i + 1}로 이동`}
+                aria-label={`${i + 1}페이지로 이동`}
               >
                 <div
                   className="h-[6px] w-full rounded-full transition-all duration-300"
                   style={{
-                    background: i <= currentScene ? "#E07A5F" : "rgba(0,0,0,0.06)",
+                    background: i <= currentPage ? "#E07A5F" : "rgba(0,0,0,0.06)",
                   }}
                 />
               </button>
@@ -234,37 +227,38 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
         </div>
       </div>
 
-      {/* Scene Content — swipeable */}
+      {/* Page Content — 2 scenes, swipeable */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentScene}
+          key={currentPage}
           {...swipeHandlers}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
-          className={`flex-1 flex flex-col px-6 py-8 ${info.bgClass} max-w-3xl mx-auto w-full`}
+          className={`flex-1 flex flex-col px-6 py-8 ${bgClass} max-w-3xl mx-auto w-full`}
         >
-          <div className="mb-6">
-            <span className="text-3xl">{info.emoji}</span>
+          {/* Story title — shown on every page */}
+          {isFirst && (
+            <h1 className="font-serif text-xl text-brown font-bold mb-8 leading-tight text-center">
+              {storyTitle}
+            </h1>
+          )}
+
+          {/* Two scenes as two paragraphs */}
+          <div className="space-y-8">
+            {pageScenes.map((scene) => (
+              <p
+                key={scene.sceneNumber}
+                className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
+                style={{ fontSize }}
+              >
+                {scene.text}
+              </p>
+            ))}
           </div>
 
-          <div className="text-[10px] text-brown-mid tracking-[2px] font-medium mb-2">
-            장면 {String(scene.sceneNumber).padStart(2, "0")} · {info.label}
-          </div>
-
-          <h2 className="font-serif text-xl text-brown font-bold mb-6 leading-tight">
-            {scene.title}
-          </h2>
-
-          <p
-            className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
-            style={{ fontSize }}
-          >
-            {scene.text}
-          </p>
-
-          {/* "아이에게 전하는 한마디" — only on the last scene */}
+          {/* Last page extras */}
           {isLast && (
             <div className="mt-8 space-y-4">
               <div
@@ -298,7 +292,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   <br />
                   따뜻한 차 한 잔, 좋아하는 음악, 짧은 산책 등
                   <br />
-                  작은 돌봄의 시간을 가져보세요. 💛
+                  작은 돌봄의 시간을 가져보세요.
                 </p>
               </div>
             </div>
@@ -311,7 +305,6 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
         <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
         {isLast ? (
           <div className="space-y-2.5">
-            {/* Share & Copy actions */}
             <div className="flex gap-2.5">
               <button
                 onClick={handleShare}
@@ -321,7 +314,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
                 }}
               >
-                📤 공유하기
+                공유하기
               </button>
               <button
                 onClick={handleCopy}
@@ -332,12 +325,10 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   border: "1.5px solid rgba(127,191,176,0.3)",
                 }}
               >
-                {copied ? "✓ 복사됨 · 붙여넣기 해보세요" : "📋 전체 복사"}
+                {copied ? "복사됨" : "전체 복사"}
               </button>
             </div>
-            {/* PDF Download */}
             <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />
-            {/* Continue to next step — only in main flow where onBackLabel is set */}
             {onBack && onBackLabel && (
               <button
                 onClick={onBack}
@@ -347,21 +338,20 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   boxShadow: "0 4px 16px rgba(139,106,175,0.3)",
                 }}
               >
-                {onBackLabel || "다음 단계 →"}
+                {onBackLabel || "다음 단계"}
               </button>
             )}
-            {/* Back to previous scene */}
             <button
-              onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
             >
-              ← 이전 장면
+              이전 페이지
             </button>
           </div>
         ) : (
           <div className="flex gap-3">
             <button
-              onClick={() => setCurrentScene((p) => Math.max(0, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={isFirst}
               className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all"
               style={{
@@ -370,17 +360,17 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 background: "transparent",
               }}
             >
-              ← 이전 장면
+              이전 페이지
             </button>
             <button
-              onClick={() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1))}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
               className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
               }}
             >
-              다음 장면 →
+              다음 페이지
             </button>
           </div>
         )}
