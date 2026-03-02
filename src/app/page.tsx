@@ -31,6 +31,7 @@ export default function Home() {
   const [referralCopied, setReferralCopied] = useState(false);
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
@@ -212,20 +213,22 @@ export default function Home() {
   }
 
   // Story viewing screen (read-only) after editing
+  // feedbackDone = false: first viewing → go to feedback
+  // feedbackDone = true: re-viewing from community → go back to community
   if (screen === "story") {
     return (
       <StoryViewer
         scenes={completedScenes}
         title={editedTitle || completedScenes[0]?.title || "나의 마음 동화"}
         authorName={user?.user_metadata?.name || undefined}
-        onBack={() => setScreen("feedback")}
-        onBackLabel="피드백 남기기 →"
+        onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
+        onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
       />
     );
   }
 
   if (screen === "feedback") {
-    return <FeedbackWizard sessionId={chatSessionId} onRestart={() => setScreen("community")} />;
+    return <FeedbackWizard sessionId={chatSessionId} onRestart={() => { setFeedbackDone(true); setScreen("community"); }} />;
   }
 
   if (screen === "community") {
@@ -236,6 +239,7 @@ export default function Home() {
           setShow(false);
           setScreen("landing");
         }}
+        onViewStory={() => setScreen("story")}
       />
     );
   }

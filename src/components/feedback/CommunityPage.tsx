@@ -7,9 +7,10 @@ import { useChatStore } from "@/lib/hooks/useChat";
 
 interface CommunityPageProps {
   onRestart: () => void;
+  onViewStory?: () => void;
 }
 
-export function CommunityPage({ onRestart }: CommunityPageProps) {
+export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [shared, setShared] = useState(false);
   const [shareError, setShareError] = useState("");
@@ -134,6 +135,20 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
             </div>
           </div>
         </div>
+
+        {/* View my story CTA — only when scenes exist */}
+        {completedScenes.length > 0 && onViewStory && (
+          <button
+            onClick={onViewStory}
+            className="w-full py-4 rounded-2xl text-[15px] font-medium text-white transition-all active:scale-[0.97] mb-5"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
+            }}
+          >
+            내 동화 다시 읽기
+          </button>
+        )}
 
         {/* Share to Community card */}
         <div

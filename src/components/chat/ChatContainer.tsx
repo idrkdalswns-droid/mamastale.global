@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -13,6 +13,7 @@ import TypingIndicator from "./TypingIndicator";
 import ChatInput from "./ChatInput";
 import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
+import { SignupModal } from "@/components/auth/SignupModal";
 
 const GUEST_TURN_LIMIT = 5;
 
@@ -35,6 +36,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
   } = useChatStore();
 
   const router = useRouter();
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -144,10 +146,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
             </p>
             {/* S7-03: Primary CTA style for signup — conversion critical */}
             <button
-              onClick={() => {
-                persistToStorage();
-                router.push("/signup");
-              }}
+              onClick={() => setShowSignupModal(true)}
               className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #C96B52)",
@@ -187,6 +186,11 @@ export function ChatPage({ onComplete }: ChatPageProps) {
         phase={currentPhase}
         disabled={guestLimitReached}
       />
+
+      {/* Signup modal — overlays chat without losing context */}
+      {showSignupModal && (
+        <SignupModal onClose={() => setShowSignupModal(false)} />
+      )}
     </div>
   );
 }
