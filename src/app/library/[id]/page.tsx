@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { StoryEditor } from "@/components/story/StoryEditor";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import type { Scene } from "@/lib/types/story";
@@ -121,15 +122,18 @@ export default function LibraryStoryPage() {
   // FR-007: Edit mode
   if (editing) {
     return (
-      <StoryEditor
-        scenes={story.scenes}
-        title={story.title}
-        onDone={handleEditDone}
-      />
+      <ErrorBoundary fullScreen>
+        <StoryEditor
+          scenes={story.scenes}
+          title={story.title}
+          onDone={handleEditDone}
+        />
+      </ErrorBoundary>
     );
   }
 
   return (
+    <ErrorBoundary fullScreen>
     <StoryViewer
       scenes={story.scenes}
       title={story.title || "나의 마음 동화"}
@@ -137,5 +141,6 @@ export default function LibraryStoryPage() {
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}
     />
+    </ErrorBoundary>
   );
 }

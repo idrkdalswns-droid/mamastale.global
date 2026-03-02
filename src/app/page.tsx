@@ -210,23 +210,25 @@ export default function Home() {
   // Story editor: mom can customize title and scene text
   if (screen === "edit") {
     return (
-      <StoryEditor
-        scenes={completedScenes}
-        title="나의 마음 동화"
-        onDone={(edited, title) => {
-          updateScenes(edited);
-          setEditedTitle(title);
-          // Silently update saved story in DB if exists
-          if (completedStoryId && completedStoryId.startsWith("story_") === false) {
-            fetch(`/api/stories/${completedStoryId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ title, scenes: edited }),
-            }).catch(() => {});
-          }
-          setScreen("story");
-        }}
-      />
+      <ErrorBoundary fullScreen>
+        <StoryEditor
+          scenes={completedScenes}
+          title="나의 마음 동화"
+          onDone={(edited, title) => {
+            updateScenes(edited);
+            setEditedTitle(title);
+            // Silently update saved story in DB if exists
+            if (completedStoryId && completedStoryId.startsWith("story_") === false) {
+              fetch(`/api/stories/${completedStoryId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title, scenes: edited }),
+              }).catch(() => {});
+            }
+            setScreen("story");
+          }}
+        />
+      </ErrorBoundary>
     );
   }
 
@@ -235,30 +237,38 @@ export default function Home() {
   // feedbackDone = true: re-viewing from community → go back to community
   if (screen === "story") {
     return (
-      <StoryViewer
-        scenes={completedScenes}
-        title={editedTitle || "나의 마음 동화"}
-        authorName={user?.user_metadata?.name || undefined}
-        onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
-        onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
-      />
+      <ErrorBoundary fullScreen>
+        <StoryViewer
+          scenes={completedScenes}
+          title={editedTitle || "나의 마음 동화"}
+          authorName={user?.user_metadata?.name || undefined}
+          onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
+          onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
+        />
+      </ErrorBoundary>
     );
   }
 
   if (screen === "feedback") {
-    return <FeedbackWizard sessionId={chatSessionId} onRestart={() => { setFeedbackDone(true); setScreen("community"); }} />;
+    return (
+      <ErrorBoundary fullScreen>
+        <FeedbackWizard sessionId={chatSessionId} onRestart={() => { setFeedbackDone(true); setScreen("community"); }} />
+      </ErrorBoundary>
+    );
   }
 
   if (screen === "community") {
     return (
-      <CommunityPage
-        onRestart={() => {
-          reset(); // LOW-11 fix: reset chat store
-          setShow(false);
-          setScreen("landing");
-        }}
-        onViewStory={() => setScreen("story")}
-      />
+      <ErrorBoundary fullScreen>
+        <CommunityPage
+          onRestart={() => {
+            reset(); // LOW-11 fix: reset chat store
+            setShow(false);
+            setScreen("landing");
+          }}
+          onViewStory={() => setScreen("story")}
+        />
+      </ErrorBoundary>
     );
   }
 
