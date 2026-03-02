@@ -194,7 +194,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-brown-light leading-8 font-light whitespace-pre-line break-keep">
+          <p className="text-sm text-brown-light leading-8 font-normal whitespace-pre-line break-keep">
             {s.body}
           </p>
         )}

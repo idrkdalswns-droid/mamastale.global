@@ -95,7 +95,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
             onClick={onRestart}
             className="w-full py-4 rounded-full text-white text-sm font-sans font-medium cursor-pointer mt-2 active:scale-[0.97] transition-transform"
             style={{
-              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
@@ -189,7 +189,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                 onClick={submitFree}
                 className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer mt-4 active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
                 }}
               >

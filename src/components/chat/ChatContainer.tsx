@@ -145,7 +145,7 @@ export function ChatPage({ onComplete }: ChatPageProps) {
               }}
               className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >

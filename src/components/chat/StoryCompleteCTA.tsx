@@ -7,6 +7,17 @@ interface StoryCompleteCTAProps {
   onViewStory: () => void;
 }
 
+// Soft floating particles for celebration feel
+const particles = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  emoji: ["✨", "🌸", "💛", "🌿", "🫧", "🌟"][i % 6],
+  x: Math.random() * 300 - 150,
+  y: Math.random() * -200 - 50,
+  delay: Math.random() * 0.8,
+  duration: 2 + Math.random() * 1.5,
+  size: 14 + Math.random() * 12,
+}));
+
 export default function StoryCompleteCTA({
   storyId,
   onViewStory,
@@ -16,36 +27,103 @@ export default function StoryCompleteCTA({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+      className="fixed inset-0 z-[70] flex items-center justify-center px-6 overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label="동화 완성"
-      style={{ background: "rgba(253,249,244,0.85)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(253,249,244,0.88)", backdropFilter: "blur(14px)" }}
     >
+      {/* Celebration particles */}
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          initial={{ opacity: 0, y: 60, x: 0, scale: 0.3 }}
+          animate={{
+            opacity: [0, 0.8, 0.6, 0],
+            y: [60, p.y],
+            x: [0, p.x],
+            scale: [0.3, 1, 0.8],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: 0.3 + p.delay,
+            ease: "easeOut",
+          }}
+          className="absolute pointer-events-none"
+          style={{ fontSize: p.size }}
+          aria-hidden="true"
+        >
+          {p.emoji}
+        </motion.div>
+      ))}
+
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-        className="w-full max-w-sm text-center"
+        className="w-full max-w-sm text-center relative z-10"
       >
-        <div className="text-[64px] mb-5">✨</div>
-        <h2 className="font-serif text-2xl font-bold text-brown mb-3 leading-tight">
+        {/* Soft glow behind emoji */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+          className="w-28 h-28 rounded-full mx-auto mb-4 flex items-center justify-center"
+          style={{
+            background: "radial-gradient(circle, rgba(224,122,95,0.12) 0%, transparent 70%)",
+          }}
+        >
+          <motion.span
+            initial={{ scale: 0.6, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
+            className="text-[64px]"
+          >
+            ✨
+          </motion.span>
+        </motion.div>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="font-serif text-2xl font-bold text-brown mb-2 leading-tight"
+        >
           나의 동화가<br />완성되었어요
-        </h2>
-        <p className="text-sm text-brown-light font-light leading-relaxed mb-8 break-keep">
-          세상에 하나뿐인 마음 동화를<br />
-          지금 바로 확인해 보세요
-        </p>
-        <button
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="text-[13px] text-brown-light font-normal leading-relaxed mb-3 break-keep"
+        >
+          어머니의 이야기가 세상에 하나뿐인<br />
+          마음 동화가 되었습니다
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
+          className="text-[11px] text-brown-pale font-normal mb-8"
+        >
+          오늘의 여정, 정말 수고하셨어요 💛
+        </motion.p>
+
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 1.0 }}
           onClick={onViewStory}
           className="w-full py-4 rounded-full text-white text-base font-medium transition-transform active:scale-[0.97]"
           style={{
-            background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+            background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
           }}
         >
           내 동화 보러가기
-        </button>
+        </motion.button>
       </motion.div>
     </motion.div>
   );

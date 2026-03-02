@@ -266,7 +266,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 onClick={handleDone}
                 className="w-full py-4 rounded-full text-[15px] font-medium text-white transition-all active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
                 }}
               >
@@ -297,7 +297,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 onClick={() => setCurrentScene((p) => Math.min(editedScenes.length - 1, p + 1))}
                 className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
                 }}
               >

@@ -88,7 +88,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
             onClick={onBack}
             className="px-6 py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
             style={{
-              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
             }}
           >
@@ -291,12 +291,12 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 className="rounded-2xl p-4 text-center"
                 style={{ background: "rgba(127,191,176,0.06)", border: "1px solid rgba(127,191,176,0.12)" }}
               >
-                <p className="text-xs text-brown-light leading-6 font-light break-keep">
+                <p className="text-xs text-brown-light leading-6 font-normal break-keep">
                   오늘 많은 감정을 꺼내주셨어요.
                   <br />
                   따뜻한 차 한 잔, 좋아하는 음악, 짧은 산책 등
                   <br />
-                  작은 돌봄의 시간을 가져보세요.
+                  작은 돌봄의 시간을 가져보세요. 💛
                 </p>
               </div>
             </div>
@@ -315,7 +315,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 onClick={handleShare}
                 className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
                 }}
               >
@@ -374,7 +374,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               onClick={() => setCurrentScene((p) => Math.min(scenes.length - 1, p + 1))}
               className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
               }}
             >

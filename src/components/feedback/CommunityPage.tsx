@@ -261,7 +261,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                   onClick={onRestart}
                   className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97]"
                   style={{
-                    background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                     boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                   }}
                 >
@@ -278,7 +278,7 @@ export function CommunityPage({ onRestart }: CommunityPageProps) {
                   href="/pricing"
                   className="block w-full py-3.5 rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97] no-underline"
                   style={{
-                    background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                     boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                   }}
                 >

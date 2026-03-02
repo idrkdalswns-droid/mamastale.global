@@ -298,7 +298,7 @@ export default function Home() {
                 <Link
                   href="/signup"
                   className="text-xs text-white font-medium no-underline px-3 py-1.5 rounded-full min-h-[44px] flex items-center"
-                  style={{ background: "linear-gradient(135deg, #E07A5F, #D4836B)" }}
+                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
                 >
                   회원가입
                 </Link>
@@ -332,13 +332,13 @@ export default function Home() {
             mamastale
           </h1>
 
-          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-5 tracking-wide">
+          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-5">
             나의 이야기가 아이의 동화가 되다
           </p>
 
           {/* Description card */}
           <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
-            <p className="text-[13px] text-brown-light leading-7 font-sans font-light break-keep">
+            <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
               엄마의 삶이 아이를 위한{" "}
               <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
               가 됩니다.
@@ -353,7 +353,7 @@ export default function Home() {
             className="rounded-2xl px-4 py-3 mb-4"
             style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
           >
-            <p className="text-[12px] text-brown-light font-light leading-6 break-keep italic">
+            <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
               &ldquo;동화를 아이에게 읽어줬더니 꼭 안아주더라고요.
               제 아픔이 아이를 위한 선물이 될 수 있다는 게 신기했어요.&rdquo;
             </p>
@@ -442,9 +442,9 @@ export default function Home() {
           <button
             onClick={handleStartStory}
             disabled={!!user && ticketsRemaining === null && !authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer tracking-wide transition-transform active:scale-[0.97] disabled:opacity-60"
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
             style={{
-              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
             }}
           >
@@ -566,7 +566,7 @@ export default function Home() {
               onClick={() => setShowNoTickets(false)}
               className="block w-full py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97] mb-3"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >
@@ -617,7 +617,7 @@ export default function Home() {
               }}
               className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >
@@ -678,7 +678,7 @@ export default function Home() {
               }}
               className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
               style={{
-                background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
               }}
             >

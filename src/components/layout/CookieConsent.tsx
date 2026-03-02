@@ -46,7 +46,7 @@ export function CookieConsent() {
           <button
             onClick={accept}
             className="flex-1 py-2.5 rounded-full text-xs text-white font-medium"
-            style={{ background: "linear-gradient(135deg, #E07A5F, #D4836B)" }}
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
             동의
           </button>

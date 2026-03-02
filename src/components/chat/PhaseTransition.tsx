@@ -83,7 +83,7 @@ export default function PhaseTransition({
             </div>
 
             <div
-              className="text-xs font-light leading-relaxed"
+              className="text-xs font-normal leading-relaxed"
               style={{ color: T.brownMid, opacity: 0.7 }}
             >
               {msg.subtitle}

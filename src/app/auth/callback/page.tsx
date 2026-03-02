@@ -127,7 +127,7 @@ export default function AuthCallbackPage() {
           href="/login"
           className="inline-flex items-center justify-center min-h-[44px] px-8 py-3 rounded-full text-sm font-medium text-white no-underline transition-all active:scale-[0.97]"
           style={{
-            background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+            background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
           }}
         >

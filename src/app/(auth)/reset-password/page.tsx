@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
                 disabled={loading}
                 className="w-full py-3.5 rounded-full text-white text-sm font-medium active:scale-[0.97] transition-transform"
                 style={{
-                  background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                 }}
               >

@@ -104,7 +104,7 @@ export default function ReviewsPage() {
             href="/?action=start"
             className="inline-flex items-center justify-center min-h-[44px] px-8 py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97]"
             style={{
-              background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >

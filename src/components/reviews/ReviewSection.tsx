@@ -203,7 +203,7 @@ export function ReviewSection() {
               onClick={handleSubmit}
               disabled={loading || !content.trim() || !alias.trim()}
               className="flex-1 py-2.5 rounded-full text-xs font-medium text-white disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #E07A5F, #D4836B)" }}
+              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
             >
               {loading ? "등록 중..." : "후기 등록"}
             </button>

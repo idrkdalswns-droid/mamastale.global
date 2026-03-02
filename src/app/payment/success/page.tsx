@@ -120,7 +120,7 @@ function PaymentSuccessContent() {
           onClick={() => router.push("/?payment=success")}
           className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
           style={{
-            background: "linear-gradient(135deg, #E07A5F, #D4836B)",
+            background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
           }}
         >

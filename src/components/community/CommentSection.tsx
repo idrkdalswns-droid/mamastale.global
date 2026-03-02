@@ -168,7 +168,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
             onClick={submitComment}
             disabled={loading || !newComment.trim()}
             className="w-full py-2 rounded-full text-xs font-medium text-white disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #E07A5F, #D4836B)" }}
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
             {loading ? "등록 중..." : "댓글 등록"}
           </button>
