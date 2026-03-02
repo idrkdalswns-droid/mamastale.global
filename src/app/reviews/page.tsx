@@ -50,7 +50,7 @@ function StarRating({ count }: { count: number }) {
 
 export default function ReviewsPage() {
   return (
-    <div className="min-h-dvh bg-cream px-6 py-10">
+    <div className="min-h-dvh bg-cream px-6 pt-10 pb-20">
       <div className="max-w-prose mx-auto">
         {/* Header */}
         <Link

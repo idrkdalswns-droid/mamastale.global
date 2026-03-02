@@ -91,7 +91,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cream px-6 py-12 relative overflow-hidden">
+    <div className="min-h-dvh bg-cream px-6 pt-12 pb-20 relative overflow-hidden">
       {/* Toss Payments SDK */}
       <Script
         src="https://js.tosspayments.com/v2/standard"

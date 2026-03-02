@@ -151,7 +151,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 relative overflow-hidden">
+    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 py-12 relative overflow-hidden">
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
       <WatercolorBlob bottom={60} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 

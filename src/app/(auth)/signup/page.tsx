@@ -126,7 +126,7 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
+      <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 py-12">
         <div className="text-center max-w-sm">
           <div className="text-5xl mb-4" style={{ color: "#E07A5F" }}>&#9993;</div>
           <h2 className="font-serif text-xl text-brown font-semibold mb-3">
@@ -176,7 +176,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 relative overflow-hidden">
+    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 py-12 relative overflow-hidden">
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
       <WatercolorBlob bottom={60} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 

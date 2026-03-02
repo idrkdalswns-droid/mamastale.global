@@ -37,7 +37,7 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-cream px-6 py-8 relative overflow-hidden">
+    <div className="min-h-dvh bg-cream px-6 pt-8 pb-20 relative overflow-hidden">
       <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
       <WatercolorBlob bottom={100} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 

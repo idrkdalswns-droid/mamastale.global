@@ -530,6 +530,9 @@ export default function Home() {
           >
             개발 요청 보드
           </a>
+
+          {/* Bottom breathing room */}
+          <div className="h-20" />
         </div>
       </div>
 
