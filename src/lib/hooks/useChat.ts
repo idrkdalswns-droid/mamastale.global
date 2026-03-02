@@ -100,7 +100,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
     if (!get().sessionId) {
-      set({ sessionId });
+      // Rebuild initial messages to pick up latest localStorage values
+      // (e.g. child age set during onboarding AFTER Zustand module-level init)
+      set({ sessionId, messages: makeInitialMessages() });
     }
   },
 
