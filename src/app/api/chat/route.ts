@@ -23,6 +23,8 @@ const chatRequestSchema = z.object({
   ).max(120),  // Generous limit for long conversations
   sessionId: z.string().optional(),
   childAge: z.string().optional(),  // Lenient — validated downstream if needed
+  currentPhase: z.number().min(1).max(4).optional(),
+  turnCountInCurrentPhase: z.number().min(0).optional(),
 });
 
 // ─── Rate Limiting (per-isolate, in-memory) ───
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, childAge } = parsed.data;
+    const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase } = parsed.data;
 
     // ─── Server-side guest turn limit ───
     // Count by total conversation turns (messages / 2), not just user messages,
@@ -163,6 +165,18 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge] || childAge}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
     }
 
+    // ─── Phase context injection (10-turn limit + forward-only) ───
+    const MAX_TURNS_PER_PHASE = 10;
+    const safePhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
+    const safeTurnCount = turnCountInCurrentPhase ?? 0;
+
+    if (safeTurnCount >= MAX_TURNS_PER_PHASE && safePhase < 4) {
+      // Force transition — turn limit reached
+      systemPrompt += `\n\n<phase_turn_limit_exceeded>\n[긴급] 현재 Phase ${safePhase}에서 ${safeTurnCount}턴이 경과했습니다. 10턴 제한을 초과했으므로 반드시 Phase ${safePhase + 1}로 전환하십시오.\n이번 응답에서 [PHASE:${safePhase + 1}]을 출력하고, Phase ${safePhase + 1}의 역할로 자연스럽게 전환하십시오.\n</phase_turn_limit_exceeded>`;
+    } else {
+      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${MAX_TURNS_PER_PHASE}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
+    }
+
     const response = await callAnthropicWithRetry(anthropic, {
       model: "claude-sonnet-4-20250514",
       max_tokens: 2000,
@@ -178,7 +192,9 @@ export async function POST(request: NextRequest) {
       .map((b) => b.text)
       .join("");
 
-    const phase = detectPhase(rawText);
+    const detectedPhase = detectPhase(rawText);
+    // Server-side forward-only enforcement: never go backward
+    const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
     const cleanText = stripPhaseTag(rawText);
     const storyComplete = isStoryComplete(cleanText, phase);
 

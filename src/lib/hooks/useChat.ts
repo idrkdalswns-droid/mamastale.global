@@ -27,6 +27,7 @@ interface ChatState {
   messages: Message[];
   currentPhase: 1 | 2 | 3 | 4;
   visitedPhases: number[];
+  turnCountInCurrentPhase: number;
   isLoading: boolean;
   isTransitioning: boolean;
   storyDone: boolean;
@@ -66,7 +67,7 @@ function buildInitialMessage(): string {
   const ageNote = childAge && AGE_LABELS[childAge]
     ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
     : "";
-  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n오늘 어머니의 마음은 어떠신가요?`;
+  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. 어머니의 이야기가 곧 동화의 이야기가 됩니다.\n\n오늘 어머니의 마음은 어떠신가요?`;
 }
 
 const makeInitialMessages = (): Message[] => [
@@ -83,6 +84,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: makeInitialMessages(),
   currentPhase: 1,
   visitedPhases: [1],
+  turnCountInCurrentPhase: 0,
   isLoading: false,
   isTransitioning: false,
   storyDone: false,
@@ -108,7 +110,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       content: text.trim(),
     };
     const updatedMessages = [...state.messages, userMsg];
-    set({ messages: updatedMessages, isLoading: true });
+    const newTurnCount = state.turnCountInCurrentPhase + 1;
+    set({ messages: updatedMessages, isLoading: true, turnCountInCurrentPhase: newTurnCount });
 
     try {
       // Filter out client-side error messages before sending to API
@@ -130,6 +133,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: apiMessages,
           sessionId: state.sessionId,
           childAge,
+          currentPhase: state.currentPhase,
+          turnCountInCurrentPhase: newTurnCount,
         }),
       });
 
@@ -140,8 +145,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const data: ChatApiResponse = await res.json();
 
-      // Handle phase transition
-      if (data.phase && data.phase !== state.currentPhase) {
+      // Handle phase transition (forward-only: never go backward)
+      const currentPhaseNow = get().currentPhase;
+      if (data.phase && data.phase > currentPhaseNow) {
         set({ isTransitioning: true });
         await new Promise((r) => setTimeout(r, 600));
         set((s) => ({
@@ -149,6 +155,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           visitedPhases: s.visitedPhases.includes(data.phase!)
             ? s.visitedPhases
             : [...s.visitedPhases, data.phase!],
+          turnCountInCurrentPhase: 0, // Reset turn count for new phase
         }));
         await new Promise((r) => setTimeout(r, 500));
         set({ isTransitioning: false });
@@ -239,6 +246,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: s.messages,
         currentPhase: s.currentPhase,
         visitedPhases: s.visitedPhases,
+        turnCountInCurrentPhase: s.turnCountInCurrentPhase,
         storyDone: s.storyDone,
         completedScenes: s.completedScenes,
         savedAt: Date.now(),
@@ -286,6 +294,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: snapshot.messages,
         currentPhase: phase as 1 | 2 | 3 | 4,
         visitedPhases: Array.isArray(snapshot.visitedPhases) ? snapshot.visitedPhases : [1],
+        turnCountInCurrentPhase: typeof snapshot.turnCountInCurrentPhase === "number" ? snapshot.turnCountInCurrentPhase : 0,
         storyDone: snapshot.storyDone === true,
         completedScenes: Array.isArray(snapshot.completedScenes) ? snapshot.completedScenes : [],
         isLoading: false,
@@ -354,6 +363,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messages: makeInitialMessages(),
       currentPhase: 1,
       visitedPhases: [1],
+      turnCountInCurrentPhase: 0,
       isLoading: false,
       isTransitioning: false,
       storyDone: false,
