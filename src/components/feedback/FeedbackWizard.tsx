@@ -4,10 +4,10 @@ import { useState } from "react";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 
 const questions = [
-  { key: "empathy", label: "Phase 1 · 공감적 치유자", sub: "AI가 감정을 충분히 공감해 주었나요?" },
-  { key: "insight", label: "Phase 2 · 소크라테스식 철학자", sub: "질문을 통해 새로운 깨달음이 있었나요?" },
-  { key: "metaphor", label: "Phase 3 · 은유의 마법사", sub: "동화 캐릭터 전환이 자연스러웠나요?" },
-  { key: "story", label: "Phase 4 · 동화 편집장", sub: "완성된 동화가 가슴에 와닿았나요?" },
+  { key: "empathy", label: "1단계 · 공감적 치유자", sub: "AI가 감정을 충분히 공감해 주었나요?" },
+  { key: "insight", label: "2단계 · 소크라테스식 철학자", sub: "질문을 통해 새로운 깨달음이 있었나요?" },
+  { key: "metaphor", label: "3단계 · 은유의 마법사", sub: "동화 캐릭터 전환이 자연스러웠나요?" },
+  { key: "story", label: "4단계 · 동화 편집장", sub: "완성된 동화가 가슴에 와닿았나요?" },
   { key: "overall", label: "전체 경험", sub: "다른 엄마에게 추천하고 싶으신가요?" },
   { key: "free", label: "자유 의견", sub: "개선점, 좋았던 점, 불편했던 점 무엇이든 좋습니다" },
 ];

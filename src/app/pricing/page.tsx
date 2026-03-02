@@ -203,7 +203,7 @@ export default function PricingPage() {
             className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-medium tracking-wide"
             style={{ background: "#E07A5F" }}
           >
-            BEST VALUE
+            가장 인기
           </div>
 
           <div className="text-center mb-4 pt-1">

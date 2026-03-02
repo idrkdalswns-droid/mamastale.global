@@ -134,7 +134,7 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
               border: `1px solid ${s.accent}20`,
             }}
           >
-            <span>STEP {s.step}</span>
+            <span>{s.step}단계</span>
             <span style={{ opacity: 0.4 }}>·</span>
             <span>{s.persona}</span>
           </div>
