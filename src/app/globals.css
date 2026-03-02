@@ -139,3 +139,51 @@
 .animate-fade-slide-in {
   animation: fadeSlideIn 0.35s ease-out forwards;
 }
+
+/* ── Bookshelf: wooden shelf plank ── */
+.shelf-plank {
+  position: relative;
+  height: 12px;
+  margin-top: 2px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(
+    180deg,
+    rgba(160, 128, 96, 0.45) 0%,
+    rgba(139, 111, 85, 0.55) 40%,
+    rgba(90, 62, 43, 0.35) 100%
+  );
+  box-shadow:
+    0 2px 4px rgba(90, 62, 43, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.shelf-plank-grain {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    rgba(90, 62, 43, 0.03) 2px,
+    transparent 4px
+  );
+}
+.dark .shelf-plank {
+  background: linear-gradient(
+    180deg,
+    rgba(120, 95, 70, 0.4) 0%,
+    rgba(90, 70, 50, 0.5) 40%,
+    rgba(60, 42, 28, 0.35) 100%
+  );
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Bookshelf: staggered book entry animation */
+@keyframes bookEntry {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-book-entry {
+  animation: bookEntry 0.45s ease both;
+}

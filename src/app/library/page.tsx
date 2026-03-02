@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { StoryCard } from "@/components/story/StoryCard";
+import { BookshelfGrid } from "@/components/story/Bookshelf";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import type { Scene } from "@/lib/types/story";
@@ -49,7 +49,7 @@ export default function LibraryPage() {
 
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <Link href="/" className="font-serif text-xl font-bold text-brown no-underline">
               mamastale
@@ -58,7 +58,7 @@ export default function LibraryPage() {
               📚 내 서재
             </h2>
             <p className="text-xs text-brown-light font-light mt-1">
-              완성한 동화들을 다시 읽어보세요
+              나만의 동화 컬렉션
             </p>
           </div>
           <Link
@@ -121,40 +121,8 @@ export default function LibraryPage() {
               다시 시도
             </button>
           </div>
-        ) : stories.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-4xl mb-4">📝</div>
-            <h3 className="font-serif text-lg text-brown font-semibold mb-2">
-              아직 완성한 동화가 없어요
-            </h3>
-            <p className="text-sm text-brown-light font-light mb-6 leading-relaxed">
-              따뜻한 대화를 나누며<br />
-              나만의 마음 동화를 만들어 보세요
-            </p>
-            <Link
-              href="/?action=start"
-              className="inline-flex items-center justify-center min-h-[44px] px-8 py-3 rounded-full text-sm font-medium text-white no-underline transition-all active:scale-[0.97]"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              첫 동화 만들기
-            </Link>
-          </div>
         ) : (
-          <div className="space-y-3">
-            {stories.map((story) => (
-              <StoryCard
-                key={story.id}
-                id={story.id}
-                title={story.title}
-                scenes={story.scenes}
-                createdAt={story.created_at}
-                href={`/library/${story.id}`}
-              />
-            ))}
-          </div>
+          <BookshelfGrid stories={stories} />
         )}
       </div>
     </div>
