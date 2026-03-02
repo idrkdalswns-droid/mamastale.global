@@ -345,7 +345,7 @@ export default function Home() {
               <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
               가 됩니다.
               <br />
-              따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
+              AI 상담사와 따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
           </div>
@@ -373,6 +373,17 @@ export default function Home() {
               }}
             >
               샘플 동화
+            </Link>
+            <Link
+              href="/pricing"
+              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              style={{
+                background: "rgba(196,149,106,0.08)",
+                color: "#8B7355",
+                border: "1px solid rgba(196,149,106,0.12)",
+              }}
+            >
+              요금 안내
             </Link>
           </div>
 
@@ -441,8 +452,15 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 불러오는 중...
               </span>
-            ) : user ? "새 동화 만들기" : "체험 시작하기"}
+            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
           </button>
+
+          {/* Free trial + time hint for non-logged-in users */}
+          {!user && !authLoading && (
+            <p className="text-[11px] text-brown-pale font-normal text-center mt-2.5 leading-relaxed">
+              회원가입 없이 3회 무료 대화 · 약 15분이면 충분해요
+            </p>
+          )}
 
           {/* Quick links for logged-in users */}
           {user && !authLoading && (

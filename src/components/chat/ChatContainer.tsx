@@ -105,7 +105,8 @@ export function ChatPage({ onComplete }: ChatPageProps) {
               color: userMsgCount >= 2 ? "#E07A5F" : "#999",
             }}
           >
-            무료 체험 {userMsgCount}/{GUEST_TURN_LIMIT}
+            무료 대화 {userMsgCount}/{GUEST_TURN_LIMIT}회
+            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막"}
           </div>
         </div>
       )}

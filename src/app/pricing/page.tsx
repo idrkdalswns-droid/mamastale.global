@@ -256,10 +256,19 @@ export default function PricingPage() {
             <div className="text-3xl mb-2">✨</div>
             <h3 className="font-serif text-lg text-brown font-semibold">5권 묶음 패키지</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
+              <span className="text-sm text-brown-pale font-light line-through mr-1">₩10,000</span>
               <span className="font-serif text-3xl font-bold text-brown">₩8,000</span>
               <span className="text-sm text-brown-light font-light">/5권</span>
             </div>
-            <p className="text-xs text-coral mt-1 font-medium">20% 할인 · 1권당 ₩1,600</p>
+            <div className="flex items-center justify-center gap-2 mt-1.5">
+              <span
+                className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
+                style={{ background: "#E07A5F" }}
+              >
+                20% OFF
+              </span>
+              <span className="text-xs text-coral font-medium">1권당 ₩1,600</span>
+            </div>
           </div>
 
           <ul className="space-y-2.5 mb-5">

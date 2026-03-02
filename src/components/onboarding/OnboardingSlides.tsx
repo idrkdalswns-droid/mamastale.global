@@ -216,11 +216,21 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
 
         {!isLast && (
           <button
-            onClick={saveAndDone}
+            onClick={() => {
+              // Skip to the last slide (age selection) instead of skipping entirely
+              if (transitioning) return;
+              setTransitioning(true);
+              setAnim(false);
+              setTimeout(() => {
+                setIdx(slides.length - 1);
+                setAnim(true);
+                setTransitioning(false);
+              }, 250);
+            }}
             disabled={transitioning}
             className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30"
           >
-            건너뛰기
+            건너뛰고 바로 시작하기
           </button>
         )}
       </div>
