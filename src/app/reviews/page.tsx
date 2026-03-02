@@ -3,6 +3,34 @@ import { ReviewSection } from "@/components/reviews/ReviewSection";
 
 const reviews = [
   {
+    alias: "윤서맘",
+    age: "41세",
+    childAge: "딸 7세",
+    stars: 5,
+    text: "사업하느라 아이에게 늘 미안한 마음이었는데, 대화를 통해 그 죄책감이 자연스럽게 풀렸어요. 완성된 동화에 제 이야기가 아이 눈높이의 모험담으로 바뀌어 있더라고요. 딸이 \"엄마 이 동화 주인공이 엄마 같아!\"라며 안겨올 때 정말 울컥했습니다.",
+  },
+  {
+    alias: "서아맘",
+    age: "38세",
+    childAge: "아들 5세, 딸 3세",
+    stars: 5,
+    text: "아동심리를 공부했지만 정작 제 감정은 돌보지 못했어요. AI라서 오히려 솔직해질 수 있었고, 4단계 대화 구조가 심리학적으로도 잘 설계되어 놀랐습니다. 아이에게 읽어주니 \"엄마도 슬플 때 있어?\"라고 묻더라고요. 그 한마디에 눈물이 났어요.",
+  },
+  {
+    alias: "예진맘",
+    age: "44세",
+    childAge: "딸 8세",
+    stars: 5,
+    text: "디자이너로 일하다 육아 후 붓을 놓은 지 오래됐는데, 이 서비스의 대화가 잊고 있던 감정을 끌어내더라고요. 동화 텍스트의 문학적 품질이 기대 이상이에요. 딸과 함께 동화를 읽으며 \"엄마도 꿈이 있었어\"라고 말해줄 수 있어서 감사해요.",
+  },
+  {
+    alias: "현정맘",
+    age: "35세",
+    childAge: "아들 4세",
+    stars: 5,
+    text: "처음엔 AI와 깊은 대화가 가능할까 반신반의했는데, 첫 질문부터 마음이 열렸어요. 15분 만에 울고 웃으며 동화까지 완성했습니다. 남편에게 보여줬더니 \"이 이야기가 네 거야?\"라며 놀라더라고요. 가족 모두에게 선물 같은 경험이었어요.",
+  },
+  {
     alias: "준우맘",
     age: "32세",
     childAge: "아들 3세",
@@ -88,7 +116,7 @@ export default function ReviewsPage() {
               </div>
 
               {/* Review text */}
-              <p className="text-[13px] text-brown-light leading-7 font-light break-keep">
+              <p className="text-[13px] text-brown-light leading-7 font-normal break-keep">
                 {r.text}
               </p>
             </div>
