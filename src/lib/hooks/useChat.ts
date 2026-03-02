@@ -31,6 +31,8 @@ interface ChatState {
   clearStorage: () => void;
   /** Update completed scenes (e.g. after user editing) */
   updateScenes: (scenes: Scene[]) => void;
+  /** Retry saving story to DB (e.g. after auth is established) */
+  retrySaveStory: () => Promise<boolean>;
 }
 
 let msgCounter = 0;
@@ -175,28 +177,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
               completedStoryId: saveData.id || get().completedStoryId,
             });
           } else if (saveRes.status === 401) {
-            // Anonymous user — story not saved to DB
-            set({
-              storySaved: false,
-              storySaveError: "login_required",
-            });
+            set({ storySaved: false, storySaveError: "login_required" });
+            get().persistToStorage(); // Backup for recovery after login/refresh
           } else if (saveRes.status === 403) {
-            // No tickets remaining
-            set({
-              storySaved: false,
-              storySaveError: "no_tickets",
-            });
+            set({ storySaved: false, storySaveError: "no_tickets" });
+            get().persistToStorage();
           } else {
-            set({
-              storySaved: false,
-              storySaveError: "save_failed",
-            });
+            set({ storySaved: false, storySaveError: "save_failed" });
+            get().persistToStorage();
           }
         } catch {
-          set({
-            storySaved: false,
-            storySaveError: "save_failed",
-          });
+          set({ storySaved: false, storySaveError: "save_failed" });
+          get().persistToStorage();
           console.warn("Failed to save story to database");
         }
       }
@@ -303,6 +295,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   updateScenes: (scenes: Scene[]) => {
     set({ completedScenes: scenes });
+  },
+
+  retrySaveStory: async () => {
+    const state = get();
+    if (state.storySaved || state.completedScenes.length === 0) return false;
+
+    try {
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "나의 마음 동화",
+          scenes: state.completedScenes,
+          sessionId: state.sessionId || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        set({
+          storySaved: true,
+          storySaveError: null,
+          completedStoryId: data.id || state.completedStoryId,
+        });
+        // Clear backup since story is now safely in DB
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
   },
 
   reset: () => {

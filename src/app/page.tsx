@@ -32,7 +32,7 @@ export default function Home() {
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
-  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes } = useChatStore();
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes, retrySaveStory, storySaved } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
@@ -45,8 +45,15 @@ export default function Home() {
     const restored = restoreFromStorage();
     if (restored) {
       setScreen("chat");
+      // Retry saving story if it was completed but not saved (e.g. auth failed earlier)
+      setTimeout(() => {
+        const s = useChatStore.getState();
+        if (s.completedScenes.length > 0 && !s.storySaved) {
+          retrySaveStory();
+        }
+      }, 1000);
     }
-  }, [authLoading, user, restoreFromStorage, screen]);
+  }, [authLoading, user, restoreFromStorage, screen, retrySaveStory]);
 
   // Detect URL params: payment success, referral code, action=start
   useEffect(() => {

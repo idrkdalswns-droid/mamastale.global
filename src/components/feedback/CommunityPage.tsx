@@ -16,7 +16,14 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
-  const { completedScenes, completedStoryId, storySaved } = useChatStore();
+  const { completedScenes, completedStoryId, storySaved, retrySaveStory } = useChatStore();
+
+  // Auto-retry story save on mount (recovers from earlier save failure)
+  useEffect(() => {
+    if (completedScenes.length > 0 && !storySaved) {
+      retrySaveStory();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch ticket balance to show context-aware next-story CTA
   // KR-J1: AbortController for cleanup on unmount
