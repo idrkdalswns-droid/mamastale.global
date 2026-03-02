@@ -5,7 +5,11 @@ import type { Message, ChatApiResponse } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
 
+// ─── Two separate storage keys ───
+// AUTH: auto-consumed after login/signup redirect (destructive restore)
 const STORAGE_KEY = "mamastale_chat_state";
+// DRAFT: persistent manual save — NEVER deleted except by explicit user action or story completion
+const DRAFT_KEY = "mamastale_chat_draft";
 
 /** Build headers with auth token for API calls (belt-and-suspenders for edge cookie issues) */
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -22,6 +26,42 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+/** Validate snapshot shape to prevent corrupted state */
+function isValidSnapshot(snapshot: unknown): snapshot is Record<string, unknown> {
+  if (typeof snapshot !== "object" || snapshot === null) return false;
+  const s = snapshot as Record<string, unknown>;
+  if (typeof s.savedAt !== "number") return false;
+  if (!Array.isArray(s.messages)) return false;
+  return (s.messages as unknown[]).every(
+    (m: unknown) =>
+      typeof m === "object" && m !== null &&
+      typeof (m as Record<string, unknown>).role === "string" &&
+      typeof (m as Record<string, unknown>).content === "string"
+  );
+}
+
+/** Apply snapshot to Zustand state (shared between restoreFromStorage and restoreDraft) */
+function snapshotToState(snapshot: Record<string, unknown>) {
+  const validPhases = [1, 2, 3, 4];
+  const phase = validPhases.includes(snapshot.currentPhase as number)
+    ? (snapshot.currentPhase as 1 | 2 | 3 | 4)
+    : 1;
+
+  return {
+    sessionId: typeof snapshot.sessionId === "string" ? snapshot.sessionId : "",
+    messages: snapshot.messages as Message[],
+    currentPhase: phase,
+    visitedPhases: Array.isArray(snapshot.visitedPhases) ? snapshot.visitedPhases as number[] : [1],
+    turnCountInCurrentPhase: typeof snapshot.turnCountInCurrentPhase === "number" ? snapshot.turnCountInCurrentPhase : 0,
+    storyDone: snapshot.storyDone === true,
+    completedScenes: Array.isArray(snapshot.completedScenes) ? snapshot.completedScenes as Scene[] : [],
+    isLoading: false,
+    isTransitioning: false,
+    storySaved: false,
+    storySaveError: null,
+  };
+}
+
 interface ChatState {
   sessionId: string;
   messages: Message[];
@@ -35,25 +75,31 @@ interface ChatState {
   completedScenes: Scene[];
   storySaved: boolean;
   storySaveError: string | null;
+  /** Whether the current session was restored from a persistent draft */
+  isFromDraft: boolean;
 
   initSession: (sessionId: string) => void;
   sendMessage: (text: string) => Promise<void>;
   setTransitioning: (v: boolean) => void;
   reset: () => void;
-  /** Save current chat state to localStorage (for signup resume) */
+  /** Save current chat state for auth redirect (auto-consumed on return) */
   persistToStorage: () => void;
-  /** Restore chat state from localStorage. Returns true if restored. */
+  /** Restore from auth redirect save. DESTRUCTIVE: deletes after restore. */
   restoreFromStorage: () => boolean;
-  /** Clear saved state from localStorage */
+  /** Save current chat as a persistent draft (임시 저장) */
+  saveDraft: () => void;
+  /** Restore from persistent draft. NON-DESTRUCTIVE: draft stays in localStorage. */
+  restoreDraft: () => boolean;
+  /** Check if any saved state exists (draft or auth). Returns info or null. */
+  getDraftInfo: () => { phase: number; messageCount: number; savedAt: number; source: string } | null;
+  /** Clear ALL saved state (both auth and draft) */
   clearStorage: () => void;
+  /** Clear only the persistent draft */
+  clearDraft: () => void;
   /** Update completed scenes (e.g. after user editing) */
   updateScenes: (scenes: Scene[]) => void;
   /** Retry saving story to DB (e.g. after auth is established) */
   retrySaveStory: () => Promise<boolean>;
-  /** Save current chat as a draft (임시 저장) */
-  saveDraft: () => void;
-  /** Check if a saved draft exists (without deleting). Returns info or null. */
-  getDraftInfo: () => { phase: number; messageCount: number; savedAt: number; source: string } | null;
 }
 
 let msgCounter = 0;
@@ -96,6 +142,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   completedScenes: [],
   storySaved: false,
   storySaveError: null,
+  isFromDraft: false,
 
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
@@ -184,6 +231,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : s.completedScenes,
       }));
 
+      // ─── Auto-update draft after each successful exchange ───
+      // If this session was restored from a draft, keep the draft in sync
+      // so progress is never lost (even if browser crashes)
+      if (get().isFromDraft && !data.isStoryComplete) {
+        get().saveDraft();
+      }
+
+      // ─── Story complete → clear draft (no longer needed) ───
+      if (data.isStoryComplete) {
+        try { localStorage.removeItem(DRAFT_KEY); } catch {}
+        set({ isFromDraft: false });
+      }
+
       // IN-7: Save completed story — set storySaved synchronously BEFORE async fetch to prevent race
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved) {
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
@@ -244,6 +304,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setTransitioning: (v: boolean) => set({ isTransitioning: v }),
 
+  // ─── Auth redirect save (STORAGE_KEY) — consumed after restore ───
   persistToStorage: () => {
     try {
       const s = get();
@@ -256,7 +317,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         storyDone: s.storyDone,
         completedScenes: s.completedScenes,
         savedAt: Date.now(),
-        source: "auth", // auth-redirect save (auto-restore on login)
+        source: "auth",
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     } catch {
@@ -264,66 +325,130 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  // ─── Auth redirect restore — DESTRUCTIVE (deletes STORAGE_KEY after restore) ───
   restoreFromStorage: () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const snapshot = JSON.parse(raw);
 
-      // IN-11: Validate restored data shape to prevent corrupted state
-      if (
-        typeof snapshot !== "object" || snapshot === null ||
-        typeof snapshot.savedAt !== "number" ||
-        !Array.isArray(snapshot.messages) ||
-        !snapshot.messages.every(
-          (m: unknown) =>
-            typeof m === "object" && m !== null &&
-            typeof (m as Record<string, unknown>).role === "string" &&
-            typeof (m as Record<string, unknown>).content === "string"
-        )
-      ) {
+      if (!isValidSnapshot(snapshot)) {
         localStorage.removeItem(STORAGE_KEY);
         return false;
       }
 
-      // Only restore if saved within last 24 hours (allows time for email verification)
-      if (Date.now() - snapshot.savedAt > 24 * 60 * 60 * 1000) {
+      // 24-hour expiry for auth saves
+      if (Date.now() - (snapshot.savedAt as number) > 24 * 60 * 60 * 1000) {
         localStorage.removeItem(STORAGE_KEY);
         return false;
       }
 
-      // Validate currentPhase is a valid value
-      const validPhases = [1, 2, 3, 4];
-      const phase = validPhases.includes(snapshot.currentPhase) ? snapshot.currentPhase : 1;
-
-      set({
-        sessionId: typeof snapshot.sessionId === "string" ? snapshot.sessionId : "",
-        messages: snapshot.messages,
-        currentPhase: phase as 1 | 2 | 3 | 4,
-        visitedPhases: Array.isArray(snapshot.visitedPhases) ? snapshot.visitedPhases : [1],
-        turnCountInCurrentPhase: typeof snapshot.turnCountInCurrentPhase === "number" ? snapshot.turnCountInCurrentPhase : 0,
-        storyDone: snapshot.storyDone === true,
-        completedScenes: Array.isArray(snapshot.completedScenes) ? snapshot.completedScenes : [],
-        isLoading: false,
-        isTransitioning: false,
-        storySaved: false,
-        storySaveError: null,
-      });
+      set(snapshotToState(snapshot));
+      // Auth saves are consumed (one-time use)
       localStorage.removeItem(STORAGE_KEY);
       return true;
     } catch {
-      // IN-11: Clear corrupted data on parse failure
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
       return false;
     }
   },
 
-  clearStorage: () => {
+  // ─── Persistent draft save (DRAFT_KEY) — survives until explicit delete ───
+  saveDraft: () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      const s = get();
+      const snapshot = {
+        sessionId: s.sessionId,
+        messages: s.messages,
+        currentPhase: s.currentPhase,
+        visitedPhases: s.visitedPhases,
+        turnCountInCurrentPhase: s.turnCountInCurrentPhase,
+        storyDone: s.storyDone,
+        completedScenes: s.completedScenes,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
     } catch {
-      // ignore
+      // localStorage not available
     }
+  },
+
+  // ─── Draft restore — NON-DESTRUCTIVE (draft stays in localStorage) ───
+  restoreDraft: () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return false;
+      const snapshot = JSON.parse(raw);
+
+      if (!isValidSnapshot(snapshot)) {
+        localStorage.removeItem(DRAFT_KEY);
+        return false;
+      }
+
+      // 30-day expiry for drafts
+      if (Date.now() - (snapshot.savedAt as number) > 30 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(DRAFT_KEY);
+        return false;
+      }
+
+      set({ ...snapshotToState(snapshot), isFromDraft: true });
+      // NOTE: We do NOT delete DRAFT_KEY here — draft persists
+      return true;
+    } catch {
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* */ }
+      return false;
+    }
+  },
+
+  // ─── getDraftInfo: checks draft first, then auth — read-only ───
+  getDraftInfo: () => {
+    try {
+      // Check persistent draft first
+      let raw = localStorage.getItem(DRAFT_KEY);
+      let source = "draft";
+
+      // Fallback to auth save
+      if (!raw) {
+        raw = localStorage.getItem(STORAGE_KEY);
+        source = "auth";
+      }
+
+      if (!raw) return null;
+      const snapshot = JSON.parse(raw);
+      if (typeof snapshot !== "object" || snapshot === null || typeof snapshot.savedAt !== "number") return null;
+
+      // Expiry: 30 days for drafts, 7 days for auth
+      const maxAge = source === "draft"
+        ? 30 * 24 * 60 * 60 * 1000
+        : 7 * 24 * 60 * 60 * 1000;
+      if (Date.now() - snapshot.savedAt > maxAge) {
+        localStorage.removeItem(source === "draft" ? DRAFT_KEY : STORAGE_KEY);
+        return null;
+      }
+
+      const userMsgCount = Array.isArray(snapshot.messages)
+        ? snapshot.messages.filter((m: { role: string }) => m.role === "user").length
+        : 0;
+      return {
+        phase: snapshot.currentPhase || 1,
+        messageCount: userMsgCount,
+        savedAt: snapshot.savedAt,
+        source,
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  // ─── Clear everything (both auth + draft) — used by explicit "삭제" button ───
+  clearStorage: () => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  },
+
+  // ─── Clear only the persistent draft ───
+  clearDraft: () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
   },
 
   updateScenes: (scenes: Scene[]) => {
@@ -353,8 +478,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           storySaveError: null,
           completedStoryId: data.id || state.completedStoryId,
         });
-        // Clear backup since story is now safely in DB
+        // Clear auth backup since story is now safely in DB
         try { localStorage.removeItem(STORAGE_KEY); } catch {}
+        // Clear draft too — story is complete
+        try { localStorage.removeItem(DRAFT_KEY); } catch {}
         return true;
       }
       return false;
@@ -363,53 +490,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  saveDraft: () => {
-    try {
-      const s = get();
-      const snapshot = {
-        sessionId: s.sessionId,
-        messages: s.messages,
-        currentPhase: s.currentPhase,
-        visitedPhases: s.visitedPhases,
-        turnCountInCurrentPhase: s.turnCountInCurrentPhase,
-        storyDone: s.storyDone,
-        completedScenes: s.completedScenes,
-        savedAt: Date.now(),
-        source: "draft", // manual draft save
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-      // localStorage not available
-    }
-  },
-
-  getDraftInfo: () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const snapshot = JSON.parse(raw);
-      if (typeof snapshot !== "object" || snapshot === null || typeof snapshot.savedAt !== "number") return null;
-      // Only valid if saved within last 7 days
-      if (Date.now() - snapshot.savedAt > 7 * 24 * 60 * 60 * 1000) {
-        localStorage.removeItem(STORAGE_KEY);
-        return null;
-      }
-      const userMsgCount = Array.isArray(snapshot.messages)
-        ? snapshot.messages.filter((m: { role: string }) => m.role === "user").length
-        : 0;
-      return {
-        phase: snapshot.currentPhase || 1,
-        messageCount: userMsgCount,
-        savedAt: snapshot.savedAt,
-        source: snapshot.source || "auth",
-      };
-    } catch {
-      return null;
-    }
-  },
-
+  // ─── Reset: clears in-memory state + auth save, but NEVER touches DRAFT_KEY ───
   reset: () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
+    // NOTE: DRAFT_KEY is intentionally preserved — drafts survive reset
     set({
       sessionId: "",
       messages: makeInitialMessages(),
@@ -423,6 +507,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       completedScenes: [],
       storySaved: false,
       storySaveError: null,
+      isFromDraft: false,
     });
   },
 }));

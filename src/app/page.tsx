@@ -33,7 +33,7 @@ export default function Home() {
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
-  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage } = useChatStore();
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
@@ -45,7 +45,7 @@ export default function Home() {
     if (!info) { setDraftInfo(null); return; }
 
     if (info.source === "auth" && user) {
-      // Auto-restore for login/signup redirect flow
+      // Auto-restore for login/signup redirect flow (destructive — consumed)
       const restored = restoreFromStorage();
       if (restored) {
         setScreen("chat");
@@ -57,7 +57,7 @@ export default function Home() {
         }, 1000);
       }
     } else if (info.source === "draft") {
-      // Manual draft — show "이어하기" card (don't auto-restore)
+      // Persistent draft — show "이어하기" card (don't auto-restore)
       setDraftInfo(info);
     }
   }, [authLoading, user, restoreFromStorage, screen, retrySaveStory, getDraftInfo]);
@@ -73,7 +73,8 @@ export default function Home() {
     // instead of restarting from onboarding (fixes guest→signup→restore flow)
     if (params.get("action") === "start") {
       window.history.replaceState({}, "", "/");
-      const restored = restoreFromStorage();
+      // Try persistent draft first, then auth save
+      const restored = restoreDraft() || restoreFromStorage();
       if (restored) {
         setScreen("chat");
       } else {
@@ -396,7 +397,8 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    const restored = restoreFromStorage();
+                    // Use non-destructive restoreDraft (draft stays in localStorage)
+                    const restored = restoreDraft();
                     if (restored) {
                       setDraftInfo(null);
                       setScreen("chat");
