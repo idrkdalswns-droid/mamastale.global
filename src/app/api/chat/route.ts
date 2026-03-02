@@ -18,11 +18,11 @@ const chatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),
-      content: z.string().min(1).max(5000),
+      content: z.string().min(1).max(50000),  // Korean text can be much longer per token
     })
-  ).max(60),  // Hard limit: prevent unbounded payload growth
+  ).max(120),  // Generous limit for long conversations
   sessionId: z.string().optional(),
-  childAge: z.enum(["0-2", "3-5", "6-8", ""]).optional(),
+  childAge: z.string().optional(),  // Lenient — validated downstream if needed
 });
 
 // ─── Rate Limiting (per-isolate, in-memory) ───
@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = chatRequestSchema.safeParse(body);
     if (!parsed.success) {
+      console.error("[Chat] Zod validation failed:", JSON.stringify(parsed.error.issues.map(i => ({ path: i.path, code: i.code, message: i.message }))));
       return NextResponse.json(
         { error: "잘못된 요청 형식입니다." },
         { status: 400 }
