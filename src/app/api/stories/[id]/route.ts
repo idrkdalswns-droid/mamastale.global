@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { sanitizeText, containsProfanity, isValidUUID } from "@/lib/utils/validation";
+import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -103,10 +103,10 @@ export async function PATCH(
           typeof (s as Record<string, unknown>).text === "string"
       );
       if (validScenes) {
-        // Sanitize scene content to prevent stored XSS
+        // Sanitize scene content — lightweight sanitizer for AI text
         for (const s of body.scenes as Array<{ title: string; text: string }>) {
           s.title = sanitizeText(s.title.slice(0, 200));
-          s.text = sanitizeText(s.text.slice(0, 5000));
+          s.text = sanitizeSceneText(s.text.slice(0, 5000));
         }
         updates.scenes = body.scenes;
       }

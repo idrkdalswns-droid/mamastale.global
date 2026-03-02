@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { Scene } from "@/lib/types/story";
+import { cleanSceneText } from "@/lib/utils/story-parser";
 
 interface StoryEditorProps {
   scenes: Scene[];
@@ -11,11 +12,11 @@ interface StoryEditorProps {
 
 export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   const [editedScenes, setEditedScenes] = useState<Scene[]>(() =>
-    scenes.map((s) => ({ ...s }))
+    scenes.map((s) => ({ ...s, text: cleanSceneText(s.text) }))
   );
   const [editedTitle, setEditedTitle] = useState(title);
   const [originalScenes] = useState<Scene[]>(() =>
-    scenes.map((s) => ({ ...s }))
+    scenes.map((s) => ({ ...s, text: cleanSceneText(s.text) }))
   );
   const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 

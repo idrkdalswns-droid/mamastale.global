@@ -6,6 +6,7 @@ import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
 import { useSwipe } from "@/lib/hooks/useSwipe";
 
 import type { Scene } from "@/lib/types/story";
+import { cleanSceneText } from "@/lib/utils/story-parser";
 
 /** Page background colors — paired scenes share the same tone */
 const pageBgClass: Record<number, string> = {
@@ -24,9 +25,13 @@ interface StoryViewerProps {
   onBackLabel?: string;
   onEdit?: () => void;
   embedded?: boolean;
+  isPublished?: boolean;
+  isPublishing?: boolean;
+  onPublish?: (authorAlias: string) => Promise<boolean | undefined>;
+  onUnpublish?: () => void;
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -39,6 +44,9 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     } catch { return 0; }
   });
   const [copied, setCopied] = useState(false);
+  const [showAliasModal, setShowAliasModal] = useState(false);
+  const [aliasInput, setAliasInput] = useState("");
+  const [publishToast, setPublishToast] = useState<string | null>(null);
 
   // Persist last read page
   useEffect(() => {
@@ -115,7 +123,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
     const header = `${storyTitle}\n${authorName || "어머니"}\n`;
 
     const body = scenes
-      .map((s) => `\n${s.text}\n`)
+      .map((s) => `\n${cleanSceneText(s.text)}\n`)
       .join("");
 
     const motherMsg = motherMessage.trim()
@@ -253,7 +261,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
                 style={{ fontSize }}
               >
-                {scene.text}
+                {cleanSceneText(scene.text)}
               </p>
             ))}
           </div>
@@ -329,6 +337,41 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               </button>
             </div>
             <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />
+            {/* Community publish button */}
+            {onPublish && (
+              isPublished ? (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex-1 py-3.5 rounded-full text-sm font-medium text-center"
+                    style={{ background: "rgba(127,191,176,0.12)", color: "#3D8B7A" }}
+                  >
+                    커뮤니티에 공유됨
+                  </div>
+                  {onUnpublish && (
+                    <button
+                      onClick={onUnpublish}
+                      disabled={isPublishing}
+                      className="px-4 py-3.5 rounded-full text-xs font-light text-brown-pale transition-all disabled:opacity-50"
+                      style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+                    >
+                      {isPublishing ? "..." : "공유 취소"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setAliasInput(""); setShowAliasModal(true); }}
+                  disabled={isPublishing}
+                  className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-50"
+                  style={{
+                    background: "linear-gradient(135deg, #8B6AAF, #A084C4)",
+                    boxShadow: "0 4px 16px rgba(139,106,175,0.3)",
+                  }}
+                >
+                  커뮤니티에 올리기
+                </button>
+              )
+            )}
             {onBack && onBackLabel && (
               <button
                 onClick={onBack}
@@ -376,6 +419,90 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
         )}
         </div>
       </div>
+
+      {/* Alias input modal for community publish */}
+      {showAliasModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="커뮤니티 공유"
+        >
+          <div
+            className="w-full max-w-xs rounded-2xl p-6 text-center"
+            style={{ background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
+          >
+            <div className="text-[36px] mb-3">🌍</div>
+            <h3 className="font-serif text-base font-bold text-brown mb-2">
+              커뮤니티에 공유하기
+            </h3>
+            <p className="text-xs text-brown-light font-light mb-4 leading-relaxed break-keep">
+              다른 분들과 동화를 나눠보세요.<br />
+              공유할 별명을 입력해주세요.
+            </p>
+            <input
+              type="text"
+              value={aliasInput}
+              onChange={(e) => setAliasInput(e.target.value.slice(0, 50))}
+              placeholder="익명의 엄마"
+              maxLength={50}
+              className="w-full px-4 py-3 rounded-xl text-sm bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
+              aria-label="별명 입력"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const alias = aliasInput.trim() || "익명의 엄마";
+                  onPublish?.(alias).then((ok) => {
+                    if (ok !== false) {
+                      setShowAliasModal(false);
+                      setPublishToast("커뮤니티에 공유되었습니다!");
+                      setTimeout(() => setPublishToast(null), 2500);
+                    }
+                  });
+                }
+              }}
+            />
+            <p className="text-[10px] text-brown-pale font-light mb-4">
+              {aliasInput.length}/50
+            </p>
+            <button
+              onClick={async () => {
+                const alias = aliasInput.trim() || "익명의 엄마";
+                const ok = await onPublish?.(alias);
+                if (ok !== false) {
+                  setShowAliasModal(false);
+                  setPublishToast("커뮤니티에 공유되었습니다!");
+                  setTimeout(() => setPublishToast(null), 2500);
+                }
+              }}
+              disabled={isPublishing}
+              className="w-full py-3 rounded-full text-sm font-medium text-white mb-2 transition-all active:scale-[0.97] disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #8B6AAF, #A084C4)" }}
+            >
+              {isPublishing ? "공유하는 중..." : "공유하기"}
+            </button>
+            <button
+              onClick={() => setShowAliasModal(false)}
+              className="w-full py-2 text-xs font-light text-brown-pale"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Publish success toast */}
+      {publishToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div
+            className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg"
+            style={{ background: "rgba(139,106,175,0.92)", backdropFilter: "blur(8px)" }}
+          >
+            {publishToast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

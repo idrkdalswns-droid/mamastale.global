@@ -14,6 +14,7 @@ interface StoryItem {
   title: string;
   scenes: Scene[];
   status: string;
+  is_public?: boolean;
   created_at: string;
 }
 

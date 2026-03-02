@@ -17,6 +17,7 @@ interface BookSpineProps {
     title: string;
     scenes: Scene[];
     created_at: string;
+    is_public?: boolean;
   };
   colorIndex: number;
 }
@@ -68,6 +69,15 @@ export function BookSpine({ story, colorIndex }: BookSpineProps) {
           >
             {sceneCount}장
           </span>
+          {story.is_public && (
+            <div
+              className="text-[7px] mt-0.5"
+              style={{ color: color.text, opacity: 0.6 }}
+              aria-label="커뮤니티 공유됨"
+            >
+              🌍
+            </div>
+          )}
         </div>
 
         {/* Subtle top/bottom book edges */}

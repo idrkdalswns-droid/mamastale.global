@@ -10,6 +10,7 @@ interface ShelfStory {
   title: string;
   scenes: Scene[];
   created_at: string;
+  is_public?: boolean;
 }
 
 interface BookshelfProps {

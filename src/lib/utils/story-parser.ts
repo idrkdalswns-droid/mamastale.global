@@ -8,14 +8,20 @@ import type { Scene } from "@/lib/types/story";
 export function cleanSceneText(text: string): string {
   let cleaned = text;
 
-  // 1. Decode HTML entities FIRST (prevents double-escaping downstream)
-  cleaned = cleaned
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'")
-    .replace(/&nbsp;/g, " ");
+  // 1. Decode HTML entities FIRST — loop to handle multi-level encoding
+  //    e.g., &amp;amp;quot; → &amp;quot; → &quot; → "
+  let prev = "";
+  while (prev !== cleaned) {
+    prev = cleaned;
+    cleaned = cleaned
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#0?39;/g, "'")
+      .replace(/&nbsp;/g, " ");
+  }
 
   // 2. Strip horizontal rules (--- or *** or ___)
   cleaned = cleaned.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "");

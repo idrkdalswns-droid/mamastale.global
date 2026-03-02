@@ -63,9 +63,10 @@ const slides: Slide[] = [
 
 interface OnboardingSlidesProps {
   onDone: () => void;
+  onGoHome?: () => void;
 }
 
-export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
+export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   // Returning users skip to age selection slide directly
   const hasSeenOnboarding = (() => {
     try { return localStorage.getItem("mamastale_onboarding_done") === "1"; } catch { return false; }
@@ -240,6 +241,15 @@ export function OnboardingSlides({ onDone }: OnboardingSlidesProps) {
             className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30"
           >
             건너뛰고 바로 시작하기
+          </button>
+        )}
+
+        {onGoHome && (
+          <button
+            onClick={onGoHome}
+            className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light"
+          >
+            ← 홈으로 돌아가기
           </button>
         )}
       </div>

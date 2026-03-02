@@ -22,14 +22,36 @@ function checkPdfRateLimit(ip: string): boolean {
   return true;
 }
 
-/** Decode pre-encoded HTML entities (prevents double-escaping) */
+/** Decode pre-encoded HTML entities — loops to handle multi-level encoding */
 function decodeHtmlEntities(text: string): string {
+  let result = text;
+  let prev = "";
+  while (prev !== result) {
+    prev = result;
+    result = result
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#0?39;/g, "'");
+  }
+  return result;
+}
+
+/** Strip markdown artifacts from scene text for PDF */
+function stripMarkdown(text: string): string {
   return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'");
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "$1")
+    .replace(/(?<!_)_([^_\n]+?)_(?!_)/g, "$1")
+    .replace(/~~(.+?)~~/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/`([^`]+?)`/g, "$1")
+    .replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /** Escape HTML special characters to prevent XSS in generated HTML */
@@ -42,9 +64,9 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
-/** Safely prepare text for HTML: decode first, then escape (prevents double-encoding) */
+/** Safely prepare text for HTML: decode → strip markdown → escape */
 function safeHtml(text: string): string {
-  return escapeHtml(decodeHtmlEntities(text));
+  return escapeHtml(stripMarkdown(decodeHtmlEntities(text)));
 }
 
 const pdfRequestSchema = z.object({

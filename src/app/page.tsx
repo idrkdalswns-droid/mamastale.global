@@ -32,6 +32,7 @@ export default function Home() {
   const [referralApplied, setReferralApplied] = useState(false);
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
+  const [startPending, setStartPending] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -69,17 +70,17 @@ export default function Home() {
       setShowPaymentSuccess(true);
     }
     // Direct start from library or other pages
-    // IMPORTANT: If user just signed up and has saved chat state, restore it
-    // instead of restarting from onboarding (fixes guest→signup→restore flow)
+    // Uses startPending to defer ticket check until auth/tickets are loaded
     if (params.get("action") === "start") {
       window.history.replaceState({}, "", "/");
-      // Try persistent draft first, then auth save
+      // Try persistent draft first — drafts bypass ticket check (already started)
       const restored = restoreDraft() || restoreFromStorage();
       if (restored) {
         setScreen("chat");
-      } else {
-        setScreen("onboarding");
+        return;
       }
+      // New story: defer to ticket-aware flow
+      setStartPending(true);
       return;
     }
     // Save referral code to localStorage + show welcome popup
@@ -144,6 +145,25 @@ export default function Home() {
       .catch(() => {});
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
 
+  // Handle deferred /?action=start after auth + tickets are loaded
+  useEffect(() => {
+    if (!startPending || authLoading) return;
+    // Guest users: allow (they have 5 free turns)
+    if (!user) {
+      setStartPending(false);
+      setScreen("onboarding");
+      return;
+    }
+    // Logged-in: wait for ticket balance
+    if (ticketsRemaining === null) return; // still loading
+    setStartPending(false);
+    if (ticketsRemaining <= 0) {
+      setShowNoTickets(true);
+    } else {
+      setScreen("onboarding");
+    }
+  }, [startPending, authLoading, user, ticketsRemaining]);
+
   // Handle "새 동화 만들기" click with ticket check
   const handleStartStory = () => {
     // Block clicks while ticket balance is still loading for logged-in users
@@ -191,7 +211,7 @@ export default function Home() {
   }, [screen]);
 
   if (screen === "onboarding") {
-    return <OnboardingSlides onDone={() => setScreen("chat")} />;
+    return <OnboardingSlides onDone={() => setScreen("chat")} onGoHome={() => { setShow(false); setScreen("landing"); }} />;
   }
 
   // CRITICAL-2 fix: chat completes → editor (then story viewer)

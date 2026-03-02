@@ -11,7 +11,7 @@ export function isValidUUID(value: string): boolean {
 }
 
 // ─── Text sanitization ───
-/** Encode HTML entities and strip dangerous protocols */
+/** Encode HTML entities and strip dangerous protocols (for user-facing fields like titles, aliases) */
 export function sanitizeText(input: string): string {
   return input
     .replace(/&/g, "&amp;")
@@ -19,6 +19,23 @@ export function sanitizeText(input: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;")
+    .replace(/javascript\s*:/gi, "")
+    .replace(/data\s*:/gi, "")
+    .replace(/vbscript\s*:/gi, "")
+    .replace(/on\w+\s*=/gi, "")
+    .trim();
+}
+
+/**
+ * Lightweight sanitizer for AI-generated scene text.
+ * Strips dangerous protocols and HTML tags but does NOT encode entities,
+ * because React JSX already auto-escapes HTML on render.
+ * Encoding entities here would cause double-encoding (&amp;amp;) in the DB.
+ */
+export function sanitizeSceneText(input: string): string {
+  return input
+    .replace(/<script[\s>][\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]*>/g, "")
     .replace(/javascript\s*:/gi, "")
     .replace(/data\s*:/gi, "")
     .replace(/vbscript\s*:/gi, "")

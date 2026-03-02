@@ -17,6 +17,8 @@ interface StoryData {
   title: string;
   scenes: Scene[];
   created_at: string;
+  is_public?: boolean;
+  author_alias?: string;
 }
 
 export default function LibraryStoryPage() {
@@ -28,6 +30,7 @@ export default function LibraryStoryPage() {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -88,6 +91,68 @@ export default function LibraryStoryPage() {
     [story]
   );
 
+  // Publish to community
+  const handlePublish = useCallback(
+    async (authorAlias: string) => {
+      if (!story) return;
+      setPublishing(true);
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        } catch { /* ignore */ }
+
+        const res = await fetch(`/api/stories/${story.id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ isPublic: true, authorAlias }),
+        });
+        if (res.ok) {
+          setStory((prev) => prev ? { ...prev, is_public: true, author_alias: authorAlias } : prev);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        setPublishing(false);
+      }
+    },
+    [story]
+  );
+
+  // Unpublish from community
+  const handleUnpublish = useCallback(
+    async () => {
+      if (!story) return;
+      setPublishing(true);
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        } catch { /* ignore */ }
+
+        const res = await fetch(`/api/stories/${story.id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ isPublic: false }),
+        });
+        if (res.ok) {
+          setStory((prev) => prev ? { ...prev, is_public: false } : prev);
+        }
+      } catch {
+        // Silently fail
+      } finally {
+        setPublishing(false);
+      }
+    },
+    [story]
+  );
+
   if (loading || saving) {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
@@ -140,6 +205,10 @@ export default function LibraryStoryPage() {
       authorName={user?.user_metadata?.name || undefined}
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}
+      isPublished={!!story.is_public}
+      isPublishing={publishing}
+      onPublish={handlePublish}
+      onUnpublish={handleUnpublish}
     />
     </ErrorBoundary>
   );

@@ -377,4 +377,20 @@ describe("cleanSceneText", () => {
     const text = "작은 마을에 예쁜 공주가 살고 있었어요.\n공주는 매일 아침 해를 보며 인사했어요.";
     expect(cleanSceneText(text)).toBe(text);
   });
+
+  it("handles double-encoded entities (&amp;amp;)", () => {
+    expect(cleanSceneText("Tom &amp;amp; Jerry")).toBe("Tom & Jerry");
+  });
+
+  it("handles triple-encoded entities (&amp;amp;amp;)", () => {
+    expect(cleanSceneText("Tom &amp;amp;amp; Jerry")).toBe("Tom & Jerry");
+  });
+
+  it("handles double-encoded &amp;quot;", () => {
+    expect(cleanSceneText("&amp;quot;hello&amp;quot;")).toBe('"hello"');
+  });
+
+  it("handles &#x27; entity", () => {
+    expect(cleanSceneText("it&#x27;s")).toBe("it's");
+  });
 });

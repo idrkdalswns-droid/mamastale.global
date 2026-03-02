@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
-import { containsProfanity, sanitizeText } from "@/lib/utils/validation";
+import { containsProfanity, sanitizeText, sanitizeSceneText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   const { data: stories, error } = await sb.client
     .from("stories")
-    .select("id, title, scenes, status, created_at")
+    .select("id, title, scenes, status, is_public, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false });
@@ -109,10 +109,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 });
     }
 
-    // Sanitize scene content to prevent stored XSS
+    // Sanitize scene content — use lightweight sanitizer for AI text
+    // (sanitizeText would encode entities → double-encoding in DB)
     for (const s of scenes as Array<{ sceneNumber: number; title: string; text: string }>) {
       s.title = sanitizeText(s.title.slice(0, 200));
-      s.text = sanitizeText(s.text.slice(0, 5000));
+      s.text = sanitizeSceneText(s.text.slice(0, 5000));
     }
 
     // Atomic ticket check & deduction — prevents race condition
