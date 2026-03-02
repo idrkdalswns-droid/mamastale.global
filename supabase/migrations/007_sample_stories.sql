@@ -33,7 +33,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 INSERT INTO public.stories (
   id, user_id, title, scenes, status,
-  is_public, author_alias, view_count, like_count, comment_count,
+  is_public, author_alias, topic, view_count, like_count, comment_count,
   created_at, updated_at
 ) VALUES (
   gen_random_uuid(),
@@ -52,7 +52,7 @@ INSERT INTO public.stories (
     {"sceneNumber":10,"title":"비 온 뒤의 무지개처럼","text":"\"아가야, 엄마가 힘들었지만 네가 있어서 다시 웃을 수 있었어.\" 하늘이는 아기 토끼에게 속삭였어요. 비가 온 뒤에 피는 무지개처럼, 힘든 시간을 지나온 하늘이의 미소는 그 어느 때보다 찬란했답니다. 그리고 그 미소는 아기 토끼에게 세상에서 가장 따뜻한 선물이 되었어요."}
   ]'::jsonb,
   'completed',
-  true, '하늘빛 엄마', 47, 15, 0,
+  true, '준우맘', '산후우울', 47, 15, 0,
   now() - interval '5 days', now() - interval '5 days'
 );
 
@@ -62,7 +62,7 @@ INSERT INTO public.stories (
 -- ============================================================
 INSERT INTO public.stories (
   id, user_id, title, scenes, status,
-  is_public, author_alias, view_count, like_count, comment_count,
+  is_public, author_alias, topic, view_count, like_count, comment_count,
   created_at, updated_at
 ) VALUES (
   gen_random_uuid(),
@@ -81,7 +81,7 @@ INSERT INTO public.stories (
     {"sceneNumber":10,"title":"세상에서 가장 따뜻한 별","text":"\"아가들아, 엄마가 지쳐서 빛을 잃을 뻔했지만 너희 덕분에 다시 반짝일 수 있었어.\" 별님은 두 작은 별을 품에 안았어요. 세상에서 가장 밝은 별은 아니지만, 세상에서 가장 따뜻한 별. 그것이 바로 별님이었답니다. 그 따뜻함은 두 작은 별에게 평생 잊지 못할 빛이 되었어요."}
   ]'::jsonb,
   'completed',
-  true, '민들레 엄마', 35, 12, 0,
+  true, '서연이네', '양육번아웃', 35, 12, 0,
   now() - interval '4 days', now() - interval '4 days'
 );
 
@@ -91,7 +91,7 @@ INSERT INTO public.stories (
 -- ============================================================
 INSERT INTO public.stories (
   id, user_id, title, scenes, status,
-  is_public, author_alias, view_count, like_count, comment_count,
+  is_public, author_alias, topic, view_count, like_count, comment_count,
   created_at, updated_at
 ) VALUES (
   gen_random_uuid(),
@@ -110,7 +110,7 @@ INSERT INTO public.stories (
     {"sceneNumber":10,"title":"두 정원이 하나로","text":"이제 그 정원에는 국화와 장미, 라벤더와 해바라기가 함께 피어요. 서로 다른 꽃들이 어우러진 정원은 마을에서 가장 아름다운 곳이 되었답니다. 달이는 아기 토끼에게 속삭였어요. \"서로 다른 것은 틀린 게 아니라 새로운 아름다움이란다.\" 그 말은 아기 토끼의 마음속에 씨앗처럼 심어졌어요."}
   ]'::jsonb,
   'completed',
-  true, '달빛 엄마', 28, 8, 0,
+  true, '하준맘', '시댁갈등', 28, 8, 0,
   now() - interval '3 days', now() - interval '3 days'
 );
 
@@ -120,7 +120,7 @@ INSERT INTO public.stories (
 -- ============================================================
 INSERT INTO public.stories (
   id, user_id, title, scenes, status,
-  is_public, author_alias, view_count, like_count, comment_count,
+  is_public, author_alias, topic, view_count, like_count, comment_count,
   created_at, updated_at
 ) VALUES (
   gen_random_uuid(),
@@ -139,7 +139,7 @@ INSERT INTO public.stories (
     {"sceneNumber":10,"title":"더 높이, 더 따뜻하게","text":"이제 봄이는 예전보다 더 높이 나는 건 아니지만, 예전보다 더 따뜻하게 날아요. 아기 나비와 함께 꽃밭 위를 날며 봄이는 속삭였어요. \"엄마가 날개를 접었던 시간이 있었기에, 지금 너와 함께 나는 이 순간이 더 소중한 거란다.\" 그 말은 바람을 타고 온 꽃밭에 퍼져나갔답니다."}
   ]'::jsonb,
   'completed',
-  true, '봄날 엄마', 19, 7, 0,
+  true, '지우맘', '경력단절', 19, 7, 0,
   now() - interval '2 days', now() - interval '2 days'
 );
 
@@ -149,7 +149,7 @@ INSERT INTO public.stories (
 -- ============================================================
 INSERT INTO public.stories (
   id, user_id, title, scenes, status,
-  is_public, author_alias, view_count, like_count, comment_count,
+  is_public, author_alias, topic, view_count, like_count, comment_count,
   created_at, updated_at
 ) VALUES (
   gen_random_uuid(),
@@ -168,6 +168,6 @@ INSERT INTO public.stories (
     {"sceneNumber":10,"title":"세상에서 가장 예쁜 거울","text":"이제 구름이는 호수를 볼 때마다 미소를 지어요. 흐릿하던 거울은 사라지고, 따뜻하고 용감한 엄마 고양이가 또렷하게 비치거든요. \"아가야, 너도 커서 거울을 볼 때 네 모습이 흐릿하게 느껴지는 날이 올 수도 있어. 그때 기억해. 넌 있는 그대로 충분히 아름답다는 걸.\" 그 말은 아기 고양이의 마음속에 영원히 빛나는 거울이 되었답니다."}
   ]'::jsonb,
   'completed',
-  true, '구름빛 엄마', 12, 3, 0,
+  true, '시우맘', '자존감', 12, 3, 0,
   now() - interval '1 day', now() - interval '1 day'
 );
