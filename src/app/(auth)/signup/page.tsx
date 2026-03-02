@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +106,15 @@ export default function SignupPage() {
         return;
       }
 
+      // DEMO MODE: If email confirmation is disabled, session is returned immediately.
+      // Redirect straight to onboarding/chat flow.
+      if (data?.session) {
+        console.log("[Signup] Session received — auto-confirmed, redirecting to chat");
+        router.push("/?action=start");
+        return;
+      }
+
+      // Fallback: If email confirmation is still enabled, show verification screen
       setSuccess(true);
     } catch (err) {
       console.error("[Signup] Unexpected error:", err);
