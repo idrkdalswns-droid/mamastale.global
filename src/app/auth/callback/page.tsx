@@ -12,6 +12,29 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // ─── CRITICAL: Capture URL params BEFORE creating Supabase client ───
+      // The Supabase client auto-detects hash fragments during initialization
+      // and may clear them from window.location before we can read them.
+      const fullUrl = window.location.href;
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const errorParam = params.get("error");
+
+      // Parse hash fragment tokens (implicit flow from OAuth)
+      let hashAccessToken: string | null = null;
+      let hashRefreshToken: string | null = null;
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        hashAccessToken = hashParams.get("access_token");
+        hashRefreshToken = hashParams.get("refresh_token");
+      }
+
+      // Debug logging
+      console.log("[AuthCallback] URL:", fullUrl);
+      console.log("[AuthCallback] code:", code, "error:", errorParam,
+        "hashTokens:", !!hashAccessToken);
+
+      // NOW create the Supabase client (after capturing URL params)
       const supabase = createClient();
       if (!supabase) {
         console.error("[AuthCallback] Supabase client unavailable — env vars missing?");
@@ -20,46 +43,29 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      const errorParam = params.get("error");
-
-      // Debug logging (visible in browser console for production debugging)
-      console.log("[AuthCallback] URL:", window.location.href);
-      console.log("[AuthCallback] code:", code, "error:", errorParam);
-
       // ─── Handle errors forwarded from /api/auth/callback ───
       if (errorParam) {
         window.history.replaceState({}, "", "/auth/callback");
 
         if (errorParam === "code_verifier") {
-          setErrorMsg(
-            "로그인 세션이 만료되었습니다.\n다시 로그인해 주세요."
-          );
+          setErrorMsg("로그인 세션이 만료되었습니다.\n다시 로그인해 주세요.");
         } else if (errorParam === "no_code") {
-          setErrorMsg(
-            "인증 정보가 올바르지 않습니다.\n다시 시도해 주세요."
-          );
+          setErrorMsg("인증 정보가 올바르지 않습니다.\n다시 시도해 주세요.");
         } else {
-          setErrorMsg(
-            "로그인에 실패했습니다.\n다시 시도해 주세요."
-          );
+          setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
         }
         setStatus("error");
         return;
       }
 
-      // ─── Email verification: client-side PKCE code exchange ───
+      // ─── PKCE flow: code in query params ───
       if (code) {
-        // Clean URL immediately to prevent replay
         window.history.replaceState({}, "", "/auth/callback");
 
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          console.error("Auth callback error:", exchangeError.message);
+          console.error("[AuthCallback] exchangeCode error:", exchangeError.message);
 
-          // PKCE code_verifier missing = opened in different browser (e.g. in-app browser)
-          // The email IS confirmed at this point, so guide user to login
           const isCodeVerifierError =
             exchangeError.message.includes("code_verifier") ||
             exchangeError.message.includes("code verifier") ||
@@ -87,34 +93,43 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // Exchange succeeded
         setStatus("success");
         setTimeout(() => router.push("/"), 1500);
         return;
       }
 
-      // ─── Hash fragment fallback (implicit flow) ───
-      const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
-      const accessToken = hashParams.get("access_token");
+      // ─── Implicit flow: tokens in hash fragment (OAuth) ───
+      if (hashAccessToken && hashRefreshToken) {
+        console.log("[AuthCallback] Implicit flow detected, calling setSession()");
+        window.history.replaceState({}, "", "/auth/callback");
 
-      if (accessToken) {
-        // Wait a moment for Supabase client to process hash tokens
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: hashAccessToken,
+          refresh_token: hashRefreshToken,
+        });
 
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        if (!sessionError) {
           setStatus("success");
           setTimeout(() => router.push("/"), 1500);
           return;
         }
+
+        console.error("[AuthCallback] setSession error:", sessionError.message);
+        setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+        setStatus("error");
+        return;
       }
 
-      // ─── No code or token — try to get existing session ───
+      // ─── Fallback: Supabase may have auto-detected hash ───
+      // Wait for async initialization to complete, then check session.
+      console.log("[AuthCallback] No code or hash tokens found, waiting for auto-detection...");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         router.push("/");
       } else {
-        console.error("[AuthCallback] No code, no token, no session. Full URL:", window.location.href);
+        console.error("[AuthCallback] No code, no hash tokens, no session. URL was:", fullUrl);
         setErrorMsg("인증 정보가 올바르지 않습니다.\n다시 시도해 주세요.");
         setStatus("error");
       }

@@ -8,7 +8,7 @@ export type OAuthProvider = "kakao" | "google";
  * Initiate OAuth sign-in with the given provider.
  * Redirects the browser to the provider's login page.
  * After authentication, Supabase redirects back to /auth/callback
- * where the existing PKCE code exchange handles session creation.
+ * where either PKCE code exchange or implicit flow token handling occurs.
  */
 export async function signInWithOAuth(provider: OAuthProvider) {
   const supabase = createClient();
@@ -17,10 +17,10 @@ export async function signInWithOAuth(provider: OAuthProvider) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      // Point to server-side API route for reliable PKCE code exchange.
-      // The API route reads code_verifier from cookies and exchanges
-      // the auth code server-side, then redirects to home.
-      redirectTo: `${window.location.origin}/api/auth/callback`,
+      // Must point to client-side page (not API route) because
+      // Supabase may use implicit flow (hash fragment tokens)
+      // which are only visible to client-side JavaScript.
+      redirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 
