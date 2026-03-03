@@ -9,14 +9,18 @@ interface OAuthButtonsProps {
   className?: string;
   /** Disable buttons (e.g. while email form is submitting) */
   disabled?: boolean;
+  /** Called BEFORE OAuth redirect — use to save chat state */
+  onBeforeRedirect?: () => void;
 }
 
-export function OAuthButtons({ className = "", disabled = false }: OAuthButtonsProps) {
+export function OAuthButtons({ className = "", disabled = false, onBeforeRedirect }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
 
   const handleOAuth = async (provider: OAuthProvider) => {
     if (loading || disabled) return;
     setLoading(provider);
+    // CRITICAL: Save chat state BEFORE browser redirects to OAuth provider
+    onBeforeRedirect?.();
     await signInWithOAuth(provider);
     // Browser will redirect; loading state only matters if redirect fails
     setTimeout(() => setLoading(null), 5000);

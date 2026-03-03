@@ -7,9 +7,11 @@ import { createClient } from "@/lib/supabase/client";
 
 interface SignupModalProps {
   onClose: () => void;
+  /** Called BEFORE any auth redirect to save chat state */
+  onBeforeAuthRedirect?: () => void;
 }
 
-export function SignupModal({ onClose }: SignupModalProps) {
+export function SignupModal({ onClose, onBeforeAuthRedirect }: SignupModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -191,7 +193,7 @@ export function SignupModal({ onClose }: SignupModalProps) {
               </p>
             </div>
 
-            <OAuthButtons disabled={loading} />
+            <OAuthButtons disabled={loading} onBeforeRedirect={onBeforeAuthRedirect} />
 
             <div className="flex items-center gap-3 my-3">
               <div className="flex-1 h-[1px] bg-brown-pale/20" />

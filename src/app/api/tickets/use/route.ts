@@ -48,12 +48,74 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (readError || !profile) {
-      console.error("[Tickets/Use] Profile read error:", readError?.code, readError?.message);
+    if (readError && readError.code !== "PGRST116") {
+      // Real DB error (not "no rows found")
+      console.error("[Tickets/Use] Profile read error:", readError.code, readError.message);
       return sb.applyCookies(NextResponse.json(
         { error: "프로필 정보를 불러올 수 없습니다." },
         { status: 500 }
       ));
+    }
+
+    // New user — no profile row yet → create with 1 free ticket
+    if (!profile) {
+      const { data: newProfile, error: insertErr } = await sb.client
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          free_stories_remaining: 1,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" })
+        .select("free_stories_remaining, metadata")
+        .single();
+
+      if (insertErr || !newProfile) {
+        console.error("[Tickets/Use] Profile create error:", insertErr?.code);
+        return sb.applyCookies(NextResponse.json(
+          { error: "프로필 생성에 실패했습니다. 다시 시도해 주세요." },
+          { status: 500 }
+        ));
+      }
+
+      // Use the newly created profile
+      Object.assign(profile ?? {}, newProfile);
+      // Re-assign to use newly created profile in subsequent code
+      const remaining = newProfile.free_stories_remaining ?? 0;
+      if (remaining <= 0) {
+        return sb.applyCookies(NextResponse.json(
+          { error: "no_tickets", message: "티켓이 부족합니다." },
+          { status: 403 }
+        ));
+      }
+
+      // Deduct 1 ticket from newly created profile
+      const { data: updated, error: deductError } = await sb.client
+        .from("profiles")
+        .update({
+          free_stories_remaining: remaining - 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .eq("free_stories_remaining", remaining)
+        .select("free_stories_remaining")
+        .single();
+
+      if (deductError || !updated) {
+        return sb.applyCookies(NextResponse.json(
+          { error: "no_tickets", message: "티켓이 부족합니다." },
+          { status: 403 }
+        ));
+      }
+
+      const metadata = (newProfile.metadata as Record<string, unknown>) || {};
+      const processedOrders = (metadata.processed_orders as string[]) || [];
+      const isPremium = processedOrders.length > 0;
+
+      return sb.applyCookies(NextResponse.json({
+        success: true,
+        remaining: updated.free_stories_remaining,
+        isPremium,
+      }));
     }
 
     const remaining = profile.free_stories_remaining ?? 0;

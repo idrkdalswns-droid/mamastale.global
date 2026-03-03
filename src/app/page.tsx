@@ -40,10 +40,55 @@ export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
-  // Auto-restore chat after signup/login OR show "이어하기" card for drafts
+  // Detect URL params: payment success, referral code, action=start
+  const [actionStart, setActionStart] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setShowPaymentSuccess(true);
+    }
+    if (params.get("action") === "start") {
+      window.history.replaceState({}, "", "/");
+      setActionStart(true);
+    }
+    // Save referral code to localStorage + show welcome popup
+    const ref = params.get("ref");
+    if (ref) {
+      try { localStorage.setItem("mamastale_ref", ref.trim().toUpperCase()); } catch {}
+      setShowReferralWelcome(true);
+    }
+    // Clean URL
+    if (params.get("payment") || ref) {
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
+
+  // ── UNIFIED auto-restore: handles both action=start and auth redirect ──
+  // Waits for auth to finish to avoid race condition with user state
   useEffect(() => {
     if (authLoading || screen !== "landing") return;
 
+    // Path A: ?action=start — explicit restore request (from auth callback / library)
+    if (actionStart) {
+      // Try draft first, then auth save — both work with or without user
+      const restored = restoreDraft() || restoreFromStorage();
+      setActionStart(false);
+      if (restored) {
+        setScreen("chat");
+        setTimeout(() => {
+          const s = useChatStore.getState();
+          if (s.completedScenes.length > 0 && !s.storySaved) {
+            retrySaveStory();
+          }
+        }, 1000);
+        return;
+      }
+      // No saved chat — treat as new story start (ticket-aware flow)
+      setStartPending(true);
+      return;
+    }
+
+    // Path B: Auto-detect saved chat state (no URL param needed)
     const info = getDraftInfo();
     if (!info) { setDraftInfo(null); return; }
 
@@ -59,43 +104,15 @@ export default function Home() {
           }
         }, 1000);
       }
+    } else if (info.source === "auth" && !user) {
+      // Auth save exists but user isn't logged in yet — show "이어하기" card
+      // This handles the case where user refreshes before completing auth
+      setDraftInfo(info);
     } else if (info.source === "draft") {
       // Persistent draft — show "이어하기" card (don't auto-restore)
       setDraftInfo(info);
     }
-  }, [authLoading, user, restoreFromStorage, screen, retrySaveStory, getDraftInfo]);
-
-  // Detect URL params: payment success, referral code, action=start
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      setShowPaymentSuccess(true);
-    }
-    // Direct start from library or other pages
-    // Uses startPending to defer ticket check until auth/tickets are loaded
-    if (params.get("action") === "start") {
-      window.history.replaceState({}, "", "/");
-      // Try persistent draft first — drafts bypass ticket check (already started)
-      const restored = restoreDraft() || restoreFromStorage();
-      if (restored) {
-        setScreen("chat");
-        return;
-      }
-      // New story: defer to ticket-aware flow
-      setStartPending(true);
-      return;
-    }
-    // Save referral code to localStorage + show welcome popup
-    const ref = params.get("ref");
-    if (ref) {
-      try { localStorage.setItem("mamastale_ref", ref.trim().toUpperCase()); } catch {}
-      setShowReferralWelcome(true);
-    }
-    // Clean URL
-    if (params.get("payment") || ref) {
-      window.history.replaceState({}, "", "/");
-    }
-  }, []);
+  }, [authLoading, user, actionStart, restoreFromStorage, restoreDraft, screen, retrySaveStory, getDraftInfo]);
 
   // Auto-apply referral code after login
   useEffect(() => {

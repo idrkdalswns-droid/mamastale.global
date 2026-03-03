@@ -56,6 +56,18 @@ export default function AuthCallbackPage() {
     }
 
     const handleAuth = async () => {
+      // Helper: check if chat state was saved before auth redirect
+      const hasSavedChat = (() => {
+        try {
+          const raw = localStorage.getItem("mamastale_chat_state");
+          if (!raw) return false;
+          const snap = JSON.parse(raw);
+          return Array.isArray(snap?.messages) && snap.messages.some((m: { role: string }) => m.role === "user");
+        } catch { return false; }
+      })();
+      // Redirect destination: if chat was saved, go to /?action=start to auto-restore
+      const redirectUrl = hasSavedChat ? "/?action=start" : "/";
+
       // ─── 4A. Implicit flow: hash tokens from OAuth ───
       // OAuth uses implicit flow (see oauth.ts), so tokens arrive in hash fragment.
       // We manually call setSession() on the SSR client to store them in cookies.
@@ -70,7 +82,7 @@ export default function AuthCallbackPage() {
 
         if (!error) {
           setStatus("success");
-          setTimeout(() => router.push("/"), 1500);
+          setTimeout(() => router.push(redirectUrl), 1500);
           return;
         }
 
@@ -91,7 +103,7 @@ export default function AuthCallbackPage() {
 
         if (!error) {
           setStatus("success");
-          setTimeout(() => router.push("/"), 1500);
+          setTimeout(() => router.push(redirectUrl), 1500);
           return;
         }
 
@@ -120,7 +132,7 @@ export default function AuthCallbackPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        router.push("/");
+        router.push(redirectUrl);
         return;
       }
 

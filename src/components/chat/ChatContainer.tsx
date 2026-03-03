@@ -70,6 +70,21 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     initSession(`session_${Date.now()}`);
   }, [initSession]);
 
+  // ── DEFENSE LAYER 1: Auto-save chat on page unload ──
+  // Catches ALL navigation scenarios: OAuth redirect, back button, URL change, tab close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const state = useChatStore.getState();
+      const userMsgs = state.messages.filter(m => m.role === "user").length;
+      // Save if user has sent at least 1 message and story isn't done
+      if (userMsgs > 0 && !state.storyDone) {
+        state.persistToStorage();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
   // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
   useEffect(() => {
     if (guestLimitReached && !storyDone && !isLoading && !guestModalReady) {
@@ -466,7 +481,10 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
 
       {/* Signup modal — overlays chat without losing context */}
       {showSignupModal && (
-        <SignupModal onClose={() => setShowSignupModal(false)} />
+        <SignupModal
+          onClose={() => setShowSignupModal(false)}
+          onBeforeAuthRedirect={persistToStorage}
+        />
       )}
     </div>
   );

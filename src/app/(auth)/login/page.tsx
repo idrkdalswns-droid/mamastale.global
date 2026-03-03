@@ -50,7 +50,21 @@ function LoginForm() {
       // Redirect to original page (or home) after login
       // Security: block protocol-relative URLs (//evil.com) to prevent open redirect
       const safe = redirectTo.startsWith("/") && !redirectTo.startsWith("//");
-      window.location.href = safe ? redirectTo : "/";
+      // Check if chat state was saved before auth — auto-restore after login
+      let hasSavedChat = false;
+      try {
+        const raw = localStorage.getItem("mamastale_chat_state");
+        if (raw) {
+          const snap = JSON.parse(raw);
+          hasSavedChat = Array.isArray(snap?.messages) &&
+            snap.messages.some((m: { role: string }) => m.role === "user");
+        }
+      } catch { /* ignore */ }
+      // If chat was saved and redirect is just home, go to action=start for auto-restore
+      const dest = hasSavedChat && (redirectTo === "/" || redirectTo === "")
+        ? "/?action=start"
+        : safe ? redirectTo : "/";
+      window.location.href = dest;
     } catch {
       setError("로그인에 실패했습니다. 다시 시도해 주세요.");
     } finally {
@@ -131,7 +145,14 @@ function LoginForm() {
         <div className="flex-1 h-[1px] bg-brown-pale/20" />
       </div>
 
-      <OAuthButtons disabled={loading} />
+      <OAuthButtons
+        disabled={loading}
+        onBeforeRedirect={() => {
+          // Preserve any saved chat state — beforeunload in ChatContainer
+          // already saved it, but this is an explicit safety net.
+          // No-op if no chat state exists (OAuthButtons.onBeforeRedirect is optional)
+        }}
+      />
 
       <div className="text-center mt-4">
         <Link href="/reset-password" className="text-xs text-brown-pale font-light no-underline">
