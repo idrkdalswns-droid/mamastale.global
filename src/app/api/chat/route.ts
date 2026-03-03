@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
-import { getSystemPrompt } from "@/lib/anthropic/system-prompt";
+import { getSystemPrompt, getPremiumPhase4Supplement } from "@/lib/anthropic/system-prompt";
 import {
   detectPhase,
   stripPhaseTag,
@@ -22,7 +22,7 @@ const chatRequestSchema = z.object({
     })
   ).max(120),  // Generous limit for long conversations
   sessionId: z.string().optional(),
-  childAge: z.string().optional(),  // Lenient — validated downstream if needed
+  childAge: z.enum(["0-2", "3-5", "6-8"]).optional(),  // JP-FIX(1): Strict enum at schema level
   currentPhase: z.number().min(1).max(4).optional(),
   turnCountInCurrentPhase: z.number().min(0).optional(),
 });
@@ -33,15 +33,29 @@ const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
 const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client)
 
+// ─── Tiered AI Model Configuration ───
+const MODEL_STANDARD = "claude-sonnet-4-20250514";
+const MODEL_PREMIUM = "claude-opus-4-20250514";
+const MAX_TOKENS_STANDARD = 4096;
+const MAX_TOKENS_PREMIUM = 8192;
+
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+// P2-FIX(DE-1): Periodic cleanup instead of threshold-only — prevents unbounded growth
+let lastRateLimitCleanup = 0;
+const CLEANUP_INTERVAL_MS = 30_000; // Clean expired entries every 30 seconds
 
 function checkRateLimit(key: string, limit: number): boolean {
   const now = Date.now();
-  // Lazy cleanup to prevent memory leak
-  if (rateLimitMap.size > 500) {
+  // Periodic TTL cleanup — runs at most once per CLEANUP_INTERVAL_MS
+  if (now - lastRateLimitCleanup > CLEANUP_INTERVAL_MS) {
+    lastRateLimitCleanup = now;
     for (const [k, v] of rateLimitMap) {
       if (now > v.resetAt) rateLimitMap.delete(k);
     }
+  }
+  // Hard cap as safety net (shouldn't normally be reached with TTL cleanup)
+  if (rateLimitMap.size > 1000) {
+    rateLimitMap.clear();
   }
   const entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
@@ -53,6 +67,9 @@ function checkRateLimit(key: string, limit: number): boolean {
   return true;
 }
 
+// P0-FIX(US-5): Per-request timeout to prevent hung connections
+const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
+
 /** Simple retry with exponential backoff for transient errors */
 async function callAnthropicWithRetry(
   anthropic: Anthropic,
@@ -61,16 +78,29 @@ async function callAnthropicWithRetry(
 ): Promise<Anthropic.Message> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await anthropic.messages.create(params);
+      // Wrap each attempt with AbortController timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+      try {
+        const result = await anthropic.messages.create(
+          params,
+          { signal: controller.signal }
+        );
+        return result;
+      } finally {
+        clearTimeout(timeout);
+      }
     } catch (err: unknown) {
-      const isRetryable =
+      // Treat abort (timeout) as retryable
+      const isAbort = err instanceof Error && err.name === "AbortError";
+      const isRetryable = isAbort || (
         err instanceof Error &&
         ("status" in err &&
           (
             (err as { status: number }).status === 429 ||
             (err as { status: number }).status === 529 ||
             (err as { status: number }).status >= 500
-          ));
+          )));
       if (!isRetryable || attempt === maxRetries) throw err;
       const delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 8000);
       console.warn(`Anthropic API retry ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms`);
@@ -85,6 +115,7 @@ export async function POST(request: NextRequest) {
 
   // ─── Auth check (optional — guests allowed with limits) ───
   let userId: string | null = null;
+  let isPremiumUser = false;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -98,6 +129,22 @@ export async function POST(request: NextRequest) {
       });
       const { data: { user } } = await supabase.auth.getUser();
       userId = user?.id || null;
+
+      // ─── Premium user detection: check if user has ever purchased tickets ───
+      if (userId) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("metadata")
+            .eq("id", userId)
+            .single();
+          const metadata = (profile?.metadata as Record<string, unknown>) || {};
+          const processedOrders = (metadata.processed_orders as string[]) || [];
+          isPremiumUser = processedOrders.length > 0;
+        } catch {
+          // Profile check failed — default to standard tier
+        }
+      }
     } catch {
       // Auth check failed — treat as guest
     }
@@ -116,6 +163,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // JP-FIX(2): Reject oversized requests before parsing (DoS prevention)
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > 1_000_000) { // 1MB max for chat requests
+      return NextResponse.json(
+        { error: "요청 데이터가 너무 큽니다." },
+        { status: 413 }
+      );
+    }
+
     // Safe JSON parsing
     let body;
     try {
@@ -155,19 +211,26 @@ export async function POST(request: NextRequest) {
     const anthropic = getAnthropicClient();
     let systemPrompt = getSystemPrompt("ko");
 
-    // Append child age context to system prompt if provided
-    if (childAge) {
-      const ageLabels: Record<string, string> = {
-        "0-2": "0~2세 (영아)",
-        "3-5": "3~5세 (유아)",
-        "6-8": "6~8세 (초등 저학년)",
-      };
-      systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge] || childAge}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
+    // ─── P0-FIX(US-1): childAge whitelist — prevent prompt injection ───
+    // Only known age ranges are allowed; arbitrary strings are silently ignored.
+    const VALID_CHILD_AGES = ["0-2", "3-5", "6-8"] as const;
+    const ageLabels: Record<string, string> = {
+      "0-2": "0~2세 (영아)",
+      "3-5": "3~5세 (유아)",
+      "6-8": "6~8세 (초등 저학년)",
+    };
+    if (childAge && (VALID_CHILD_AGES as readonly string[]).includes(childAge)) {
+      systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge]}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
     }
 
     // ─── Phase context injection (10-turn limit + forward-only) ───
     const MAX_TURNS_PER_PHASE = 10;
-    const safePhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
+
+    // P0-FIX(US-2): Phase progression validation — prevent direct jump to Phase 4.
+    // Minimum message count per claimed phase to ensure therapeutic process.
+    const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
+    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
+    const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
     const safeTurnCount = turnCountInCurrentPhase ?? 0;
 
     if (safeTurnCount >= MAX_TURNS_PER_PHASE && safePhase < 4) {
@@ -177,9 +240,19 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${MAX_TURNS_PER_PHASE}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
     }
 
+    // ─── Tiered model selection: Phase 4 + paid user → Opus (premium) ───
+    const usePremiumModel = isPremiumUser && safePhase === 4;
+    const selectedModel = usePremiumModel ? MODEL_PREMIUM : MODEL_STANDARD;
+    const selectedMaxTokens = usePremiumModel ? MAX_TOKENS_PREMIUM : MAX_TOKENS_STANDARD;
+
+    // Append premium story supplement for paid Phase 4
+    if (usePremiumModel) {
+      systemPrompt += getPremiumPhase4Supplement();
+    }
+
     const response = await callAnthropicWithRetry(anthropic, {
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
+      model: selectedModel,
+      max_tokens: selectedMaxTokens,
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
@@ -219,10 +292,19 @@ export async function POST(request: NextRequest) {
       isStoryComplete: storyComplete,
       storyId,
       ...(storyComplete && scenes.length > 0 ? { scenes } : {}),
+      ...(usePremiumModel ? { isPremium: true } : {}),
     });
   } catch (error: unknown) {
     // Log error message only (no PII, no full stack)
     console.error("Chat API error:", error instanceof Error ? error.name : "Unknown");
+
+    // P2-FIX(DE-2): Specific error messages for different failure modes
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json(
+        { error: "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요." },
+        { status: 504 }
+      );
+    }
 
     if (error instanceof Error && "status" in error) {
       const status = (error as { status: number }).status;

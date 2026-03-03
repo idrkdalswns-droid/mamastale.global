@@ -1,9 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { incrementTickets } from "@/lib/supabase/tickets";
 import { containsProfanity, sanitizeText, sanitizeSceneText } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// P1-FIX(KR-1): Rate limit + size limits for story save endpoint
+const STORY_SAVE_RATE_WINDOW_MS = 60_000;
+const STORY_SAVE_RATE_LIMIT = 5; // Max 5 saves per minute per user
+const MAX_BODY_SIZE = 512_000; // 512KB max request body
+
+const storySaveRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkStorySaveRate(userId: string): boolean {
+  const now = Date.now();
+  // Lazy cleanup
+  if (storySaveRateMap.size > 200) {
+    for (const [k, v] of storySaveRateMap) {
+      if (now > v.resetAt) storySaveRateMap.delete(k);
+    }
+  }
+  const entry = storySaveRateMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    storySaveRateMap.set(userId, { count: 1, resetAt: now + STORY_SAVE_RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= STORY_SAVE_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 /** Try cookie auth first, then fallback to Authorization bearer token */
 async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
@@ -64,6 +88,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // P1-FIX(KR-1): Rate limit per user
+  if (!checkStorySaveRate(user.id)) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429 }
+    );
+  }
+
+  // P1-FIX(KR-2): Reject oversized request bodies to prevent memory exhaustion
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_BODY_SIZE) {
+    return NextResponse.json(
+      { error: "요청 데이터가 너무 큽니다." },
+      { status: 413 }
+    );
+  }
+
   try {
     // Safe JSON parsing
     let body;
@@ -71,6 +112,15 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    }
+
+    // P1-FIX(KR-2): Double-check parsed body size (content-length can be spoofed)
+    const bodyStr = JSON.stringify(body);
+    if (bodyStr.length > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: "요청 데이터가 너무 큽니다." },
+        { status: 413 }
+      );
     }
 
     const { scenes, sessionId, metadata, isPublic } = body;
@@ -116,43 +166,8 @@ export async function POST(request: NextRequest) {
       s.text = sanitizeSceneText(s.text.slice(0, 5000));
     }
 
-    // Atomic ticket check & deduction — prevents race condition
-    let ticketsAfter = 0;
-
-    const { data: profile } = await sb.client
-      .from("profiles")
-      .select("free_stories_remaining")
-      .eq("id", user.id)
-      .single();
-
-    const remaining = profile?.free_stories_remaining ?? 0;
-    if (remaining <= 0) {
-      return NextResponse.json(
-        { error: "no_tickets", message: "티켓이 부족합니다." },
-        { status: 403 }
-      );
-    }
-
-    // Deduct ticket FIRST (optimistic lock via conditional update)
-    const { data: updatedProfile, error: deductError } = await sb.client
-      .from("profiles")
-      .update({
-        free_stories_remaining: remaining - 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id)
-      .gte("free_stories_remaining", 1) // only deduct if still >= 1
-      .select("free_stories_remaining")
-      .single();
-
-    if (deductError || !updatedProfile) {
-      return NextResponse.json(
-        { error: "no_tickets", message: "티켓이 부족합니다." },
-        { status: 403 }
-      );
-    }
-
-    ticketsAfter = updatedProfile.free_stories_remaining;
+    // Ticket deduction is now handled upfront at /api/tickets/use (chat start).
+    // This endpoint only saves the completed story.
 
     // Validate session_id: must be a valid UUID or null
     // Client sends "session_${Date.now()}" which is NOT a UUID → skip FK
@@ -197,13 +212,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (insertResult.error || !insertResult.data) {
-      // Atomic rollback: +1 ticket back (prevents overwriting concurrent changes)
-      await incrementTickets(sb.client, user.id, 1);
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
       return NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 });
     }
 
-    return sb.applyCookies(NextResponse.json({ id: insertResult.data.id, ticketsRemaining: ticketsAfter }));
+    return sb.applyCookies(NextResponse.json({ id: insertResult.data.id }));
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

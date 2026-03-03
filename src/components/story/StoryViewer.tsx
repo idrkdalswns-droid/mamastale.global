@@ -30,9 +30,11 @@ interface StoryViewerProps {
   isPublishing?: boolean;
   onPublish?: (authorAlias: string) => Promise<boolean | undefined>;
   onUnpublish?: () => void;
+  /** Whether this story was generated with the premium (Opus) AI model */
+  isPremium?: boolean;
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -188,6 +190,11 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               >
                 {currentPage + 1} / {totalPages}
               </div>
+              {isPremium && (
+                <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: "rgba(224,122,95,0.1)", color: "#E07A5F" }}>
+                  ✨ 프리미엄 AI
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-0.5">
               <button

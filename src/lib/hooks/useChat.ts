@@ -77,6 +77,8 @@ interface ChatState {
   storySaveError: string | null;
   /** Whether the current session was restored from a persistent draft */
   isFromDraft: boolean;
+  /** Whether the completed story was generated with the premium (Opus) model */
+  isPremiumStory: boolean;
 
   initSession: (sessionId: string) => void;
   sendMessage: (text: string) => Promise<void>;
@@ -104,6 +106,9 @@ interface ChatState {
 
 let msgCounter = 0;
 const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
+
+// P1-FIX(KR-3): Module-level lock to prevent concurrent save/retry operations
+let saveInFlight = false;
 
 const AGE_LABELS: Record<string, string> = {
   "0-2": "어린 아이를 돌보시느라",
@@ -143,6 +148,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   storySaved: false,
   storySaveError: null,
   isFromDraft: false,
+  isPremiumStory: false,
 
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
@@ -229,6 +235,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           data.scenes && data.scenes.length > 0
             ? data.scenes
             : s.completedScenes,
+        // P1-FIX(KR-4): Use ?? instead of || to prevent sticky premium state.
+        // Only override when API explicitly returns isPremium; otherwise keep current.
+        isPremiumStory: data.isPremium !== undefined ? data.isPremium : s.isPremiumStory,
       }));
 
       // ─── Auto-update draft after each successful exchange ───
@@ -245,7 +254,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
 
       // IN-7: Save completed story — set storySaved synchronously BEFORE async fetch to prevent race
-      if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved) {
+      if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved && !saveInFlight) {
+        saveInFlight = true; // P1-FIX(KR-3): Module-level lock in addition to state flag
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = "나의 마음 동화";
@@ -280,6 +290,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           set({ storySaved: false, storySaveError: "save_failed" });
           get().persistToStorage();
           console.warn("Failed to save story to database");
+        } finally {
+          saveInFlight = false; // P1-FIX(KR-3): Release module-level lock
         }
       }
     } catch (err) {
@@ -459,6 +471,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     if (state.storySaved || state.completedScenes.length === 0) return false;
 
+    // P1-FIX(KR-3): Prevent concurrent retry attempts
+    if (saveInFlight) return false;
+    saveInFlight = true;
+
     try {
       const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/stories", {
@@ -487,6 +503,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return false;
     } catch {
       return false;
+    } finally {
+      saveInFlight = false;
     }
   },
 
@@ -508,6 +526,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       storySaved: false,
       storySaveError: null,
       isFromDraft: false,
+      isPremiumStory: false,
     });
   },
 }));

@@ -17,6 +17,7 @@ import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import TicketConfirmModal from "@/components/chat/TicketConfirmModal";
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "story" | "feedback" | "community";
 
@@ -33,8 +34,9 @@ export default function Home() {
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
+  const [showTicketConfirm, setShowTicketConfirm] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
-  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage } = useChatStore();
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
@@ -160,19 +162,25 @@ export default function Home() {
     if (ticketsRemaining <= 0) {
       setShowNoTickets(true);
     } else {
-      setScreen("onboarding");
+      // Show ticket confirmation popup instead of direct start
+      setShowTicketConfirm(true);
     }
   }, [startPending, authLoading, user, ticketsRemaining]);
 
-  // Handle "새 동화 만들기" click with ticket check
+  // Handle "새 동화 만들기" click with ticket confirmation
   const handleStartStory = () => {
     // Block clicks while ticket balance is still loading for logged-in users
-    // (prevents bypassing ticket check by clicking before API responds)
     if (user && ticketsRemaining === null) return;
     if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
       setShowNoTickets(true);
       return;
     }
+    // Logged-in users: show ticket confirmation popup (deduct before starting)
+    if (user && ticketsRemaining !== null && ticketsRemaining > 0) {
+      setShowTicketConfirm(true);
+      return;
+    }
+    // Guests: go directly to onboarding (no ticket needed for free trial)
     setScreen("onboarding");
   };
 
@@ -264,6 +272,7 @@ export default function Home() {
           authorName={user?.user_metadata?.name || undefined}
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
+          isPremium={isPremiumStory}
         />
       </ErrorBoundary>
     );
@@ -676,6 +685,20 @@ export default function Home() {
           <div className="h-20" />
         </div>
       </div>
+
+      {/* Ticket confirmation modal — shown before starting a new story */}
+      {showTicketConfirm && ticketsRemaining !== null && (
+        <TicketConfirmModal
+          remainingTickets={ticketsRemaining}
+          onConfirm={() => {
+            setShowTicketConfirm(false);
+            // Update local ticket count (already deducted on server)
+            setTicketsRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
+            setScreen("onboarding");
+          }}
+          onCancel={() => setShowTicketConfirm(false)}
+        />
+      )}
 
       {/* SG-1: No Tickets Modal — accessible dialog */}
       {showNoTickets && (

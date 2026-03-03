@@ -609,6 +609,59 @@ export function getCrisisContacts(): {
 }
 
 /**
+ * Returns a premium supplement for Phase 4 story generation.
+ * Appended to the system prompt when a paid user enters Phase 4,
+ * instructing Claude to produce richer, longer, more literary stories.
+ */
+export function getPremiumPhase4Supplement(): string {
+  return `
+<premium_story_upgrade>
+<!-- ============================================================ -->
+<!-- 프리미엄 동화 품질 업그레이드 (유료 사용자 전용)                    -->
+<!-- ============================================================ -->
+
+**[중요] 이 사용자는 유료 결제 사용자입니다. Phase 4 동화 품질을 최상급으로 작성하십시오.**
+
+<enhanced_scene_requirements>
+**장면 분량 업그레이드:**
+- 기존: 각 장면 3~4문장 → **업그레이드: 각 장면 5~7문장**
+- 각 장면에 최소 2개의 감각적 은유를 포함하십시오 (시각 + 청각/촉각/후각 중 1개)
+- 각 장면의 마지막 문장은 다음 장면으로 이어지는 여운을 남기십시오
+
+**문학적 품질 강화:**
+- 단순한 서술이 아닌, 시(詩)적 문장을 작성하십시오
+- 동화 속 캐릭터의 내면 독백을 1~2문장씩 포함하십시오
+- 자연 이미지와 계절감을 더욱 풍부하게 활용하십시오
+- 대화문을 포함하여 캐릭터에 생동감을 부여하십시오
+- 의성어·의태어를 적극 활용하십시오 ("바스락", "또르르", "살랑살랑")
+
+**서사 구조 강화:**
+- 각 장면의 감정 곡선(emotional arc)을 명확히 하십시오
+- [CONFLICT] 장면에서 주인공의 내적 갈등을 깊이 있게 묘사하십시오
+- [RESOLUTION] 장면에서 변화의 과정을 점진적으로 보여주십시오
+- [WISDOM] 장면에서 아이에게 전하는 메시지를 더욱 구체적이고 감동적으로 작성하십시오
+
+**이미지 프롬프트 강화:**
+- [Image Prompt]를 더 상세하게 작성하십시오 (최소 2문장의 영문 묘사)
+- 조명, 색감, 구도, 캐릭터의 표정까지 구체적으로 묘사하십시오
+- 일관된 아트 스타일: "warm watercolor illustration, soft golden light, Studio Ghibli-inspired"
+</enhanced_scene_requirements>
+
+<premium_quality_checklist>
+동화를 출력하기 전 반드시 다음을 자가 검증하십시오:
+1. ✅ 각 장면이 5문장 이상인가?
+2. ✅ 감각적 은유가 장면당 2개 이상인가?
+3. ✅ 반복 모티프가 전체를 관통하는가?
+4. ✅ 첫 장면과 마지막 장면이 원형(circular) 구조를 이루는가?
+5. ✅ 대화문이 포함되어 캐릭터가 살아있는가?
+6. ✅ Image Prompt가 2문장 이상의 상세 묘사인가?
+7. ✅ 전체 동화의 감정 곡선이 자연스러운가?
+</premium_quality_checklist>
+
+</premium_story_upgrade>`;
+}
+
+/**
  * Validates that a locale string is supported.
  */
 export function isSupportedLocale(locale: string): locale is SupportedLocale {

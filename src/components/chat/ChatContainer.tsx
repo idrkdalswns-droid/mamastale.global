@@ -13,6 +13,7 @@ import TypingIndicator from "./TypingIndicator";
 import ChatInput from "./ChatInput";
 import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
+import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import { SignupModal } from "@/components/auth/SignupModal";
 
 const GUEST_TURN_LIMIT = 5;
@@ -34,6 +35,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     completedScenes,
     storySaved,
     storySaveError,
+    isPremiumStory,
     sendMessage,
     initSession,
     persistToStorage,
@@ -46,9 +48,15 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showPremiumUpgrade, setShowPremiumUpgrade] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
+  // P2-FIX(IL-1): Track if user scrolled up (to avoid disrupting reading)
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const userScrolledRef = useRef(false);
+  // P3-FIX(IL-4): Delayed guest signup modal (1.5s after AI responds)
+  const [guestModalReady, setGuestModalReady] = useState(false);
 
   // Count user messages for guest turn limit
   const userMsgCount = useMemo(
@@ -62,9 +70,22 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     initSession(`session_${Date.now()}`);
   }, [initSession]);
 
+  // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
+  useEffect(() => {
+    if (guestLimitReached && !storyDone && !isLoading && !guestModalReady) {
+      const timer = setTimeout(() => setGuestModalReady(true), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [guestLimitReached, storyDone, isLoading, guestModalReady]);
+
+  // P2-FIX(IL-1): Only auto-scroll if user hasn't manually scrolled up
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el && !userScrolledRef.current) {
+      el.scrollTop = el.scrollHeight;
+    } else if (el && userScrolledRef.current) {
+      setShowScrollDown(true);
+    }
   }, [messages, isLoading]);
 
   // When story is done, scroll to bottom so farewell message is visible,
@@ -78,8 +99,32 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     }
   }, [storyDone, completedScenes, showCelebration]);
 
+  // P2-FIX(IL-1): Track scroll position to detect user scrolling up
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    userScrolledRef.current = !nearBottom;
+    if (nearBottom) setShowScrollDown(false);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+      userScrolledRef.current = false;
+      setShowScrollDown(false);
+    }
+  }, []);
+
+  // P3-FIX(IL-2): Detect last error message for retry button
+  const lastMessage = messages[messages.length - 1];
+  const hasErrorMessage = lastMessage?.isError === true;
+
   const handleSend = useCallback(
     (text: string) => {
+      // Reset scroll tracking on new message
+      userScrolledRef.current = false;
       sendMessage(text);
     },
     [sendMessage]
@@ -120,6 +165,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
         style={{ WebkitOverflowScrolling: "touch" }}
+        onScroll={handleScroll}
       >
         <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
           {messages.map((m) => (
@@ -131,23 +177,25 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
       </div>
 
       {/* Guest turn counter — show remaining free messages */}
+      {/* P3-FIX(IL-3): Enhanced warning at 4/5 messages for conversion */}
       {isGuest && !guestLimitReached && !storyDone && userMsgCount > 0 && (
         <div className="absolute top-[70px] right-3 z-[60]">
           <div
             className="px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all duration-300"
             style={{
               background: userMsgCount >= GUEST_TURN_LIMIT - 1
-                ? "rgba(224,122,95,0.2)"
+                ? "rgba(224,122,95,0.25)"
                 : userMsgCount >= 2
                   ? "rgba(224,122,95,0.12)"
                   : "rgba(0,0,0,0.04)",
               color: userMsgCount >= 2 ? "#E07A5F" : "#999",
-              border: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "1px solid rgba(224,122,95,0.3)" : "1px solid transparent",
+              border: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "1.5px solid rgba(224,122,95,0.4)" : "1px solid transparent",
+              animation: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
             }}
           >
             {userMsgCount >= GUEST_TURN_LIMIT - 1 ? "⚡ " : ""}
             무료 대화 {userMsgCount}/{GUEST_TURN_LIMIT}회
-            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막!"}
+            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막 무료 대화예요!"}
           </div>
         </div>
       )}
@@ -155,8 +203,9 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
       {!storyDone && !guestLimitReached && <PhaseRuleHint phase={currentPhase} />}
 
-      {/* Guest turn limit reached — signup prompt (wait for last response before showing) */}
-      {guestLimitReached && !storyDone && !isLoading && (
+      {/* Guest turn limit reached — signup prompt
+          P3-FIX(IL-4): 1.5s delay after last AI response to let user read it */}
+      {guestModalReady && !storyDone && (
         <div
           className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]"
           role="dialog"
@@ -234,9 +283,28 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
       )}
 
       {/* Story complete celebration — only after user reads farewell */}
-      {showCelebration && (
+      {showCelebration && !showPremiumUpgrade && (
         <StoryCompleteCTA
           storyId={completedStoryId || ""}
+          onViewStory={() => {
+            // For non-premium stories, show upgrade CTA before navigating
+            if (!isPremiumStory && user) {
+              setShowPremiumUpgrade(true);
+            } else {
+              onComplete();
+            }
+          }}
+        />
+      )}
+
+      {/* Premium upgrade CTA — shown after free/standard story completion */}
+      {showPremiumUpgrade && (
+        <PremiumUpgradeCTA
+          trigger="story_complete"
+          onClose={() => {
+            setShowPremiumUpgrade(false);
+            onComplete();
+          }}
           onViewStory={onComplete}
         />
       )}
@@ -291,6 +359,42 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
               홈으로 돌아가기
             </button>
           </div>
+        </div>
+      )}
+
+      {/* P2-FIX(IL-1): "↓ 새 메시지" floating scroll button */}
+      {showScrollDown && !storyDone && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-[65] px-4 py-2 rounded-full text-xs font-medium text-white shadow-lg transition-all active:scale-95"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+        >
+          ↓ 새 메시지
+        </button>
+      )}
+
+      {/* P3-FIX(IL-2): Error retry button — shown when last message is an error */}
+      {hasErrorMessage && !isLoading && !storyDone && (
+        <div className="sticky bottom-[80px] z-[60] flex justify-center pb-2">
+          <button
+            onClick={() => {
+              // Remove the error message and resend the last user message
+              const lastUserMsg = [...messages].reverse().find(m => m.role === "user" && !m.isError);
+              if (lastUserMsg) {
+                // Remove error messages from the end
+                const cleaned = messages.filter(m => !m.isError);
+                useChatStore.setState({ messages: cleaned });
+                sendMessage(lastUserMsg.content);
+              }
+            }}
+            className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg transition-all active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+            }}
+          >
+            🔄 다시 시도하기
+          </button>
         </div>
       )}
 

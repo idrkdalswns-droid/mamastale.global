@@ -28,4 +28,6 @@ export interface ChatApiResponse {
   isStoryComplete: boolean;
   storyId?: string;
   scenes?: import("@/lib/types/story").Scene[];
+  /** Whether this response was generated with the premium (Opus) model */
+  isPremium?: boolean;
 }
