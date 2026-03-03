@@ -22,11 +22,34 @@ export default function AuthCallbackPage() {
 
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
+      const errorParam = params.get("error");
 
-      // Also check hash fragment for implicit flow fallback
-      const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
-      const accessToken = hashParams.get("access_token");
+      // Debug logging (visible in browser console for production debugging)
+      console.log("[AuthCallback] URL:", window.location.href);
+      console.log("[AuthCallback] code:", code, "error:", errorParam);
 
+      // ─── Handle errors forwarded from /api/auth/callback ───
+      if (errorParam) {
+        window.history.replaceState({}, "", "/auth/callback");
+
+        if (errorParam === "code_verifier") {
+          setErrorMsg(
+            "로그인 세션이 만료되었습니다.\n다시 로그인해 주세요."
+          );
+        } else if (errorParam === "no_code") {
+          setErrorMsg(
+            "인증 정보가 올바르지 않습니다.\n다시 시도해 주세요."
+          );
+        } else {
+          setErrorMsg(
+            "로그인에 실패했습니다.\n다시 시도해 주세요."
+          );
+        }
+        setStatus("error");
+        return;
+      }
+
+      // ─── Email verification: client-side PKCE code exchange ───
       if (code) {
         // Clean URL immediately to prevent replay
         window.history.replaceState({}, "", "/auth/callback");
@@ -70,8 +93,14 @@ export default function AuthCallbackPage() {
         return;
       }
 
+      // ─── Hash fragment fallback (implicit flow) ───
+      const hashParams = new URLSearchParams(window.location.hash.replace("#", ""));
+      const accessToken = hashParams.get("access_token");
+
       if (accessToken) {
-        // Implicit flow fallback — session should be set automatically
+        // Wait a moment for Supabase client to process hash tokens
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setStatus("success");
@@ -80,11 +109,12 @@ export default function AuthCallbackPage() {
         }
       }
 
-      // No code or token — try to get existing session
+      // ─── No code or token — try to get existing session ───
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         router.push("/");
       } else {
+        console.error("[AuthCallback] No code, no token, no session. Full URL:", window.location.href);
         setErrorMsg("인증 정보가 올바르지 않습니다.\n다시 시도해 주세요.");
         setStatus("error");
       }

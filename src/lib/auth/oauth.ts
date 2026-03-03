@@ -17,7 +17,10 @@ export async function signInWithOAuth(provider: OAuthProvider) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      // Point to server-side API route for reliable PKCE code exchange.
+      // The API route reads code_verifier from cookies and exchanges
+      // the auth code server-side, then redirects to home.
+      redirectTo: `${window.location.origin}/api/auth/callback`,
     },
   });
 
