@@ -5,13 +5,35 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 // Map Toss error codes to safe, predefined Korean messages
+// Covers: 카드, 카카오페이, 네이버페이, 토스페이, 계좌이체 등 전 결제수단
 const ERROR_MESSAGES: Record<string, string> = {
+  // ─── 공통 ───
   PAY_PROCESS_CANCELED: "결제가 취소되었습니다.",
   PAY_PROCESS_ABORTED: "결제가 중단되었습니다.",
-  REJECT_CARD_COMPANY: "카드사에서 거절되었습니다. 다른 카드를 사용해 주세요.",
+  NOT_AVAILABLE_PAYMENT: "사용할 수 없는 결제 수단입니다.",
   EXCEED_MAX_DAILY_PAYMENT_COUNT: "일일 결제 횟수를 초과했습니다.",
   EXCEED_MAX_PAYMENT_AMOUNT: "결제 한도를 초과했습니다.",
-  NOT_AVAILABLE_PAYMENT: "사용할 수 없는 결제 수단입니다.",
+  BELOW_MINIMUM_AMOUNT: "최소 결제 금액 미만입니다.",
+  NOT_FOUND_PAYMENT: "결제 정보를 찾을 수 없습니다.",
+  NOT_FOUND_PAYMENT_SESSION: "결제 세션이 만료되었습니다. 다시 시도해 주세요.",
+  DUPLICATED_ORDER_ID: "이미 처리된 주문입니다.",
+  UNAUTHORIZED_KEY: "결제 인증에 실패했습니다.",
+  FORBIDDEN_REQUEST: "허용되지 않은 요청입니다.",
+  // ─── 카드 결제 ───
+  REJECT_CARD_COMPANY: "카드사에서 거절되었습니다. 다른 카드를 사용해 주세요.",
+  INVALID_CARD_EXPIRATION: "카드 유효기간이 만료되었습니다.",
+  INVALID_STOPPED_CARD: "정지된 카드입니다. 카드사에 문의해 주세요.",
+  INVALID_CARD_LOST_OR_STOLEN: "분실 또는 도난 신고된 카드입니다.",
+  INVALID_CARD_NUMBER: "카드 번호가 올바르지 않습니다.",
+  NOT_SUPPORTED_INSTALLMENT_PLAN_CARD_OR_MERCHANT: "할부 결제가 불가능한 카드입니다.",
+  // ─── 간편결제 (카카오페이, 네이버페이, 토스페이) ───
+  EASY_PAY_PROCESS_CANCELED: "간편결제가 취소되었습니다.",
+  EASY_PAY_FAILED: "간편결제에 실패했습니다. 다시 시도해 주세요.",
+  EASY_PAY_USER_CANCEL: "간편결제가 취소되었습니다.",
+  FDS_ERROR: "이상 거래가 감지되어 결제가 중단되었습니다.",
+  // ─── 계좌이체 ───
+  INVALID_BANK: "지원하지 않는 은행입니다.",
+  NOT_AVAILABLE_BANK: "현재 이용할 수 없는 은행입니다. 잠시 후 다시 시도해 주세요.",
 };
 
 function PaymentFailContent() {

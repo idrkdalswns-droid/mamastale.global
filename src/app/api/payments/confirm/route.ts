@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
+import { z } from "zod";
 
 export const runtime = "edge";
 
@@ -9,6 +10,16 @@ const VALID_PRICES: Record<number, number> = {
   4900: 1,   // ₩4,900 = 1 ticket
   18900: 5,  // ₩18,900 = 5 tickets
 };
+
+// ─── Zod schema for payment confirmation request ───
+const confirmRequestSchema = z.object({
+  paymentKey: z.string().min(1).max(200),
+  orderId: z.string().min(1).max(64).regex(/^order_[a-f0-9-]+$/i, "Invalid order ID format"),
+  amount: z.number().int().positive().max(1_000_000),
+});
+
+// ─── Request body size limit ───
+const MAX_BODY_SIZE = 4_000; // 4KB — confirm requests are tiny
 
 // ─── Order ID deduplication (per-isolate, in-memory) ───
 const processedOrders = new Map<string, number>();
@@ -48,6 +59,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // ─── Body size limit (DoS prevention) ───
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: "요청 데이터가 너무 큽니다." },
+        { status: 413 }
+      );
+    }
+
     // Safe JSON parsing
     let body;
     try {
@@ -59,11 +79,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { paymentKey, orderId, amount } = body;
-
-    if (!paymentKey || !orderId || !amount) {
-      return NextResponse.json({ error: "Invalid payment data" }, { status: 400 });
+    // ─── Zod validation ───
+    const parsed = confirmRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "유효하지 않은 결제 데이터입니다." },
+        { status: 400 }
+      );
     }
+
+    const { paymentKey, orderId, amount } = parsed.data;
 
     // ─── Server-side idempotency guard ───
     if (isOrderProcessed(orderId)) {
@@ -175,15 +200,18 @@ export async function POST(request: NextRequest) {
 
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";
+    // Log payment method for analytics (카드/카카오페이/네이버페이/토스페이 etc.)
+    const paymentMethod = confirmData.method || confirmData.easyPay?.provider || "unknown";
     console.log(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
-      `user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
+      `method=${paymentMethod}, user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
     );
 
     return sb.applyCookies(NextResponse.json({
       success: true,
       ticketsAdded: ticketCount,
       ticketsTotal: newTotal,
+      paymentMethod: typeof paymentMethod === "string" ? paymentMethod : "unknown",
     }));
   } catch (error) {
     console.error("[Toss] Confirm error:", error instanceof Error ? error.name : "Unknown");

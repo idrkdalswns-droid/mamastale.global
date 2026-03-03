@@ -4,12 +4,22 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
+// Map Toss payment methods to user-friendly labels
+const PAYMENT_METHOD_LABELS: Record<string, { icon: string; label: string }> = {
+  카드: { icon: "💳", label: "카드" },
+  간편결제: { icon: "📱", label: "간편결제" },
+  계좌이체: { icon: "🏦", label: "계좌이체" },
+  가상계좌: { icon: "🏧", label: "가상계좌" },
+  휴대폰: { icon: "📞", label: "휴대폰" },
+};
+
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"confirming" | "success" | "error">("confirming");
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketsAdded, setTicketsAdded] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const confirmedRef = useRef(false);
 
   useEffect(() => {
@@ -44,6 +54,7 @@ function PaymentSuccessContent() {
         const data = await res.json();
         if (res.ok && data.success) {
           setTicketsAdded(data.ticketsAdded || 1);
+          if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setStatus("success");
         } else {
           setStatus("error");
@@ -111,6 +122,11 @@ function PaymentSuccessContent() {
         <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
           티켓 <span className="text-coral font-semibold">{ticketsAdded}장</span> 구매가 완료되었어요.
         </p>
+        {paymentMethod && PAYMENT_METHOD_LABELS[paymentMethod] && (
+          <p className="text-[11px] text-brown-pale font-light mb-1">
+            {PAYMENT_METHOD_LABELS[paymentMethod].icon} {PAYMENT_METHOD_LABELS[paymentMethod].label}로 결제됨
+          </p>
+        )}
         <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
           이제 아이를 위한 아름다운<br />
           <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
