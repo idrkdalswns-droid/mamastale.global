@@ -181,6 +181,8 @@ export default function PricingPage() {
         orderName: product.name,
         successUrl: `${window.location.origin}/payment/success`,
         failUrl: `${window.location.origin}/payment/fail`,
+        // Pass email for payment receipt delivery
+        customerEmail: user?.email || undefined,
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "";

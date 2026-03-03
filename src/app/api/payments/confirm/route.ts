@@ -39,7 +39,9 @@ function isOrderProcessed(orderId: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const tossSecretKey = process.env.TOSS_SECRET_KEY;
+  // Widget secret key takes priority (matched pair with widget client key)
+  // Falls back to standard secret key for backward compatibility
+  const tossSecretKey = process.env.TOSS_WIDGET_SECRET_KEY || process.env.TOSS_SECRET_KEY;
   if (!tossSecretKey) {
     return NextResponse.json(
       { error: "결제 시스템이 설정되지 않았습니다." },
