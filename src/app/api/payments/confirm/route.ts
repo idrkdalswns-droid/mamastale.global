@@ -201,7 +201,8 @@ export async function POST(request: NextRequest) {
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";
     // Log payment method for analytics (카드/카카오페이/네이버페이/토스페이 etc.)
-    const paymentMethod = confirmData.method || confirmData.easyPay?.provider || "unknown";
+    // Prefer easyPay.provider for specific provider name (e.g., "카카오페이" instead of "간편결제")
+    const paymentMethod = confirmData.easyPay?.provider || confirmData.method || "unknown";
     console.log(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
       `method=${paymentMethod}, user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`

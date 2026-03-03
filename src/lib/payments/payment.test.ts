@@ -366,12 +366,21 @@ describe("payment method labels", () => {
     계좌이체: { icon: "🏦", label: "계좌이체" },
     가상계좌: { icon: "🏧", label: "가상계좌" },
     휴대폰: { icon: "📞", label: "휴대폰" },
+    카카오페이: { icon: "🟡", label: "카카오페이" },
+    네이버페이: { icon: "🟢", label: "네이버페이" },
+    토스페이: { icon: "🔵", label: "토스페이" },
   };
 
   it("has labels for all major Korean payment methods", () => {
     expect(PAYMENT_METHOD_LABELS["카드"]).toBeDefined();
     expect(PAYMENT_METHOD_LABELS["간편결제"]).toBeDefined();
     expect(PAYMENT_METHOD_LABELS["계좌이체"]).toBeDefined();
+  });
+
+  it("has labels for specific easy pay providers", () => {
+    expect(PAYMENT_METHOD_LABELS["카카오페이"]).toBeDefined();
+    expect(PAYMENT_METHOD_LABELS["네이버페이"]).toBeDefined();
+    expect(PAYMENT_METHOD_LABELS["토스페이"]).toBeDefined();
   });
 
   it("each label has an icon and text", () => {

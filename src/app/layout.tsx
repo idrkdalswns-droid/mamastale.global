@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Toaster } from "react-hot-toast";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
+import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -105,6 +106,7 @@ export default function RootLayout({
         </a>
         <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-x-hidden">
           {children}
+          <Footer />
         </main>
         <ConsentGatedScripts />
         <CookieConsent />

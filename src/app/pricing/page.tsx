@@ -631,8 +631,7 @@ export default function PricingPage() {
                     카드 결제로 진행됩니다
                   </p>
                   <p className="text-[10px] text-brown-pale font-light">
-                    사업자등록 완료 후 카카오페이·네이버페이·토스페이도 사용
-                    가능해요
+                    간편결제를 원하시면 새로고침 후 다시 시도해 주세요
                   </p>
                 </div>
 

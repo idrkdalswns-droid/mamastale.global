@@ -11,6 +11,10 @@ const PAYMENT_METHOD_LABELS: Record<string, { icon: string; label: string }> = {
   계좌이체: { icon: "🏦", label: "계좌이체" },
   가상계좌: { icon: "🏧", label: "가상계좌" },
   휴대폰: { icon: "📞", label: "휴대폰" },
+  // Specific easy pay providers (returned via easyPay.provider)
+  카카오페이: { icon: "🟡", label: "카카오페이" },
+  네이버페이: { icon: "🟢", label: "네이버페이" },
+  토스페이: { icon: "🔵", label: "토스페이" },
 };
 
 function PaymentSuccessContent() {

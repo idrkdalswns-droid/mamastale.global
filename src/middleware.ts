@@ -20,12 +20,12 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://js.tosspayments.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://js.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com",
-      "frame-src https://js.stripe.com https://js.tosspayments.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://t1.kakaocdn.net https://k.kakaocdn.net",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com https://kapi.kakao.com",
+      "frame-src https://js.stripe.com https://js.tosspayments.com https://accounts.kakao.com",
     ].join("; ")
   );
 
