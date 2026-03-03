@@ -450,6 +450,51 @@ export default function Home() {
             </div>
           )}
 
+          {/* Ticket balance display for logged-in users */}
+          {user && ticketsRemaining !== null && (
+            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
+              <span className="text-xs text-brown font-medium">
+                {ticketsRemaining > 0
+                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
+                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
+                }
+              </span>
+              {ticketsRemaining <= 0 && (
+                <Link
+                  href="/pricing"
+                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
+                >
+                  구매하기
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* CTA button */}
+          <button
+            onClick={handleStartStory}
+            disabled={!!user && ticketsRemaining === null && !authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-4"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {user && ticketsRemaining === null && !authLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                불러오는 중...
+              </span>
+            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
+          </button>
+
+          {/* Free trial + time hint for non-logged-in users */}
+          {!user && !authLoading && (
+            <p className="text-[11px] text-brown-pale font-normal text-center mb-4 leading-relaxed">
+              회원가입 없이 5회 무료 대화 · 약 15분이면 충분해요
+            </p>
+          )}
+
           {/* Quick browse links */}
           <div className="flex gap-2 mb-4">
             <Link
@@ -518,81 +563,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom section: ticket + CTA + links */}
+        {/* Bottom section: referral + testimonials */}
         <div>
-          {/* Ticket balance display for logged-in users */}
-          {user && ticketsRemaining !== null && (
-            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
-              <span className="text-xs text-brown font-medium">
-                {ticketsRemaining > 0
-                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
-                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
-                }
-              </span>
-              {ticketsRemaining <= 0 && (
-                <Link
-                  href="/pricing"
-                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
-                >
-                  구매하기
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* CTA button */}
-          <button
-            onClick={handleStartStory}
-            disabled={!!user && ticketsRemaining === null && !authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {user && ticketsRemaining === null && !authLoading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                불러오는 중...
-              </span>
-            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
-          </button>
-
-          {/* Free trial + time hint for non-logged-in users */}
-          {!user && !authLoading && (
-            <p className="text-[11px] text-brown-pale font-normal text-center mt-2.5 leading-relaxed">
-              회원가입 없이 5회 무료 대화 · 약 15분이면 충분해요
-            </p>
-          )}
-
-          {/* Quick links for logged-in users */}
-          {user && !authLoading && (
-            <div className="flex gap-3 mt-3">
-              <Link
-                href="/library"
-                className="flex-1 py-2.5 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
-                style={{
-                  background: "rgba(127,191,176,0.12)",
-                  color: "#5A9E8F",
-                  border: "1.5px solid rgba(127,191,176,0.25)",
-                }}
-              >
-                내 서재
-              </Link>
-              <Link
-                href="/community"
-                className="flex-1 py-2.5 rounded-full text-sm font-medium text-center no-underline transition-all active:scale-[0.97]"
-                style={{
-                  background: "rgba(200,184,216,0.12)",
-                  color: "#6D4C91",
-                  border: "1.5px solid rgba(200,184,216,0.25)",
-                }}
-              >
-                커뮤니티
-              </Link>
-            </div>
-          )}
-
           {/* Referral link for logged-in users */}
           {user && referralCode && (
             <button
