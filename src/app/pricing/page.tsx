@@ -8,6 +8,20 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { useAuth } from "@/lib/hooks/useAuth";
 
 // ─── Toss Payment Widget SDK v2 Type Declarations ───
+// Based on: https://docs.tosspayments.com/sdk/v2/js
+
+// Widget sub-objects returned by renderPaymentMethods / renderAgreement
+interface WidgetPaymentMethodWidget {
+  getSelectedPaymentMethod: () => Promise<{ code: string }>;
+  on: (event: "paymentMethodSelect", callback: (method: { code: string }) => void) => void;
+  destroy: () => Promise<void>;
+}
+
+interface WidgetAgreementWidget {
+  on: (event: "agreementStatusChange", callback: (status: { agreedRequiredTerms: boolean }) => void) => void;
+  destroy: () => Promise<void>;
+}
+
 declare global {
   interface Window {
     TossPayments?: (clientKey: string) => {
@@ -31,11 +45,11 @@ interface TossWidgets {
   renderPaymentMethods: (opts: {
     selector: string;
     variantKey?: string;
-  }) => Promise<void>;
+  }) => Promise<WidgetPaymentMethodWidget>;
   renderAgreement: (opts: {
     selector: string;
     variantKey?: string;
-  }) => Promise<void>;
+  }) => Promise<WidgetAgreementWidget>;
   requestPayment: (params: {
     orderId: string;
     orderName: string;
@@ -43,6 +57,9 @@ interface TossWidgets {
     failUrl: string;
     customerEmail?: string;
     customerName?: string;
+    customerMobilePhone?: string;
+    metadata?: Record<string, string>;
+    windowTarget?: "self" | "iframe";
   }) => Promise<void>;
 }
 
@@ -74,11 +91,14 @@ export default function PricingPage() {
   const [widgetReady, setWidgetReady] = useState(false);
   const [widgetLoading, setWidgetLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { user, loading: authLoading } = useAuth();
 
   const widgetsRef = useRef<TossWidgets | null>(null);
+  const paymentMethodWidgetRef = useRef<WidgetPaymentMethodWidget | null>(null);
+  const agreementWidgetRef = useRef<WidgetAgreementWidget | null>(null);
   const widgetInitProductRef = useRef<PriceType | null>(null);
   const checkoutRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +132,7 @@ export default function PricingPage() {
     widgetInitProductRef.current = selectedProduct;
     setWidgetLoading(true);
     setWidgetReady(false);
+    setTermsAgreed(false);
 
     const initWidget = async () => {
       try {
@@ -120,11 +141,25 @@ export default function PricingPage() {
         widgetsRef.current = widgets;
 
         await widgets.setAmount({ currency: "KRW", value: product.amount });
-        await widgets.renderPaymentMethods({
+
+        // SDK docs: renderPaymentMethods returns a widget object with
+        // getSelectedPaymentMethod(), on(), destroy() methods
+        const paymentMethodWidget = await widgets.renderPaymentMethods({
           selector: "#payment-methods",
         });
-        await widgets.renderAgreement({
+        paymentMethodWidgetRef.current = paymentMethodWidget;
+
+        // SDK docs: renderAgreement returns a widget object with
+        // on('agreementStatusChange'), destroy() methods
+        const agreementWidget = await widgets.renderAgreement({
           selector: "#agreement",
+        });
+        agreementWidgetRef.current = agreementWidget;
+
+        // Subscribe to agreement status changes (per SDK docs)
+        // Enable/disable payment button based on required terms agreement
+        agreementWidget.on("agreementStatusChange", (status) => {
+          setTermsAgreed(status.agreedRequiredTerms);
         });
 
         setWidgetReady(true);
@@ -141,6 +176,16 @@ export default function PricingPage() {
     initWidget();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProduct, sdkReady, user?.id, useWidgetMode]);
+
+  // ─── Widget Cleanup on Unmount ───
+  // SDK docs: "한 페이지에서 두 개의 결제 UI를 렌더링할 수 없어요.
+  // destroy() 메서드로 기존 UI를 제거한 다음에 렌더링하세요."
+  useEffect(() => {
+    return () => {
+      paymentMethodWidgetRef.current?.destroy().catch(() => {});
+      agreementWidgetRef.current?.destroy().catch(() => {});
+    };
+  }, []);
 
   // ─── Select Product ───
   const handleSelectProduct = useCallback(
@@ -183,9 +228,14 @@ export default function PricingPage() {
         // mode param tells our confirm API which secret key to use (gsk_ vs sk_)
         successUrl: `${window.location.origin}/payment/success?mode=widget`,
         failUrl: `${window.location.origin}/payment/fail`,
-        // Pass customer info for payment receipt (per official Toss sample)
+        // Pass customer info for payment receipt (per SDK docs)
         customerEmail: user?.email || undefined,
         customerName: (user?.user_metadata?.display_name as string) || (user?.user_metadata?.name as string) || undefined,
+        // SDK docs: metadata — 최대 5개 키-값 쌍, 토스 대시보드에서 확인 가능
+        metadata: {
+          productType: selectedProduct,
+          tickets: String(product.tickets),
+        },
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "";
@@ -614,10 +664,11 @@ export default function PricingPage() {
                   style={{ display: widgetLoading ? "none" : "block" }}
                 />
 
-                {/* Pay button */}
+                {/* Pay button — disabled until widget ready AND terms agreed */}
+                {/* SDK docs: agreementStatusChange 이벤트로 약관 동의 확인 */}
                 <button
                   onClick={handleWidgetPayment}
-                  disabled={!widgetReady || isProcessing}
+                  disabled={!widgetReady || !termsAgreed || isProcessing}
                   className="w-full py-4 rounded-full text-white text-[15px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
                   style={{
                     background: "linear-gradient(135deg, #E07A5F, #C96B52)",
@@ -626,7 +677,9 @@ export default function PricingPage() {
                 >
                   {isProcessing
                     ? "결제 진행 중..."
-                    : `₩${PRODUCTS[selectedProduct].amount.toLocaleString()} 결제하기`}
+                    : !termsAgreed && widgetReady
+                      ? "약관에 동의해 주세요"
+                      : `₩${PRODUCTS[selectedProduct].amount.toLocaleString()} 결제하기`}
                 </button>
               </>
             ) : (
