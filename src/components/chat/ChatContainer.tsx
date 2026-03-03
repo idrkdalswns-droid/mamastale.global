@@ -134,14 +134,20 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
       {isGuest && !guestLimitReached && !storyDone && userMsgCount > 0 && (
         <div className="absolute top-[70px] right-3 z-[60]">
           <div
-            className="px-2.5 py-1 rounded-full text-[10px] font-medium"
+            className="px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all duration-300"
             style={{
-              background: userMsgCount >= 2 ? "rgba(224,122,95,0.12)" : "rgba(0,0,0,0.04)",
+              background: userMsgCount >= GUEST_TURN_LIMIT - 1
+                ? "rgba(224,122,95,0.2)"
+                : userMsgCount >= 2
+                  ? "rgba(224,122,95,0.12)"
+                  : "rgba(0,0,0,0.04)",
               color: userMsgCount >= 2 ? "#E07A5F" : "#999",
+              border: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "1px solid rgba(224,122,95,0.3)" : "1px solid transparent",
             }}
           >
+            {userMsgCount >= GUEST_TURN_LIMIT - 1 ? "⚡ " : ""}
             무료 대화 {userMsgCount}/{GUEST_TURN_LIMIT}회
-            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막"}
+            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막!"}
           </div>
         </div>
       )}
@@ -174,7 +180,12 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
               회원가입 후 <span className="text-coral font-medium">이 대화를 그대로 이어서</span><br />
               나만의 마음 동화를 완성할 수 있어요.
             </p>
-            <p className="text-[11px] text-brown-pale font-light mb-5">
+            <div className="flex items-center justify-center gap-3 my-3 text-[11px] text-brown-mid font-medium">
+              <span>✅ 대화 이어가기</span>
+              <span>✅ 영구 보관</span>
+              <span>✅ 무료 1회</span>
+            </div>
+            <p className="text-[11px] text-brown-pale font-light mb-4">
               대화 내용은 안전하게 보관됩니다
             </p>
             {/* S7-03: Primary CTA style for signup — conversion critical */}
@@ -198,7 +209,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
               이미 계정이 있으신가요? <span className="text-coral font-medium">로그인</span>
             </button>
             <p className="text-[10px] text-brown-pale font-light text-center mt-2">
-              카카오 · Google 로그인은 곧 지원됩니다
+              카카오 · Google로도 간편 가입 가능
             </p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { signInWithOAuth, type OAuthProvider } from "@/lib/auth/oauth";
 
 interface OAuthButtonsProps {
@@ -23,6 +24,11 @@ export function OAuthButtons({ className = "", disabled = false }: OAuthButtonsP
 
   return (
     <div className={`space-y-2.5 ${className}`}>
+      <p className="text-[10px] text-brown-pale font-light text-center break-keep">
+        로그인 시{" "}
+        <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</Link> 및{" "}
+        <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">개인정보처리방침</Link>에 동의합니다.
+      </p>
       {/* Kakao Login Button — Official branding: yellow bg, dark brown text */}
       <button
         type="button"

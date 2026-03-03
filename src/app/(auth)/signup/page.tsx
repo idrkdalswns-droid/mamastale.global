@@ -180,9 +180,14 @@ export default function SignupPage() {
       <WatercolorBlob bottom={60} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 
       <div className="relative z-[1] w-full max-w-sm">
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <h1 className="font-serif text-3xl font-bold text-brown mb-2">mamastale</h1>
-          <p className="text-sm text-brown-light font-light">새로운 여정을 시작하세요</p>
+          <p className="text-sm text-brown-light font-light mb-4">새로운 여정을 시작하세요</p>
+          <div className="flex items-center justify-center gap-4 text-[11px] text-brown-mid font-medium">
+            <span>🎫 무료 체험 1회</span>
+            <span>📖 영구 보관</span>
+            <span>🤝 커뮤니티</span>
+          </div>
         </div>
 
         <OAuthButtons disabled={loading} />

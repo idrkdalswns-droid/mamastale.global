@@ -7,6 +7,7 @@ import { useSwipe } from "@/lib/hooks/useSwipe";
 
 import type { Scene } from "@/lib/types/story";
 import { cleanSceneText } from "@/lib/utils/story-parser";
+import { shareToKakao } from "@/lib/share/kakao";
 
 /** Page background colors — paired scenes share the same tone */
 const pageBgClass: Record<number, string> = {
@@ -313,7 +314,24 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
         <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
         {isLast ? (
           <div className="space-y-2.5">
-            <div className="flex gap-2.5">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
+                  shareToKakao({
+                    title: storyTitle,
+                    description: `${authorName || "엄마"}가 만든 세상에 하나뿐인 동화`,
+                    url: siteUrl,
+                  });
+                }}
+                className="flex-1 py-3.5 rounded-full text-sm font-bold transition-all active:scale-[0.97]"
+                style={{
+                  background: "#FEE500",
+                  color: "#3C1E1E",
+                }}
+              >
+                💬 카카오톡
+              </button>
               <button
                 onClick={handleShare}
                 className="flex-1 py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
@@ -333,7 +351,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   border: "1.5px solid rgba(127,191,176,0.3)",
                 }}
               >
-                {copied ? "복사됨" : "전체 복사"}
+                {copied ? "✓" : "복사"}
               </button>
             </div>
             <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />

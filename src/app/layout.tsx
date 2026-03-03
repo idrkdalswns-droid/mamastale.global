@@ -24,6 +24,7 @@ export const metadata: Metadata = {
       "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
     type: "website",
     locale: "ko_KR",
+    siteName: "mamastale",
     images: [
       {
         url: "/images/hero.jpg",
@@ -32,6 +33,12 @@ export const metadata: Metadata = {
         alt: "엄마와 아이가 함께 동화책을 읽는 수채화 일러스트",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
+    description: "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다.",
+    images: ["/images/hero.jpg"],
   },
 };
 
@@ -50,6 +57,33 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* Schema.org structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              "name": "mamastale",
+              "url": "https://mamastale-global.pages.dev",
+              "description": "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다.",
+              "applicationCategory": "LifestyleApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "KRW",
+                "description": "첫 동화 무료 체험"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "reviewCount": "11",
+                "bestRating": "5"
+              }
+            }),
+          }}
+        />
         {/* Non-blocking Google Fonts with preconnect */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

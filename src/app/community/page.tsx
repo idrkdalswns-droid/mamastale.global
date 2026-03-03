@@ -32,20 +32,25 @@ export default function CommunityBrowsePage() {
   const [error, setError] = useState("");
   const [sort, setSort] = useState<"recent" | "popular">("recent");
   const [topic, setTopic] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
-  const fetchStories = async (sortBy: string, topicFilter: string, pageNum: number, append = false) => {
+  const fetchStories = async (sortBy: string, topicFilter: string, pageNum: number, append = false, searchQuery = "") => {
     try {
       setLoading(true);
       setError("");
       const params = new URLSearchParams({ sort: sortBy, page: String(pageNum) });
       if (topicFilter) params.set("topic", topicFilter);
+      if (searchQuery) params.set("search", searchQuery);
       const res = await fetch(`/api/community?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setStories(prev => append ? [...prev, ...data.stories] : data.stories);
       setHasMore(data.hasMore);
+      if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch {
       if (!append) setError("동화 목록을 불러올 수 없습니다.");
     } finally {
@@ -54,14 +59,19 @@ export default function CommunityBrowsePage() {
   };
 
   useEffect(() => {
-    fetchStories(sort, topic, 1);
+    fetchStories(sort, topic, 1, false, search);
     setPage(1);
-  }, [sort, topic]);
+  }, [sort, topic, search]);
 
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchStories(sort, topic, nextPage, true);
+    fetchStories(sort, topic, nextPage, true, search);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(searchInput.trim());
   };
 
   return (
@@ -80,13 +90,44 @@ export default function CommunityBrowsePage() {
               커뮤니티
             </h2>
             <p className="text-xs text-brown-light font-light mt-1">
-              다른 엄마들의 마음 동화를 읽어보세요
+              {totalCount !== null && totalCount > 0
+                ? `${totalCount}개의 이야기가 공유되었어요`
+                : "다른 엄마들의 마음 동화를 읽어보세요"}
             </p>
           </div>
           <Link href="/" className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center">
             ← 홈
           </Link>
         </div>
+
+        {/* Search bar */}
+        <form onSubmit={handleSearch} className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="동화 제목이나 내용 검색..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm font-sans outline-none"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                border: "1.5px solid rgba(196,149,106,0.15)",
+                color: "#444",
+              }}
+              aria-label="동화 검색"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brown-pale text-sm">🔍</span>
+            {search && (
+              <button
+                type="button"
+                onClick={() => { setSearchInput(""); setSearch(""); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brown-pale"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </form>
 
         {/* Topic filter */}
         <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
@@ -151,12 +192,25 @@ export default function CommunityBrowsePage() {
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">
+            <div className="text-3xl mb-3">📚</div>
             <h3 className="font-serif text-lg text-brown font-semibold mb-2">
-              {topic ? "해당 주제의 동화가 없어요" : "아직 공유된 동화가 없어요"}
+              {topic ? "해당 주제의 동화가 없어요" : "아직 공유된 이야기가 없어요"}
             </h3>
-            <p className="text-sm text-brown-light font-light leading-relaxed">
-              {topic ? "다른 주제를 선택해 보세요" : "첫 번째로 동화를 공유해 보세요!"}
+            <p className="text-sm text-brown-light font-light leading-relaxed mb-5">
+              {topic ? "다른 주제를 선택해 보세요" : "첫 번째 이야기를 나눠보세요!"}
             </p>
+            {!topic && (
+              <Link
+                href="/?action=start"
+                className="inline-flex items-center justify-center min-h-[44px] px-8 py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97]"
+                style={{
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                  boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                }}
+              >
+                나만의 동화 만들기 →
+              </Link>
+            )}
           </div>
         ) : (
           <>

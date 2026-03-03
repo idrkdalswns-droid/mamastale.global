@@ -35,7 +35,19 @@ export default function TermsPage() {
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제7조 (면책)</h2>
           <p>AI가 생성한 콘텐츠의 정확성을 보증하지 않으며, 서비스 이용으로 인한 심리적 영향에 대해 제한적 책임만 부담합니다.</p>
 
-          <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 2월 28일</p>
+          <h2 className="font-serif text-lg font-semibold text-brown mt-8">제8조 (AI 대화 데이터 처리 방침)</h2>
+          <p>본 서비스는 이용자와의 대화를 처리하기 위해 제3자 AI 모델(Anthropic Claude)을 활용합니다.</p>
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>대화 내용은 동화 생성이라는 서비스 제공 목적으로만 사용됩니다.</li>
+            <li>대화 데이터는 Anthropic의 서버에서 처리되며, Anthropic의 데이터 처리 방침에 따릅니다.</li>
+            <li>완성된 동화 및 대화 기록은 이용자의 계정에 저장되며, 이용자가 직접 삭제를 요청할 수 있습니다.</li>
+            <li>대화 내용 삭제를 원하시는 경우 support@mamastale.com으로 문의해 주세요.</li>
+          </ul>
+
+          <h2 className="font-serif text-lg font-semibold text-brown mt-8">제9조 (환불 정책)</h2>
+          <p>미사용 티켓은 구매일로부터 7일 이내에 환불이 가능합니다. 환불 요청은 support@mamastale.com으로 문의해 주세요. 이미 동화 생성에 사용된 티켓은 환불이 불가합니다.</p>
+
+          <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 3일</p>
         </div>
 
         <div className="mt-10">

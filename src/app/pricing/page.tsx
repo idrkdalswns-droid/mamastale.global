@@ -29,6 +29,7 @@ export default function PricingPage() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
   const [error, setError] = useState("");
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { user, loading: authLoading } = useAuth();
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
   const sdkLoadedRef = useRef(false);
@@ -44,9 +45,9 @@ export default function PricingPage() {
   const handleCheckout = async (priceType: "ticket" | "bundle") => {
     setError("");
 
-    // Must be logged in to purchase
+    // Must be logged in to purchase — redirect to login
     if (!user) {
-      setError("티켓을 구매하려면 로그인이 필요합니다.");
+      window.location.href = "/login?redirect=/pricing";
       return;
     }
 
@@ -114,11 +115,11 @@ export default function PricingPage() {
             mamastale
           </Link>
           <h2 className="font-serif text-xl text-brown font-semibold mt-4 mb-2">
-            요금 안내
+            마음 동화, 지금 시작하세요
           </h2>
           <p className="text-sm text-brown-light font-light leading-relaxed">
             첫 동화는 무료, 그 다음부터는<br />
-            커피 한 잔 값으로 새로운 마음 동화를
+            커피 한 잔 값으로 아이가 매일 읽는 동화를
           </p>
         </div>
 
@@ -202,10 +203,10 @@ export default function PricingPage() {
           }}
         >
           <div
-            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-medium tracking-wide"
-            style={{ background: "#E07A5F" }}
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold tracking-wide"
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
-            가장 인기
+            ✨ 가장 인기
           </div>
 
           <div className="text-center mb-4 pt-1">
@@ -248,13 +249,19 @@ export default function PricingPage() {
 
         {/* Bundle Pack */}
         <div
-          className="rounded-2xl p-5 mb-4"
+          className="rounded-2xl p-5 mb-4 relative"
           style={{
             background: "rgba(255,255,255,0.7)",
             border: "1px solid rgba(109,76,145,0.15)",
           }}
         >
-          <div className="text-center mb-4">
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold tracking-wide"
+            style={{ background: "linear-gradient(135deg, #6D4C91, #8B6FB0)" }}
+          >
+            🏆 Best Value
+          </div>
+          <div className="text-center mb-4 pt-1">
             <div className="text-3xl mb-2">✨</div>
             <h3 className="font-serif text-lg text-brown font-semibold">동화 다섯 스토리 완성 티켓</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
@@ -324,6 +331,57 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div
+          className="rounded-2xl p-5 mb-4"
+          style={{
+            background: "rgba(255,255,255,0.4)",
+            border: "1px solid rgba(196,149,106,0.08)",
+          }}
+        >
+          <h3 className="font-serif text-sm font-semibold text-brown mb-3 text-center">
+            자주 묻는 질문
+          </h3>
+          <div className="space-y-2">
+            {[
+              {
+                q: "티켓은 어떻게 사용하나요?",
+                a: "티켓 1장으로 4단계 마음 대화를 진행하고, 10장면 동화 1편을 완성할 수 있어요. 동화 완성 시 티켓이 차감됩니다.",
+              },
+              {
+                q: "만든 동화는 영구 보관되나요?",
+                a: "네, 완성된 동화는 '내 서재'에 영구 보관됩니다. 언제든 PDF로 다운로드하거나 공유할 수 있어요.",
+              },
+              {
+                q: "환불은 가능한가요?",
+                a: "미사용 티켓은 구매일로부터 7일 이내에 환불 가능합니다. 고객센터(support@mamastale.com)로 문의해 주세요.",
+              },
+            ].map((faq, i) => (
+              <div key={i} className="border border-brown-pale/10 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                >
+                  <span className="text-xs text-brown font-medium">{faq.q}</span>
+                  <span className="text-xs text-brown-pale ml-2 flex-shrink-0">{openFaq === i ? "−" : "+"}</span>
+                </button>
+                {openFaq === i && (
+                  <div className="px-4 pb-3">
+                    <p className="text-[11px] text-brown-light font-light leading-relaxed">{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Refund & Trust */}
+        <div className="text-center mb-4">
+          <p className="text-[10px] text-brown-pale font-light leading-relaxed">
+            미사용 티켓 7일 이내 환불 가능 · 문의: support@mamastale.com
+          </p>
         </div>
 
         <AdBanner slot="pricing-bottom" format="horizontal" />

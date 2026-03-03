@@ -396,7 +396,7 @@ export default function Home() {
           </p>
 
           {/* Description card */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
+          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-4">
             <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
               <span className="text-coral font-semibold">&ldquo;엄마, 엄마 동화 들려줘!&rdquo;</span>
               <br />
@@ -407,6 +407,22 @@ export default function Home() {
               따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
               아이에게 들려줄 나만의 동화를 만들어 보세요.
             </p>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-3 mb-5">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
+              <span className="text-[11px]">🧠</span>
+              <span className="text-[10px] text-brown-mid font-medium">전문가 감수</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
+              <span className="text-[11px]">📖</span>
+              <span className="text-[10px] text-brown-mid font-medium">실제 엄마 이야기</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
+              <span className="text-[11px]">🔒</span>
+              <span className="text-[10px] text-brown-mid font-medium">100% 비공개</span>
+            </div>
           </div>
 
           {/* Draft resume card */}
@@ -600,44 +616,48 @@ export default function Home() {
 
         {/* Bottom section: testimonials */}
         <div>
-          {/* Social proof — testimonials at bottom */}
-          <div className="space-y-2 mt-6">
-            <p className="text-[11px] text-brown-pale font-medium text-center mb-2">이용자 후기</p>
+          {/* Social proof — testimonials as horizontal scroll */}
+          <div className="mt-6">
+            <p className="text-[11px] text-brown-pale font-medium text-center mb-3">
+              ⭐ 4.8 / 5.0 · 이용자 후기
+            </p>
             <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
+              className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
+              style={{ scrollbarWidth: "none" }}
             >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;15분 만에 울고 웃으며 동화까지 완성했어요.
-                남편이 &lsquo;이게 네 이야기야?&rsquo;라며 놀라더라고요.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 현정맘 (35세, 아들 4세)
-              </p>
-            </div>
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-            >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;사업하느라 늘 미안했는데, 완성된 동화에 제 이야기가
-                아이 눈높이 모험담으로 바뀌어 있더라고요.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 윤서맘 (41세, 딸 7세)
-              </p>
-            </div>
-            <div
-              className="rounded-2xl px-4 py-3"
-              style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-            >
-              <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                &ldquo;아동심리 전문가지만 정작 제 감정은 돌보지 못했어요.
-                AI라서 오히려 솔직해질 수 있었습니다.&rdquo;
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                — 서아맘 (38세, 아들 5세)
-              </p>
+              {[
+                {
+                  text: "15분 만에 울고 웃으며 동화까지 완성했어요. 남편이 \u2018이게 네 이야기야?\u2019라며 놀라더라고요.",
+                  author: "현정맘 (35세, 아들 4세)",
+                  stars: 5,
+                },
+                {
+                  text: "사업하느라 늘 미안했는데, 완성된 동화에 제 이야기가 아이 눈높이 모험담으로 바뀌어 있더라고요.",
+                  author: "윤서맘 (41세, 딸 7세)",
+                  stars: 5,
+                },
+                {
+                  text: "아동심리 전문가지만 정작 제 감정은 돌보지 못했어요. AI라서 오히려 솔직해질 수 있었습니다.",
+                  author: "서아맘 (38세, 아들 5세)",
+                  stars: 5,
+                },
+              ].map((review, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-[75%] rounded-2xl px-4 py-3 snap-start"
+                  style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
+                >
+                  <div className="text-[10px] text-amber-400 mb-1">
+                    {"★".repeat(review.stars)}
+                  </div>
+                  <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
+                    &ldquo;{review.text}&rdquo;
+                  </p>
+                  <p className="text-[10px] text-brown-pale font-light mt-1.5">
+                    — {review.author}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -806,7 +826,7 @@ export default function Home() {
               이메일로 회원가입
             </button>
             <p className="text-[11px] text-brown-pale font-light text-center mb-1">
-              카카오 · Google 로그인은 곧 지원됩니다
+              카카오 · Google로도 간편 가입 가능
             </p>
             <div className="h-[1px] bg-brown-pale/15 my-2" />
             <button
