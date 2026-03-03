@@ -144,7 +144,20 @@ export default function CommunityStoryClient() {
                     await navigator.share({ title: story.title || "마음 동화", url });
                   } catch { /* user cancelled */ }
                 } else {
-                  await navigator.clipboard.writeText(url);
+                  // CTO-FIX: Clipboard API can throw in non-HTTPS or iframe contexts
+                  try {
+                    await navigator.clipboard.writeText(url);
+                  } catch {
+                    // Fallback: use legacy execCommand
+                    const ta = document.createElement("textarea");
+                    ta.value = url;
+                    ta.style.position = "fixed";
+                    ta.style.opacity = "0";
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(ta);
+                  }
                   setShareCopied(true);
                   setTimeout(() => setShareCopied(false), 2000);
                 }

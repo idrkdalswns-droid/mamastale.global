@@ -248,7 +248,7 @@ export default function PricingPage() {
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedProduct, isProcessing]);
+  }, [selectedProduct, isProcessing, user]); // CTO-FIX: Added 'user' to prevent stale closure for customerEmail/customerName
 
   // ─── Standard Mode Fallback: card-only popup ───
   const handleStandardPayment = useCallback(async () => {

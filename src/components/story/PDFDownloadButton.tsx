@@ -21,10 +21,14 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
     // If we await fetch() first, the user gesture context expires and window.open is blocked.
     const printWindow = window.open("", "_blank");
     if (printWindow) {
-      printWindow.document.write(
-        '<html><head><title>동화책 만드는 중</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#8B6F55"><p>📖 동화책을 만들고 있어요...</p></body></html>'
-      );
-      printWindow.document.close();
+      // CTO-FIX: Use DOM API instead of document.write() to avoid XSS vector
+      const doc = printWindow.document;
+      doc.title = "동화책 만드는 중";
+      const body = doc.body;
+      body.style.cssText = "font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#8B6F55";
+      const p = doc.createElement("p");
+      p.textContent = "📖 동화책을 만들고 있어요...";
+      body.appendChild(p);
     }
 
     try {

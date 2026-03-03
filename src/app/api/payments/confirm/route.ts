@@ -171,10 +171,11 @@ export async function POST(request: NextRequest) {
       }
 
       console.error("[Toss] Payment confirmation failed:", confirmData?.code, confirmData?.message);
-      // Forward Toss error code to client for specific error messages on fail page
+      // CTO-FIX: Use generic error message instead of forwarding Toss internal error details
+      // Only forward the error code (safe), not the message (may contain internal info)
       return sb.applyCookies(NextResponse.json(
         {
-          error: confirmData?.message || "결제 확인에 실패했습니다.",
+          error: "결제 확인에 실패했습니다.",
           code: confirmData?.code || "UNKNOWN_ERROR",
         },
         { status: 400 }

@@ -47,9 +47,10 @@ export async function POST(request: NextRequest) {
   // ─── Require authentication (with session cookie preservation) ───
   const sb = createApiSupabaseClient(request);
   if (!sb) {
+    // CTO-FIX: Correct error — sb null means Supabase env vars are missing, not auth failure
     return NextResponse.json(
-      { error: "로그인이 필요합니다." },
-      { status: 401 }
+      { error: "DB not configured" },
+      { status: 503 }
     );
   }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // Map Toss payment methods to user-friendly labels
 const PAYMENT_METHOD_LABELS: Record<string, { icon: string; label: string }> = {
@@ -46,17 +47,24 @@ function PaymentSuccessContent() {
     confirmedRef.current = true;
     window.history.replaceState({}, "", "/payment/success");
 
-    // Confirm payment with backend (per official Toss sample pattern)
-    fetch("/api/payments/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        paymentKey,
-        orderId,
-        amount: Number(amount),
-        mode,
-      }),
-    })
+    // CTO-FIX: Include Bearer token for cookie fallback (mobile browsers)
+    const confirmPayment = async () => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch { /* ignore */ }
+      return fetch("/api/payments/confirm", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ paymentKey, orderId, amount: Number(amount), mode }),
+      });
+    };
+
+    confirmPayment()
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.success) {

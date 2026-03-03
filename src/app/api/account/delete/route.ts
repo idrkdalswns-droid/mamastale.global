@@ -36,11 +36,26 @@ export async function DELETE(request: NextRequest) {
   const userId = user.id;
 
   try {
-    // JP-04: Delete ALL user data in dependency order (all tables)
-    await serviceClient.from("comment_reports").delete().eq("reporter_id", userId);
-    await serviceClient.from("likes").delete().eq("user_id", userId);
-    await serviceClient.from("feedback").delete().eq("user_id", userId);
-    await serviceClient.from("comments").delete().eq("user_id", userId);
+    // CTO-FIX: Delete ALL user data with error tracking per table
+    // Non-transactional — track failures to ensure partial deletes are logged
+    const maskedId = userId.slice(0, 8) + "…";
+
+    // Phase 1: Delete non-dependent records (can run in parallel)
+    const phase1Tables = ["comment_reports", "likes", "feedback", "comments"] as const;
+    const phase1Results = await Promise.allSettled(
+      phase1Tables.map(async (table) => {
+        const col = table === "comment_reports" ? "reporter_id" : "user_id";
+        const { error: err } = await serviceClient.from(table).delete().eq(col, userId);
+        if (err) throw new Error(`${table}: ${err.code}`);
+      })
+    );
+    phase1Results.forEach((result, i) => {
+      if (result.status === "rejected") {
+        console.error(`[Account] Failed to delete ${phase1Tables[i]} for user=${maskedId}`);
+      }
+    });
+
+    // Phase 2: Delete dependent records (sequential, dependency order)
     await serviceClient.from("stories").delete().eq("user_id", userId);
     await serviceClient.from("referrals").delete().eq("referrer_id", userId);
     await serviceClient.from("referrals").delete().eq("referred_id", userId);
@@ -50,10 +65,11 @@ export async function DELETE(request: NextRequest) {
     // Delete auth user
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
     if (deleteError) {
-      console.error("[Account] Delete auth error:", deleteError.name);
+      console.error("[Account] Delete auth error:", deleteError.name, "user=", maskedId);
       return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
     }
 
+    console.log(`[Account] Successfully deleted user=${maskedId}`);
     return sb.applyCookies(NextResponse.json({ success: true, message: "계정이 삭제되었습니다." }));
   } catch (e) {
     console.error("[Account] Delete error:", e instanceof Error ? e.name : "Unknown");

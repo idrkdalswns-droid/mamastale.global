@@ -4,13 +4,19 @@
  */
 
 /**
- * Escape Postgres LIKE wildcards (%, _, \) in user-provided search terms.
+ * Escape Postgres LIKE wildcards (%, _, \) and PostgREST filter syntax
+ * characters (commas, dots, parentheses) in user-provided search terms.
  * Returns empty string if input is empty or exceeds maxLength.
+ *
+ * CTO-FIX: Also escape commas/dots/parens to prevent PostgREST .or() injection.
+ * Without this, a search like "a),title.eq.1" could inject arbitrary filter conditions.
  */
 export function sanitizeSearchQuery(input: string, maxLength = 100): string {
   if (!input || input.length > maxLength) return "";
   return input
     .replace(/[%_\\]/g, (c) => `\\${c}`)
+    // CTO-FIX: Strip PostgREST filter meta-characters to prevent injection
+    .replace(/[.,()]/g, "")
     .trim();
 }
 

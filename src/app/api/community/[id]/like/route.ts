@@ -28,6 +28,26 @@ function checkGuestLikeLimit(ip: string): boolean {
   return true;
 }
 
+// CTO-FIX: IP+story deduplication to prevent guest like inflation
+// Same IP can only like the same story once per 24h window (per-isolate)
+const GUEST_DEDUP_TTL = 86_400_000; // 24 hours
+const guestDedupMap = new Map<string, number>(); // key: "ip:storyId" → expiresAt
+
+function isGuestDuplicate(ip: string, storyId: string): boolean {
+  const now = Date.now();
+  // Lazy cleanup when map grows too large
+  if (guestDedupMap.size > 2000) {
+    for (const [k, v] of guestDedupMap) {
+      if (now > v) guestDedupMap.delete(k);
+    }
+  }
+  const key = `${ip}:${storyId}`;
+  const expiresAt = guestDedupMap.get(key);
+  if (expiresAt && now < expiresAt) return true; // already liked
+  guestDedupMap.set(key, now + GUEST_DEDUP_TTL);
+  return false;
+}
+
 // POST: Toggle like (authenticated) or guest like (no auth, rate-limited)
 export async function POST(
   request: NextRequest,
@@ -48,7 +68,7 @@ export async function POST(
 
   const { data: { user } } = await sb.client.auth.getUser();
 
-  // Guest like — rate-limited, increment counter only
+  // Guest like — rate-limited + dedup, increment counter only
   if (!user) {
     const ip = getClientIP(request);
     if (!checkGuestLikeLimit(ip)) {
@@ -56,6 +76,11 @@ export async function POST(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
         { status: 429 }
       ));
+    }
+
+    // CTO-FIX: Prevent same IP liking the same story repeatedly
+    if (isGuestDuplicate(ip, storyId)) {
+      return sb.applyCookies(NextResponse.json({ liked: true, guest: true, duplicate: true }));
     }
 
     const serviceClient = createServiceRoleClient();

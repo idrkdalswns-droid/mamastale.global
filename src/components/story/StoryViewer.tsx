@@ -461,6 +461,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
           role="dialog"
           aria-modal="true"
           aria-label="커뮤니티 공유"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowAliasModal(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowAliasModal(false); }}
         >
           <div
             className="w-full max-w-xs rounded-2xl p-6 text-center"

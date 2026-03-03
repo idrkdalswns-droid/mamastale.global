@@ -10,9 +10,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Try cookie auth first, then Bearer token fallback
+  let user = (await sb.client.auth.getUser()).data.user;
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const { data: tokenData } = await sb.client.auth.getUser(token);
+      user = tokenData.user;
+    }
+  }
+  if (!user) {
+    // CTO-FIX: applyCookies was missing on 401 response
+    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
 
   const { data: profile, error } = await sb.client
