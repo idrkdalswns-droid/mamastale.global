@@ -240,10 +240,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         isPremiumStory: data.isPremium !== undefined ? data.isPremium : s.isPremiumStory,
       }));
 
-      // ─── Auto-update draft after each successful exchange ───
-      // If this session was restored from a draft, keep the draft in sync
-      // so progress is never lost (even if browser crashes)
-      if (get().isFromDraft && !data.isStoryComplete) {
+      // ─── Auto-save draft after EVERY successful exchange ───
+      // Saves to localStorage on every turn for BOTH guests and logged-in users.
+      // This guarantees 0% chat loss on: refresh, crash, OAuth redirect, tab close.
+      // (Previously only saved when isFromDraft was true — missing fresh sessions)
+      if (!data.isStoryComplete) {
         get().saveDraft();
       }
 
