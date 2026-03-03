@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
   const { data: { user } } = await sb.client.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
 
   // 기존 추천 코드 확인
   const { data: profile } = await sb.client
@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
       .select("*", { count: "exact", head: true })
       .eq("referrer_id", user.id);
 
-    return NextResponse.json({
+    return sb.applyCookies(NextResponse.json({
       code: profile.referral_code,
       referralCount: count || 0,
-    });
+    }));
   }
 
   // 코드 생성 (중복 방지 최대 5회 시도)
@@ -57,11 +57,11 @@ export async function GET(request: NextRequest) {
       .eq("id", user.id);
 
     if (!error) {
-      return NextResponse.json({ code, referralCount: 0 });
+      return sb.applyCookies(NextResponse.json({ code, referralCount: 0 }));
     }
   }
 
-  return NextResponse.json({ error: "코드 생성에 실패했습니다." }, { status: 500 });
+  return sb.applyCookies(NextResponse.json({ error: "코드 생성에 실패했습니다." }, { status: 500 }));
 }
 
 // POST /api/referral — 추천 코드 적용 (가입 후 호출)
@@ -70,29 +70,29 @@ export async function POST(request: NextRequest) {
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
   const { data: { user } } = await sb.client.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
 
   // Safe JSON parsing
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
+    return sb.applyCookies(NextResponse.json(
       { error: "잘못된 요청 형식입니다." },
       { status: 400 }
-    );
+    ));
   }
 
   const { referralCode } = body;
   if (!referralCode || typeof referralCode !== "string") {
-    return NextResponse.json({ error: "추천 코드가 필요합니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "추천 코드가 필요합니다." }, { status: 400 }));
   }
 
   const code = referralCode.trim().toUpperCase();
 
   // UK-4: Validate referral code format (6 chars, alphanumeric only)
   if (code.length !== 6 || !/^[A-Z0-9]{6}$/.test(code)) {
-    return NextResponse.json({ error: "유효하지 않은 추천 코드 형식입니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "유효하지 않은 추천 코드 형식입니다." }, { status: 400 }));
   }
 
   const admin = createServiceRoleClient();
@@ -106,12 +106,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (!referrer) {
-    return NextResponse.json({ error: "유효하지 않은 추천 코드입니다." }, { status: 404 });
+    return sb.applyCookies(NextResponse.json({ error: "유효하지 않은 추천 코드입니다." }, { status: 404 }));
   }
 
   // 자기 자신 추천 방지
   if (referrer.id === user.id) {
-    return NextResponse.json({ error: "본인의 추천 코드는 사용할 수 없습니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "본인의 추천 코드는 사용할 수 없습니다." }, { status: 400 }));
   }
 
   // 2. 이미 추천받은 적 있는지 확인
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 });
+    return sb.applyCookies(NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 }));
   }
 
   // 3. 추천 기록 생성 (unique constraint on referred_id prevents race condition)
@@ -138,10 +138,10 @@ export async function POST(request: NextRequest) {
   if (insertError) {
     // Handle duplicate insert from race condition (unique constraint violation)
     if (insertError.code === "23505") {
-      return NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 });
+      return sb.applyCookies(NextResponse.json({ error: "이미 추천 혜택을 받으셨습니다." }, { status: 409 }));
     }
     console.error("[Referral] Insert error: code=", insertError.code);
-    return NextResponse.json({ error: "추천 적용에 실패했습니다." }, { status: 500 });
+    return sb.applyCookies(NextResponse.json({ error: "추천 적용에 실패했습니다." }, { status: 500 }));
   }
 
   // 4. 추천인에게 티켓 +1 (atomic)
@@ -150,8 +150,8 @@ export async function POST(request: NextRequest) {
   // 5. 신규 가입자에게도 티켓 +1 (atomic)
   await incrementTickets(admin, user.id, 1);
 
-  return NextResponse.json({
+  return sb.applyCookies(NextResponse.json({
     success: true,
     message: "추천 혜택이 적용되었습니다! 티켓 1장이 추가되었어요.",
-  });
+  }));
 }

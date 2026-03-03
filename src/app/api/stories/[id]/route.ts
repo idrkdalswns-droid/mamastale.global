@@ -36,7 +36,7 @@ export async function GET(
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   const { data: story, error } = await sb.client
@@ -47,7 +47,7 @@ export async function GET(
     .single();
 
   if (error || !story) {
-    return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
+    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
   }
 
   return sb.applyCookies(NextResponse.json({ story }));
@@ -71,7 +71,7 @@ export async function PATCH(
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   try {
@@ -80,7 +80,7 @@ export async function PATCH(
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
     const updates: Record<string, unknown> = {};
 
@@ -89,7 +89,7 @@ export async function PATCH(
     if (typeof body.authorAlias === "string") {
       const safeAlias = sanitizeText(body.authorAlias.trim().slice(0, 50));
       if (safeAlias && containsProfanity(safeAlias)) {
-        return NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 });
+        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
       }
       updates.author_alias = safeAlias || null;
     }
@@ -113,7 +113,7 @@ export async function PATCH(
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 }));
     }
 
     const { error } = await sb.client
@@ -124,11 +124,11 @@ export async function PATCH(
 
     if (error) {
       console.error("[Stories] Update error: code=", error.code);
-      return NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 });
+      return sb.applyCookies(NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 }));
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }
 }

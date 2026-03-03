@@ -60,17 +60,20 @@ export async function POST(request: NextRequest) {
 
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    // CRITICAL: Apply cookies even on auth failure to preserve session refresh
+    return sb.applyCookies(
+      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+    );
   }
 
   try {
     // ─── Body size limit (DoS prevention) ───
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > MAX_BODY_SIZE) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "요청 데이터가 너무 큽니다." },
         { status: 413 }
-      );
+      ));
     }
 
     // Safe JSON parsing
@@ -78,19 +81,19 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "잘못된 요청 형식입니다." },
         { status: 400 }
-      );
+      ));
     }
 
     // ─── Zod validation ───
     const parsed = confirmRequestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "유효하지 않은 결제 데이터입니다." },
         { status: 400 }
-      );
+      ));
     }
 
     const { paymentKey, orderId, amount, mode } = parsed.data;
@@ -116,10 +119,10 @@ export async function POST(request: NextRequest) {
     // ─── Server-side price validation ───
     const numericAmount = Number(amount);
     if (!VALID_PRICES[numericAmount]) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "유효하지 않은 결제 금액입니다." },
         { status: 400 }
-      );
+      ));
     }
 
     // Confirm payment with Toss Payments API (10s timeout)
@@ -142,10 +145,10 @@ export async function POST(request: NextRequest) {
       clearTimeout(tossTimeout);
       if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
         console.error("[Toss] Payment confirmation timed out for order:", orderId);
-        return NextResponse.json(
+        return sb.applyCookies(NextResponse.json(
           { error: "결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요." },
           { status: 504 }
-        );
+        ));
       }
       throw fetchErr;
     }
@@ -159,22 +162,22 @@ export async function POST(request: NextRequest) {
       // Return success WITHOUT incrementing tickets again to prevent double-charge.
       if (confirmData?.code === "ALREADY_PROCESSED_PAYMENT") {
         const ticketCount = VALID_PRICES[numericAmount] || 1;
-        return NextResponse.json({
+        return sb.applyCookies(NextResponse.json({
           success: true,
           ticketsAdded: ticketCount,
           alreadyProcessed: true,
-        });
+        }));
       }
 
       console.error("[Toss] Payment confirmation failed:", confirmData?.code, confirmData?.message);
       // Forward Toss error code to client for specific error messages on fail page
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         {
           error: confirmData?.message || "결제 확인에 실패했습니다.",
           code: confirmData?.code || "UNKNOWN_ERROR",
         },
         { status: 400 }
-      );
+      ));
     }
 
     // ─── Use Toss-confirmed amount (not client-supplied) ───
@@ -183,10 +186,10 @@ export async function POST(request: NextRequest) {
 
     if (!ticketCount) {
       console.error("[Toss] Unexpected confirmed amount:", confirmedAmount);
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "결제 금액이 유효하지 않습니다." },
         { status: 400 }
-      );
+      ));
     }
 
     // IL-03: DB-level idempotency — store orderId before incrementing tickets
@@ -233,9 +236,9 @@ export async function POST(request: NextRequest) {
     }));
   } catch (error) {
     console.error("[Toss] Confirm error:", error instanceof Error ? error.name : "Unknown");
-    return NextResponse.json(
+    return sb.applyCookies(NextResponse.json(
       { error: "결제 확인 중 오류가 발생했습니다." },
       { status: 500 }
-    );
+    ));
   }
 }

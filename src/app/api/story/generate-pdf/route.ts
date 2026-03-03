@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
   }
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   try {
@@ -105,15 +105,15 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
     const parsed = pdfRequestSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "Invalid story data" },
         { status: 400 }
-      );
+      ));
     }
 
     const { scenes, title, authorName } = parsed.data;
@@ -164,19 +164,19 @@ export async function POST(request: NextRequest) {
 </html>`;
 
     // JP-14: Return with security headers
-    return new Response(html, {
+    return sb.applyCookies(new NextResponse(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'",
       },
-    });
+    }));
   } catch (error) {
     console.error("PDF generation error:", error instanceof Error ? error.name : "Unknown");
-    return NextResponse.json(
+    return sb.applyCookies(NextResponse.json(
       { error: "PDF generation failed" },
       { status: 500 }
-    );
+    ));
   }
 }

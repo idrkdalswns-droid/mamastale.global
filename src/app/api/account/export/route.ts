@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
 
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   // JP-05: Rate limit exports
   if (!checkExportRateLimit(user.id)) {
-    return NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429 });
+    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429 }));
   }
 
   const userId = user.id;
@@ -72,6 +72,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (e) {
     console.error("[Account] Export error:", e instanceof Error ? e.name : "Unknown");
-    return NextResponse.json({ error: "데이터 내보내기에 실패했습니다." }, { status: 500 });
+    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기에 실패했습니다." }, { status: 500 }));
   }
 }

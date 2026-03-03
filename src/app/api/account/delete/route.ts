@@ -25,12 +25,12 @@ export async function DELETE(request: NextRequest) {
 
   const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   const serviceClient = createServiceRoleClient();
   if (!serviceClient) {
-    return NextResponse.json({ error: "서비스를 사용할 수 없습니다." }, { status: 503 });
+    return sb.applyCookies(NextResponse.json({ error: "서비스를 사용할 수 없습니다." }, { status: 503 }));
   }
 
   const userId = user.id;
@@ -51,12 +51,12 @@ export async function DELETE(request: NextRequest) {
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
     if (deleteError) {
       console.error("[Account] Delete auth error:", deleteError.name);
-      return NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 });
+      return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
     }
 
-    return NextResponse.json({ success: true, message: "계정이 삭제되었습니다." });
+    return sb.applyCookies(NextResponse.json({ success: true, message: "계정이 삭제되었습니다." }));
   } catch (e) {
     console.error("[Account] Delete error:", e instanceof Error ? e.name : "Unknown");
-    return NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 });
+    return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
   }
 }

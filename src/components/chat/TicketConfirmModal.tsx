@@ -35,14 +35,19 @@ export default function TicketConfirmModal({
       const res = await fetch("/api/tickets/use", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Ensure auth cookies are sent on all browsers
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         if (data.error === "no_tickets") {
           setError("티켓이 부족합니다. 충전 후 다시 시도해 주세요.");
+        } else if (res.status === 401) {
+          // Session expired — guide user to re-login
+          setError("로그인이 만료되었습니다. 페이지를 새로고침해 주세요.");
         } else {
-          setError("오류가 발생했습니다. 다시 시도해 주세요.");
+          // Show server error message for better debugging
+          setError(data.error || "오류가 발생했습니다. 다시 시도해 주세요.");
         }
         submittingRef.current = false;
         setIsLoading(false);
@@ -52,7 +57,7 @@ export default function TicketConfirmModal({
       // Ticket deducted successfully → proceed
       onConfirm();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError("네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.");
       submittingRef.current = false;
       setIsLoading(false);
     }

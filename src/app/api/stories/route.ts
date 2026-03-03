@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
 
   const { data: stories, error } = await sb.client
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[Stories] List error: code=", error.code);
-    return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
+    return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
   }
 
   return sb.applyCookies(NextResponse.json({ stories: stories || [] }));
@@ -85,24 +85,24 @@ export async function POST(request: NextRequest) {
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
   }
 
   // P1-FIX(KR-1): Rate limit per user
   if (!checkStorySaveRate(user.id)) {
-    return NextResponse.json(
+    return sb.applyCookies(NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }
-    );
+    ));
   }
 
   // P1-FIX(KR-2): Reject oversized request bodies to prevent memory exhaustion
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > MAX_BODY_SIZE) {
-    return NextResponse.json(
+    return sb.applyCookies(NextResponse.json(
       { error: "요청 데이터가 너무 큽니다." },
       { status: 413 }
-    );
+    ));
   }
 
   try {
@@ -111,16 +111,16 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
 
     // P1-FIX(KR-2): Double-check parsed body size (content-length can be spoofed)
     const bodyStr = JSON.stringify(body);
     if (bodyStr.length > MAX_BODY_SIZE) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "요청 데이터가 너무 큽니다." },
         { status: 413 }
-      );
+      ));
     }
 
     const { scenes, sessionId, metadata, isPublic } = body;
@@ -130,23 +130,23 @@ export async function POST(request: NextRequest) {
 
     // UK-2/UK-3: Profanity check on title and alias (visible in community)
     if (title && containsProfanity(title)) {
-      return NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 }));
     }
     if (authorAlias && containsProfanity(authorAlias)) {
-      return NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
     }
 
     // UK-5: Limit metadata size to prevent DB bloat
     if (metadata && JSON.stringify(metadata).length > 10_000) {
-      return NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 }));
     }
 
     // ─── Validate scenes BEFORE ticket deduction ───
     if (!Array.isArray(scenes) || scenes.length === 0) {
-      return NextResponse.json({ error: "동화 장면 데이터가 필요합니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "동화 장면 데이터가 필요합니다." }, { status: 400 }));
     }
     if (scenes.length > 20) {
-      return NextResponse.json({ error: "장면 수가 너무 많습니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "장면 수가 너무 많습니다." }, { status: 400 }));
     }
     const validScenes = scenes.every(
       (s: unknown) =>
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         typeof (s as Record<string, unknown>).text === "string"
     );
     if (!validScenes) {
-      return NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 }));
     }
 
     // Sanitize scene content — use lightweight sanitizer for AI text
@@ -213,11 +213,11 @@ export async function POST(request: NextRequest) {
 
     if (insertResult.error || !insertResult.data) {
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
-      return NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 });
+      return sb.applyCookies(NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 }));
     }
 
     return sb.applyCookies(NextResponse.json({ id: insertResult.data.id }));
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "Invalid request" }, { status: 400 }));
   }
 }

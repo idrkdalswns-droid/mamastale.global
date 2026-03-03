@@ -32,7 +32,12 @@ export async function POST(request: NextRequest) {
     }
   }
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    // CRITICAL: Apply cookies even on auth failure — Supabase may have started
+    // a session refresh during getUser(), and dropping those cookies breaks
+    // the client's session permanently.
+    return sb.applyCookies(
+      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+    );
   }
 
   try {
@@ -44,19 +49,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (readError || !profile) {
-      console.error("[Tickets/Use] Profile read error:", readError?.code);
-      return NextResponse.json(
+      console.error("[Tickets/Use] Profile read error:", readError?.code, readError?.message);
+      return sb.applyCookies(NextResponse.json(
         { error: "프로필 정보를 불러올 수 없습니다." },
         { status: 500 }
-      );
+      ));
     }
 
     const remaining = profile.free_stories_remaining ?? 0;
     if (remaining <= 0) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "no_tickets", message: "티켓이 부족합니다." },
         { status: 403 }
-      );
+      ));
     }
 
     // P0-FIX(US-4): Truly atomic deduction using exact expected value.
@@ -75,10 +80,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (deductError || !updated) {
-      return NextResponse.json(
+      console.warn("[Tickets/Use] CAS deduction failed:", deductError?.code);
+      return sb.applyCookies(NextResponse.json(
         { error: "no_tickets", message: "티켓이 부족합니다." },
         { status: 403 }
-      );
+      ));
     }
 
     // Determine premium status from purchase history
@@ -92,10 +98,10 @@ export async function POST(request: NextRequest) {
       isPremium,
     }));
   } catch (error) {
-    console.error("[Tickets/Use] Error:", error instanceof Error ? error.name : "Unknown");
-    return NextResponse.json(
+    console.error("[Tickets/Use] Error:", error instanceof Error ? error.message : "Unknown");
+    return sb.applyCookies(NextResponse.json(
       { error: "티켓 사용 중 오류가 발생했습니다." },
       { status: 500 }
-    );
+    ));
   }
 }
