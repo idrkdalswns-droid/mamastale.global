@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
@@ -37,9 +38,6 @@ export default function SignupPage() {
       }
     } catch { setResendStatus("error"); }
   };
-
-  // OAuth signup handlers — to be enabled when Kakao/Google providers are configured
-  // const handleOAuthSignup = async (provider: "kakao" | "google") => { ... };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,9 +185,20 @@ export default function SignupPage() {
           <p className="text-sm text-brown-light font-light">새로운 여정을 시작하세요</p>
         </div>
 
-        <p className="text-[11px] text-brown-pale font-light text-center mb-4">
-          카카오 · Google 회원가입은 곧 지원됩니다
+        <OAuthButtons disabled={loading} />
+
+        <p className="text-[10px] text-brown-pale font-light text-center mt-1 mb-2 break-keep">
+          소셜 로그인 시{" "}
+          <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</Link> 및{" "}
+          <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">개인정보처리방침</Link>에
+          동의하는 것으로 간주합니다.
         </p>
+
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-[1px] bg-brown-pale/20" />
+          <span className="text-[11px] text-brown-pale">또는 이메일로 가입</span>
+          <div className="flex-1 h-[1px] bg-brown-pale/20" />
+        </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <input

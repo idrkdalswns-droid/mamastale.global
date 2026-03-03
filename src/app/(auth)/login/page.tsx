@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -130,9 +131,7 @@ function LoginForm() {
         <div className="flex-1 h-[1px] bg-brown-pale/20" />
       </div>
 
-      <p className="text-[11px] text-brown-pale font-light text-center">
-        카카오 · Google 로그인은 곧 지원됩니다
-      </p>
+      <OAuthButtons disabled={loading} />
 
       <div className="text-center mt-4">
         <Link href="/reset-password" className="text-xs text-brown-pale font-light no-underline">

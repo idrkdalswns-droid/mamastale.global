@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { createClient } from "@/lib/supabase/client";
 
 interface SignupModalProps {
@@ -188,6 +189,14 @@ export function SignupModal({ onClose }: SignupModalProps) {
                 회원가입 후 <span className="text-coral font-medium">이 대화를 그대로 이어서</span><br />
                 나만의 마음 동화를 완성할 수 있어요.
               </p>
+            </div>
+
+            <OAuthButtons disabled={loading} />
+
+            <div className="flex items-center gap-3 my-3">
+              <div className="flex-1 h-[1px] bg-brown-pale/20" />
+              <span className="text-[10px] text-brown-pale">또는 이메일로 가입</span>
+              <div className="flex-1 h-[1px] bg-brown-pale/20" />
             </div>
 
             <form onSubmit={handleSignup} className="space-y-3">
