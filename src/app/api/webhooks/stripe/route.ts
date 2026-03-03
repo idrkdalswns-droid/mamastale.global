@@ -70,8 +70,20 @@ async function verifyStripeSignature(
   }
 }
 
+// CTO-FIX: Body size limit to prevent memory exhaustion
+const MAX_WEBHOOK_BODY = 64_000; // 64KB — Stripe events are typically < 10KB
+
 export async function POST(request: NextRequest) {
+  // Check content-length before reading body
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_WEBHOOK_BODY) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   const body = await request.text();
+  if (body.length > MAX_WEBHOOK_BODY) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
   const sig = request.headers.get("stripe-signature");
 
   if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {

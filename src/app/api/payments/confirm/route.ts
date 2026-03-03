@@ -58,7 +58,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
   if (!user) {
     // CRITICAL: Apply cookies even on auth failure to preserve session refresh
     return sb.applyCookies(

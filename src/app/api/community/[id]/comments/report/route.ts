@@ -51,7 +51,15 @@ export async function POST(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }));
   }
@@ -81,14 +89,19 @@ export async function POST(
       return sb.applyCookies(NextResponse.json({ error: "댓글을 찾을 수 없습니다." }, { status: 404 }));
     }
 
-    // Insert report (ignore duplicate via ON CONFLICT)
-    await sb.client
+    // CTO-FIX: Check insert result and handle duplicates gracefully
+    const { error: insertErr } = await sb.client
       .from("comment_reports")
       .insert({
         comment_id: commentId,
-        user_id: user.id,
+        reporter_id: user.id,
         story_id: storyId,
       });
+
+    // 23505 = unique constraint violation (already reported) — treat as success
+    if (insertErr && insertErr.code !== "23505") {
+      console.error("[Report] Insert error:", insertErr.code);
+    }
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {

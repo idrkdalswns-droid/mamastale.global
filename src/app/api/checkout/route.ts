@@ -54,7 +54,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
   if (!user) {
     return sb.applyCookies(NextResponse.json(
       { error: "로그인이 필요합니다." },

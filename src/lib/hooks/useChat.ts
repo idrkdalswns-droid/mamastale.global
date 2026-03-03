@@ -185,9 +185,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       let childAge: string | undefined;
       try { childAge = localStorage.getItem("mamastale_child_age") || undefined; } catch {}
 
+      // CTO-FIX: Include Bearer token for premium detection in WebView/mobile
+      const chatHeaders = await getAuthHeaders();
+
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: chatHeaders,
         body: JSON.stringify({
           messages: apiMessages,
           sessionId: state.sessionId,

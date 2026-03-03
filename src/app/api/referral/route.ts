@@ -18,12 +18,25 @@ function generateCode(): string {
   return code;
 }
 
+/** CTO-FIX: Bearer token fallback helper for mobile/WebView compatibility */
+async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
+  return user;
+}
+
 // GET /api/referral — 내 추천 코드 조회 (없으면 생성)
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
 
   // 기존 추천 코드 확인
@@ -47,7 +60,8 @@ export async function GET(request: NextRequest) {
 
   // 코드 생성 (중복 방지 최대 5회 시도)
   const admin = createServiceRoleClient();
-  if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  // CTO-FIX: applyCookies was missing on this error path
+  if (!admin) return sb.applyCookies(NextResponse.json({ error: "Service unavailable" }, { status: 503 }));
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateCode();
@@ -69,7 +83,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  const user = await resolveUser(sb, request);
   if (!user) return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
 
   // Safe JSON parsing
@@ -96,7 +110,8 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createServiceRoleClient();
-  if (!admin) return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  // CTO-FIX: applyCookies was missing on this error path
+  if (!admin) return sb.applyCookies(NextResponse.json({ error: "Service unavailable" }, { status: 503 }));
 
   // 1. 추천인 찾기
   const { data: referrer } = await admin
