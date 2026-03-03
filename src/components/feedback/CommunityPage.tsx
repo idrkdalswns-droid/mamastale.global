@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
+import { createClient } from "@/lib/supabase/client";
 
 interface CommunityPageProps {
   onRestart: () => void;
@@ -17,6 +18,21 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [alias, setAlias] = useState("");
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const { completedScenes, completedStoryId, storySaved, retrySaveStory } = useChatStore();
+
+  // SIM-FIX(S19): Get auth headers with Bearer token fallback
+  const getAuthHeaders = useCallback(async () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      }
+    } catch { /* ignore */ }
+    return headers;
+  }, []);
 
   // Auto-retry story save on mount (recovers from earlier save failure)
   useEffect(() => {
@@ -45,13 +61,15 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
     setIsSharing(true);
     setShareError("");
     try {
+      // SIM-FIX(S19): Include Bearer token for cookie fallback
+      const headers = await getAuthHeaders();
       let res: Response;
 
       if (completedStoryId && storySaved) {
         // Story already saved — just update to public (no duplicate)
         res = await fetch(`/api/stories/${completedStoryId}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             isPublic: true,
             authorAlias: alias.trim() || "익명의 엄마",
@@ -65,7 +83,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
 
         res = await fetch("/api/stories", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             title,
             scenes: completedScenes,

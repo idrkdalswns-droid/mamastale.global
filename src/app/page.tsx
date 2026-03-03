@@ -36,6 +36,7 @@ export default function Home() {
   const [startPending, setStartPending] = useState(false);
   const [showTicketConfirm, setShowTicketConfirm] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
+  const [editSaveError, setEditSaveError] = useState(false);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
@@ -262,13 +263,32 @@ export default function Home() {
           onDone={(edited, title) => {
             updateScenes(edited);
             setEditedTitle(title);
-            // Silently update saved story in DB if exists
+            // SIM-FIX(S18): Update saved story in DB with error feedback
             if (completedStoryId && completedStoryId.startsWith("story_") === false) {
-              fetch(`/api/stories/${completedStoryId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, scenes: edited }),
-              }).catch(() => {});
+              (async () => {
+                try {
+                  const headers: Record<string, string> = { "Content-Type": "application/json" };
+                  try {
+                    const supabase = createClient();
+                    if (supabase) {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+                    }
+                  } catch { /* ignore */ }
+                  const res = await fetch(`/api/stories/${completedStoryId}`, {
+                    method: "PATCH",
+                    headers,
+                    body: JSON.stringify({ title, scenes: edited }),
+                  });
+                  if (!res.ok) {
+                    setEditSaveError(true);
+                    setTimeout(() => setEditSaveError(false), 3000);
+                  }
+                } catch {
+                  setEditSaveError(true);
+                  setTimeout(() => setEditSaveError(false), 3000);
+                }
+              })();
             }
             setScreen("story");
           }}
@@ -291,6 +311,15 @@ export default function Home() {
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
         />
+        {/* SIM-FIX(S18): Edit save error toast */}
+        {editSaveError && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg"
+              style={{ background: "rgba(224,122,95,0.92)", backdropFilter: "blur(8px)" }}>
+              수정 저장에 실패했어요. 서재에서 다시 수정해 주세요.
+            </div>
+          </div>
+        )}
       </ErrorBoundary>
     );
   }

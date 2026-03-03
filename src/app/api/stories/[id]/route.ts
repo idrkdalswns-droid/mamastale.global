@@ -93,7 +93,14 @@ export async function PATCH(
       }
       updates.author_alias = safeAlias || null;
     }
-    if (typeof body.title === "string") updates.title = sanitizeText(body.title.trim().slice(0, 200));
+    if (typeof body.title === "string") {
+      const safeTitle = sanitizeText(body.title.trim().slice(0, 200));
+      // SIM-FIX(S25): Profanity check on title updates (matches POST behavior)
+      if (safeTitle && containsProfanity(safeTitle)) {
+        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 }));
+      }
+      updates.title = safeTitle;
+    }
     if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
       const validScenes = body.scenes.every(
         (s: unknown) =>
