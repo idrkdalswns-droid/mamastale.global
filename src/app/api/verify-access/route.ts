@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-/** Constant-time string comparison to prevent timing attacks */
+/** Constant-time string comparison to prevent timing attacks.
+ *  Compares length via XOR to avoid early-return length leakage. */
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
   const encoder = new TextEncoder();
   const bufA = encoder.encode(a);
   const bufB = encoder.encode(b);
-  let result = 0;
-  for (let i = 0; i < bufA.length; i++) {
-    result |= bufA[i] ^ bufB[i];
+  // Compare lengths in constant time (XOR ≠ 0 if different)
+  let result = bufA.length ^ bufB.length;
+  // Compare bytes up to the longer string's length (prevents out-of-bounds)
+  const maxLen = Math.max(bufA.length, bufB.length);
+  for (let i = 0; i < maxLen; i++) {
+    result |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
   }
   return result === 0;
 }

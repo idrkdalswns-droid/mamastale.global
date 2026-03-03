@@ -33,7 +33,10 @@ export function parsePagination(
   maxPage = 100,
   perPage = 12
 ): { page: number; limit: number; offset: number } {
-  const parsed = parseInt(rawPage || "1");
+  const parsed = parseInt(rawPage || "1", 10);
   const page = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, maxPage) : 1;
-  return { page, limit: perPage, offset: (page - 1) * perPage };
+  const offset = (page - 1) * perPage;
+  // Safety cap: prevent excessively large offsets that could DoS the database
+  const safeOffset = Math.min(offset, 10_000);
+  return { page, limit: perPage, offset: safeOffset };
 }

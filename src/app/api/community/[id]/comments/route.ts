@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, containsProfanity } from "@/lib/utils/validation";
 
 export const runtime = "edge";
@@ -12,19 +13,6 @@ function createAnonClient() {
   if (!url || !key) return null;
   return createServerClient(url, key, {
     cookies: { getAll() { return []; }, setAll() {} },
-  });
-}
-
-function getAuthClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  return createServerClient(url, key, {
-    cookies: {
-      getAll() { return request.cookies.getAll(); },
-      setAll() {},
-    },
   });
 }
 
@@ -77,14 +65,15 @@ export async function POST(
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
   }
 
-  const supabase = getAuthClient(request);
-  if (!supabase) {
+  // Use createApiSupabaseClient to preserve session cookies on auth refresh
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }));
   }
 
   // Verify story is public before allowing comments
@@ -97,7 +86,7 @@ export async function POST(
       .eq("is_public", true)
       .single();
     if (!story) {
-      return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
+      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
     }
   }
 
@@ -107,13 +96,13 @@ export async function POST(
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
 
     const { content, authorAlias } = body;
 
     if (!content?.trim()) {
-      return NextResponse.json({ error: "댓글 내용을 입력해 주세요" }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "댓글 내용을 입력해 주세요" }, { status: 400 }));
     }
 
     // Sanitize inputs (strip HTML tags, JS protocol)
@@ -124,13 +113,13 @@ export async function POST(
 
     // Profanity check
     if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "부적절한 표현이 포함되어 있습니다." },
         { status: 400 }
-      );
+      ));
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await sb.client
       .from("comments")
       .insert({
         user_id: user.id,
@@ -143,7 +132,7 @@ export async function POST(
 
     if (error) {
       console.error("[Comments] Insert error: code=", error.code);
-      return NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 });
+      return sb.applyCookies(NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 }));
     }
 
     // IN-6: Atomic comment count increment with error logging
@@ -159,8 +148,8 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ comment: data });
+    return sb.applyCookies(NextResponse.json({ comment: data }));
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "Invalid request" }, { status: 400 }));
   }
 }

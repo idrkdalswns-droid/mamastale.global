@@ -66,11 +66,14 @@ export async function GET(
   if (shouldCountView(ip, id)) {
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
-      await serviceClient.rpc("increment_story_counter", {
+      const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {
         p_story_id: id,
         p_column: "view_count",
         p_delta: 1,
       });
+      if (rpcError) {
+        console.error("[Community] View count increment failed:", rpcError.code);
+      }
     }
   }
 

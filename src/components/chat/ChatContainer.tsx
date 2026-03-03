@@ -168,8 +168,8 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         onScroll={handleScroll}
       >
         <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
-          {messages.map((m) => (
-            <MessageBubble key={m.id || `msg_${m.role}_${m.content.slice(0, 20)}_${messages.indexOf(m)}`} message={m} currentPhase={currentPhase} />
+          {messages.map((m, idx) => (
+            <MessageBubble key={m.id || `msg_${m.role}_${idx}`} message={m} currentPhase={currentPhase} />
           ))}
 
           {isLoading && <TypingIndicator phase={currentPhase} />}

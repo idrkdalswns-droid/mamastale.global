@@ -26,6 +26,8 @@ export async function middleware(request: NextRequest) {
       "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://t1.kakaocdn.net https://k.kakaocdn.net",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.tosspayments.com https://api.stripe.com https://www.google-analytics.com https://kapi.kakao.com",
       "frame-src https://js.stripe.com https://js.tosspayments.com https://accounts.kakao.com",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests",
     ].join("; ")
   );
 

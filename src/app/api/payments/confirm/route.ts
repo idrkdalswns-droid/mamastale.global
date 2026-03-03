@@ -126,7 +126,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Confirm payment with Toss Payments API (10s timeout)
-    const encryptedKey = btoa(`${tossSecretKey}:`);
+    // Base64-encode for HTTP Basic Auth (actual transport encryption is via HTTPS)
+    const basicAuthCredential = btoa(`${tossSecretKey}:`);
     const tossAbort = new AbortController();
     const tossTimeout = setTimeout(() => tossAbort.abort(), 10_000);
 
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
       confirmRes = await fetch("https://api.tosspayments.com/v1/payments/confirm", {
         method: "POST",
         headers: {
-          "Authorization": `Basic ${encryptedKey}`,
+          "Authorization": `Basic ${basicAuthCredential}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ paymentKey, orderId, amount: numericAmount }),

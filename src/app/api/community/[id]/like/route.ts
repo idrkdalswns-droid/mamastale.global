@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 // FI-5: Static import instead of dynamic import in hot path
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
@@ -28,19 +28,6 @@ function checkGuestLikeLimit(ip: string): boolean {
   return true;
 }
 
-function getSupabaseClient(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  return createServerClient(url, key, {
-    cookies: {
-      getAll() { return request.cookies.getAll(); },
-      setAll() {},
-    },
-  });
-}
-
 // POST: Toggle like (authenticated) or guest like (no auth, rate-limited)
 export async function POST(
   request: NextRequest,
@@ -53,21 +40,22 @@ export async function POST(
     return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
   }
 
-  const supabase = getSupabaseClient(request);
-  if (!supabase) {
+  // Use createApiSupabaseClient to preserve session cookies on auth refresh
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await sb.client.auth.getUser();
 
   // Guest like — rate-limited, increment counter only
   if (!user) {
     const ip = getClientIP(request);
     if (!checkGuestLikeLimit(ip)) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
         { status: 429 }
-      );
+      ));
     }
 
     const serviceClient = createServiceRoleClient();
@@ -78,11 +66,11 @@ export async function POST(
         p_delta: 1,
       });
     }
-    return NextResponse.json({ liked: true, guest: true });
+    return sb.applyCookies(NextResponse.json({ liked: true, guest: true }));
   }
 
   // Authenticated user — toggle like
-  const { data: existing } = await supabase
+  const { data: existing } = await sb.client
     .from("likes")
     .select("id")
     .eq("user_id", user.id)
@@ -94,7 +82,7 @@ export async function POST(
 
   if (existing) {
     // Unlike
-    const { error: deleteError } = await supabase.from("likes").delete().eq("id", existing.id);
+    const { error: deleteError } = await sb.client.from("likes").delete().eq("id", existing.id);
 
     // IN-4: Only decrement counter if delete succeeded (prevents count drift)
     if (!deleteError && serviceClient) {
@@ -106,10 +94,10 @@ export async function POST(
       if (rpcError) console.error("[Like] Decrement failed:", rpcError.message);
     }
 
-    return NextResponse.json({ liked: false });
+    return sb.applyCookies(NextResponse.json({ liked: false }));
   } else {
     // Like
-    const { error: insertError } = await supabase.from("likes").insert({
+    const { error: insertError } = await sb.client.from("likes").insert({
       user_id: user.id,
       story_id: storyId,
     });
@@ -124,7 +112,7 @@ export async function POST(
       if (rpcError) console.error("[Like] Increment failed:", rpcError.message);
     }
 
-    return NextResponse.json({ liked: !insertError });
+    return sb.applyCookies(NextResponse.json({ liked: !insertError }));
   }
 }
 
@@ -139,23 +127,23 @@ export async function GET(
     return NextResponse.json({ liked: false });
   }
 
-  const supabase = getSupabaseClient(request);
-  if (!supabase) {
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
     return NextResponse.json({ liked: false });
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await sb.client.auth.getUser();
   if (!user) {
     // Guest — like status tracked by client localStorage
-    return NextResponse.json({ liked: false, guest: true });
+    return sb.applyCookies(NextResponse.json({ liked: false, guest: true }));
   }
 
-  const { data } = await supabase
+  const { data } = await sb.client
     .from("likes")
     .select("id")
     .eq("user_id", user.id)
     .eq("story_id", storyId)
     .single();
 
-  return NextResponse.json({ liked: !!data });
+  return sb.applyCookies(NextResponse.json({ liked: !!data }));
 }

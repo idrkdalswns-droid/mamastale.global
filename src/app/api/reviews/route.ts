@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
     const safeContent = sanitizeText(content.trim().slice(0, 500));
     const safeAlias = sanitizeText(authorAlias.trim().slice(0, 20));
     const safeChildInfo = childInfo ? sanitizeText(childInfo.trim().slice(0, 30)) : null;
-    const safeStars = Math.min(5, Math.max(1, parseInt(stars) || 5));
+    const parsedStars = Number.isFinite(Number(stars)) ? Math.round(Number(stars)) : 5;
+    const safeStars = Math.min(5, Math.max(1, parsedStars));
 
     if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
       return NextResponse.json(

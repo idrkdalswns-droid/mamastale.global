@@ -127,4 +127,14 @@ describe("parsePagination", () => {
     expect(limit).toBe(20);
     expect(offset).toBe(20);
   });
+
+  it("caps offset at 10,000 to prevent DB DoS", () => {
+    // maxPage=100, perPage=12: offset = (100-1)*12 = 1188 — fine
+    const { offset: normalOffset } = parsePagination("100", 100, 12);
+    expect(normalOffset).toBeLessThanOrEqual(10_000);
+
+    // Large maxPage: offset = (999-1)*50 = 49900 → capped to 10000
+    const { offset: largeOffset } = parsePagination("999", 1000, 50);
+    expect(largeOffset).toBe(10_000);
+  });
 });
