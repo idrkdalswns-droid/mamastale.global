@@ -66,7 +66,15 @@ export async function POST(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
 
   // Guest like — rate-limited + dedup, increment counter only
   if (!user) {
@@ -157,7 +165,15 @@ export async function GET(
     return NextResponse.json({ liked: false });
   }
 
-  const { data: { user } } = await sb.client.auth.getUser();
+  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
   if (!user) {
     // Guest — like status tracked by client localStorage
     return sb.applyCookies(NextResponse.json({ liked: false, guest: true }));

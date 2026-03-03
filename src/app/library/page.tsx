@@ -37,9 +37,11 @@ export default function LibraryPage() {
       const headers: Record<string, string> = {};
       try {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
         }
       } catch { /* ignore */ }
 
