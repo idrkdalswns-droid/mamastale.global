@@ -450,6 +450,24 @@ export default function Home() {
             </div>
           )}
 
+          {/* CTA button */}
+          <button
+            onClick={handleStartStory}
+            disabled={!!user && ticketsRemaining === null && !authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {user && ticketsRemaining === null && !authLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                불러오는 중...
+              </span>
+            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
+          </button>
+
           {/* Ticket balance display for logged-in users */}
           {user && ticketsRemaining !== null && (
             <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
@@ -470,23 +488,40 @@ export default function Home() {
             </div>
           )}
 
-          {/* CTA button */}
-          <button
-            onClick={handleStartStory}
-            disabled={!!user && ticketsRemaining === null && !authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-4"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {user && ticketsRemaining === null && !authLoading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                불러오는 중...
-              </span>
-            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
-          </button>
+          {/* Referral link for logged-in users */}
+          {user && referralCode && (
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}?ref=${referralCode}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  setReferralCopied(true);
+                  setTimeout(() => setReferralCopied(false), 2000);
+                }).catch(() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: "mamastale 추천",
+                      text: "엄마의 이야기가 아이의 동화가 되는 곳, mamastale을 추천합니다!",
+                      url,
+                    });
+                  }
+                });
+              }}
+              className="w-full mb-3 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.97]"
+              style={{
+                background: referralCopied
+                  ? "rgba(127,191,176,0.15)"
+                  : "rgba(224,122,95,0.08)",
+                color: referralCopied ? "#5A9E8F" : "#E07A5F",
+                border: referralCopied
+                  ? "1.5px solid rgba(127,191,176,0.3)"
+                  : "1.5px solid rgba(224,122,95,0.2)",
+              }}
+            >
+              {referralCopied
+                ? "추천 링크가 복사되었어요!"
+                : "친구 추천하고 무료 티켓 받기"}
+            </button>
+          )}
 
           {/* Free trial + time hint for non-logged-in users */}
           {!user && !authLoading && (
@@ -528,7 +563,7 @@ export default function Home() {
                 border: "1px solid rgba(196,149,106,0.12)",
               }}
             >
-              요금 안내
+              티켓 구매
             </Link>
           </div>
 
@@ -563,44 +598,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom section: referral + testimonials */}
+        {/* Bottom section: testimonials */}
         <div>
-          {/* Referral link for logged-in users */}
-          {user && referralCode && (
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}?ref=${referralCode}`;
-                navigator.clipboard.writeText(url).then(() => {
-                  setReferralCopied(true);
-                  setTimeout(() => setReferralCopied(false), 2000);
-                }).catch(() => {
-                  // Fallback: use share API on mobile
-                  if (navigator.share) {
-                    navigator.share({
-                      title: "mamastale 추천",
-                      text: "엄마의 이야기가 아이의 동화가 되는 곳, mamastale을 추천합니다!",
-                      url,
-                    });
-                  }
-                });
-              }}
-              className="w-full mt-2 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.97]"
-              style={{
-                background: referralCopied
-                  ? "rgba(127,191,176,0.15)"
-                  : "rgba(224,122,95,0.08)",
-                color: referralCopied ? "#5A9E8F" : "#E07A5F",
-                border: referralCopied
-                  ? "1.5px solid rgba(127,191,176,0.3)"
-                  : "1.5px solid rgba(224,122,95,0.2)",
-              }}
-            >
-              {referralCopied
-                ? "추천 링크가 복사되었어요!"
-                : "친구 추천하고 무료 티켓 받기"}
-            </button>
-          )}
-
           {/* Social proof — testimonials at bottom */}
           <div className="space-y-2 mt-6">
             <p className="text-[11px] text-brown-pale font-medium text-center mb-2">이용자 후기</p>

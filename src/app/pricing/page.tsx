@@ -64,7 +64,7 @@ export default function PricingPage() {
 
     try {
       const amount = priceType === "bundle" ? 18900 : 4900;
-      const orderName = priceType === "bundle" ? "동화 5권 묶음 패키지" : "동화 1권 티켓";
+      const orderName = priceType === "bundle" ? "동화 다섯 스토리 완성 티켓" : "동화 스토리 하나 완성 티켓";
       // JP-17: Non-enumerable order ID using crypto.randomUUID()
       const orderId = `order_${crypto.randomUUID()}`;
 
@@ -210,7 +210,7 @@ export default function PricingPage() {
 
           <div className="text-center mb-4 pt-1">
             <div className="text-3xl mb-2">🎫</div>
-            <h3 className="font-serif text-lg text-brown font-semibold">동화 1권 티켓</h3>
+            <h3 className="font-serif text-lg text-brown font-semibold">동화 스토리 하나 완성 티켓</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
               <span className="font-serif text-3xl font-bold text-brown">₩4,900</span>
               <span className="text-sm text-brown-light font-light">/1권</span>
@@ -256,7 +256,7 @@ export default function PricingPage() {
         >
           <div className="text-center mb-4">
             <div className="text-3xl mb-2">✨</div>
-            <h3 className="font-serif text-lg text-brown font-semibold">5권 묶음 패키지</h3>
+            <h3 className="font-serif text-lg text-brown font-semibold">동화 다섯 스토리 완성 티켓</h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
               <span className="text-sm text-brown-pale font-light line-through mr-1">₩24,500</span>
               <span className="font-serif text-3xl font-bold text-brown">₩18,900</span>
