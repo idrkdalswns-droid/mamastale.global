@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendStatus, setResendStatus] = useState<"" | "sending" | "sent" | "error">("");
+  const [showWhySignup, setShowWhySignup] = useState(false);
 
   const handleResendVerification = async () => {
     if (!email || resendStatus === "sending") return;
@@ -332,7 +333,44 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <div className="text-center mt-6">
+        {/* "왜 가입해야 하나요?" collapsible */}
+        <div className="mt-5">
+          <button
+            type="button"
+            onClick={() => setShowWhySignup((v) => !v)}
+            className="w-full flex items-center justify-center gap-1.5 text-[11px] text-brown-mid font-medium py-2"
+          >
+            왜 가입해야 하나요?
+            <span className="text-brown-pale text-[10px]">{showWhySignup ? "−" : "+"}</span>
+          </button>
+          {showWhySignup && (
+            <div
+              className="rounded-2xl p-4 mt-1 animate-in fade-in duration-300"
+              style={{ background: "rgba(255,255,255,0.5)", border: "1px solid rgba(196,149,106,0.1)" }}
+            >
+              <ul className="space-y-2.5 text-[11px] text-brown-light font-light leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="text-coral font-semibold mt-0.5">✓</span>
+                  <span><strong className="font-medium">대화 이어가기</strong> — 게스트 무료 대화가 끝나도 회원가입 후 그대로 이어서 동화를 완성할 수 있어요.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral font-semibold mt-0.5">✓</span>
+                  <span><strong className="font-medium">동화 영구 보관</strong> — 완성된 동화가 내 서재에 안전하게 저장되어, 언제든 PDF로 다운로드하고 공유할 수 있어요.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral font-semibold mt-0.5">✓</span>
+                  <span><strong className="font-medium">커뮤니티 참여</strong> — 다른 엄마들의 이야기를 읽고, 나의 동화를 공유하며 서로 힘이 되어줄 수 있어요.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-coral font-semibold mt-0.5">✓</span>
+                  <span><strong className="font-medium">무료 체험 1회 제공</strong> — 회원가입만으로 동화 1편을 완전 무료로 만들 수 있어요.</span>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center mt-4">
           <Link href="/login" className="text-sm text-brown-mid font-light no-underline">
             이미 계정이 있으신가요? <span className="text-coral font-medium">로그인</span>
           </Link>

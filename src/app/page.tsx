@@ -400,8 +400,11 @@ export default function Home() {
             mamastale
           </h1>
 
-          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-5">
+          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-1.5">
             나의 이야기가 아이의 동화가 되다
+          </p>
+          <p className="text-[11px] text-brown-pale font-light mb-5">
+            지금까지 <span className="text-coral font-medium">150+</span>명의 엄마가 동화를 만들었어요
           </p>
 
           {/* Description card */}
