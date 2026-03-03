@@ -51,12 +51,23 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
         JSON.stringify([...updated])
       );
     } catch {}
-    // Server-side report (fire and forget)
-    fetch(`/api/community/${storyId}/comments/report`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ commentId }),
-    }).catch(() => {});
+    // CTO-FIX(HIGH): Include Bearer token + credentials for WebView/mobile
+    (async () => {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        } catch {}
+        await fetch(`/api/community/${storyId}/comments/report`, {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({ commentId }),
+        });
+      } catch {}
+    })();
   };
 
   const submitComment = async () => {

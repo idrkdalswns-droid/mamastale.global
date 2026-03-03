@@ -118,51 +118,92 @@ export default function Home() {
   // Auto-apply referral code after login
   useEffect(() => {
     if (authLoading || !user || referralApplied) return;
-    try {
-      const savedRef = localStorage.getItem("mamastale_ref");
-      if (!savedRef) return;
-      localStorage.removeItem("mamastale_ref");
-      setReferralApplied(true);
+    const savedRef = (() => { try { return localStorage.getItem("mamastale_ref"); } catch { return null; } })();
+    if (!savedRef) return;
+    // CTO-FIX(CRITICAL): Don't remove from localStorage until API confirms success.
+    // Previous: removed before fetch → network failure = referral benefit permanently lost
+    setReferralApplied(true);
+
+    // IIFE for async Bearer token retrieval
+    (async () => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch {}
+
       fetch("/api/referral", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: "include",
         body: JSON.stringify({ referralCode: savedRef }),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
+            // Only remove from localStorage AFTER successful API response
+            try { localStorage.removeItem("mamastale_ref"); } catch {}
             // Re-fetch ticket balance to show updated count
-            fetch("/api/tickets")
+            fetch("/api/tickets", { credentials: "include" })
               .then((r) => r.ok ? r.json() : null)
               .then((d) => { if (d) setTicketsRemaining(d.remaining ?? 0); });
           }
+          // On failure, savedRef stays in localStorage → retried next time
         })
-        .catch(() => {});
-    } catch {}
+        .catch(() => {
+          // Network error → savedRef stays in localStorage for next attempt
+          setReferralApplied(false);
+        });
+    })();
   }, [authLoading, user, referralApplied]);
 
   // Fetch my referral code for logged-in users
+  // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
   useEffect(() => {
     if (!user) { setReferralCode(null); return; }
-    fetch("/api/referral")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.code) setReferralCode(data.code); })
-      .catch(() => {});
+    (async () => {
+      try {
+        const headers: Record<string, string> = {};
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch("/api/referral", { headers, credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.code) setReferralCode(data.code);
+        }
+      } catch {}
+    })();
   }, [user]);
 
   // Fetch ticket balance for logged-in users
   // Re-fetches when returning to landing (e.g. after completing a story)
+  // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
   useEffect(() => {
     if (!user || screen !== "landing") {
       if (!user) setTicketsRemaining(null);
       return;
     }
-    fetch("/api/tickets")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data) setTicketsRemaining(data.remaining ?? 0);
-      })
-      .catch(() => {});
+    (async () => {
+      try {
+        const headers: Record<string, string> = {};
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+        const res = await fetch("/api/tickets", { headers, credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) setTicketsRemaining(data.remaining ?? 0);
+        }
+      } catch {}
+    })();
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
 
   // Handle deferred /?action=start after auth + tickets are loaded
@@ -826,7 +867,10 @@ export default function Home() {
             <button
               onClick={() => {
                 closePaymentModal();
-                setScreen("onboarding");
+                // CTO-FIX(CRITICAL): 결제 성공 후에도 반드시 TicketConfirmModal을 거쳐 티켓 차감
+                // 이전: setScreen("onboarding") → 티켓 차감 없이 스토리 시작 (매출 손실)
+                // 수정: handleStartStory() → TicketConfirmModal → /api/tickets/use → onboarding
+                handleStartStory();
               }}
               className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
               style={{

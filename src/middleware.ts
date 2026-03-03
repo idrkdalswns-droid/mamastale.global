@@ -87,9 +87,12 @@ export async function middleware(request: NextRequest) {
 
   // ─── Safety net: redirect /?code= to /auth/callback ───
   // Handles legacy email links or misconfigured redirects
+  // CTO-FIX: Forward all auth params (code, type, error_description, etc.)
   if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
     const callbackUrl = new URL("/auth/callback", request.url);
-    callbackUrl.searchParams.set("code", request.nextUrl.searchParams.get("code")!);
+    for (const [key, value] of request.nextUrl.searchParams.entries()) {
+      callbackUrl.searchParams.set(key, value);
+    }
     return NextResponse.redirect(callbackUrl);
   }
 

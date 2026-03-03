@@ -127,7 +127,18 @@ export async function POST(request: NextRequest) {
           setAll() {},
         },
       });
-      const { data: { user } } = await supabase.auth.getUser();
+
+      // CTO-FIX(HIGH): Try cookie auth first, then Bearer token fallback.
+      // Previous: setAll() no-op meant expired tokens couldn't refresh,
+      // and no Bearer check meant WebView/mobile users always got standard model.
+      let user = (await supabase.auth.getUser()).data.user;
+      if (!user) {
+        const authHeader = request.headers.get("Authorization");
+        if (authHeader?.startsWith("Bearer ")) {
+          const { data: tokenData } = await supabase.auth.getUser(authHeader.slice(7));
+          user = tokenData.user;
+        }
+      }
       userId = user?.id || null;
 
       // ─── Premium user detection: check if user has ever purchased tickets ───
