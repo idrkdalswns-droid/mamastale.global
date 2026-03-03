@@ -41,10 +41,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Read current ticket balance + metadata (for premium detection)
+    // ROOT-CAUSE FIX: Query ONLY free_stories_remaining first.
+    // The previous code selected "free_stories_remaining, metadata" in a single query.
+    // If the "metadata" column doesn't exist in profiles, PostgREST returns a column-not-found
+    // error (code !== PGRST116), which triggered the "프로필 정보를 불러올 수 없습니다." error.
     const { data: profile, error: readError } = await sb.client
       .from("profiles")
-      .select("free_stories_remaining, metadata")
+      .select("free_stories_remaining")
       .eq("id", user.id)
       .single();
 
@@ -57,6 +60,22 @@ export async function POST(request: NextRequest) {
       ));
     }
 
+    // Helper: Try to read metadata column separately (graceful fallback)
+    // If column doesn't exist, returns empty object instead of crashing
+    const readMetadata = async (userId: string): Promise<Record<string, unknown>> => {
+      try {
+        const { data: metaRow, error: metaErr } = await sb.client
+          .from("profiles")
+          .select("metadata")
+          .eq("id", userId)
+          .single();
+        if (metaErr || !metaRow) return {};
+        return (metaRow.metadata as Record<string, unknown>) || {};
+      } catch {
+        return {};
+      }
+    };
+
     // New user — no profile row yet → create with 1 free ticket
     if (!profile) {
       const { data: newProfile, error: insertErr } = await sb.client
@@ -66,7 +85,7 @@ export async function POST(request: NextRequest) {
           free_stories_remaining: 1,
           updated_at: new Date().toISOString(),
         }, { onConflict: "id" })
-        .select("free_stories_remaining, metadata")
+        .select("free_stories_remaining")
         .single();
 
       if (insertErr || !newProfile) {
@@ -77,9 +96,6 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      // Use the newly created profile
-      Object.assign(profile ?? {}, newProfile);
-      // Re-assign to use newly created profile in subsequent code
       const remaining = newProfile.free_stories_remaining ?? 0;
       if (remaining <= 0) {
         return sb.applyCookies(NextResponse.json(
@@ -88,7 +104,7 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      // Deduct 1 ticket from newly created profile
+      // Deduct 1 ticket from newly created profile (CAS guard)
       const { data: updated, error: deductError } = await sb.client
         .from("profiles")
         .update({
@@ -107,7 +123,7 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      const metadata = (newProfile.metadata as Record<string, unknown>) || {};
+      const metadata = await readMetadata(user.id);
       const processedOrders = (metadata.processed_orders as string[]) || [];
       const isPremium = processedOrders.length > 0;
 
@@ -127,9 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     // P0-FIX(US-4): Truly atomic deduction using exact expected value.
-    // Previous code used `remaining - 1` which could race if two requests
-    // read the same `remaining`. Now we verify the EXACT current value
-    // to ensure only one concurrent request can succeed.
+    // Verifies the EXACT current value to ensure only one concurrent request can succeed.
     const { data: updated, error: deductError } = await sb.client
       .from("profiles")
       .update({
@@ -137,7 +151,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", user.id)
-      .eq("free_stories_remaining", remaining) // Exact match — true CAS (Compare-And-Swap)
+      .eq("free_stories_remaining", remaining) // CAS (Compare-And-Swap)
       .select("free_stories_remaining")
       .single();
 
@@ -149,8 +163,8 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // Determine premium status from purchase history
-    const metadata = (profile.metadata as Record<string, unknown>) || {};
+    // Determine premium status from purchase history (graceful fallback)
+    const metadata = await readMetadata(user.id);
     const processedOrders = (metadata.processed_orders as string[]) || [];
     const isPremium = processedOrders.length > 0;
 

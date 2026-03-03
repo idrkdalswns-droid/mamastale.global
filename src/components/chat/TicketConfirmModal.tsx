@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
 
 interface TicketConfirmModalProps {
   remainingTickets: number;
@@ -32,10 +33,24 @@ export default function TicketConfirmModal({
     setError(null);
 
     try {
+      // ROOT-CAUSE FIX: Add Bearer token alongside cookies for mobile/embed compatibility.
+      // Some browsers (WebView, in-app browsers) strip cookies on same-origin requests,
+      // causing 401 errors. Bearer token ensures auth works everywhere.
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch {
+        // Session read failed — proceed with cookies only
+      }
+
       const res = await fetch("/api/tickets/use", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // Ensure auth cookies are sent on all browsers
+        headers,
+        credentials: "include",
       });
 
       if (!res.ok) {

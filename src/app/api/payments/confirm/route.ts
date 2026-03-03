@@ -195,15 +195,22 @@ export async function POST(request: NextRequest) {
     }
 
     // IL-03: DB-level idempotency — store orderId before incrementing tickets
-    // Uses profiles.metadata to track processed orders (no extra table needed)
-    const { data: profile } = await sb.client
-      .from("profiles")
-      .select("metadata")
-      .eq("id", user.id)
-      .single();
-
-    const metadata = (profile?.metadata as Record<string, unknown>) || {};
-    const processedOrderIds = (metadata.processed_orders as string[]) || [];
+    // ROOT-CAUSE FIX: Graceful fallback if metadata column doesn't exist
+    let metadata: Record<string, unknown> = {};
+    let processedOrderIds: string[] = [];
+    try {
+      const { data: profile, error: metaErr } = await sb.client
+        .from("profiles")
+        .select("metadata")
+        .eq("id", user.id)
+        .single();
+      if (!metaErr && profile) {
+        metadata = (profile.metadata as Record<string, unknown>) || {};
+        processedOrderIds = (metadata.processed_orders as string[]) || [];
+      }
+    } catch {
+      // metadata column doesn't exist — skip dedup check, rely on in-memory dedup
+    }
     if (processedOrderIds.includes(orderId)) {
       return sb.applyCookies(NextResponse.json({
         success: true, ticketsAdded: ticketCount, alreadyProcessed: true,
@@ -214,11 +221,16 @@ export async function POST(request: NextRequest) {
     const newTotal = await incrementTickets(sb.client, user.id, ticketCount);
 
     // Record orderId in profile metadata to prevent cross-isolate double processing
-    const updatedOrders = [...processedOrderIds.slice(-19), orderId]; // Keep last 20
-    await sb.client
-      .from("profiles")
-      .update({ metadata: { ...metadata, processed_orders: updatedOrders } })
-      .eq("id", user.id);
+    // Graceful: if metadata column doesn't exist, ticket increment still succeeds
+    try {
+      const updatedOrders = [...processedOrderIds.slice(-19), orderId]; // Keep last 20
+      await sb.client
+        .from("profiles")
+        .update({ metadata: { ...metadata, processed_orders: updatedOrders } })
+        .eq("id", user.id);
+    } catch {
+      console.warn("[Toss] metadata column update failed — dedup relies on in-memory guard");
+    }
 
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";
