@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { sanitizeSearchQuery, parsePagination } from "@/lib/utils/search";
 
 export const runtime = "edge";
 
@@ -23,11 +24,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sort = searchParams.get("sort") || "recent";
   const topic = searchParams.get("topic") || "";
-  const rawPage = parseInt(searchParams.get("page") || "1");
-  // FI-4: Cap page number to prevent wasteful deep pagination
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.min(rawPage, 100) : 1;
-  const limit = 12;
-  const offset = (page - 1) * limit;
+  const search = searchParams.get("search") || "";
+  const { page, limit, offset } = parsePagination(searchParams.get("page"));
 
   let query = supabase
     .from("stories")
@@ -37,6 +35,12 @@ export async function GET(request: NextRequest) {
 
   if (topic && topic.length <= 50) {
     query = query.eq("topic", topic);
+  }
+
+  // Search: match title or author_alias (sanitized, max 100 chars)
+  const safeSearch = sanitizeSearchQuery(search);
+  if (safeSearch) {
+    query = query.or(`title.ilike.%${safeSearch}%,author_alias.ilike.%${safeSearch}%`);
   }
 
   if (sort === "popular") {
@@ -54,10 +58,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
   }
 
+  const total = count || 0;
+
   return NextResponse.json({
     stories: stories || [],
-    total: count || 0,
+    total,
+    totalCount: total, // frontend compatibility alias
     page,
-    hasMore: (count || 0) > offset + limit,
+    hasMore: total > offset + limit,
   });
 }

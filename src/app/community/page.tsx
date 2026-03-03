@@ -183,7 +183,7 @@ export default function CommunityBrowsePage() {
           <div className="text-center py-20">
             <p className="text-sm text-brown-light font-light mb-4">{error}</p>
             <button
-              onClick={() => fetchStories(sort, topic, 1)}
+              onClick={() => fetchStories(sort, topic, 1, false, search)}
               className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
               style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
             >

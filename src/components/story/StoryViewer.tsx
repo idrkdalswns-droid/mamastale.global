@@ -316,13 +316,21 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
           <div className="space-y-2.5">
             <div className="flex gap-2">
               <button
-                onClick={() => {
+                onClick={async () => {
                   const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
-                  shareToKakao({
+                  const ok = await shareToKakao({
                     title: storyTitle,
                     description: `${authorName || "엄마"}가 만든 세상에 하나뿐인 동화`,
                     url: siteUrl,
                   });
+                  if (!ok) {
+                    // Kakao SDK 미설정 시 기본 공유로 fallback
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      navigator.share({ title: storyTitle, url: siteUrl }).catch(() => {});
+                    } else {
+                      alert("카카오톡 공유를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+                    }
+                  }
                 }}
                 className="flex-1 py-3.5 rounded-full text-sm font-bold transition-all active:scale-[0.97]"
                 style={{
