@@ -13,6 +13,7 @@ const VALID_PRICES: Record<number, number> = {
   18900: 5,
 };
 
+// mode: "widget" uses gsk_ key, "standard" uses sk_ key (per official Toss sample)
 const confirmRequestSchema = z.object({
   paymentKey: z.string().min(1).max(200),
   orderId: z
@@ -21,12 +22,15 @@ const confirmRequestSchema = z.object({
     .max(64)
     .regex(/^order_[a-f0-9-]+$/i, "Invalid order ID format"),
   amount: z.number().int().positive().max(1_000_000),
+  mode: z.enum(["widget", "standard"]).default("widget"),
 });
 
 // ─── Extracted from payment/fail/page.tsx ───
 const ERROR_MESSAGES: Record<string, string> = {
+  // 공통 (결제창)
   PAY_PROCESS_CANCELED: "결제가 취소되었습니다.",
   PAY_PROCESS_ABORTED: "결제가 중단되었습니다.",
+  USER_CANCEL: "결제가 취소되었습니다.",
   NOT_AVAILABLE_PAYMENT: "사용할 수 없는 결제 수단입니다.",
   EXCEED_MAX_DAILY_PAYMENT_COUNT: "일일 결제 횟수를 초과했습니다.",
   EXCEED_MAX_PAYMENT_AMOUNT: "결제 한도를 초과했습니다.",
@@ -37,6 +41,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   DUPLICATED_ORDER_ID: "이미 처리된 주문입니다.",
   UNAUTHORIZED_KEY: "결제 인증에 실패했습니다.",
   FORBIDDEN_REQUEST: "허용되지 않은 요청입니다.",
+  // 카드 결제
   REJECT_CARD_COMPANY:
     "카드사에서 거절되었습니다. 다른 카드를 사용해 주세요.",
   INVALID_CARD_EXPIRATION: "카드 유효기간이 만료되었습니다.",
@@ -45,13 +50,27 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_CARD_NUMBER: "카드 번호가 올바르지 않습니다.",
   NOT_SUPPORTED_INSTALLMENT_PLAN_CARD_OR_MERCHANT:
     "할부 결제가 불가능한 카드입니다.",
+  // 간편결제
   EASY_PAY_PROCESS_CANCELED: "간편결제가 취소되었습니다.",
   EASY_PAY_FAILED: "간편결제에 실패했습니다. 다시 시도해 주세요.",
   EASY_PAY_USER_CANCEL: "간편결제가 취소되었습니다.",
   FDS_ERROR: "이상 거래가 감지되어 결제가 중단되었습니다.",
+  // 계좌이체
   INVALID_BANK: "지원하지 않는 은행입니다.",
   NOT_AVAILABLE_BANK:
     "현재 이용할 수 없는 은행입니다. 잠시 후 다시 시도해 주세요.",
+  // Confirm API 에러 (서버 포워딩)
+  ALREADY_PROCESSED_PAYMENT: "이미 처리된 결제입니다.",
+  PROVIDER_ERROR: "결제 서비스 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  INVALID_PAYMENT_AMOUNT: "결제 금액이 올바르지 않습니다.",
+  INVALID_ORDER_ID: "주문 번호가 올바르지 않습니다.",
+  INVALID_API_KEY: "결제 인증에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  CONFIRM_FAILED: "결제 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  UNKNOWN_ERROR: "알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  REJECT_ACCOUNT_PAYMENT: "계좌 결제가 거절되었습니다. 다른 결제 수단을 사용해 주세요.",
+  REJECT_TOSSPAY_INVALID_ACCOUNT: "토스페이 계좌 정보가 올바르지 않습니다.",
+  EXCEED_MAX_AUTH_COUNT: "인증 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.",
+  NOT_AVAILABLE_PAYMENT_METHOD: "사용할 수 없는 결제 수단입니다. 다른 결제 수단을 선택해 주세요.",
 };
 
 // ─── Product config (from pricing page) ───
@@ -113,6 +132,34 @@ describe("confirmRequestSchema", () => {
     expect(
       confirmRequestSchema.safeParse({ ...validPayload, amount: 18900 }).success
     ).toBe(true);
+  });
+
+  // ─── mode validation (widget vs standard key selection) ───
+  it("defaults mode to 'widget' when not provided", () => {
+    const result = confirmRequestSchema.safeParse(validPayload);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.mode).toBe("widget");
+  });
+
+  it("accepts mode='widget'", () => {
+    const result = confirmRequestSchema.safeParse({ ...validPayload, mode: "widget" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.mode).toBe("widget");
+  });
+
+  it("accepts mode='standard'", () => {
+    const result = confirmRequestSchema.safeParse({ ...validPayload, mode: "standard" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.mode).toBe("standard");
+  });
+
+  it("rejects invalid mode values", () => {
+    expect(
+      confirmRequestSchema.safeParse({ ...validPayload, mode: "invalid" }).success
+    ).toBe(false);
+    expect(
+      confirmRequestSchema.safeParse({ ...validPayload, mode: "brandpay" }).success
+    ).toBe(false);
   });
 
   // ─── paymentKey validation ───
@@ -234,13 +281,31 @@ describe("ERROR_MESSAGES", () => {
     expect(ERROR_MESSAGES["NOT_AVAILABLE_BANK"]).toBeDefined();
   });
 
-  it("covers cancellation codes", () => {
+  it("covers cancellation codes (including USER_CANCEL)", () => {
     expect(ERROR_MESSAGES["PAY_PROCESS_CANCELED"]).toBeDefined();
     expect(ERROR_MESSAGES["PAY_PROCESS_ABORTED"]).toBeDefined();
+    expect(ERROR_MESSAGES["USER_CANCEL"]).toBeDefined();
   });
 
   it("covers fraud detection", () => {
     expect(ERROR_MESSAGES["FDS_ERROR"]).toBeDefined();
+  });
+
+  it("covers confirm API error codes (server-forwarded)", () => {
+    expect(ERROR_MESSAGES["ALREADY_PROCESSED_PAYMENT"]).toBeDefined();
+    expect(ERROR_MESSAGES["PROVIDER_ERROR"]).toBeDefined();
+    expect(ERROR_MESSAGES["INVALID_PAYMENT_AMOUNT"]).toBeDefined();
+    expect(ERROR_MESSAGES["INVALID_ORDER_ID"]).toBeDefined();
+    expect(ERROR_MESSAGES["INVALID_API_KEY"]).toBeDefined();
+    expect(ERROR_MESSAGES["CONFIRM_FAILED"]).toBeDefined();
+    expect(ERROR_MESSAGES["UNKNOWN_ERROR"]).toBeDefined();
+  });
+
+  it("covers additional payment rejection codes", () => {
+    expect(ERROR_MESSAGES["REJECT_ACCOUNT_PAYMENT"]).toBeDefined();
+    expect(ERROR_MESSAGES["REJECT_TOSSPAY_INVALID_ACCOUNT"]).toBeDefined();
+    expect(ERROR_MESSAGES["EXCEED_MAX_AUTH_COUNT"]).toBeDefined();
+    expect(ERROR_MESSAGES["NOT_AVAILABLE_PAYMENT_METHOD"]).toBeDefined();
   });
 });
 
@@ -392,6 +457,45 @@ describe("payment method labels", () => {
 
   it("unknown payment method returns undefined (safe fallback)", () => {
     expect(PAYMENT_METHOD_LABELS["UNKNOWN_METHOD"]).toBeUndefined();
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// Secret Key Selection (Widget vs Standard mode)
+// Per official Toss sample: widget (gsk_) and standard (sk_) use different keys
+// ════════════════════════════════════════════════════════════
+
+describe("secret key selection by mode", () => {
+  // Simulates the key selection logic from confirm/route.ts
+  function selectKey(
+    mode: "widget" | "standard",
+    widgetKey: string | undefined,
+    apiKey: string | undefined
+  ): string | undefined {
+    return mode === "standard"
+      ? (apiKey || widgetKey)
+      : (widgetKey || apiKey);
+  }
+
+  it("widget mode prefers gsk_ key", () => {
+    expect(selectKey("widget", "gsk_widget", "sk_api")).toBe("gsk_widget");
+  });
+
+  it("standard mode prefers sk_ key", () => {
+    expect(selectKey("standard", "gsk_widget", "sk_api")).toBe("sk_api");
+  });
+
+  it("widget mode falls back to sk_ key if gsk_ not set", () => {
+    expect(selectKey("widget", undefined, "sk_api")).toBe("sk_api");
+  });
+
+  it("standard mode falls back to gsk_ key if sk_ not set", () => {
+    expect(selectKey("standard", "gsk_widget", undefined)).toBe("gsk_widget");
+  });
+
+  it("returns undefined if no keys configured", () => {
+    expect(selectKey("widget", undefined, undefined)).toBeUndefined();
+    expect(selectKey("standard", undefined, undefined)).toBeUndefined();
   });
 });
 

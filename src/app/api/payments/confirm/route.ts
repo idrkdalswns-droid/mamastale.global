@@ -12,10 +12,13 @@ const VALID_PRICES: Record<number, number> = {
 };
 
 // ─── Zod schema for payment confirmation request ───
+// mode: "widget" uses TOSS_WIDGET_SECRET_KEY (gsk_), "standard" uses TOSS_SECRET_KEY (sk_)
+// Official Toss sample uses separate endpoints; we use a single endpoint with mode param
 const confirmRequestSchema = z.object({
   paymentKey: z.string().min(1).max(200),
   orderId: z.string().min(1).max(64).regex(/^order_[a-f0-9-]+$/i, "Invalid order ID format"),
   amount: z.number().int().positive().max(1_000_000),
+  mode: z.enum(["widget", "standard"]).default("widget"),
 });
 
 // ─── Request body size limit ───
@@ -39,10 +42,10 @@ function isOrderProcessed(orderId: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  // Widget secret key takes priority (matched pair with widget client key)
-  // Falls back to standard secret key for backward compatibility
-  const tossSecretKey = process.env.TOSS_WIDGET_SECRET_KEY || process.env.TOSS_SECRET_KEY;
-  if (!tossSecretKey) {
+  // Validate that at least one secret key is configured
+  const widgetSecretKey = process.env.TOSS_WIDGET_SECRET_KEY;
+  const apiSecretKey = process.env.TOSS_SECRET_KEY;
+  if (!widgetSecretKey && !apiSecretKey) {
     return NextResponse.json(
       { error: "결제 시스템이 설정되지 않았습니다." },
       { status: 503 }
@@ -90,7 +93,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { paymentKey, orderId, amount } = parsed.data;
+    const { paymentKey, orderId, amount, mode } = parsed.data;
+
+    // ─── Select secret key based on payment mode ───
+    // Widget mode (gck_ client key) → must use gsk_ secret key
+    // Standard mode (ck_ client key) → must use sk_ secret key
+    // Mismatched key pairs cause FORBIDDEN_REQUEST in production
+    const tossSecretKey = mode === "standard"
+      ? (apiSecretKey || widgetSecretKey)!   // Standard prefers sk_, falls back to gsk_
+      : (widgetSecretKey || apiSecretKey)!;  // Widget prefers gsk_, falls back to sk_
 
     // ─── Server-side idempotency guard ───
     if (isOrderProcessed(orderId)) {
@@ -155,9 +166,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      console.error("[Toss] Payment confirmation failed:", confirmData?.code);
+      console.error("[Toss] Payment confirmation failed:", confirmData?.code, confirmData?.message);
+      // Forward Toss error code to client for specific error messages on fail page
       return NextResponse.json(
-        { error: "결제 확인에 실패했습니다." },
+        {
+          error: confirmData?.message || "결제 확인에 실패했습니다.",
+          code: confirmData?.code || "UNKNOWN_ERROR",
+        },
         { status: 400 }
       );
     }

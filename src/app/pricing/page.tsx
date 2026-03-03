@@ -179,10 +179,13 @@ export default function PricingPage() {
       await widgetsRef.current.requestPayment({
         orderId,
         orderName: product.name,
-        successUrl: `${window.location.origin}/payment/success`,
+        // Toss appends paymentKey, orderId, amount to these URLs
+        // mode param tells our confirm API which secret key to use (gsk_ vs sk_)
+        successUrl: `${window.location.origin}/payment/success?mode=widget`,
         failUrl: `${window.location.origin}/payment/fail`,
-        // Pass email for payment receipt delivery
+        // Pass customer info for payment receipt (per official Toss sample)
         customerEmail: user?.email || undefined,
+        customerName: (user?.user_metadata?.display_name as string) || (user?.user_metadata?.name as string) || undefined,
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "";
@@ -222,7 +225,8 @@ export default function PricingPage() {
         amount: { currency: "KRW", value: product.amount },
         orderId,
         orderName: product.name,
-        successUrl: `${window.location.origin}/payment/success`,
+        // Standard mode uses ck_/sk_ key pair (different from widget gck_/gsk_ pair)
+        successUrl: `${window.location.origin}/payment/success?mode=standard`,
         failUrl: `${window.location.origin}/payment/fail`,
       });
     } catch (err) {

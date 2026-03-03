@@ -33,6 +33,8 @@ function PaymentSuccessContent() {
     const paymentKey = searchParams.get("paymentKey");
     const orderId = searchParams.get("orderId");
     const amount = searchParams.get("amount");
+    // mode: "widget" or "standard" — tells backend which secret key to use
+    const mode = searchParams.get("mode") || "widget";
 
     if (!paymentKey || !orderId || !amount) {
       setStatus("error");
@@ -44,7 +46,7 @@ function PaymentSuccessContent() {
     confirmedRef.current = true;
     window.history.replaceState({}, "", "/payment/success");
 
-    // Confirm payment with backend
+    // Confirm payment with backend (per official Toss sample pattern)
     fetch("/api/payments/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,6 +54,7 @@ function PaymentSuccessContent() {
         paymentKey,
         orderId,
         amount: Number(amount),
+        mode,
       }),
     })
       .then(async (res) => {
@@ -61,15 +64,17 @@ function PaymentSuccessContent() {
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setStatus("success");
         } else {
-          setStatus("error");
-          setErrorMsg(data.error || "결제 확인에 실패했습니다.");
+          // Redirect to fail page with error code (like official Toss sample)
+          // This gives users specific, actionable error messages
+          const errorCode = data.code || "CONFIRM_FAILED";
+          router.replace(`/payment/fail?code=${encodeURIComponent(errorCode)}`);
         }
       })
       .catch(() => {
         setStatus("error");
-        setErrorMsg("네트워크 오류가 발생했습니다.");
+        setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       });
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   if (status === "confirming") {
     return (

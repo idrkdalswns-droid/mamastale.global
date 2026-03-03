@@ -5,11 +5,12 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 // Map Toss error codes to safe, predefined Korean messages
-// Covers: 카드, 카카오페이, 네이버페이, 토스페이, 계좌이체 등 전 결제수단
+// Covers: 카드, 카카오페이, 네이버페이, 토스페이, 계좌이체 + confirm API 에러
 const ERROR_MESSAGES: Record<string, string> = {
-  // ─── 공통 ───
+  // ─── 공통 (결제창) ───
   PAY_PROCESS_CANCELED: "결제가 취소되었습니다.",
   PAY_PROCESS_ABORTED: "결제가 중단되었습니다.",
+  USER_CANCEL: "결제가 취소되었습니다.",
   NOT_AVAILABLE_PAYMENT: "사용할 수 없는 결제 수단입니다.",
   EXCEED_MAX_DAILY_PAYMENT_COUNT: "일일 결제 횟수를 초과했습니다.",
   EXCEED_MAX_PAYMENT_AMOUNT: "결제 한도를 초과했습니다.",
@@ -34,6 +35,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   // ─── 계좌이체 ───
   INVALID_BANK: "지원하지 않는 은행입니다.",
   NOT_AVAILABLE_BANK: "현재 이용할 수 없는 은행입니다. 잠시 후 다시 시도해 주세요.",
+  // ─── Confirm API 에러 (서버 → 클라이언트 포워딩) ───
+  ALREADY_PROCESSED_PAYMENT: "이미 처리된 결제입니다.",
+  PROVIDER_ERROR: "결제 서비스 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  INVALID_PAYMENT_AMOUNT: "결제 금액이 올바르지 않습니다.",
+  INVALID_ORDER_ID: "주문 번호가 올바르지 않습니다.",
+  INVALID_API_KEY: "결제 인증에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  CONFIRM_FAILED: "결제 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  UNKNOWN_ERROR: "알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  REJECT_ACCOUNT_PAYMENT: "계좌 결제가 거절되었습니다. 다른 결제 수단을 사용해 주세요.",
+  REJECT_TOSSPAY_INVALID_ACCOUNT: "토스페이 계좌 정보가 올바르지 않습니다.",
+  EXCEED_MAX_AUTH_COUNT: "인증 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.",
+  NOT_AVAILABLE_PAYMENT_METHOD: "사용할 수 없는 결제 수단입니다. 다른 결제 수단을 선택해 주세요.",
 };
 
 function PaymentFailContent() {
