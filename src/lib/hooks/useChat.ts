@@ -433,10 +433,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const snapshot = JSON.parse(raw);
       if (typeof snapshot !== "object" || snapshot === null || typeof snapshot.savedAt !== "number") return null;
 
-      // Expiry: 30 days for drafts, 7 days for auth
+      // CTO-FIX: Auth save expiry must match restoreFromStorage (24h), not 7d.
+      // Previous 7d caused getDraftInfo to show "이어서 대화하기" card even after
+      // restoreFromStorage would silently fail (>24h old), leading to dead button clicks.
       const maxAge = source === "draft"
         ? 30 * 24 * 60 * 60 * 1000
-        : 7 * 24 * 60 * 60 * 1000;
+        : 24 * 60 * 60 * 1000;
       if (Date.now() - snapshot.savedAt > maxAge) {
         localStorage.removeItem(source === "draft" ? DRAFT_KEY : STORAGE_KEY);
         return null;

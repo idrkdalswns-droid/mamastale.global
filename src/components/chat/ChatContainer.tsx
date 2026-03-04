@@ -220,7 +220,9 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
 
       {/* Guest turn limit reached — signup prompt
           P3-FIX(IL-4): 1.5s delay after last AI response to let user read it */}
-      {guestModalReady && !storyDone && (
+      {/* CTO-FIX: Add isGuest check — after in-modal signup, user becomes authenticated
+          but guestModalReady stays true, blocking the entire chat UI */}
+      {guestModalReady && isGuest && !storyDone && (
         <div
           className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]"
           role="dialog"
