@@ -16,18 +16,30 @@ interface OAuthButtonsProps {
 export function OAuthButtons({ className = "", disabled = false, onBeforeRedirect }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const handleOAuth = async (provider: OAuthProvider) => {
     if (loading || disabled) return;
     setLoading(provider);
+    setErrorMsg(null);
     // CRITICAL: Save chat state BEFORE browser redirects to OAuth provider
     onBeforeRedirect?.();
-    await signInWithOAuth(provider);
+    // LAUNCH-FIX: Handle signInWithOAuth error return
+    const result = await signInWithOAuth(provider);
+    if (result.error) {
+      setErrorMsg(result.error);
+      setLoading(null);
+      return;
+    }
     // Browser will redirect; loading state only matters if redirect fails
     setTimeout(() => setLoading(null), 5000);
   };
 
   return (
     <div className={`space-y-2.5 ${className}`}>
+      {errorMsg && (
+        <p className="text-xs text-red-500 text-center" role="alert">{errorMsg}</p>
+      )}
       <p className="text-[10px] text-brown-pale font-light text-center break-keep">
         로그인 시{" "}
         <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</Link> 및{" "}

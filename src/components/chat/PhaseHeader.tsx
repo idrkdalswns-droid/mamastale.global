@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PHASES } from "@/lib/constants/phases";
-import { useSettingsStore, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
+import { useSettingsStore, useSettingsHydration, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
 import type { FontSize } from "@/lib/hooks/useSettings";
 
 interface PhaseHeaderProps {
@@ -21,6 +21,7 @@ export default function PhaseHeader({
   onSaveDraft,
 }: PhaseHeaderProps) {
   const p = PHASES[currentPhase];
+  useSettingsHydration(); // LAUNCH-FIX: Hydrate from localStorage after mount
   const { fontSize, setFontSize } = useSettingsStore();
   const [showSettings, setShowSettings] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);

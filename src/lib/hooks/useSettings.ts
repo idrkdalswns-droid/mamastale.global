@@ -1,22 +1,18 @@
 "use client";
 
 import { create } from "zustand";
+import { useEffect } from "react";
 
 export type FontSize = "small" | "medium" | "large";
 
 interface SettingsState {
   fontSize: FontSize;
+  _hydrated: boolean;
   setFontSize: (size: FontSize) => void;
+  _hydrate: () => void;
 }
 
 const FONT_SIZE_KEY = "mamastale-font-size";
-
-function getStoredFontSize(): FontSize {
-  if (typeof window === "undefined") return "medium";
-  const stored = localStorage.getItem(FONT_SIZE_KEY);
-  if (stored === "small" || stored === "medium" || stored === "large") return stored;
-  return "medium";
-}
 
 export const FONT_SIZE_MAP: Record<FontSize, number> = {
   small: 13,
@@ -30,11 +26,35 @@ export const FONT_SIZE_LABELS: Record<FontSize, string> = {
   large: "크게",
 };
 
+// LAUNCH-FIX: Always initialize with "medium" to prevent hydration mismatch.
+// localStorage is read on client-side via _hydrate() after mount.
 export const useSettingsStore = create<SettingsState>((set) => ({
-  fontSize: getStoredFontSize(),
+  fontSize: "medium",
+  _hydrated: false,
 
   setFontSize: (size: FontSize) => {
-    localStorage.setItem(FONT_SIZE_KEY, size);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(FONT_SIZE_KEY, size);
+    }
     set({ fontSize: size });
   },
+
+  _hydrate: () => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(FONT_SIZE_KEY);
+    if (stored === "small" || stored === "medium" || stored === "large") {
+      set({ fontSize: stored, _hydrated: true });
+    } else {
+      set({ _hydrated: true });
+    }
+  },
 }));
+
+/** Hook to hydrate settings from localStorage after mount (avoids SSR mismatch) */
+export function useSettingsHydration() {
+  const hydrate = useSettingsStore((s) => s._hydrate);
+  const hydrated = useSettingsStore((s) => s._hydrated);
+  useEffect(() => {
+    if (!hydrated) hydrate();
+  }, [hydrate, hydrated]);
+}

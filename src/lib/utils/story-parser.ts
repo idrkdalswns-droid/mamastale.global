@@ -10,9 +10,12 @@ export function cleanSceneText(text: string): string {
 
   // 1. Decode HTML entities FIRST — loop to handle multi-level encoding
   //    e.g., &amp;amp;quot; → &amp;quot; → &quot; → "
+  //    LAUNCH-FIX: Max 10 iterations to prevent infinite loop on malformed input
   let prev = "";
-  while (prev !== cleaned) {
+  let decodeIter = 0;
+  while (prev !== cleaned && decodeIter < 10) {
     prev = cleaned;
+    decodeIter++;
     cleaned = cleaned
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")

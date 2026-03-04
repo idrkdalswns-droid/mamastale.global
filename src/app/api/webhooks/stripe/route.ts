@@ -146,13 +146,20 @@ export async function POST(request: NextRequest) {
         // ─── Atomic ticket increment ───
         await incrementTickets(supabase, userId, ticketCount);
 
-        await supabase.from("subscriptions").insert({
+        // LAUNCH-FIX: Check insert result + store session.id in both columns
+        // stripe_customer_id stores checkout session ID for idempotency lookups above
+        // stripe_subscription_id stores subscription ID for lifecycle event matching below
+        const { error: subInsertErr } = await supabase.from("subscriptions").insert({
           user_id: userId,
           stripe_customer_id: session.id,
+          stripe_subscription_id: session.subscription || session.id,
           plan: "premium",
           status: "active",
           updated_at: new Date().toISOString(),
         });
+        if (subInsertErr) {
+          console.error("[Stripe] Subscription insert failed:", subInsertErr.code, "user=", userId.slice(0, 8) + "…");
+        }
       }
       break;
     }

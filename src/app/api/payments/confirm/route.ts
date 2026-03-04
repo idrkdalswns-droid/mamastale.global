@@ -2,8 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { incrementTickets } from "@/lib/supabase/tickets";
 import { z } from "zod";
+import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// LAUNCH-FIX: Rate limiting for payment confirmations (prevent abuse)
+const PAYMENT_RATE_WINDOW = 60_000; // 1 minute
+const PAYMENT_RATE_LIMIT = 10; // 10 confirm attempts per minute per IP
+const paymentRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkPaymentRate(ip: string): boolean {
+  const now = Date.now();
+  if (paymentRateMap.size > 300) {
+    for (const [k, v] of paymentRateMap) { if (now > v.resetAt) paymentRateMap.delete(k); }
+  }
+  const entry = paymentRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    paymentRateMap.set(ip, { count: 1, resetAt: now + PAYMENT_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= PAYMENT_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 // ─── Valid prices (server-side source of truth) ───
 const VALID_PRICES: Record<number, number> = {
@@ -42,6 +63,15 @@ function isOrderProcessed(orderId: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // LAUNCH-FIX: Rate limit payment confirmations
+  const ip = getClientIP(request);
+  if (!checkPaymentRate(ip)) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429 }
+    );
+  }
+
   // Validate that at least one secret key is configured
   const widgetSecretKey = process.env.TOSS_WIDGET_SECRET_KEY;
   const apiSecretKey = process.env.TOSS_SECRET_KEY;

@@ -20,13 +20,15 @@ export type OAuthProvider = "kakao" | "google";
  * JavaScript regardless of cookie state. The callback page then uses the SSR
  * client's setSession() to store them in cookies for server-side access.
  */
-export async function signInWithOAuth(provider: OAuthProvider) {
+export async function signInWithOAuth(
+  provider: OAuthProvider
+): Promise<{ error: string | null }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     console.error("[OAuth] Missing Supabase env vars");
-    return;
+    return { error: "로그인 설정이 올바르지 않습니다." };
   }
 
   // Vanilla client with implicit flow — bypasses @supabase/ssr's forced PKCE
@@ -47,5 +49,8 @@ export async function signInWithOAuth(provider: OAuthProvider) {
 
   if (error) {
     console.error(`[OAuth] ${provider} sign-in error:`, error.message);
+    return { error: "로그인에 실패했습니다. 다시 시도해 주세요." };
   }
+
+  return { error: null };
 }

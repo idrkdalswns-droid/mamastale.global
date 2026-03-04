@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// LAUNCH-FIX: Rate limiting to prevent brute-force on access key
+const ACCESS_RATE_WINDOW = 60_000;
+const ACCESS_RATE_LIMIT = 5;
+const accessRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkAccessRate(ip: string): boolean {
+  const now = Date.now();
+  if (accessRateMap.size > 300) {
+    for (const [k, v] of accessRateMap) { if (now > v.resetAt) accessRateMap.delete(k); }
+  }
+  const entry = accessRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    accessRateMap.set(ip, { count: 1, resetAt: now + ACCESS_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= ACCESS_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 /** Constant-time string comparison to prevent timing attacks.
  *  Compares length via XOR to avoid early-return length leakage. */
@@ -30,6 +50,15 @@ function cookieOptions(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // LAUNCH-FIX: Rate limit brute-force attempts
+  const ip = getClientIP(request);
+  if (!checkAccessRate(ip)) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429 }
+    );
+  }
+
   const accessKey = process.env.SITE_ACCESS_KEY;
 
   // No access key configured — gate is disabled

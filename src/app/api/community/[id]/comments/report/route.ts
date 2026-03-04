@@ -101,6 +101,7 @@ export async function POST(
     // 23505 = unique constraint violation (already reported) — treat as success
     if (insertErr && insertErr.code !== "23505") {
       console.error("[Report] Insert error:", insertErr.code);
+      return sb.applyCookies(NextResponse.json({ error: "신고 처리에 실패했습니다." }, { status: 500 }));
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));

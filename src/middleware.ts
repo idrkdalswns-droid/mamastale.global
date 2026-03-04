@@ -101,6 +101,18 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  const protectedPaths = ["/dashboard", "/library"];
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+
+  const authPaths = ["/login", "/signup"];
+  const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
+
+  // LAUNCH-FIX: Only call getUser() for protected/auth pages to avoid
+  // unnecessary Supabase Auth API calls on every public page request.
+  if (!isProtected && !isAuthPage) {
+    return response;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -119,14 +131,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const protectedPaths = ["/dashboard", "/library"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
-
-  const authPaths = ["/login", "/signup"];
-  const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
-
   try {
-    // Refresh session
+    // Refresh session — only runs for protected/auth pages
     const { data: { user } } = await supabase.auth.getUser();
 
     // Protected routes — redirect to login if not authenticated

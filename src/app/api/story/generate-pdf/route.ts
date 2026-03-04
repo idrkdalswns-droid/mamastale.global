@@ -26,8 +26,10 @@ function checkPdfRateLimit(ip: string): boolean {
 function decodeHtmlEntities(text: string): string {
   let result = text;
   let prev = "";
-  while (prev !== result) {
+  let iter = 0;
+  while (prev !== result && iter < 10) {
     prev = result;
+    iter++;
     result = result
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
@@ -69,17 +71,19 @@ function safeHtml(text: string): string {
   return escapeHtml(stripMarkdown(decodeHtmlEntities(text)));
 }
 
+// LAUNCH-FIX: Add max lengths to prevent memory exhaustion / DoS
+const MAX_PDF_BODY_SIZE = 512_000;
 const pdfRequestSchema = z.object({
   scenes: z.array(
     z.object({
       sceneNumber: z.number(),
-      title: z.string(),
-      text: z.string(),
-      imagePrompt: z.string().optional(),
+      title: z.string().max(500),
+      text: z.string().max(10_000),
+      imagePrompt: z.string().max(1000).optional(),
     })
-  ),
-  title: z.string().optional(),
-  authorName: z.string().optional(),
+  ).max(20),
+  title: z.string().max(200).optional(),
+  authorName: z.string().max(100).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -87,6 +91,12 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!checkPdfRateLimit(ip)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+  }
+
+  // LAUNCH-FIX: Reject oversized bodies before parsing
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_PDF_BODY_SIZE) {
+    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
   }
 
   // IL-01: Proper Supabase session validation (not just cookie existence)
