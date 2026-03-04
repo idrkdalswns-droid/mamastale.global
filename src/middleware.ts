@@ -37,14 +37,9 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Cache headers for static assets
-  if (pathname.match(/\.(js|css|woff2?|ttf|otf|ico|png|jpg|jpeg|webp|svg|gif)$/)) {
-    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
-  }
   // No-store for API responses with sensitive data
   if (pathname.startsWith("/api/")) {
     response.headers.set("Cache-Control", "no-store, must-revalidate");
-    response.headers.set("X-XSS-Protection", "1; mode=block");
   }
 
   // ─── Site Access Gate ───
@@ -104,7 +99,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ["/dashboard", "/library"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
-  const authPaths = ["/login", "/signup"];
+  const authPaths = ["/login", "/signup", "/reset-password"];
   const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
 
   // LAUNCH-FIX: Only call getUser() for protected/auth pages to avoid

@@ -286,8 +286,13 @@ export async function POST(request: NextRequest) {
     let scenes: ReturnType<typeof parseStoryScenes> = [];
 
     if (storyComplete) {
-      const allPhase4Text = messages
-        .filter((m) => m.role === "assistant")
+      // LAUNCH-FIX R2: Only use later assistant messages for scene parsing.
+      // Earlier phases (1-3) may contain numbered lists or bracketed text that
+      // confuse the story parser. Phase 4 starts after ~12+ messages.
+      const assistantMsgs = messages.filter((m) => m.role === "assistant");
+      const phase4StartIdx = Math.max(0, assistantMsgs.length - 20);
+      const allPhase4Text = assistantMsgs
+        .slice(phase4StartIdx)
         .map((m) => m.content)
         .join("\n\n") + "\n\n" + cleanText;
 

@@ -339,8 +339,11 @@ describe("cleanSceneText", () => {
     expect(cleanSceneText("Tom &amp; Jerry")).toBe("Tom & Jerry");
   });
 
-  it("decodes &lt; and &gt;", () => {
-    expect(cleanSceneText("&lt;div&gt;")).toBe("<div>");
+  it("decodes &lt; and &gt; then strips HTML tags (defense-in-depth)", () => {
+    // &lt;div&gt; → <div> → stripped by HTML tag removal
+    expect(cleanSceneText("&lt;div&gt;")).toBe("");
+    // Mixed text with encoded tags: text survives, tags don't
+    expect(cleanSceneText("안녕 &lt;b&gt;세상&lt;/b&gt;")).toBe("안녕 세상");
   });
 
   it("decodes &quot; and &#039;", () => {

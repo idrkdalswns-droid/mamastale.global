@@ -55,7 +55,10 @@ function loadKakaoSDK(): Promise<void> {
     script.src = KAKAO_SDK_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Kakao SDK 로드 실패"));
+    script.onerror = () => {
+      sdkLoading = null; // LAUNCH-FIX R2: Allow retry on network failure
+      reject(new Error("Kakao SDK 로드 실패"));
+    };
     document.head.appendChild(script);
   });
 

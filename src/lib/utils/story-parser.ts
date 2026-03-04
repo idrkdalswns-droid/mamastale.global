@@ -26,6 +26,10 @@ export function cleanSceneText(text: string): string {
       .replace(/&nbsp;/g, " ");
   }
 
+  // 1b. LAUNCH-FIX R2: Strip any HTML tags that may have been decoded from entities
+  // Defense-in-depth: ensures no raw HTML survives into clean output
+  cleaned = cleaned.replace(/<[^>]*>/g, "");
+
   // 2. Strip horizontal rules (--- or *** or ___)
   cleaned = cleaned.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "");
 
