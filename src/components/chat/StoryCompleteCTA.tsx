@@ -9,7 +9,7 @@ interface StoryCompleteCTAProps {
 // Soft floating particles for celebration feel
 const particles = Array.from({ length: 12 }, (_, i) => ({
   id: i,
-  emoji: ["✨", "🌸", "💛", "🌿", "🫧", "🌟"][i % 6],
+  emoji: ["*", "•", "·", "○", "◦", "∘"][i % 6],
   x: Math.random() * 300 - 150,
   y: Math.random() * -200 - 50,
   delay: Math.random() * 0.8,
@@ -77,7 +77,7 @@ export default function StoryCompleteCTA({
             transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
             className="text-[64px]"
           >
-            ✨
+            ·
           </motion.span>
         </motion.div>
 
@@ -107,7 +107,7 @@ export default function StoryCompleteCTA({
           transition={{ duration: 0.5, delay: 0.9 }}
           className="text-[11px] text-brown-pale font-normal mb-8"
         >
-          오늘의 여정, 정말 수고하셨어요 💛
+          오늘의 여정, 정말 수고하셨어요
         </motion.p>
 
         <motion.button

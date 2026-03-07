@@ -7,15 +7,15 @@ import { createClient } from "@/lib/supabase/client";
 
 // Map Toss payment methods to user-friendly labels
 const PAYMENT_METHOD_LABELS: Record<string, { icon: string; label: string }> = {
-  카드: { icon: "💳", label: "카드" },
-  간편결제: { icon: "📱", label: "간편결제" },
-  계좌이체: { icon: "🏦", label: "계좌이체" },
-  가상계좌: { icon: "🏧", label: "가상계좌" },
-  휴대폰: { icon: "📞", label: "휴대폰" },
+  카드: { icon: "", label: "카드" },
+  간편결제: { icon: "", label: "간편결제" },
+  계좌이체: { icon: "", label: "계좌이체" },
+  가상계좌: { icon: "", label: "가상계좌" },
+  휴대폰: { icon: "", label: "휴대폰" },
   // Specific easy pay providers (returned via easyPay.provider)
-  카카오페이: { icon: "🟡", label: "카카오페이" },
-  네이버페이: { icon: "🟢", label: "네이버페이" },
-  토스페이: { icon: "🔵", label: "토스페이" },
+  카카오페이: { icon: "", label: "카카오페이" },
+  네이버페이: { icon: "", label: "네이버페이" },
+  토스페이: { icon: "", label: "토스페이" },
 };
 
 function PaymentSuccessContent() {
@@ -88,7 +88,6 @@ function PaymentSuccessContent() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
         <div className="text-center">
-          <div className="text-[56px] mb-4 animate-pulse">💳</div>
           <h2 className="font-serif text-xl font-bold text-brown mb-3">
             결제 확인 중...
           </h2>
@@ -104,7 +103,6 @@ function PaymentSuccessContent() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
         <div className="text-center">
-          <div className="text-[56px] mb-4">😕</div>
           <h2 className="font-serif text-xl font-bold text-brown mb-3">
             결제 확인 실패
           </h2>
@@ -136,7 +134,6 @@ function PaymentSuccessContent() {
           boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
         }}
       >
-        <div className="text-[56px] mb-4">🌷</div>
         <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
           감사합니다, 어머니
         </h2>
@@ -145,7 +142,7 @@ function PaymentSuccessContent() {
         </p>
         {paymentMethod && PAYMENT_METHOD_LABELS[paymentMethod] && (
           <p className="text-[11px] text-brown-pale font-light mb-1">
-            {PAYMENT_METHOD_LABELS[paymentMethod].icon} {PAYMENT_METHOD_LABELS[paymentMethod].label}로 결제됨
+            {PAYMENT_METHOD_LABELS[paymentMethod].label}로 결제됨
           </p>
         )}
         <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
@@ -171,6 +168,17 @@ function PaymentSuccessContent() {
         >
           홈으로 돌아가기
         </button>
+
+        {/* Post-conversion secondary links */}
+        <div className="mt-4 pt-4 border-t border-brown-pale/10">
+          <button
+            onClick={() => router.push("/community")}
+            className="w-full py-2.5 rounded-full text-sm font-medium text-brown-mid no-underline transition-all active:scale-[0.97]"
+            style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+          >
+            커뮤니티 둘러보기
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -181,7 +189,7 @@ export default function PaymentSuccessPage() {
     <Suspense
       fallback={
         <div className="min-h-dvh bg-cream flex items-center justify-center">
-          <div className="text-3xl animate-pulse">💳</div>
+          <div className="text-sm text-brown-pale">결제 처리 중...</div>
         </div>
       }
     >

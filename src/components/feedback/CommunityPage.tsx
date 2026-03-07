@@ -140,7 +140,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
       <div className="flex-1 flex flex-col px-7 py-8 relative z-[1] max-w-2xl mx-auto w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-[48px] mb-4">🎉</div>
           <h1 className="font-serif text-[26px] font-bold text-brown leading-tight mb-3">
             당신의 동화가<br />완성되었어요
           </h1>
@@ -205,14 +204,13 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
           }}
         >
           <div className="text-center">
-            <div className="text-2xl mb-2">🌍</div>
             <h3 className="font-serif text-[15px] font-semibold text-brown mb-2">
               커뮤니티에 동화를 공유할까요?
             </h3>
             {shared ? (
               <div>
                 <p className="text-xs text-mint-deep font-medium mb-3">
-                  ✅ 커뮤니티에 공유되었습니다!
+                  커뮤니티에 공유되었습니다!
                 </p>
                 <Link
                   href="/community"
@@ -254,7 +252,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                     boxShadow: "0 4px 16px rgba(109,76,145,0.25)",
                   }}
                 >
-                  {isSharing ? "공유 중..." : "🌍 커뮤니티에 공유하기"}
+                  {isSharing ? "공유 중..." : "커뮤니티에 공유하기"}
                 </button>
                 <p className="text-[10px] text-brown-pale font-light">
                   공유하지 않아도 괜찮아요 — 아래로 스크롤해 주세요
@@ -311,7 +309,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
           }}
         >
           <div className="text-center mb-4">
-            <div className="text-2xl mb-1.5">🔮</div>
             <h3 className="font-serif text-[15px] font-semibold text-brown mb-1">
               다음에 만들어 볼까요?
             </h3>
@@ -338,7 +335,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
             >
               {interestSent.illustration ? (
                 <>
-                  <span className="text-xl block mb-1">✅</span>
+                  <span className="text-sm block mb-1 text-mint-deep font-bold">완료</span>
                   <span className="text-xs text-mint-deep font-medium block">관심 등록 완료!</span>
                   <span className="text-[10px] text-brown-pale font-light block mt-0.5">
                     곧 만나보실 수 있어요
@@ -346,7 +343,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 </>
               ) : (
                 <>
-                  <span className="text-3xl block mb-2">🎨</span>
                   <span className="text-sm font-medium text-brown block">삽화 생성</span>
                   <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
                     동화에 어울리는<br />일러스트를 AI가 그려드려요
@@ -371,7 +367,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
             >
               {interestSent.video_story ? (
                 <>
-                  <span className="text-xl block mb-1">✅</span>
+                  <span className="text-sm block mb-1 text-mint-deep font-bold">완료</span>
                   <span className="text-xs text-mint-deep font-medium block">관심 등록 완료!</span>
                   <span className="text-[10px] text-brown-pale font-light block mt-0.5">
                     곧 만나보실 수 있어요
@@ -379,7 +375,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 </>
               ) : (
                 <>
-                  <span className="text-3xl block mb-2">🎬</span>
                   <span className="text-sm font-medium text-brown block">영상 동화</span>
                   <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
                     동화를 읽어주는<br />영상으로 만들어 드려요
@@ -399,7 +394,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
           }}
         >
           <div className="text-center">
-            <div className="text-2xl mb-2">📖</div>
             <h3 className="font-serif text-[15px] font-semibold text-brown mb-1.5">
               또 다른 동화를 만들어 볼까요?
             </h3>
@@ -417,7 +411,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                     boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                   }}
                 >
-                  📖 새 동화 만들기
+                  새 동화 만들기
                 </button>
               </>
             ) : (
@@ -459,7 +453,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
               border: "1.5px solid rgba(127,191,176,0.25)",
             }}
           >
-            📚 내 서재
+            내 서재
           </Link>
           <button
             onClick={onRestart}

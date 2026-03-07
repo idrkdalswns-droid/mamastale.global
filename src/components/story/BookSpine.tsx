@@ -75,7 +75,6 @@ export function BookSpine({ story, colorIndex }: BookSpineProps) {
               style={{ color: color.text, opacity: 0.6 }}
               aria-label="커뮤니티 공유됨"
             >
-              🌍
             </div>
           )}
         </div>

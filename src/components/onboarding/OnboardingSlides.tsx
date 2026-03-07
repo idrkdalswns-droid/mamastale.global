@@ -22,7 +22,7 @@ const slides: Slide[] = [
   {
     step: 1,
     persona: "하은이 · 감정 표현 안내자",
-    icon: "🫧",
+    icon: "1",
     accent: "#7FBFB0",
     title: "먼저, 편안하게\n마음을 열어주세요",
     body: "하은이는 펜네베이커(Pennebaker)의\n표현적 글쓰기 원리로 대화합니다.\n\n말로 꺼낸 감정은 '외면화'되어\n더 이상 나를 안에서 조이지 않아요.\n\n판단 없이 들어주는 따뜻한 대화 속에서\n오래 참아온 마음이 자연스럽게 풀립니다.",
@@ -30,7 +30,7 @@ const slides: Slide[] = [
   {
     step: 2,
     persona: "민서 · 소크라틱 질문자",
-    icon: "🌿",
+    icon: "2",
     accent: "#E07A5F",
     title: "굳어진 마음에\n새 빛이 들어와요",
     body: "민서는 아이의 순수한 시선으로\n소크라틱 질문을 건넵니다.\n\n'엄마, 그게 정말 엄마 잘못이야?'\n\n이 질문이 오래된 고정관념에\n작은 균열을 만들고,\n전혀 다른 시각에서\n상황을 바라보게 해 줍니다.",
@@ -38,7 +38,7 @@ const slides: Slide[] = [
   {
     step: 3,
     persona: "지우 · 은유의 마법사",
-    icon: "✨",
+    icon: "3",
     accent: "#8B6AAF",
     title: "아픔이 이야기 속\n캐릭터가 돼요",
     body: "지우는 내러티브 테라피 원리로\n어머니의 감정을 동화 캐릭터로 바꿉니다.\n\n슬픔은 '비를 좋아하는 구름 토끼'로,\n불안은 '빛을 무서워하는 작은 반딧불이'로.\n\n감정이 나와 분리된 별개의 존재가 되면\n비로소 돌보고 이해할 수 있게 됩니다.",
@@ -46,7 +46,7 @@ const slides: Slide[] = [
   {
     step: 4,
     persona: "서연 · 동화 편집장",
-    icon: "📖",
+    icon: "4",
     accent: "#C4956A",
     title: "세상에 하나뿐인\n동화가 완성돼요",
     body: "서연이 모든 과정을 엮어\n10장면의 마음 동화를 완성합니다.\n\n어머니의 경험이 동화라는\n안전한 형태로 다시 태어나\n아이에게 읽어줄 수 있는\n일상의 치유 도구가 됩니다.\n\n약 15~20분이면 충분해요.",
@@ -54,7 +54,7 @@ const slides: Slide[] = [
   {
     step: 0,
     persona: "",
-    icon: "🌱",
+    icon: "",
     accent: "#7FBFB0",
     title: "시작하기 전에",
     body: "_childAge_", // special marker — rendered as custom form below
@@ -149,15 +149,18 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
           </div>
         )}
 
-        <div
-          className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[40px] mb-7"
-          style={{
-            background: `${s.accent}10`,
-            border: `1px solid ${s.accent}15`,
-          }}
-        >
-          {s.icon}
-        </div>
+        {s.icon && (
+          <div
+            className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[28px] font-bold mb-7"
+            style={{
+              background: `${s.accent}15`,
+              border: `2px solid ${s.accent}30`,
+              color: s.accent,
+            }}
+          >
+            {s.icon}
+          </div>
+        )}
 
         <h2 className="font-serif text-[22px] text-brown font-semibold mb-5 leading-[1.5] whitespace-pre-line">
           {s.title}

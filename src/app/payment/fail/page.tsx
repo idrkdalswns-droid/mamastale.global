@@ -60,7 +60,6 @@ function PaymentFailContent() {
   return (
     <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
       <div className="text-center max-w-sm">
-        <div className="text-[56px] mb-4">😔</div>
         <h2 className="font-serif text-xl font-bold text-brown mb-3">
           결제에 실패했어요
         </h2>
@@ -68,10 +67,14 @@ function PaymentFailContent() {
           {errorMessage}
         </p>
         {errorCode && (
-          <p className="text-[10px] text-brown-pale mb-6">
+          <p className="text-[10px] text-brown-pale mb-4">
             오류 코드: {errorCode}
           </p>
         )}
+
+        <p className="text-sm text-brown-light font-light mb-6 break-keep">
+          다른 결제 수단으로 시도해 보세요
+        </p>
 
         <Link
           href="/pricing"
@@ -90,6 +93,17 @@ function PaymentFailContent() {
         >
           홈으로 돌아가기
         </Link>
+
+        <p className="text-[11px] text-brown-pale font-light mt-6">
+          문제가 계속되면{" "}
+          <a
+            href="mailto:kang.minjune@icloud.com"
+            className="text-coral underline underline-offset-2"
+          >
+            kang.minjune@icloud.com
+          </a>
+          으로 문의해 주세요
+        </p>
       </div>
     </div>
   );
@@ -100,7 +114,7 @@ export default function PaymentFailPage() {
     <Suspense
       fallback={
         <div className="min-h-dvh bg-cream flex items-center justify-center">
-          <div className="text-3xl">😔</div>
+          <div className="text-sm text-brown-pale">결제 처리 중...</div>
         </div>
       }
     >

@@ -100,9 +100,6 @@ export default function TicketConfirmModal({
           boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
         }}
       >
-        {/* Icon */}
-        <div className="text-[48px] mb-3">🎫</div>
-
         {/* Title */}
         <h3 className="font-serif text-lg font-bold text-brown mb-2 leading-tight">
           우리 아이만을 위한 동화
@@ -147,7 +144,7 @@ export default function TicketConfirmModal({
               사용 중...
             </span>
           ) : (
-            "네, 시작할게요 ✨"
+            "네, 시작할게요"
           )}
         </button>
 

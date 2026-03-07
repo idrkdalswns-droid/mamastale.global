@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     const userMsgCount = messages.filter((m) => m.role === "user").length;
     const totalTurns = Math.ceil(messages.length / 2);
     if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
-      return NextResponse.json({ error: "무료 체험 횟수를 초과했습니다." }, { status: 403 });
+      return NextResponse.json({ error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." }, { status: 403 });
     }
   }
 

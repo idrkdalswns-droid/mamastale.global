@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import requests from "@/data/feature-requests.json";
 
 const FILTERS = [
@@ -46,27 +45,13 @@ export default function FeatureRequestsPage() {
     <div className="min-h-dvh bg-cream px-6 pt-8 pb-20">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link
-              href="/"
-              className="font-serif text-xl font-bold text-brown no-underline"
-            >
-              mamastale
-            </Link>
-            <h1 className="font-serif text-lg text-brown font-semibold mt-2">
-              개발 요청 보드
-            </h1>
-            <p className="text-xs text-brown-light font-light mt-1 break-keep">
-              엄마들의 목소리로 만들어가는 서비스입니다
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="text-xs text-brown-mid font-light no-underline"
-          >
-            홈
-          </Link>
+        <div className="mb-6">
+          <h1 className="font-serif text-lg text-brown font-semibold">
+            개발 요청 보드
+          </h1>
+          <p className="text-xs text-brown-light font-light mt-1 break-keep">
+            엄마들의 목소리로 만들어가는 서비스입니다
+          </p>
         </div>
 
         {/* Filter tabs */}
@@ -157,15 +142,6 @@ export default function FeatureRequestsPage() {
           총 {filtered.length}건의 요청
         </p>
 
-        {/* Footer */}
-        <div className="mt-8">
-          <Link
-            href="/"
-            className="text-sm text-brown-mid no-underline"
-          >
-            ← 홈으로
-          </Link>
-        </div>
       </div>
     </div>
   );

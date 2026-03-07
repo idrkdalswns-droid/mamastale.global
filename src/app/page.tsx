@@ -425,17 +425,17 @@ export default function Home() {
             {presenceLoaded && liveTotal > 0 ? (
               <>
                 <p>
-                  🟢 현재 접속자 <span className="text-coral font-medium">{liveTotal}</span>명
+                  현재 접속자 <span className="text-coral font-medium">{liveTotal}</span>명
                 </p>
                 {liveCreating > 0 && (
                   <p>
-                    ✍️ 지금 동화를 만들고 있는 어머니 <span className="text-coral font-medium">{liveCreating}</span>명
+                    지금 동화를 만들고 있는 어머니 <span className="text-coral font-medium">{liveCreating}</span>명
                   </p>
                 )}
               </>
             ) : (
               <p>
-                지금까지 <span className="text-coral font-medium">150+</span>명의 엄마가 동화를 만들었어요
+                지금까지 <span className="text-coral font-medium">237+</span>명의 엄마가 동화를 만들었어요
               </p>
             )}
           </div>
@@ -461,7 +461,6 @@ export default function Home() {
               style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">📝</span>
                 <div>
                   <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
                   <p className="text-[11px] text-brown-pale font-light">
@@ -510,7 +509,7 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 불러오는 중...
               </span>
-            ) : user ? "새 동화 만들기" : "무료로 체험 시작하기"}
+            ) : user ? "새 동화 만들기" : "지금 동화 만들기"}
           </button>
 
           {/* Ticket balance display for logged-in users */}
@@ -536,7 +535,7 @@ export default function Home() {
           {/* Free trial + time hint for non-logged-in users */}
           {!user && !authLoading && (
             <p className="text-[11px] text-brown-pale font-normal text-center mb-4 leading-relaxed">
-              회원가입 없이 5회 무료 대화 · 약 15분이면 충분해요
+              약 15분이면 나만의 동화가 완성돼요
             </p>
           )}
 
@@ -588,7 +587,7 @@ export default function Home() {
                   border: `1px solid ${p.accent}18`,
                 }}
               >
-                <span className="text-sm flex-shrink-0">{p.icon}</span>
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: p.accent }}>{p.id}</span>
                 <div>
                   <div
                     className="text-[11px] font-semibold font-sans leading-tight"
@@ -613,7 +612,7 @@ export default function Home() {
           {/* Social proof — testimonials as horizontal scroll */}
           <div className="mt-6">
             <p className="text-[11px] text-brown-pale font-medium text-center mb-3">
-              ⭐ 4.8 / 5.0 · 이용자 후기
+              4.8 / 5.0 · 이용자 후기
             </p>
             <div
               className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"

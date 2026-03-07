@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import { Footer } from "@/components/layout/Footer";
+import { GlobalNav } from "@/components/layout/GlobalNav";
 import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import "./globals.css";
 
@@ -78,9 +79,9 @@ export default async function RootLayout({
               "operatingSystem": "Web",
               "offers": {
                 "@type": "Offer",
-                "price": "0",
+                "price": "4900",
                 "priceCurrency": "KRW",
-                "description": "첫 동화 무료 체험"
+                "description": "동화 스토리 하나 완성 티켓"
               },
               "aggregateRating": {
                 "@type": "AggregateRating",
@@ -112,6 +113,7 @@ export default async function RootLayout({
           본문으로 건너뛰기
         </a>
         <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-x-hidden">
+          <GlobalNav />
           {children}
           <Footer />
         </main>

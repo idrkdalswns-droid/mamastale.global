@@ -44,9 +44,9 @@ export function SignupModal({ onClose, onBeforeAuthRedirect }: SignupModalProps)
         {/* Benefits */}
         <div className="space-y-2 mb-5">
           {[
-            { icon: "💬", text: "대화 이어서 진행" },
-            { icon: "📖", text: "동화 영구 보관" },
-            { icon: "🎫", text: "무료 1회 티켓" },
+            { icon: "·", text: "대화 이어서 진행" },
+            { icon: "·", text: "동화 영구 보관" },
+            { icon: "·", text: "나만의 동화 제작" },
           ].map((b, i) => (
             <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl" style={{ background: "rgba(224,122,95,0.05)" }}>
               <span className="text-sm">{b.icon}</span>

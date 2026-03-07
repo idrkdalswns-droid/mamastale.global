@@ -81,23 +81,15 @@ export default function CommunityBrowsePage() {
 
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link href="/" className="font-serif text-xl font-bold text-brown no-underline">
-              mamastale
-            </Link>
-            <h2 className="font-serif text-lg text-brown font-semibold mt-2">
-              커뮤니티
-            </h2>
-            <p className="text-xs text-brown-light font-light mt-1">
-              {totalCount !== null && totalCount > 0
-                ? `${totalCount}개의 이야기가 공유되었어요`
-                : "다른 엄마들의 마음 동화를 읽어보세요"}
-            </p>
-          </div>
-          <Link href="/" className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center">
-            ← 홈
-          </Link>
+        <div className="mb-6">
+          <h2 className="font-serif text-lg text-brown font-semibold">
+            커뮤니티
+          </h2>
+          <p className="text-xs text-brown-light font-light mt-1">
+            {totalCount !== null && totalCount > 0
+              ? `${totalCount}개의 이야기가 공유되었어요`
+              : "다른 엄마들의 마음 동화를 읽어보세요"}
+          </p>
         </div>
 
         {/* Search bar */}
@@ -108,7 +100,7 @@ export default function CommunityBrowsePage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="동화 제목이나 내용 검색..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm font-sans outline-none"
+              className="w-full pl-4 pr-4 py-2.5 rounded-xl text-sm font-sans outline-none"
               style={{
                 background: "rgba(255,255,255,0.6)",
                 border: "1.5px solid rgba(196,149,106,0.15)",
@@ -116,7 +108,6 @@ export default function CommunityBrowsePage() {
               }}
               aria-label="동화 검색"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brown-pale text-sm">🔍</span>
             {search && (
               <button
                 type="button"
@@ -192,7 +183,6 @@ export default function CommunityBrowsePage() {
           </div>
         ) : stories.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-3xl mb-3">📚</div>
             <h3 className="font-serif text-lg text-brown font-semibold mb-2">
               {topic ? "해당 주제의 동화가 없어요" : "아직 공유된 이야기가 없어요"}
             </h3>

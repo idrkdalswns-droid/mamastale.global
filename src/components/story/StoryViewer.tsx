@@ -192,7 +192,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               </div>
               {isPremium && (
                 <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: "rgba(224,122,95,0.1)", color: "#E07A5F" }}>
-                  ✨ 프리미엄 AI
+                  프리미엄 AI
                 </div>
               )}
             </div>
@@ -345,7 +345,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   color: "#3C1E1E",
                 }}
               >
-                💬 카카오톡
+                카카오톡
               </button>
               <button
                 onClick={handleShare}
@@ -468,7 +468,6 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
             className="w-full max-w-xs rounded-2xl p-6 text-center"
             style={{ background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
           >
-            <div className="text-[36px] mb-3">🌍</div>
             <h3 className="font-serif text-base font-bold text-brown mb-2">
               커뮤니티에 공유하기
             </h3>

@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       const totalTurns = Math.ceil(messages.length / 2);
       if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
         return NextResponse.json(
-          { error: "무료 체험 횟수를 초과했습니다. 회원가입 후 이용해 주세요." },
+          { error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." },
           { status: 403 }
         );
       }

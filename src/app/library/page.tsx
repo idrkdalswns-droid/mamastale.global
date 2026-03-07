@@ -63,24 +63,13 @@ export default function LibraryPage() {
 
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link href="/" className="font-serif text-xl font-bold text-brown no-underline">
-              mamastale
-            </Link>
-            <h2 className="font-serif text-lg text-brown font-semibold mt-2">
-              📚 내 서재
-            </h2>
-            <p className="text-xs text-brown-light font-light mt-1">
-              나만의 동화 컬렉션
-            </p>
-          </div>
-          <Link
-            href="/"
-            className="text-xs text-brown-mid font-light no-underline min-h-[44px] min-w-[44px] flex items-center justify-center"
-          >
-            ← 홈
-          </Link>
+        <div className="mb-6">
+          <h2 className="font-serif text-lg text-brown font-semibold">
+            내 서재
+          </h2>
+          <p className="text-xs text-brown-light font-light mt-1">
+            나만의 동화 컬렉션
+          </p>
         </div>
 
         {/* Draft in progress */}
@@ -90,7 +79,7 @@ export default function LibraryPage() {
             style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
           >
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-xl">{PHASES[draftInfo.phase]?.icon || "📝"}</span>
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white" style={{ background: PHASES[draftInfo.phase]?.accent || '#E07A5F' }}>{draftInfo.phase}</span>
               <div>
                 <p className="text-sm font-semibold text-brown">진행 중인 대화</p>
                 <p className="text-[11px] text-brown-pale font-light">
@@ -120,12 +109,10 @@ export default function LibraryPage() {
         {/* Content */}
         {loading ? (
           <div className="text-center py-20">
-            <div className="text-3xl mb-3 animate-pulse">📖</div>
             <p className="text-sm text-brown-light font-light">불러오는 중...</p>
           </div>
         ) : error ? (
           <div className="text-center py-20">
-            <div className="text-3xl mb-3">😕</div>
             <p className="text-sm text-brown-light font-light mb-4">{error}</p>
             <button
               onClick={() => { setError(""); setLoading(true); fetchStories(); }}

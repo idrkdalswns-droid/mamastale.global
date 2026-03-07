@@ -39,7 +39,6 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
 
         {/* Progress indicator */}
         <div className="text-center mb-4">
-          <div className="text-[48px] mb-2">🌿</div>
           <h3 className="font-serif text-lg font-bold text-brown mb-1.5 leading-tight">
             동화가 만들어지고 있어요
           </h3>
@@ -118,9 +117,9 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
           <>
             <div className="space-y-2 mb-4">
               {[
-                { icon: "💬", text: "대화 이어서 진행" },
-                { icon: "📖", text: "동화 영구 보관" },
-                { icon: "🎫", text: "첫 티켓 20% 할인" },
+                { icon: "·", text: "대화 이어서 진행" },
+                { icon: "·", text: "동화 영구 보관" },
+                { icon: "·", text: "첫 티켓 20% 할인" },
               ].map((b, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl" style={{ background: "rgba(224,122,95,0.05)" }}>
                   <span className="text-sm">{b.icon}</span>

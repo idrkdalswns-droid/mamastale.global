@@ -13,11 +13,11 @@ const questions = [
 ];
 
 const faces = [
-  { em: "😞", lb: "아쉬워요" },
-  { em: "😐", lb: "보통" },
-  { em: "🙂", lb: "괜찮아요" },
-  { em: "😊", lb: "좋았어요" },
-  { em: "🥹", lb: "감동" },
+  { em: "1", lb: "아쉬워요" },
+  { em: "2", lb: "보통" },
+  { em: "3", lb: "괜찮아요" },
+  { em: "4", lb: "좋았어요" },
+  { em: "5", lb: "감동" },
 ];
 
 interface FeedbackWizardProps {
@@ -83,7 +83,6 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
         <WatercolorBlob bottom={60} left={-60} size={200} color="rgba(184,216,208,0.07)" />
 
         <div className="relative z-[1] text-center w-full animate-fade-in">
-          <div className="text-[56px] mb-5">🙏</div>
           <h2 className="font-serif text-2xl text-brown font-semibold mb-2.5 leading-snug">
             소중한 피드백<br />감사합니다
           </h2>
@@ -166,7 +165,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                       ratings[q.key] === i + 1 ? "rgba(224,122,95,0.03)" : "rgba(255,255,255,0.6)",
                   }}
                 >
-                  <span className="text-[30px]">{f.em}</span>
+                  <span className="text-[20px] font-bold" style={{ color: ratings[q.key] === i + 1 ? '#E07A5F' : '#8B6F55' }}>{f.em}</span>
                   <span className="text-[10px] text-brown-light font-light">{f.lb}</span>
                 </button>
               ))}

@@ -3,7 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
-// GET: Check remaining tickets for current user
+// GET: Check remaining tickets + first purchase eligibility
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 }));
   }
 
+  let remaining = 0;
+
   // New user — no profile row yet → auto-create with 1 free ticket
   if (!profile) {
     const { data: newProfile, error: upsertErr } = await sb.client
@@ -53,12 +55,24 @@ export async function GET(request: NextRequest) {
       return sb.applyCookies(NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 }));
     }
 
-    return sb.applyCookies(NextResponse.json({
-      remaining: newProfile?.free_stories_remaining ?? 1,
-    }));
+    remaining = newProfile?.free_stories_remaining ?? 1;
+  } else {
+    remaining = profile.free_stories_remaining ?? 0;
   }
 
-  return sb.applyCookies(NextResponse.json({
-    remaining: profile.free_stories_remaining ?? 0,
-  }));
+  // Check first purchase eligibility: ≤1 completed stories means first purchase
+  let isFirstPurchase = true;
+  try {
+    const { count } = await sb.client
+      .from("stories")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "completed");
+    isFirstPurchase = (count ?? 0) <= 1;
+  } catch {
+    // If stories query fails, default to false for safety
+    isFirstPurchase = false;
+  }
+
+  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase }));
 }

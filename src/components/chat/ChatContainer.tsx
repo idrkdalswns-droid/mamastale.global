@@ -215,9 +215,9 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
               animation: userMsgCount >= FREE_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
             }}
           >
-            {userMsgCount >= FREE_TURN_LIMIT - 1 ? "⚡ " : ""}
-            무료 대화 {userMsgCount}/{FREE_TURN_LIMIT}회
-            {userMsgCount === FREE_TURN_LIMIT - 1 && " · 마지막 무료 대화예요!"}
+            {userMsgCount >= FREE_TURN_LIMIT - 1 ? "" : ""}
+            대화 {userMsgCount}/{FREE_TURN_LIMIT}회
+            {userMsgCount === FREE_TURN_LIMIT - 1 && " · 마지막 대화예요!"}
           </div>
         </div>
       )}
@@ -308,7 +308,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
           style={{ background: "rgba(253,249,244,0.88)", backdropFilter: "blur(14px)" }}
         >
           <div className="w-full max-w-sm text-center">
-            <div className="text-[48px] mb-4">😢</div>
             <h2 className="font-serif text-xl font-bold text-brown mb-2">
               동화 생성에 문제가 발생했어요
             </h2>
@@ -362,7 +361,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
               boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
             }}
           >
-            🔄 다시 시도하기
+            다시 시도하기
           </button>
         </div>
       )}

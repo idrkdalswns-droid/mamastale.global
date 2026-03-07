@@ -64,7 +64,6 @@ export default function PremiumUpgradeCTA({
               background: "radial-gradient(circle, rgba(224,122,95,0.15) 0%, transparent 70%)",
             }}
           >
-            <span className="text-[52px]">📖</span>
           </motion.div>
 
           {trigger === "story_complete" ? (
@@ -96,7 +95,7 @@ export default function PremiumUpgradeCTA({
                 transition={{ duration: 0.4, delay: 0.4 }}
                 className="font-serif text-xl font-bold text-brown mb-2 leading-tight"
               >
-                무료 체험이 끝났어요
+                더 깊은 이야기를 만들어보세요
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0 }}
@@ -124,11 +123,11 @@ export default function PremiumUpgradeCTA({
                 className="rounded-2xl p-3.5"
                 style={{ background: "rgba(0,0,0,0.03)" }}
               >
-                <p className="text-[10px] text-brown-pale font-medium mb-2 uppercase tracking-wider">무료 체험</p>
+                <p className="text-[10px] text-brown-pale font-medium mb-2 uppercase tracking-wider">기본</p>
                 <ul className="space-y-1.5 text-[11px] text-brown-mid font-light leading-snug">
-                  <li>📝 장면당 3~4문장</li>
-                  <li>🤖 기본 AI</li>
-                  <li>🖼️ 기본 삽화 안내</li>
+                  <li>· 장면당 3~4문장</li>
+                  <li>· 기본 AI</li>
+                  <li>· 기본 삽화 안내</li>
                 </ul>
               </div>
               {/* Premium tier */}
@@ -147,9 +146,9 @@ export default function PremiumUpgradeCTA({
                 </div>
                 <p className="text-[10px] text-coral font-semibold mb-2 uppercase tracking-wider">유료 결제</p>
                 <ul className="space-y-1.5 text-[11px] text-brown font-medium leading-snug">
-                  <li>📝 장면당 5~7문장</li>
-                  <li>✨ 최상위 AI</li>
-                  <li>🖼️ 상세 삽화 안내</li>
+                  <li>· 장면당 5~7문장</li>
+                  <li>· 최상위 AI</li>
+                  <li>· 상세 삽화 안내</li>
                 </ul>
               </div>
             </div>
@@ -163,7 +162,6 @@ export default function PremiumUpgradeCTA({
             className="flex items-center justify-center gap-1.5 mb-5 px-4 py-2 rounded-full mx-auto"
             style={{ background: "rgba(90,158,143,0.08)", width: "fit-content" }}
           >
-            <span className="text-[11px]">🔬</span>
             <p className="text-[10px] text-[#5A9E8F] font-medium">
               프리미엄은 더 높은 수준의 AI 모델로 동화를 만들어요
             </p>
@@ -186,7 +184,7 @@ export default function PremiumUpgradeCTA({
               프리미엄 동화 만들기 — ₩4,900
             </button>
             <p className="text-[10px] text-brown-pale font-light mb-4">
-              커피 한 잔 값으로 아이가 매일 읽는 동화를 ☕
+              커피 한 잔 값으로 아이가 매일 읽는 동화를
             </p>
 
             {/* Bundle upsell with Pennebaker research */}
@@ -197,7 +195,7 @@ export default function PremiumUpgradeCTA({
             </div>
 
             <p className="text-[11px] text-brown-light font-light leading-relaxed mb-3 text-center break-keep">
-              💬 매일 15~20분, 4일 연속 마음 이야기를<br />
+              매일 15~20분, 4일 연속 마음 이야기를<br />
               꺼낸 사람들의 마음이 가벼워졌다는<br />
               연구 결과가 있어요.
             </p>
@@ -240,9 +238,9 @@ export default function PremiumUpgradeCTA({
           transition={{ duration: 0.4, delay: 1.1 }}
           className="flex items-center justify-center gap-4 mt-4 text-[10px] text-brown-pale font-light"
         >
-          <span>🔒 대화 100% 비공개</span>
-          <span>💳 안전 결제</span>
-          <span>🔄 환불 가능</span>
+          <span>대화 100% 비공개</span>
+          <span>안전 결제</span>
+          <span>환불 불가</span>
         </motion.div>
       </motion.div>
     </motion.div>

@@ -92,7 +92,6 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   if (!editedScenes.length) {
     return (
       <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8 text-center font-sans">
-        <div className="text-4xl mb-4">😢</div>
         <h2 className="font-serif text-lg font-bold text-brown mb-2">
           동화 장면을 불러올 수 없어요
         </h2>

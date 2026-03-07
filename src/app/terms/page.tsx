@@ -21,8 +21,7 @@ export default function TermsPage() {
           <p>본 서비스는 의료 행위를 대체하지 않습니다. AI 상담은 참고용이며, 전문 의료 상담이 필요한 경우 반드시 전문가의 도움을 받으시기 바랍니다. 긴급 상황 시 자살예방상담전화 1393, 정신건강위기상담 1577-0199로 연락해 주세요.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제4조 (이용 요금)</h2>
-          <p>무료 체험: 1회 완전한 동화 창작 가능 (회원가입 불필요, 5턴 제한)<br/>
-          동화 스토리 하나 완성 티켓: ₩4,900 / 1권 (첫 구매 시 ₩3,920)<br/>
+          <p>동화 스토리 하나 완성 티켓: ₩4,900 / 1권 (첫 구매 시 ₩3,920)<br/>
           동화 네 스토리 완성 티켓: ₩14,900 / 4권 (24% 할인, 1권당 ₩3,725)<br/>
           티켓은 구매일로부터 30일 이내에 사용해야 하며, 결제는 토스페이먼츠를 통해 처리됩니다.</p>
 
@@ -45,7 +44,7 @@ export default function TermsPage() {
           </ul>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제9조 (환불 정책)</h2>
-          <p>미사용 티켓은 구매일로부터 7일 이내에 환불이 가능합니다. 환불 요청은 kang.minjune@icloud.com으로 문의해 주세요. 이미 동화 생성에 사용된 티켓은 환불이 불가합니다.</p>
+          <p>모든 티켓 구매는 최종 확정이며 환불이 불가합니다. 구매 전 신중하게 결정해 주세요.</p>
 
           <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 3일</p>
         </div>
