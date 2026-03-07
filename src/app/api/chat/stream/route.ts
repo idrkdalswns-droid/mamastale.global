@@ -110,6 +110,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 
+  // ─── Body size check ───
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 1_000_000) {
+    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+  }
+
   // ─── Parse request ───
   let body;
   try { body = await request.json(); } catch {

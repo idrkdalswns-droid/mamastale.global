@@ -19,9 +19,7 @@ function isEventProcessed(eventId: string): boolean {
       if (now - ts > DEDUP_TTL_MS) processedEvents.delete(id);
     }
   }
-  if (processedEvents.has(eventId)) return true;
-  processedEvents.set(eventId, now);
-  return false;
+  return processedEvents.has(eventId);
 }
 
 // Simple HMAC-based signature verification for Edge Runtime
@@ -125,10 +123,9 @@ export async function POST(request: NextRequest) {
           console.error("[Stripe] Invalid user_id in metadata");
           break;
         }
-        const rawTicketCount = session.metadata?.ticket_count
-          ? parseInt(session.metadata.ticket_count)
-          : 1;
-        const ticketCount = Math.min(Math.max(rawTicketCount, 1), 5);
+        const VALID_STRIPE_TICKET_COUNTS = [1, 4];
+        const rawTicketCount = parseInt(session.metadata?.ticket_count || "1", 10);
+        const ticketCount = VALID_STRIPE_TICKET_COUNTS.includes(rawTicketCount) ? rawTicketCount : 1;
 
         // ─── DB-level idempotency: check if this session was already processed ───
         const { data: existingSub } = await supabase
@@ -144,7 +141,13 @@ export async function POST(request: NextRequest) {
         }
 
         // ─── Atomic ticket increment ───
-        await incrementTickets(supabase, userId, ticketCount);
+        try {
+          await incrementTickets(supabase, userId, ticketCount);
+        } catch (err) {
+          console.error("[Stripe] Ticket increment failed:", err);
+          processedEvents.delete(event.id); // Allow retry
+          return NextResponse.json({ error: "Ticket increment failed" }, { status: 500 });
+        }
 
         // LAUNCH-FIX: Check insert result + store session.id in both columns
         // stripe_customer_id stores checkout session ID for idempotency lookups above
@@ -202,6 +205,11 @@ export async function POST(request: NextRequest) {
       }
       break;
     }
+  }
+
+  // Mark event as processed AFTER successful handling
+  if (event.id) {
+    processedEvents.set(event.id, Date.now());
   }
 
   return NextResponse.json({ received: true });

@@ -53,14 +53,16 @@ const ORDER_DEDUP_TTL_MS = 600_000; // 10 minutes
 function isOrderProcessed(orderId: string): boolean {
   const now = Date.now();
   // Lazy cleanup
-  if (processedOrders.size > 500) {
-    for (const [id, ts] of processedOrders) {
-      if (now - ts > ORDER_DEDUP_TTL_MS) processedOrders.delete(id);
+  if (processedOrders.size > 200) {
+    for (const [key, timestamp] of processedOrders) {
+      if (now - timestamp > 600_000) processedOrders.delete(key);
     }
   }
-  if (processedOrders.has(orderId)) return true;
-  processedOrders.set(orderId, now);
-  return false;
+  return processedOrders.has(orderId);
+}
+
+function markOrderProcessed(orderId: string): void {
+  processedOrders.set(orderId, Date.now());
 }
 
 export async function POST(request: NextRequest) {
@@ -283,7 +285,20 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Atomic ticket increment ───
-    const newTotal = await incrementTickets(sb.client, user.id, ticketCount);
+    let newTotal: number;
+    try {
+      newTotal = await incrementTickets(sb.client, user.id, ticketCount);
+    } catch (ticketErr) {
+      console.error(`[CRITICAL] Payment ${orderId} confirmed but ticket increment failed for user ${user.id.slice(0, 8)}...`, ticketErr);
+      // Do NOT mark as processed — allow retry
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제는 완료되었으나 티켓 충전에 실패했습니다. 잠시 후 다시 시도하시거나 고객센터에 문의해 주세요.", code: "TICKET_INCREMENT_FAILED" },
+        { status: 500 }
+      ));
+    }
+
+    // Mark as processed ONLY after successful ticket increment
+    markOrderProcessed(orderId);
 
     // Record orderId in profile metadata to prevent cross-isolate double processing
     // Graceful: if metadata column doesn't exist, ticket increment still succeeds

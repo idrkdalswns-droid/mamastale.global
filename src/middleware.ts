@@ -10,11 +10,24 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // CSRF: validate Origin for state-changing API requests
-  if (pathname.startsWith("/api/") && ["POST", "DELETE", "PATCH", "PUT"].includes(request.method)) {
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/webhooks/") &&
+      ["POST", "DELETE", "PATCH", "PUT"].includes(request.method)) {
     const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
     const allowedOrigin = new URL(request.url).origin;
-    if (origin && origin !== allowedOrigin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    if (origin) {
+      if (origin !== allowedOrigin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    } else if (referer) {
+      try {
+        if (new URL(referer).origin !== allowedOrigin) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
   }
 
@@ -36,7 +49,7 @@ export async function middleware(request: NextRequest) {
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://t1.kakaocdn.net https://k.kakaocdn.net",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.tosspayments.com https://api.stripe.com https://www.google-analytics.com https://kapi.kakao.com",
-      "frame-src https://js.stripe.com https://*.tosspayments.com https://accounts.kakao.com",
+      "frame-src https://js.stripe.com https://*.tosspayments.com https://accounts.kakao.com https://www.youtube.com",
       "frame-ancestors 'none'",
       // CTO-FIX: Add missing CSP directives for defense-in-depth
       "base-uri 'self'",

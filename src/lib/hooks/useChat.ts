@@ -385,11 +385,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
 
       if (!res.body) {
-        set({
-          messages: get().messages,
-          turnCountInCurrentPhase: get().turnCountInCurrentPhase,
-          isLoading: false,
-        });
+        set({ isLoading: false });
         return;
       }
       const reader = res.body.getReader();

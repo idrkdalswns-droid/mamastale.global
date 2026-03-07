@@ -39,11 +39,14 @@ export const metadata: Metadata = {
       },
     ],
   },
+  alternates: {
+    canonical: "/",
+  },
   twitter: {
     card: "summary_large_image",
     title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
     description: "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다.",
-    images: ["/images/hero.jpg"],
+    images: ["https://mamastale-global.pages.dev/images/hero.jpg"],
   },
 };
 
@@ -81,7 +84,9 @@ export default async function RootLayout({
                 "@type": "Offer",
                 "price": "4900",
                 "priceCurrency": "KRW",
-                "description": "동화 스토리 하나 완성 티켓"
+                "description": "동화 스토리 하나 완성 티켓",
+                "availability": "https://schema.org/InStock",
+                "url": "https://mamastale-global.pages.dev/pricing"
               }
             }),
           }}

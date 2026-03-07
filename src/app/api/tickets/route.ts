@@ -60,17 +60,18 @@ export async function GET(request: NextRequest) {
     remaining = profile.free_stories_remaining ?? 0;
   }
 
-  // Check first purchase eligibility: ≤1 completed stories means first purchase
-  let isFirstPurchase = true;
+  // Check first purchase eligibility: no prior processed orders in metadata
+  let isFirstPurchase = false;
   try {
-    const { count } = await sb.client
-      .from("stories")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("status", "completed");
-    isFirstPurchase = (count ?? 0) <= 1;
+    const { data: profile } = await sb.client
+      .from("profiles")
+      .select("metadata")
+      .eq("id", user.id)
+      .single();
+    const meta = (profile?.metadata as Record<string, unknown>) || {};
+    const priorOrders = (meta.processed_orders as string[]) || [];
+    isFirstPurchase = priorOrders.length === 0;
   } catch {
-    // If stories query fails, default to false for safety
     isFirstPurchase = false;
   }
 
