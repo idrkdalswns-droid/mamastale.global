@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Message, ChatApiResponse, StorySeedState } from "@/lib/types/chat";
+import type { Message, ChatApiResponse, ChatStreamEvent, StorySeedState } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
 
@@ -85,6 +85,8 @@ interface ChatState {
 
   initSession: (sessionId: string) => void;
   sendMessage: (text: string) => Promise<void>;
+  /** Send message with SSE streaming (falls back to sendMessage on error) */
+  sendMessageStreaming: (text: string) => Promise<void>;
   setTransitioning: (v: boolean) => void;
   reset: () => void;
   /** Save current chat state for auth redirect (auto-consumed on return) */
@@ -306,6 +308,197 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (err) {
       // Show API error messages (Korean) as-is, but replace raw browser errors
       // (e.g. "Failed to fetch", "Load failed") with a friendly Korean message
+      const errMessage =
+        err instanceof Error && err.message && /[가-힣]/.test(err.message)
+          ? err.message
+          : "네트워크에 문제가 생겼어요. 잠시 후 다시 이야기해 주세요.";
+      const errorMsg: Message = {
+        id: genId("err"),
+        role: "assistant",
+        content: errMessage,
+        phase: state.currentPhase,
+        isError: true,
+      };
+      set((s) => ({ messages: [...s.messages, errorMsg] }));
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  sendMessageStreaming: async (text: string) => {
+    const state = get();
+    if (!text.trim() || state.isLoading) return;
+
+    const userMsg: Message = {
+      id: genId("user"),
+      role: "user",
+      content: text.trim(),
+    };
+    const updatedMessages = [...state.messages, userMsg];
+    const newTurnCount = state.turnCountInCurrentPhase + 1;
+    set({ messages: updatedMessages, isLoading: true, turnCountInCurrentPhase: newTurnCount });
+
+    try {
+      const apiMessages = updatedMessages
+        .filter((m) => !m.isError)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      let childAge: string | undefined;
+      try { childAge = localStorage.getItem("mamastale_child_age") || undefined; } catch {}
+
+      const chatHeaders = await getAuthHeaders();
+
+      const res = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: chatHeaders,
+        body: JSON.stringify({
+          messages: apiMessages,
+          sessionId: state.sessionId,
+          childAge,
+          currentPhase: state.currentPhase,
+          turnCountInCurrentPhase: newTurnCount,
+          storySeed: state.storySeed,
+        }),
+      });
+
+      // If streaming endpoint fails or returns JSON (crisis), fall back
+      const contentType = res.headers.get("Content-Type") || "";
+      if (!res.ok || !contentType.includes("text/event-stream")) {
+        // Undo the user message and turn count, then delegate to sendMessage
+        set({
+          messages: state.messages,
+          turnCountInCurrentPhase: state.turnCountInCurrentPhase,
+          isLoading: false,
+        });
+        return get().sendMessage(text);
+      }
+
+      // Create placeholder assistant message for streaming
+      const assistantMsgId = genId("asst");
+      set((s) => ({
+        messages: [...s.messages, {
+          id: assistantMsgId,
+          role: "assistant" as const,
+          content: "",
+          phase: s.currentPhase,
+        }],
+      }));
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          let event: ChatStreamEvent;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.type === "text" && event.text) {
+            assistantContent += event.text;
+            set((s) => ({
+              messages: s.messages.map((m) =>
+                m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+              ),
+            }));
+          }
+
+          if (event.type === "done") {
+            // Handle phase transition
+            const currentPhaseNow = get().currentPhase;
+            if (event.phase && event.phase > currentPhaseNow) {
+              set({ isTransitioning: true });
+              await new Promise((r) => setTimeout(r, 600));
+              set((s) => ({
+                currentPhase: event.phase as 1 | 2 | 3 | 4,
+                visitedPhases: s.visitedPhases.includes(event.phase!)
+                  ? s.visitedPhases
+                  : [...s.visitedPhases, event.phase!],
+                turnCountInCurrentPhase: 0,
+              }));
+              await new Promise((r) => setTimeout(r, 500));
+              set({ isTransitioning: false });
+            }
+
+            // Update message with final phase tag
+            set((s) => ({
+              messages: s.messages.map((m) =>
+                m.id === assistantMsgId ? { ...m, phase: event.phase || s.currentPhase } : m
+              ),
+              storyDone: event.isStoryComplete || s.storyDone,
+              completedStoryId: event.storyId || s.completedStoryId,
+              completedScenes: event.scenes && event.scenes.length > 0
+                ? event.scenes
+                : s.completedScenes,
+              isPremiumStory: event.isPremium !== undefined ? event.isPremium : s.isPremiumStory,
+            }));
+
+            // Auto-save draft
+            if (!event.isStoryComplete) {
+              get().saveDraft();
+            } else {
+              try { localStorage.removeItem(DRAFT_KEY); } catch {}
+              set({ isFromDraft: false });
+            }
+
+            // Save completed story
+            if (event.isStoryComplete && event.scenes && event.scenes.length > 0 && !get().storySaved && !saveInFlight) {
+              saveInFlight = true;
+              set({ storySaved: true });
+              try {
+                const authHeaders = await getAuthHeaders();
+                const saveRes = await fetch("/api/stories", {
+                  method: "POST",
+                  headers: authHeaders,
+                  body: JSON.stringify({
+                    title: "나의 마음 동화",
+                    scenes: event.scenes,
+                    sessionId: state.sessionId || undefined,
+                  }),
+                });
+                if (saveRes.ok) {
+                  const saveData = await saveRes.json();
+                  set({ storySaveError: null, completedStoryId: saveData.id || get().completedStoryId });
+                } else if (saveRes.status === 401) {
+                  set({ storySaved: false, storySaveError: "login_required" });
+                  get().persistToStorage();
+                } else if (saveRes.status === 403) {
+                  set({ storySaved: false, storySaveError: "no_tickets" });
+                  get().persistToStorage();
+                } else {
+                  set({ storySaved: false, storySaveError: "save_failed" });
+                  get().persistToStorage();
+                }
+              } catch {
+                set({ storySaved: false, storySaveError: "save_failed" });
+                get().persistToStorage();
+              } finally {
+                saveInFlight = false;
+              }
+            }
+          }
+
+          if (event.type === "error") {
+            // Replace empty placeholder with error
+            set((s) => ({
+              messages: s.messages.map((m) =>
+                m.id === assistantMsgId
+                  ? { ...m, content: event.error || "스트리밍 오류가 발생했어요.", isError: true }
+                  : m
+              ),
+            }));
+          }
+        }
+      }
+    } catch (err) {
       const errMessage =
         err instanceof Error && err.message && /[가-힣]/.test(err.message)
           ? err.message

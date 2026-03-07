@@ -253,43 +253,126 @@ export function getCrisisKeywords(): { ko: string[]; en: string[] } {
   };
 }
 
+// ─── Multi-Tier Crisis Detection (mental-wellness-prompts + CSSRS inspired) ───
+
+export type CrisisSeverity = "HIGH" | "MEDIUM" | "LOW" | null;
+
+export interface CrisisScreenResult {
+  severity: CrisisSeverity;
+  /** Hard-coded response for HIGH, null for MEDIUM/LOW */
+  response: string | null;
+  /** Keywords that triggered detection (for logging) */
+  detectedKeywords: string[];
+  /** Extra XML to inject into Claude prompt for MEDIUM severity */
+  promptInjection?: string;
+}
+
+// ─── HIGH severity: immediate crisis (bypass Claude) ───
+const HIGH_KO = [
+  "죽고싶", "죽고 싶", "자살", "자해",
+  "사라지고싶", "사라지고 싶", "없어지고싶", "없어지고 싶",
+  "목을매", "목을 매", "밧줄", "높은곳에서",
+  "약을먹", "손목을", "뛰어내리",
+  "세상을떠나고싶", "더이상못살",
+];
+const HIGH_EN = [
+  "kill myself", "want to die", "end it all",
+  "hurt myself", "better off dead", "suicide",
+  "not worth living", "end my life",
+  "take my own life", "no reason to live",
+];
+const HIGH_JA = [
+  "死にたい", "自殺", "自傷", "消えたい",
+  "いなくなりたい", "生きていたくない",
+];
+const HIGH_ZH = [
+  "不想活了", "自杀", "自残", "想死",
+  "活不下去", "没有活着的意义",
+];
+const HIGH_AR = [
+  "أريد الموت", "الانتحار", "إيذاء النفس",
+  "لا أريد العيش", "أريد أن أختفي",
+];
+const HIGH_FR = [
+  "envie de mourir", "me suicider", "me tuer",
+  "en finir", "ne plus vivre", "automutilation",
+];
+
+// ─── MEDIUM severity: warning signs (inject context, let Claude handle) ───
+const MEDIUM_KO = [
+  "살고싶지않", "살고 싶지 않",
+  "아이없이", "아이 없이",
+  "혼자죽", "혼자 죽",
+  "모든게끝", "모든 게 끝",
+  "아무도몰라", "아무도 몰라",
+  "아무도이해못", "아무도 이해 못",
+  "영원히혼자", "영원히 혼자",
+  "희망이없", "희망이 없",
+  "의미가없", "의미가 없",
+  "이유가없", "이유가 없",
+  "내가없어지면", "내가 없어지면",
+  "짐이되고싶지않", "짐이 되고 싶지 않",
+];
+const MEDIUM_EN = [
+  "don't want to live", "can't go on",
+  "no hope", "no point", "worthless",
+  "burden to everyone", "nobody cares",
+  "nobody understands", "forever alone",
+  "can't take it anymore", "giving up",
+];
+const MEDIUM_JA = [
+  "生きたくない", "もう無理", "希望がない",
+  "誰も分かってくれない", "迷惑をかけたくない",
+];
+const MEDIUM_ZH = [
+  "不想活", "没有希望", "活着没意思",
+  "没人理解我", "我是累赘",
+];
+
+// ─── LOW severity: risk factors (log only, no action) ───
+const LOW_KO = [
+  "잠을못자", "잠을 못 자", "밤새",
+  "식욕이없", "식욕이 없", "밥을못먹", "밥을 못 먹",
+  "계속울", "계속 울", "울음이멈추지않",
+  "감정조절이안", "감정 조절이 안",
+  "아무것도하기싫", "아무것도 하기 싫",
+  "무기력", "공허",
+];
+const LOW_EN = [
+  "can't sleep", "no appetite", "can't stop crying",
+  "feel nothing", "empty inside", "numb",
+  "can't function", "exhausted all the time",
+];
+
 /**
- * Server-side crisis keyword pre-screening.
- * Checks user message BEFORE sending to Claude API.
- * Returns a crisis response if detected, or null if safe.
+ * Multi-tier crisis keyword pre-screening (v2.0).
  *
- * This saves API tokens by intercepting crisis messages immediately,
- * and ensures consistent, reliable crisis responses without depending
- * on LLM interpretation.
+ * HIGH → bypass Claude, return hard-coded crisis response
+ * MEDIUM → inject crisis context into Claude prompt
+ * LOW → log for monitoring only
+ *
+ * Supports all 6 locales: ko, en, ja, zh, ar, fr
  */
-export function screenForCrisis(userMessage: string): string | null {
+export function screenForCrisis(userMessage: string): CrisisScreenResult {
   const lowerMsg = userMessage.toLowerCase();
   const normalizedMsg = userMessage.replace(/\s+/g, "");
+  const detected: string[] = [];
 
-  // ─── High-severity keywords (immediate crisis) ───
-  const HIGH_SEVERITY_KO = [
-    "죽고싶", "죽고 싶", "자살", "자해",
-    "사라지고싶", "사라지고 싶", "없어지고싶", "없어지고 싶",
-    "목을매", "목을 매", "밧줄", "높은곳에서",
-    "약을먹", "손목을", "뛰어내리",
-  ];
-  const HIGH_SEVERITY_EN = [
-    "kill myself", "want to die", "end it all",
-    "hurt myself", "better off dead", "suicide",
-    "not worth living", "end my life",
-  ];
+  // ─── HIGH severity check (6 languages) ───
+  const highAllKo = HIGH_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const highAllEn = HIGH_EN.filter(kw => lowerMsg.includes(kw));
+  const highAllJa = HIGH_JA.filter(kw => normalizedMsg.includes(kw));
+  const highAllZh = HIGH_ZH.filter(kw => normalizedMsg.includes(kw));
+  const highAllAr = HIGH_AR.filter(kw => normalizedMsg.includes(kw));
+  const highAllFr = HIGH_FR.filter(kw => lowerMsg.includes(kw));
 
-  // Check Korean high-severity
-  const isHighKo = HIGH_SEVERITY_KO.some(
-    (kw) => normalizedMsg.includes(kw.replace(/\s+/g, ""))
-  );
-  // Check English high-severity
-  const isHighEn = HIGH_SEVERITY_EN.some((kw) => lowerMsg.includes(kw));
+  detected.push(...highAllKo, ...highAllEn, ...highAllJa, ...highAllZh, ...highAllAr, ...highAllFr);
 
-  if (!isHighKo && !isHighEn) return null;
-
-  // Return hard-coded crisis response (bypasses LLM entirely)
-  return `지금 많이 힘드시군요. 어머니의 고통이 느껴집니다.
+  if (detected.length > 0) {
+    return {
+      severity: "HIGH",
+      detectedKeywords: detected,
+      response: `지금 많이 힘드시군요. 어머니의 고통이 느껴집니다.
 
 지금 이 순간, 어머니의 안전이 가장 중요합니다.
 
@@ -299,7 +382,57 @@ export function screenForCrisis(userMessage: string): string | null {
 📞 **정신건강위기상담전화: 1577-0199** (24시간)
 📞 **응급: 119**
 
-이 서비스는 전문 상담을 대체할 수 없어요. 전문가의 도움을 받으시는 것이 가장 중요합니다. 지금 바로 전화해 주세요.`;
+이 서비스는 전문 상담을 대체할 수 없어요. 전문가의 도움을 받으시는 것이 가장 중요합니다. 지금 바로 전화해 주세요.`,
+    };
+  }
+
+  // ─── MEDIUM severity check ───
+  const medAllKo = MEDIUM_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const medAllEn = MEDIUM_EN.filter(kw => lowerMsg.includes(kw));
+  const medAllJa = MEDIUM_JA.filter(kw => normalizedMsg.includes(kw));
+  const medAllZh = MEDIUM_ZH.filter(kw => normalizedMsg.includes(kw));
+
+  const medDetected = [...medAllKo, ...medAllEn, ...medAllJa, ...medAllZh];
+
+  if (medDetected.length > 0) {
+    return {
+      severity: "MEDIUM",
+      detectedKeywords: medDetected,
+      response: null,
+      promptInjection: `
+
+<crisis_context>
+[주의] 이 사용자의 메시지에서 심리적 고위험 신호가 감지되었습니다: ${medDetected.slice(0, 3).join(", ")}
+
+다음 지침을 따르십시오:
+1. 현재 Phase의 치료적 대화를 유지하되, 부드럽게 사용자의 감정 상태를 확인하십시오.
+2. "혹시 지금 많이 힘드신 건 아닌지 여쭤봐도 될까요?" 등의 자연스러운 안전 확인을 포함하십시오.
+3. 필요 시 전문 상담 연결을 안내하되, 강요하지 마십시오.
+4. 절대 위기 신호를 무시하거나 대화 주제를 강제로 전환하지 마십시오.
+</crisis_context>`,
+    };
+  }
+
+  // ─── LOW severity check ───
+  const lowAllKo = LOW_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const lowAllEn = LOW_EN.filter(kw => lowerMsg.includes(kw));
+
+  const lowDetected = [...lowAllKo, ...lowAllEn];
+
+  if (lowDetected.length > 0) {
+    return {
+      severity: "LOW",
+      detectedKeywords: lowDetected,
+      response: null,
+    };
+  }
+
+  // ─── No crisis detected ───
+  return {
+    severity: null,
+    detectedKeywords: [],
+    response: null,
+  };
 }
 
 /**

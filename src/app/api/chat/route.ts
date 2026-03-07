@@ -4,14 +4,20 @@ import Anthropic from "@anthropic-ai/sdk";
 export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
 import { getSystemPrompt, getPremiumPhase4Supplement, screenForCrisis } from "@/lib/anthropic/system-prompt";
+import type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";
 import { getPhasePrompt } from "@/lib/anthropic/phase-prompts";
 import type { StorySeedContext } from "@/lib/anthropic/phase-prompts";
+import { selectModel, getFallbackModel } from "@/lib/anthropic/model-router";
+import { validateOutputSafety } from "@/lib/anthropic/output-safety";
 import {
   detectPhase,
   stripPhaseTag,
   isStoryComplete,
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
+import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
+import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
+import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/utils/response-cache";
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
@@ -37,45 +43,10 @@ const chatRequestSchema = z.object({
   storySeed: storySeedSchema,
 });
 
-// ─── Rate Limiting (per-isolate, in-memory) ───
-const RATE_WINDOW_MS = 60_000; // 1 minute
+// ─── Rate Limiting (in-memory fallback only — primary is now Supabase) ───
 const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
 const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client)
-
-// ─── Tiered AI Model Configuration ───
-const MODEL_STANDARD = "claude-sonnet-4-20250514";
-const MODEL_PREMIUM = "claude-opus-4-20250514";
-const MAX_TOKENS_STANDARD = 4096;
-const MAX_TOKENS_PREMIUM = 8192;
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-// P2-FIX(DE-1): Periodic cleanup instead of threshold-only — prevents unbounded growth
-let lastRateLimitCleanup = 0;
-const CLEANUP_INTERVAL_MS = 30_000; // Clean expired entries every 30 seconds
-
-function checkRateLimit(key: string, limit: number): boolean {
-  const now = Date.now();
-  // Periodic TTL cleanup — runs at most once per CLEANUP_INTERVAL_MS
-  if (now - lastRateLimitCleanup > CLEANUP_INTERVAL_MS) {
-    lastRateLimitCleanup = now;
-    for (const [k, v] of rateLimitMap) {
-      if (now > v.resetAt) rateLimitMap.delete(k);
-    }
-  }
-  // Hard cap as safety net (shouldn't normally be reached with TTL cleanup)
-  if (rateLimitMap.size > 1000) {
-    rateLimitMap.clear();
-  }
-  const entry = rateLimitMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
-}
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
@@ -120,7 +91,35 @@ async function callAnthropicWithRetry(
   throw new Error("Unreachable");
 }
 
+/** Retry with automatic model fallback */
+async function callAnthropicWithFallback(
+  anthropic: Anthropic,
+  params: Anthropic.MessageCreateParamsNonStreaming,
+  maxRetries = 2
+): Promise<{ response: Anthropic.Message; modelUsed: string; wasFallback: boolean }> {
+  try {
+    const response = await callAnthropicWithRetry(anthropic, params, maxRetries);
+    return { response, modelUsed: params.model, wasFallback: false };
+  } catch (err) {
+    // Try fallback model
+    const fallback = getFallbackModel(params.model);
+    if (fallback) {
+      console.warn(`[Chat] Model fallback: ${params.model} → ${fallback.model} (${fallback.reasoning})`);
+      const fallbackParams = { ...params, model: fallback.model, max_tokens: fallback.maxTokens };
+      try {
+        const response = await callAnthropicWithRetry(anthropic, fallbackParams, 1);
+        return { response, modelUsed: fallback.model, wasFallback: true };
+      } catch {
+        // Fallback also failed — throw original error
+        throw err;
+      }
+    }
+    throw err;
+  }
+}
+
 export async function POST(request: NextRequest) {
+  const requestStartTime = Date.now();
   const ip = getClientIP(request);
 
   // ─── Auth check (optional — guests allowed with limits) ───
@@ -139,8 +138,6 @@ export async function POST(request: NextRequest) {
       });
 
       // CTO-FIX(HIGH): Try cookie auth first, then Bearer token fallback.
-      // Previous: setAll() no-op meant expired tokens couldn't refresh,
-      // and no Bearer check meant WebView/mobile users always got standard model.
       let user = (await supabase.auth.getUser()).data.user;
       if (!user) {
         const authHeader = request.headers.get("Authorization");
@@ -172,16 +169,22 @@ export async function POST(request: NextRequest) {
   }
 
   const isAuthenticated = !!userId;
-  const rateKey = isAuthenticated ? `auth:${userId}` : `ip:${ip}`;
+  const rateKey = isAuthenticated ? `chat:auth:${userId}` : `chat:ip:${ip}`;
   const rateLimit = isAuthenticated ? AUTH_RATE_LIMIT : GUEST_RATE_LIMIT;
 
-  // ─── Rate limiting ───
-  if (!checkRateLimit(rateKey, rateLimit)) {
+  // ─── Persistent Rate limiting (Supabase primary, in-memory fallback) ───
+  const withinLimit = await checkRateLimitPersistent(rateKey, rateLimit, 60);
+  if (!withinLimit) {
+    logEvent({ eventType: "rate_limit_hit", endpoint: "/api/chat", userId }).catch(() => {});
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }
     );
   }
+
+  // Periodic cleanup (fire-and-forget)
+  maybeCleanupRateLimits().catch(() => {});
+  maybeCleanupCache().catch(() => {});
 
   try {
     // JP-FIX(2): Reject oversized requests before parsing (DoS prevention)
@@ -216,8 +219,6 @@ export async function POST(request: NextRequest) {
     const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
 
     // ─── Server-side guest turn limit ───
-    // Count by total conversation turns (messages / 2), not just user messages,
-    // to prevent bypass via fabricated assistant messages in the array.
     if (!isAuthenticated) {
       const userMsgCount = messages.filter((m) => m.role === "user").length;
       const totalTurns = Math.ceil(messages.length / 2);
@@ -229,19 +230,78 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ─── SERVER-SIDE CRISIS PRE-SCREENING ───
-    // Check the latest user message for crisis keywords BEFORE calling Claude API.
-    // Saves API tokens and ensures consistent, reliable crisis responses.
+    // ─── MULTI-TIER CRISIS PRE-SCREENING (v2.0) ───
     const latestUserMsg = messages.filter((m) => m.role === "user").pop();
+    let crisisResult: CrisisScreenResult = { severity: null, detectedKeywords: [], response: null };
+
     if (latestUserMsg) {
-      const crisisResponse = screenForCrisis(latestUserMsg.content);
-      if (crisisResponse) {
-        console.warn("[Chat] Crisis keyword detected — returning hard-coded response");
+      crisisResult = screenForCrisis(latestUserMsg.content);
+
+      // HIGH severity → bypass Claude, return hard-coded response
+      if (crisisResult.severity === "HIGH") {
+        console.warn("[Chat] HIGH crisis detected:", crisisResult.detectedKeywords.slice(0, 3).join(", "));
+        logLLMCall({
+          sessionId: parsed.data.sessionId,
+          userId,
+          model: "crisis_bypass",
+          phase: clientPhase || 1,
+          inputTokens: 0,
+          outputTokens: 0,
+          latencyMs: Date.now() - requestStartTime,
+          wasCrisisIntercepted: true,
+        }).catch(() => {});
+        logEvent({
+          eventType: "crisis_detection",
+          endpoint: "/api/chat",
+          userId,
+          metadata: { severity: "HIGH", keywords: crisisResult.detectedKeywords.slice(0, 3) },
+        }).catch(() => {});
+
         return NextResponse.json({
-          content: crisisResponse,
+          content: crisisResult.response!,
           phase: clientPhase || 1,
           isStoryComplete: false,
           isCrisisIntervention: true,
+        });
+      }
+
+      // MEDIUM/LOW severity → log for monitoring
+      if (crisisResult.severity === "MEDIUM" || crisisResult.severity === "LOW") {
+        logEvent({
+          eventType: "crisis_detection",
+          endpoint: "/api/chat",
+          userId,
+          metadata: { severity: crisisResult.severity, keywords: crisisResult.detectedKeywords.slice(0, 3) },
+        }).catch(() => {});
+      }
+    }
+
+    // ─── Phase context ───
+    const MAX_TURNS_PER_PHASE = 10;
+    const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
+    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
+    const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
+    const safeTurnCount = turnCountInCurrentPhase ?? 0;
+
+    // ─── RESPONSE CACHE CHECK (Phase 1 only) ───
+    if (safePhase === 1 && latestUserMsg && crisisResult.severity === null) {
+      const cached = await getCachedResponse(latestUserMsg.content, safePhase);
+      if (cached) {
+        logLLMCall({
+          sessionId: parsed.data.sessionId,
+          userId,
+          model: "cache_hit",
+          phase: safePhase,
+          inputTokens: 0,
+          outputTokens: 0,
+          latencyMs: Date.now() - requestStartTime,
+          wasCached: true,
+        }).catch(() => {});
+
+        return NextResponse.json({
+          content: cached.content,
+          phase: cached.phase,
+          isStoryComplete: false,
         });
       }
     }
@@ -249,10 +309,8 @@ export async function POST(request: NextRequest) {
     const anthropic = getAnthropicClient();
 
     // ─── PHASE-AWARE PROMPT ASSEMBLY (v3.0) ───
-    // Base prompt (role, safety, rules) + active phase protocol
     let systemPrompt = getSystemPrompt("ko");
 
-    // ─── P0-FIX(US-1): childAge whitelist — prevent prompt injection ───
     const VALID_CHILD_AGES = ["0-2", "3-5", "6-8"] as const;
     const ageLabels: Record<string, string> = {
       "0-2": "0~2세 (영아)",
@@ -263,25 +321,13 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge]}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
     }
 
-    // ─── Phase context injection (10-turn limit + forward-only) ───
-    const MAX_TURNS_PER_PHASE = 10;
-
-    // P0-FIX(US-2): Phase progression validation — prevent direct jump to Phase 4.
-    const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
-    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
-    const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
-    const safeTurnCount = turnCountInCurrentPhase ?? 0;
-
     if (safeTurnCount >= MAX_TURNS_PER_PHASE && safePhase < 4) {
-      // Force transition — turn limit reached
       systemPrompt += `\n\n<phase_turn_limit_exceeded>\n[긴급] 현재 Phase ${safePhase}에서 ${safeTurnCount}턴이 경과했습니다. 10턴 제한을 초과했으므로 반드시 Phase ${safePhase + 1}로 전환하십시오.\n이번 응답에서 [PHASE:${safePhase + 1}]을 출력하고, Phase ${safePhase + 1}의 역할로 자연스럽게 전환하십시오.\n</phase_turn_limit_exceeded>`;
     } else {
       systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${MAX_TURNS_PER_PHASE}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
     }
 
-    // ─── INJECT ACTIVE PHASE'S DETAILED CLINICAL PROTOCOL ───
-    // Only the current phase's protocol is sent (not all 4), reducing tokens ~60%
-    // and focusing Claude's attention on the correct therapeutic techniques.
+    // Inject active phase's clinical protocol
     const seedContext: StorySeedContext = {
       coreSeed: storySeed?.coreSeed,
       chosenMetaphor: storySeed?.chosenMetaphor,
@@ -290,25 +336,35 @@ export async function POST(request: NextRequest) {
     };
     systemPrompt += getPhasePrompt(safePhase as 1 | 2 | 3 | 4, seedContext);
 
-    // ─── Tiered model selection: Phase 4 + paid user → Opus (premium) ───
-    const usePremiumModel = isPremiumUser && safePhase === 4;
-    const selectedModel = usePremiumModel ? MODEL_PREMIUM : MODEL_STANDARD;
-    const selectedMaxTokens = usePremiumModel ? MAX_TOKENS_PREMIUM : MAX_TOKENS_STANDARD;
+    // ─── MEDIUM crisis context injection ───
+    if (crisisResult.severity === "MEDIUM" && crisisResult.promptInjection) {
+      systemPrompt += crisisResult.promptInjection;
+    }
+
+    // ─── INTELLIGENT MODEL ROUTING (litellm-inspired) ───
+    const modelSelection = selectModel({
+      phase: safePhase as 1 | 2 | 3 | 4,
+      isPremiumUser,
+      isCrisisContext: crisisResult.severity === "MEDIUM",
+    });
 
     // Append premium story supplement for paid Phase 4
-    if (usePremiumModel) {
+    if (isPremiumUser && safePhase === 4) {
       systemPrompt += getPremiumPhase4Supplement();
     }
 
-    const response = await callAnthropicWithRetry(anthropic, {
-      model: selectedModel,
-      max_tokens: selectedMaxTokens,
+    const apiStartTime = Date.now();
+    const { response, modelUsed, wasFallback } = await callAnthropicWithFallback(anthropic, {
+      model: modelSelection.model,
+      max_tokens: modelSelection.maxTokens,
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
     });
+
+    const apiLatencyMs = Date.now() - apiStartTime;
 
     const rawText = response.content
       .filter((b) => b.type === "text")
@@ -320,6 +376,40 @@ export async function POST(request: NextRequest) {
     const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
     const cleanText = stripPhaseTag(rawText);
     const storyComplete = isStoryComplete(cleanText, phase, safePhase);
+
+    // ─── OUTPUT SAFETY VALIDATION (psysafe-ai inspired) ───
+    const safetyResult = validateOutputSafety(cleanText, safePhase, detectedPhase);
+    if (!safetyResult.passed) {
+      console.warn("[Chat] Output safety violations:", safetyResult.violations.map(v => `${v.type}:${v.matched}`).join(", "));
+      logEvent({
+        eventType: "output_safety_violation",
+        endpoint: "/api/chat",
+        userId,
+        metadata: {
+          violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })),
+          phase: safePhase,
+          model: modelUsed,
+        },
+      }).catch(() => {});
+    }
+
+    // ─── LLM CALL LOGGING (fire-and-forget) ───
+    logLLMCall({
+      sessionId: parsed.data.sessionId,
+      userId,
+      model: modelUsed,
+      phase: safePhase,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      latencyMs: apiLatencyMs,
+      wasModelFallback: wasFallback,
+      fallbackReason: wasFallback ? `primary_failed:${modelSelection.model}` : undefined,
+    }).catch(() => {});
+
+    // ─── CACHE Phase 1 response (if applicable) ───
+    if (safePhase === 1 && !storyComplete && latestUserMsg && crisisResult.severity === null) {
+      setCachedResponse(latestUserMsg.content, safePhase, cleanText, phase ?? 1).catch(() => {});
+    }
 
     let storyId: string | undefined;
     let scenes: ReturnType<typeof parseStoryScenes> = [];
@@ -345,11 +435,20 @@ export async function POST(request: NextRequest) {
       isStoryComplete: storyComplete,
       storyId,
       ...(storyComplete && scenes.length > 0 ? { scenes } : {}),
-      ...(usePremiumModel ? { isPremium: true } : {}),
+      ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
     });
   } catch (error: unknown) {
     // Log error message only (no PII, no full stack)
     console.error("Chat API error:", error instanceof Error ? error.name : "Unknown");
+
+    const latencyMs = Date.now() - requestStartTime;
+    logEvent({
+      eventType: "error",
+      endpoint: "/api/chat",
+      latencyMs,
+      userId,
+      metadata: { errorName: error instanceof Error ? error.name : "Unknown" },
+    }).catch(() => {});
 
     // P2-FIX(DE-2): Specific error messages for different failure modes
     if (error instanceof Error && error.name === "AbortError") {

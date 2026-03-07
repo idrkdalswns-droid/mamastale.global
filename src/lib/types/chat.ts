@@ -47,3 +47,26 @@ export interface StorySeedState {
   /** Counter-force/magical tool from Phase 3 (e.g., "빛나는 횃불") */
   counterForce?: string;
 }
+
+/**
+ * SSE streaming event types for /api/chat/stream
+ */
+export interface ChatStreamEvent {
+  type: "meta" | "text" | "done" | "error";
+  /** Streaming text chunk (for 'text' events) */
+  text?: string;
+  /** Current phase (for 'meta' and 'done' events) */
+  phase?: number | null;
+  /** Story completion flag (for 'done' events) */
+  isStoryComplete?: boolean;
+  /** Completed story ID (for 'done' events) */
+  storyId?: string;
+  /** Parsed story scenes (for 'done' events when story is complete) */
+  scenes?: import("@/lib/types/story").Scene[];
+  /** Premium model indicator (for 'done' events) */
+  isPremium?: boolean;
+  /** Token usage info (for 'done' events) */
+  usage?: { inputTokens: number; outputTokens: number };
+  /** Error message (for 'error' events) */
+  error?: string;
+}
