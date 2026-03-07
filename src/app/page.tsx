@@ -660,12 +660,13 @@ export default function Home() {
           <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
             본 서비스는 실제 의료 행위를 대체하지 않습니다
           </p>
-          <a
+          <Link
             href="/feature-requests"
-            className="block text-xs text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2 min-h-[44px] inline-flex items-center justify-center w-full"
+            className="block text-xs text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2 min-h-[44px] w-full no-underline"
+            style={{ textDecoration: "underline", textUnderlineOffset: "2px" }}
           >
             개발 요청 보드
-          </a>
+          </Link>
 
           {/* Bottom breathing room */}
           <div className="h-20" />

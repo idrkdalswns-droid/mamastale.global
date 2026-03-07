@@ -41,13 +41,17 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "/",
+    canonical: "https://mamastale-global.pages.dev/",
   },
   twitter: {
     card: "summary_large_image",
     title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
-    description: "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다.",
+    description: "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
     images: ["https://mamastale-global.pages.dev/images/hero.jpg"],
+  },
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
   },
 };
 

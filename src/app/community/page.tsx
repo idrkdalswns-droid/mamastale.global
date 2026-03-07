@@ -82,9 +82,9 @@ export default function CommunityBrowsePage() {
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="font-serif text-lg text-brown font-semibold">
+          <h1 className="font-serif text-lg text-brown font-semibold">
             커뮤니티
-          </h2>
+          </h1>
           <p className="text-xs text-brown-light font-light mt-1">
             {totalCount !== null && totalCount > 0
               ? `${totalCount}개의 이야기가 공유되었어요`

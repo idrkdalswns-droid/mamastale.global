@@ -65,9 +65,9 @@ export default function LibraryPage() {
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="font-serif text-lg text-brown font-semibold">
+          <h1 className="font-serif text-lg text-brown font-semibold">
             내 서재
-          </h2>
+          </h1>
           <p className="text-xs text-brown-light font-light mt-1">
             나만의 동화 컬렉션
           </p>
