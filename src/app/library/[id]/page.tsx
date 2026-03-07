@@ -1,9 +1,5 @@
 "use client";
 
-// NOTE: "export const runtime" is a server-side directive.
-// In "use client" components, it has no effect. The edge runtime
-// config for this route's API calls is set in the API route files.
-
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
