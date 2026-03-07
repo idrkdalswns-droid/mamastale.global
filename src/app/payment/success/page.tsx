@@ -69,7 +69,11 @@ function PaymentSuccessContent() {
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.success) {
-          setTicketsAdded(data.ticketsAdded || 1);
+          // ticketsAdded may be absent on alreadyProcessed responses -- derive from amount
+          const amountParam = searchParams.get("amount");
+          const amountNum = amountParam ? Number(amountParam) : 0;
+          const derivedTickets = amountNum >= 14900 ? 4 : 1;
+          setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setStatus("success");
         } else {

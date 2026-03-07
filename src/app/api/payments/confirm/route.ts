@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
     }
     if (processedOrderIds.includes(orderId)) {
       return sb.applyCookies(NextResponse.json({
-        success: true, ticketsAdded: ticketCount, alreadyProcessed: true,
+        success: true, alreadyProcessed: true,
       }));
     }
 

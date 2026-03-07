@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         });
         if (subInsertErr) {
-          console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
-          return NextResponse.json({ error: "Subscription record failed" }, { status: 500 });
+          // Tickets already granted — log error but return 200 to prevent Stripe retry (which would double-grant)
+          console.error("[Stripe][CRITICAL] Subscription insert failed after ticket grant:", subInsertErr.code, subInsertErr.message, "sessionId:", session.id, "userId:", userId);
         }
       }
       break;
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("subscriptions")
           .update({
-            status: sub.status === "active" ? "active" : "past_due",
+            status: ["active", "past_due", "canceled", "unpaid", "paused"].includes(sub.status) ? sub.status : "past_due",
             ...(periodStart && {
               current_period_start: new Date(periodStart * 1000).toISOString(),
             }),
