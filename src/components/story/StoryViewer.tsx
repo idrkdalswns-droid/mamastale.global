@@ -290,7 +290,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   placeholder="사랑하는 우리 아이에게..."
                   maxLength={200}
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm font-serif bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none resize-none leading-relaxed"
+                  className="w-full px-3 py-2.5 rounded-xl font-serif bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none resize-none leading-relaxed"
+                  style={{ fontSize: 16 }}
                   aria-label="아이에게 전하는 한마디"
                 />
                 <p className="text-[10px] text-brown-pale font-light text-right mt-1">
@@ -481,7 +482,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               onChange={(e) => setAliasInput(e.target.value.slice(0, 50))}
               placeholder="익명의 엄마"
               maxLength={50}
-              className="w-full px-4 py-3 rounded-xl text-sm bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
+              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
+              style={{ fontSize: 16 }}
               aria-label="별명 입력"
               autoFocus
               onKeyDown={(e) => {
@@ -518,7 +520,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
             </button>
             <button
               onClick={() => setShowAliasModal(false)}
-              className="w-full py-2 text-xs font-light text-brown-pale"
+              className="w-full py-2 text-xs font-light text-brown-pale min-h-[44px]"
             >
               취소
             </button>

@@ -240,7 +240,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
               }, 250);
             }}
             disabled={transitioning}
-            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30"
+            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30 min-h-[44px]"
           >
             건너뛰고 바로 시작하기
           </button>
@@ -249,7 +249,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
         {onGoHome && (
           <button
             onClick={onGoHome}
-            className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light"
+            className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light min-h-[44px]"
           >
             ← 홈으로 돌아가기
           </button>

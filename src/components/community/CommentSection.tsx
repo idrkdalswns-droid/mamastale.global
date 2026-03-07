@@ -143,7 +143,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
         <button
           onClick={() => setShowForm(!showForm)}
           aria-expanded={showForm}
-          className="text-xs text-coral font-medium"
+          className="text-xs text-coral font-medium min-h-[44px] flex items-center px-2"
         >
           {showForm ? "취소" : "댓글 작성"}
         </button>
@@ -159,8 +159,8 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
             placeholder="별명 (선택)"
             aria-label="댓글 별명"
             maxLength={20}
-            className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none mb-2"
-            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
+            className="w-full px-3 py-2 rounded-lg font-sans outline-none mb-2 min-h-[44px]"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />
           <textarea
             value={newComment}
@@ -168,8 +168,8 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
             placeholder="따뜻한 댓글을 남겨주세요..."
             maxLength={500}
             rows={3}
-            className="w-full px-3 py-2 rounded-lg text-xs font-sans outline-none resize-none mb-1"
-            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
+            className="w-full px-3 py-2 rounded-lg font-sans outline-none resize-none mb-1"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />
           <div className="flex justify-between items-center mb-2">
             <span className="text-[10px] text-brown-pale">{newComment.length}/500</span>
@@ -190,7 +190,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
           <button
             onClick={submitComment}
             disabled={loading || !newComment.trim()}
-            className="w-full py-2 rounded-full text-xs font-medium text-white disabled:opacity-50"
+            className="w-full py-2 rounded-full text-xs font-medium text-white disabled:opacity-50 min-h-[44px]"
             style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
             {loading ? "등록 중..." : "댓글 등록"}
@@ -230,7 +230,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
                         reportComment(comment.id);
                       }
                     }}
-                    className="text-[10px] text-brown-pale hover:text-red-400 transition-colors"
+                    className="text-[10px] text-brown-pale hover:text-red-400 transition-colors min-h-[44px] flex items-center px-2"
                   >
                     신고
                   </button>

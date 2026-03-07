@@ -38,14 +38,14 @@ export function CookieConsent() {
         <div className="flex gap-2">
           <button
             onClick={decline}
-            className="flex-1 py-2.5 rounded-full text-xs text-brown-light font-medium"
+            className="flex-1 py-2.5 rounded-full text-xs text-brown-light font-medium min-h-[44px]"
             style={{ border: "1px solid rgba(196,149,106,0.2)" }}
           >
             거부
           </button>
           <button
             onClick={accept}
-            className="flex-1 py-2.5 rounded-full text-xs text-white font-medium"
+            className="flex-1 py-2.5 rounded-full text-xs text-white font-medium min-h-[44px]"
             style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
             동의
