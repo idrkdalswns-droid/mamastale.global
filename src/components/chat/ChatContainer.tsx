@@ -16,6 +16,7 @@ import StoryCompleteCTA from "./StoryCompleteCTA";
 import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import { SignupModal } from "@/components/auth/SignupModal";
 import TurnFivePopup from "./TurnFivePopup";
+import { usePresence } from "@/lib/hooks/usePresence";
 
 const FREE_TURN_LIMIT = 5;
 
@@ -45,6 +46,9 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
     saveDraft,
     retrySaveStory,
   } = useChatStore();
+
+  // Track this user as "creating a story" for live presence counting
+  usePresence("chat");
 
   const router = useRouter();
   const [showSignupModal, setShowSignupModal] = useState(false);

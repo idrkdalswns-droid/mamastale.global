@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { createClient } from "@/lib/supabase/client";
+import { getAnonymousId } from "@/lib/utils/anonymous-id";
 
 interface CommunityPageProps {
   onRestart: () => void;
@@ -17,6 +18,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
+  const [interestSent, setInterestSent] = useState<Record<string, boolean>>({});
   const { completedScenes, completedStoryId, storySaved, retrySaveStory } = useChatStore();
 
   // SIM-FIX(S19): Get auth headers with Bearer token fallback
@@ -33,6 +35,25 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
     } catch { /* ignore */ }
     return headers;
   }, []);
+
+  // Interest click handler (illustration / video_story)
+  const handleInterestClick = useCallback(async (featureType: "illustration" | "video_story") => {
+    if (interestSent[featureType]) return;
+    try {
+      const res = await fetch("/api/interest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature_type: featureType,
+          story_id: completedStoryId || undefined,
+          anonymous_id: getAnonymousId(),
+        }),
+      });
+      if (res.ok) {
+        setInterestSent((prev) => ({ ...prev, [featureType]: true }));
+      }
+    } catch { /* silent */ }
+  }, [interestSent, completedStoryId]);
 
   // Auto-retry story save on mount (recovers from earlier save failure)
   useEffect(() => {
@@ -278,6 +299,94 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 카카오톡 오픈채팅 참여하기
               </a>
             </div>
+          </div>
+        </div>
+
+        {/* Interest voting cards — demand assessment + vision signaling */}
+        <div
+          className="rounded-2xl p-5 mb-5"
+          style={{
+            background: "linear-gradient(135deg, rgba(232,168,124,0.06), rgba(200,184,216,0.06))",
+            border: "1px solid rgba(232,168,124,0.10)",
+          }}
+        >
+          <div className="text-center mb-4">
+            <div className="text-2xl mb-1.5">🔮</div>
+            <h3 className="font-serif text-[15px] font-semibold text-brown mb-1">
+              다음에 만들어 볼까요?
+            </h3>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
+              완성된 동화를 바탕으로 더 특별한 경험을 준비하고 있어요.<br />
+              관심 있는 기능에 투표해 주세요!
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Illustration card */}
+            <button
+              onClick={() => handleInterestClick("illustration")}
+              disabled={interestSent.illustration}
+              className="rounded-2xl p-4 text-center transition-all active:scale-[0.97] disabled:scale-100"
+              style={{
+                background: interestSent.illustration
+                  ? "rgba(90,158,143,0.08)"
+                  : "rgba(255,255,255,0.7)",
+                border: interestSent.illustration
+                  ? "1.5px solid rgba(90,158,143,0.3)"
+                  : "1px solid rgba(196,149,106,0.12)",
+              }}
+            >
+              {interestSent.illustration ? (
+                <>
+                  <span className="text-xl block mb-1">✅</span>
+                  <span className="text-xs text-mint-deep font-medium block">관심 등록 완료!</span>
+                  <span className="text-[10px] text-brown-pale font-light block mt-0.5">
+                    곧 만나보실 수 있어요
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl block mb-2">🎨</span>
+                  <span className="text-sm font-medium text-brown block">삽화 생성</span>
+                  <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
+                    동화에 어울리는<br />일러스트를 AI가 그려드려요
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Video story card */}
+            <button
+              onClick={() => handleInterestClick("video_story")}
+              disabled={interestSent.video_story}
+              className="rounded-2xl p-4 text-center transition-all active:scale-[0.97] disabled:scale-100"
+              style={{
+                background: interestSent.video_story
+                  ? "rgba(90,158,143,0.08)"
+                  : "rgba(255,255,255,0.7)",
+                border: interestSent.video_story
+                  ? "1.5px solid rgba(90,158,143,0.3)"
+                  : "1px solid rgba(196,149,106,0.12)",
+              }}
+            >
+              {interestSent.video_story ? (
+                <>
+                  <span className="text-xl block mb-1">✅</span>
+                  <span className="text-xs text-mint-deep font-medium block">관심 등록 완료!</span>
+                  <span className="text-[10px] text-brown-pale font-light block mt-0.5">
+                    곧 만나보실 수 있어요
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl block mb-2">🎬</span>
+                  <span className="text-sm font-medium text-brown block">영상 동화</span>
+                  <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
+                    동화를 읽어주는<br />영상으로 만들어 드려요
+                  </span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 

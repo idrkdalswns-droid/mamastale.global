@@ -13,6 +13,7 @@ import { StoryEditor } from "@/components/story/StoryEditor";
 import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
 import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
+import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -35,6 +36,7 @@ export default function Home() {
   const [editSaveError, setEditSaveError] = useState(false);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
+  const { total: liveTotal, creating: liveCreating, isLoaded: presenceLoaded } = usePresence("home");
 
   // Detect URL params: payment success, action=start
   const [actionStart, setActionStart] = useState(false);
@@ -419,9 +421,24 @@ export default function Home() {
           <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-1.5">
             나의 이야기가 아이의 동화가 되다
           </p>
-          <p className="text-[11px] text-brown-pale font-light mb-5">
-            지금까지 <span className="text-coral font-medium">150+</span>명의 엄마가 동화를 만들었어요
-          </p>
+          <div className="text-[11px] text-brown-pale font-light mb-5 space-y-0.5">
+            {presenceLoaded && liveTotal > 0 ? (
+              <>
+                <p>
+                  🟢 현재 접속자 <span className="text-coral font-medium">{liveTotal}</span>명
+                </p>
+                {liveCreating > 0 && (
+                  <p>
+                    ✍️ 지금 동화를 만들고 있는 어머니 <span className="text-coral font-medium">{liveCreating}</span>명
+                  </p>
+                )}
+              </>
+            ) : (
+              <p>
+                지금까지 <span className="text-coral font-medium">150+</span>명의 엄마가 동화를 만들었어요
+              </p>
+            )}
+          </div>
 
           {/* Description card */}
           <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-4">
