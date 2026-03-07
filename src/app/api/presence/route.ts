@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   // ~10% chance: cleanup stale entries
   if (Math.random() < 0.1) {
-    await supabase.rpc("cleanup_stale_presence").catch(() => {});
+    try { await supabase.rpc("cleanup_stale_presence"); } catch { /* ignore */ }
   }
 
   // Count active users (last 60 seconds)

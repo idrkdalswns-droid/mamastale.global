@@ -3,7 +3,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
-import { getSystemPrompt, getPremiumPhase4Supplement } from "@/lib/anthropic/system-prompt";
+import { getSystemPrompt, getPremiumPhase4Supplement, screenForCrisis } from "@/lib/anthropic/system-prompt";
+import { getPhasePrompt } from "@/lib/anthropic/phase-prompts";
+import type { StorySeedContext } from "@/lib/anthropic/phase-prompts";
 import {
   detectPhase,
   stripPhaseTag,
@@ -13,6 +15,13 @@ import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
+
+// ─── Story Seed schema (optional, from client state) ───
+const storySeedSchema = z.object({
+  coreSeed: z.string().max(200).optional(),
+  chosenMetaphor: z.string().max(200).optional(),
+  counterForce: z.string().max(200).optional(),
+}).optional();
 
 const chatRequestSchema = z.object({
   messages: z.array(
@@ -25,6 +34,7 @@ const chatRequestSchema = z.object({
   childAge: z.enum(["0-2", "3-5", "6-8"]).optional(),  // JP-FIX(1): Strict enum at schema level
   currentPhase: z.number().min(1).max(4).optional(),
   turnCountInCurrentPhase: z.number().min(0).optional(),
+  storySeed: storySeedSchema,
 });
 
 // ─── Rate Limiting (per-isolate, in-memory) ───
@@ -203,7 +213,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase } = parsed.data;
+    const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
 
     // ─── Server-side guest turn limit ───
     // Count by total conversation turns (messages / 2), not just user messages,
@@ -219,11 +229,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ─── SERVER-SIDE CRISIS PRE-SCREENING ───
+    // Check the latest user message for crisis keywords BEFORE calling Claude API.
+    // Saves API tokens and ensures consistent, reliable crisis responses.
+    const latestUserMsg = messages.filter((m) => m.role === "user").pop();
+    if (latestUserMsg) {
+      const crisisResponse = screenForCrisis(latestUserMsg.content);
+      if (crisisResponse) {
+        console.warn("[Chat] Crisis keyword detected — returning hard-coded response");
+        return NextResponse.json({
+          content: crisisResponse,
+          phase: clientPhase || 1,
+          isStoryComplete: false,
+          isCrisisIntervention: true,
+        });
+      }
+    }
+
     const anthropic = getAnthropicClient();
+
+    // ─── PHASE-AWARE PROMPT ASSEMBLY (v3.0) ───
+    // Base prompt (role, safety, rules) + active phase protocol
     let systemPrompt = getSystemPrompt("ko");
 
     // ─── P0-FIX(US-1): childAge whitelist — prevent prompt injection ───
-    // Only known age ranges are allowed; arbitrary strings are silently ignored.
     const VALID_CHILD_AGES = ["0-2", "3-5", "6-8"] as const;
     const ageLabels: Record<string, string> = {
       "0-2": "0~2세 (영아)",
@@ -238,7 +267,6 @@ export async function POST(request: NextRequest) {
     const MAX_TURNS_PER_PHASE = 10;
 
     // P0-FIX(US-2): Phase progression validation — prevent direct jump to Phase 4.
-    // Minimum message count per claimed phase to ensure therapeutic process.
     const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
     const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
     const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
@@ -250,6 +278,17 @@ export async function POST(request: NextRequest) {
     } else {
       systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${MAX_TURNS_PER_PHASE}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
     }
+
+    // ─── INJECT ACTIVE PHASE'S DETAILED CLINICAL PROTOCOL ───
+    // Only the current phase's protocol is sent (not all 4), reducing tokens ~60%
+    // and focusing Claude's attention on the correct therapeutic techniques.
+    const seedContext: StorySeedContext = {
+      coreSeed: storySeed?.coreSeed,
+      chosenMetaphor: storySeed?.chosenMetaphor,
+      counterForce: storySeed?.counterForce,
+      childAge: childAge ? ageLabels[childAge] : undefined,
+    };
+    systemPrompt += getPhasePrompt(safePhase as 1 | 2 | 3 | 4, seedContext);
 
     // ─── Tiered model selection: Phase 4 + paid user → Opus (premium) ───
     const usePremiumModel = isPremiumUser && safePhase === 4;
@@ -287,8 +326,6 @@ export async function POST(request: NextRequest) {
 
     if (storyComplete) {
       // LAUNCH-FIX R2: Only use later assistant messages for scene parsing.
-      // Earlier phases (1-3) may contain numbered lists or bracketed text that
-      // confuse the story parser. Phase 4 starts after ~12+ messages.
       const assistantMsgs = messages.filter((m) => m.role === "assistant");
       const phase4StartIdx = Math.max(0, assistantMsgs.length - 20);
       const allPhase4Text = assistantMsgs

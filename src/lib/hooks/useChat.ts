@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Message, ChatApiResponse } from "@/lib/types/chat";
+import type { Message, ChatApiResponse, StorySeedState } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
 
@@ -55,6 +55,7 @@ function snapshotToState(snapshot: Record<string, unknown>) {
     turnCountInCurrentPhase: typeof snapshot.turnCountInCurrentPhase === "number" ? snapshot.turnCountInCurrentPhase : 0,
     storyDone: snapshot.storyDone === true,
     completedScenes: Array.isArray(snapshot.completedScenes) ? snapshot.completedScenes as Scene[] : [],
+    storySeed: (typeof snapshot.storySeed === "object" && snapshot.storySeed !== null) ? snapshot.storySeed as StorySeedState : {},
     isLoading: false,
     isTransitioning: false,
     storySaved: false,
@@ -79,6 +80,8 @@ interface ChatState {
   isFromDraft: boolean;
   /** Whether the completed story was generated with the premium (Opus) model */
   isPremiumStory: boolean;
+  /** Story Seed — therapeutic anchor tracked across phases */
+  storySeed: StorySeedState;
 
   initSession: (sessionId: string) => void;
   sendMessage: (text: string) => Promise<void>;
@@ -149,6 +152,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   storySaveError: null,
   isFromDraft: false,
   isPremiumStory: false,
+  storySeed: {},
 
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
@@ -197,6 +201,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           childAge,
           currentPhase: state.currentPhase,
           turnCountInCurrentPhase: newTurnCount,
+          storySeed: state.storySeed,
         }),
       });
 
@@ -332,6 +337,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         turnCountInCurrentPhase: s.turnCountInCurrentPhase,
         storyDone: s.storyDone,
         completedScenes: s.completedScenes,
+        storySeed: s.storySeed,
         savedAt: Date.now(),
         source: "auth",
       };
@@ -381,6 +387,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         turnCountInCurrentPhase: s.turnCountInCurrentPhase,
         storyDone: s.storyDone,
         completedScenes: s.completedScenes,
+        storySeed: s.storySeed,
         savedAt: Date.now(),
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
@@ -533,6 +540,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       storySaveError: null,
       isFromDraft: false,
       isPremiumStory: false,
+      storySeed: {},
     });
   },
 }));
