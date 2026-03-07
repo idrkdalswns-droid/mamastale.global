@@ -2,9 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { isValidUUID, sanitizeText, containsProfanity } from "@/lib/utils/validation";
+import { isValidUUID, sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+// P1-FIX: Rate limiting for comment POST (prevent spam)
+const COMMENT_RATE_WINDOW = 60_000; // 1 minute
+const COMMENT_RATE_LIMIT = 5; // max 5 comments per minute per IP
+const commentRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkCommentRate(key: string): boolean {
+  const now = Date.now();
+  if (commentRateMap.size > 300) {
+    for (const [k, v] of commentRateMap) {
+      if (now > v.resetAt) commentRateMap.delete(k);
+    }
+  }
+  const entry = commentRateMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    commentRateMap.set(key, { count: 1, resetAt: now + COMMENT_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= COMMENT_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
@@ -59,6 +81,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // P1-FIX: Rate limit comment submissions
+  const ip = getClientIP(request);
+  if (!checkCommentRate(ip)) {
+    return NextResponse.json(
+      { error: "댓글은 1분에 5개까지 등록 가능합니다." },
+      { status: 429 }
+    );
+  }
+
   const { id: storyId } = await params;
 
   if (!isValidUUID(storyId)) {

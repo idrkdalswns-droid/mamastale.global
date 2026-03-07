@@ -137,7 +137,17 @@ export async function POST(request: NextRequest) {
       body: params.toString(),
     });
 
-    const session = await response.json();
+    // R2-FIX: Wrap Stripe response parsing in try-catch (may return non-JSON on 502)
+    let session;
+    try {
+      session = await response.json();
+    } catch {
+      console.error("[Stripe] Non-JSON response, status:", response.status);
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요." },
+        { status: 502 }
+      ));
+    }
 
     if (!response.ok) {
       console.error("Stripe API error:", session?.error?.type);

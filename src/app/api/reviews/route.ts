@@ -86,27 +86,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createAnonClient();
-  if (!supabase) {
-    return sb.applyCookies(NextResponse.json({ error: "DB not configured" }, { status: 503 }));
-  }
-
   // Safe JSON parsing
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
   }
 
   try {
     const { authorAlias, childInfo, stars, content } = body;
 
     if (!content?.trim()) {
-      return NextResponse.json({ error: "후기 내용을 입력해 주세요" }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "후기 내용을 입력해 주세요" }, { status: 400 }));
     }
     if (!authorAlias?.trim()) {
-      return NextResponse.json({ error: "별명을 입력해 주세요" }, { status: 400 });
+      return sb.applyCookies(NextResponse.json({ error: "별명을 입력해 주세요" }, { status: 400 }));
     }
 
     const safeContent = sanitizeText(content.trim().slice(0, 500));
@@ -116,13 +111,15 @@ export async function POST(request: NextRequest) {
     const safeStars = Math.min(5, Math.max(1, parsedStars));
 
     if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
-      return NextResponse.json(
+      return sb.applyCookies(NextResponse.json(
         { error: "부적절한 표현이 포함되어 있습니다." },
         { status: 400 }
-      );
+      ));
     }
 
-    const { data, error } = await supabase
+    // P0-FIX: Use authenticated client (sb.client) instead of anon client
+    // Anon client may fail INSERT under RLS policies that require user context
+    const { data, error } = await sb.client
       .from("user_reviews")
       .insert({
         author_alias: safeAlias,
@@ -135,11 +132,11 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("[Reviews] Insert error: code=", error.code);
-      return NextResponse.json({ error: "후기 등록에 실패했습니다." }, { status: 500 });
+      return sb.applyCookies(NextResponse.json({ error: "후기 등록에 실패했습니다." }, { status: 500 }));
     }
 
-    return NextResponse.json({ review: data });
+    return sb.applyCookies(NextResponse.json({ review: data }));
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }
 }

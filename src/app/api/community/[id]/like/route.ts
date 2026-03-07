@@ -116,6 +116,18 @@ export async function POST(
       return sb.applyCookies(NextResponse.json({ liked: true, guest: true, duplicate: true }));
     }
 
+    // P1-FIX: Verify story is public before allowing guest likes
+    // Without this check, a guest could inflate like_count on private stories
+    const { data: publicStory } = await sb.client
+      .from("stories")
+      .select("id")
+      .eq("id", storyId)
+      .eq("is_public", true)
+      .maybeSingle();
+    if (!publicStory) {
+      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+    }
+
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
       await serviceClient.rpc("increment_story_counter", {

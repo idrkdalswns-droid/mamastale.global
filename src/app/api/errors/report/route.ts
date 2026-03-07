@@ -19,6 +19,12 @@ const reportMap = new Map<string, { count: number; reset: number }>();
 
 function checkReportLimit(ip: string): boolean {
   const now = Date.now();
+  // P1-FIX: Lazy cleanup to prevent unbounded memory growth
+  if (reportMap.size > 300) {
+    for (const [k, v] of reportMap) {
+      if (now > v.reset) reportMap.delete(k);
+    }
+  }
   const entry = reportMap.get(ip);
   if (!entry || now > entry.reset) {
     reportMap.set(ip, { count: 1, reset: now + 60_000 });

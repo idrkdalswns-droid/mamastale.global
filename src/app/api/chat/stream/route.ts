@@ -29,6 +29,7 @@ import {
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
+import { recordCrisisEvent } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
@@ -165,6 +166,15 @@ export async function POST(request: NextRequest) {
           reasoning: crisisResult.reasoning,
         },
       }).catch(() => {});
+      // P0-FIX: Record HIGH crisis to crisis_events for persistent tracking (was missing in stream endpoint)
+      recordCrisisEvent({
+        sessionId: parsed.data.sessionId || `anon_${Date.now()}`,
+        userId,
+        severity: "HIGH",
+        cssrsLevel: crisisResult.cssrsLevel,
+        keywords: crisisResult.detectedKeywords.slice(0, 5),
+        reasoning: crisisResult.reasoning,
+      }).catch(() => {});
       return NextResponse.json({
         content: crisisResult.response!,
         phase: clientPhase || 1,
@@ -185,6 +195,17 @@ export async function POST(request: NextRequest) {
           reasoning: crisisResult.reasoning,
         },
       }).catch(() => {});
+      // P0-FIX: Record MEDIUM crisis events to DB (parity with non-stream endpoint)
+      if (crisisResult.severity === "MEDIUM") {
+        recordCrisisEvent({
+          sessionId: parsed.data.sessionId || `anon_${Date.now()}`,
+          userId,
+          severity: "MEDIUM",
+          cssrsLevel: crisisResult.cssrsLevel,
+          keywords: crisisResult.detectedKeywords.slice(0, 5),
+          reasoning: crisisResult.reasoning,
+        }).catch(() => {});
+      }
     }
   }
 
@@ -256,18 +277,33 @@ export async function POST(request: NextRequest) {
           })),
         });
 
+        // P1-FIX: Streaming timeout — abort if no data for 90 seconds
+        const STREAM_TIMEOUT_MS = 90_000;
+        let lastChunkTime = Date.now();
+        const timeoutCheck = setInterval(() => {
+          if (Date.now() - lastChunkTime > STREAM_TIMEOUT_MS) {
+            clearInterval(timeoutCheck);
+            stream.abort();
+          }
+        }, 5_000);
+
         let fullText = "";
 
-        for await (const event of stream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            fullText += event.delta.text;
-            controller.enqueue(encoder.encode(
-              `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
-            ));
+        try {
+          for await (const event of stream) {
+            lastChunkTime = Date.now();
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              fullText += event.delta.text;
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
+              ));
+            }
           }
+        } finally {
+          clearInterval(timeoutCheck);
         }
 
         const apiLatencyMs = Date.now() - apiStartTime;
@@ -328,11 +364,16 @@ export async function POST(request: NextRequest) {
         }).catch(() => {});
 
       } catch (err) {
-        console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown");
+        // R2-FIX: Distinguish timeout errors from other stream failures
+        const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"));
+        const errorMessage = isAbort
+          ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
+          : "스트리밍 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.";
+        console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
         controller.enqueue(encoder.encode(
           `data: ${JSON.stringify({
             type: "error",
-            error: "스트리밍 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.",
+            error: errorMessage,
           })}\n\n`
         ));
         controller.close();
@@ -341,7 +382,7 @@ export async function POST(request: NextRequest) {
           eventType: "error",
           endpoint: "/api/chat/stream",
           userId,
-          metadata: { errorName: err instanceof Error ? err.name : "Unknown" },
+          metadata: { errorName: err instanceof Error ? err.name : "Unknown", isTimeout: isAbort },
         }).catch(() => {});
       }
     },

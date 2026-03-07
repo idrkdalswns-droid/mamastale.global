@@ -225,7 +225,18 @@ export async function POST(request: NextRequest) {
     }
     clearTimeout(tossTimeout);
 
-    const confirmData = await confirmRes.json();
+    // P0-FIX: Wrap Toss response parsing in try-catch (Toss may return HTML on 502/503)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let confirmData: any;
+    try {
+      confirmData = await confirmRes.json();
+    } catch {
+      console.error("[Toss] Non-JSON response from Toss API, status:", confirmRes.status);
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요.", code: "PROVIDER_ERROR" },
+        { status: 502 }
+      ));
+    }
 
     if (!confirmRes.ok) {
       // Handle already-confirmed payments gracefully (e.g., user refreshed success page)

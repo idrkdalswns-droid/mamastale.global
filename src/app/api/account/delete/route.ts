@@ -49,7 +49,8 @@ export async function DELETE(request: NextRequest) {
     const maskedId = userId.slice(0, 8) + "…";
 
     // Phase 1: Delete non-dependent records (can run in parallel)
-    const phase1Tables = ["comment_reports", "likes", "feedback", "comments"] as const;
+    // P1-FIX: Added "user_reviews" to prevent orphaned review records after account deletion
+    const phase1Tables = ["comment_reports", "likes", "feedback", "comments", "user_reviews"] as const;
     const phase1Results = await Promise.allSettled(
       phase1Tables.map(async (table) => {
         const col = table === "comment_reports" ? "reporter_id" : "user_id";
