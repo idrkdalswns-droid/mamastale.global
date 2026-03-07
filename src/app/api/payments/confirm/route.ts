@@ -139,13 +139,18 @@ export async function POST(request: NextRequest) {
 
     const { paymentKey, orderId, amount, mode } = parsed.data;
 
-    // ─── Select secret key based on payment mode ───
-    // Widget mode (gck_ client key) → must use gsk_ secret key
-    // Standard mode (ck_ client key) → must use sk_ secret key
-    // Mismatched key pairs cause FORBIDDEN_REQUEST in production
-    const tossSecretKey = mode === "standard"
-      ? (apiSecretKey || widgetSecretKey)!   // Standard prefers sk_, falls back to gsk_
-      : (widgetSecretKey || apiSecretKey)!;  // Widget prefers gsk_, falls back to sk_
+    // ─── Select secret key based on payment mode (NO cross-mode fallback) ───
+    // Widget mode (gck_ client key) → MUST use gsk_ secret key
+    // Standard mode (ck_ client key) → MUST use sk_ secret key
+    // Mismatched key pairs cause FORBIDDEN_REQUEST from Toss
+    const tossSecretKey = mode === "standard" ? apiSecretKey : widgetSecretKey;
+    if (!tossSecretKey) {
+      console.error(`[Toss] Missing secret key for mode="${mode}"`);
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제 시스템 설정 오류입니다.", code: "MISSING_SECRET_KEY" },
+        { status: 503 }
+      ));
+    }
 
     // ─── Server-side idempotency guard ───
     if (isOrderProcessed(orderId)) {

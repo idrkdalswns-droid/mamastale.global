@@ -42,6 +42,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_ORDER_ID: "주문 번호가 올바르지 않습니다.",
   INVALID_API_KEY: "결제 인증에 실패했습니다. 잠시 후 다시 시도해 주세요.",
   CONFIRM_FAILED: "결제 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  TICKET_INCREMENT_FAILED: "결제는 완료되었으나 티켓 충전에 실패했습니다. 고객센터에 문의해 주세요.",
+  MISSING_SECRET_KEY: "결제 시스템 설정 오류입니다. 고객센터에 문의해 주세요.",
   UNKNOWN_ERROR: "알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
   REJECT_ACCOUNT_PAYMENT: "계좌 결제가 거절되었습니다. 다른 결제 수단을 사용해 주세요.",
   REJECT_TOSSPAY_INVALID_ACCOUNT: "토스페이 계좌 정보가 올바르지 않습니다.",

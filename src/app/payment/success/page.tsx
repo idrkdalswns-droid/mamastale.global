@@ -21,12 +21,15 @@ const PAYMENT_METHOD_LABELS: Record<string, { label: string }> = {
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<"confirming" | "success" | "error">("confirming");
+  const [status, setStatus] = useState<"confirming" | "success" | "error" | "ticket_failed">("confirming");
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketsAdded, setTicketsAdded] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [hasSavedChat, setHasSavedChat] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const confirmedRef = useRef(false);
+  // Store payment params for retry (URL is cleaned before fetch)
+  const paymentParamsRef = useRef<{ paymentKey: string; orderId: string; amount: number; mode: string } | null>(null);
 
   useEffect(() => {
     // Idempotency guard: prevent double-confirm on re-render or refresh
@@ -44,12 +47,16 @@ function PaymentSuccessContent() {
       return;
     }
 
+    // Store params for potential retry BEFORE cleaning URL
+    const params = { paymentKey, orderId, amount: Number(amount), mode };
+    paymentParamsRef.current = params;
+
     // Mark as confirmed and clean URL BEFORE the fetch to prevent race
     confirmedRef.current = true;
     window.history.replaceState({}, "", "/payment/success");
 
     // CTO-FIX: Include Bearer token for cookie fallback (mobile browsers)
-    const confirmPayment = async () => {
+    const callConfirm = async (p: typeof params) => {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       try {
         const supabase = createClient();
@@ -61,24 +68,24 @@ function PaymentSuccessContent() {
       return fetch("/api/payments/confirm", {
         method: "POST",
         headers,
-        body: JSON.stringify({ paymentKey, orderId, amount: Number(amount), mode }),
+        body: JSON.stringify(p),
       });
     };
 
-    confirmPayment()
+    callConfirm(params)
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.success) {
           // ticketsAdded may be absent on alreadyProcessed responses -- derive from amount
-          const amountParam = searchParams.get("amount");
-          const amountNum = amountParam ? Number(amountParam) : 0;
-          const derivedTickets = amountNum >= 14900 ? 4 : 1;
+          const derivedTickets = params.amount >= 14900 ? 4 : 1;
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setStatus("success");
+        } else if (data.code === "TICKET_INCREMENT_FAILED") {
+          // Payment confirmed but ticket grant failed — offer retry (money already charged)
+          setStatus("ticket_failed");
         } else {
           // Redirect to fail page with error code (like official Toss sample)
-          // This gives users specific, actionable error messages
           const errorCode = data.code || "CONFIRM_FAILED";
           router.replace(`/payment/fail?code=${encodeURIComponent(errorCode)}`);
         }
@@ -88,6 +95,50 @@ function PaymentSuccessContent() {
         setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       });
   }, [searchParams, router]);
+
+  // Retry handler for TICKET_INCREMENT_FAILED
+  const handleRetryTicket = async () => {
+    const params = paymentParamsRef.current;
+    if (!params || retrying) return;
+    setRetrying(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch { /* ignore */ }
+      const res = await fetch("/api/payments/confirm", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const derivedTickets = params.amount >= 14900 ? 4 : 1;
+        setTicketsAdded(data.ticketsAdded || derivedTickets);
+        if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
+        setStatus("success");
+      } else if (data.code === "TICKET_INCREMENT_FAILED") {
+        setRetrying(false); // Allow another retry
+      } else {
+        // On retry, if backend returns success (alreadyProcessed), treat as success
+        if (data.success) {
+          const derivedTickets = params.amount >= 14900 ? 4 : 1;
+          setTicketsAdded(data.ticketsAdded || derivedTickets);
+          setStatus("success");
+        } else {
+          setStatus("error");
+          setErrorMsg("티켓 충전에 실패했습니다. 고객센터에 문의해 주세요.");
+        }
+      }
+    } catch {
+      setRetrying(false);
+      setErrorMsg("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+    }
+  };
 
   // Check if there's a saved chat to resume
   useEffect(() => {
@@ -103,6 +154,48 @@ function PaymentSuccessContent() {
           </h2>
           <p className="text-sm text-brown-light font-light">
             잠시만 기다려 주세요
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "ticket_failed") {
+    return (
+      <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
+        <div className="text-center max-w-sm">
+          <h2 className="font-serif text-xl font-bold text-brown mb-3">
+            티켓 충전 지연
+          </h2>
+          <p className="text-sm text-brown-light font-light mb-2 break-keep">
+            결제는 완료되었으나 티켓 충전에 일시적 오류가 발생했습니다.
+          </p>
+          <p className="text-sm text-brown-light font-light mb-6 break-keep">
+            아래 버튼을 눌러 다시 시도해 주세요.
+          </p>
+          <button
+            onClick={handleRetryTicket}
+            disabled={retrying}
+            className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3 disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+            }}
+          >
+            {retrying ? "처리 중..." : "티켓 충전 다시 시도"}
+          </button>
+          {errorMsg && (
+            <p className="text-xs text-coral mb-3">{errorMsg}</p>
+          )}
+          <p className="text-[11px] text-brown-pale font-light mt-4">
+            문제가 계속되면{" "}
+            <a
+              href="mailto:kang.minjune@icloud.com"
+              className="text-coral underline underline-offset-2"
+            >
+              kang.minjune@icloud.com
+            </a>
+            으로 문의해 주세요
           </p>
         </div>
       </div>
