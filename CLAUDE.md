@@ -589,6 +589,109 @@ function checkRate(key: string, limit: number, windowMs: number): boolean {
 
 ---
 
+## 🔴 민감 영역 (반드시 plan.md 선행)
+
+아래 영역은 변경 시 반드시 **plan.md를 먼저 작성**하고 승인 후 구현하세요.
+임의 수정 시 프로덕션 사고로 직결됩니다.
+
+| 영역 | 파일 | 위험도 | 이유 |
+|------|------|--------|------|
+| **위기감지** | `src/lib/anthropic/system-prompt.ts` | 🔴 최고 | CSSRS 임상 검증된 키워드. 잘못 수정 시 자살 위기 미감지 |
+| **결제** | `src/app/api/checkout/route.ts`, `webhooks/stripe/` | 🔴 최고 | 금전 직결. 티켓 차감 원자성 보장 필수 |
+| **인증** | `src/lib/supabase/server-api.ts`, `middleware.ts` | 🔴 최고 | RLS 우회, 세션 탈취 가능 |
+| **티켓** | `src/lib/supabase/tickets.ts` | 🟠 높음 | 원자적 차감 로직. 경쟁 조건 주의 |
+| **시스템 프롬프트** | `src/lib/anthropic/phase-prompts.ts` | 🟠 높음 | 치유적 대화 품질에 직접 영향 |
+| **출력 안전** | `src/lib/anthropic/output-safety.ts` | 🟠 높음 | 독성 긍정, 의료 조언 필터링 |
+| **환경변수** | `.env.local` | 🔴 최고 | API 키 노출 절대 금지 |
+
+### 수정 금지 패턴
+
+```
+❌ system-prompt.ts의 위기 키워드를 AI가 임의로 추가/삭제
+❌ tickets.ts의 atomic decrement 로직 변경
+❌ middleware.ts의 보안 헤더 제거
+❌ .env.local을 git에 커밋
+❌ RLS 정책 변경 (반드시 DBA 검토)
+```
+
+---
+
+## 🧭 바이브코딩 워크플로우 가이드
+
+### 기능 개발 순서
+
+```
+1. plan.md 작성 요청 ("구현하지 마. 계획만 세워줘")
+2. plan.md 리뷰 & 인라인 노트 추가 (1~6회 반복)
+3. 승인 후 구현 시작
+4. 500줄 이상 변경 시 서브태스크로 분할
+5. 구현 완료 → npm run build && npm test
+6. git diff 리뷰 → 커밋
+```
+
+### 3-Attempt 모델
+
+- **1차**: 탐색. 코드 대부분 폐기 각오. 맥락 파악용
+- **2차**: 피드백 반영. 50% 활용 가능
+- **3차**: 실제 작업 시작점
+
+### 되돌리기 > 반복수정
+
+```
+AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
+5분 이상 같은 버그로 씨름 → 리셋하고 처음부터
+```
+
+### 컨텍스트 관리
+
+- 200k 토큰 중 ~20k은 CLAUDE.md + 프로젝트 초기화
+- 긴 세션에서 품질 저하 시 `/clear` 후 재시작
+- 검색 도구로 컨텍스트를 과다 채우지 않기 (필요한 파일만)
+
+---
+
+## 최근 아키텍처 추가사항 (2025.03)
+
+### 다층 위기감지 (CSSRS 5단계)
+- HIGH (Level 4-5): Claude API 바이패스, 하드코딩 위기 응답
+- MEDIUM (Level 2-3): `<crisis_context>` 프롬프트 주입
+- LOW (Level 1): 로그만 기록
+- 14개 false positive 패턴으로 오탐 방지
+
+### 모델 라우팅 (`model-router.ts`)
+| Phase | 일반 | 유료 |
+|-------|------|------|
+| 1 공감 | Haiku 3.5 | Haiku 3.5 |
+| 2 소크라테스 | Sonnet 4 | Sonnet 4 |
+| 3 은유 | Sonnet 4 | Sonnet 4 |
+| 4 동화 | Sonnet 4 | Opus 4 |
+
+### SSE 스트리밍 (`/api/chat/stream`)
+- 기존 `/api/chat` 하위호환 유지
+- SSE: `{type:'meta'}` → `{type:'text'}` → `{type:'done'}`
+
+### PWA (@serwist/next)
+- 서비스워커: `src/app/sw.ts`
+- 오프라인 폴백: `src/app/~offline/page.tsx`
+- 매니페스트: `src/app/manifest.json`
+
+### i18n (next-intl)
+- 6개 언어: `messages/{ko,en,ja,zh,ar,fr}.json`
+- 설정: `src/i18n/request.ts`
+- RTL: 아랍어 자동 `dir="rtl"`
+
+### Supabase 마이그레이션 (012-017)
+```
+012_llm_observability.sql   — LLM 호출 추적
+013_event_logs.sql          — 이벤트 로그
+014_rate_limiting.sql       — 지속적 Rate Limiting
+015_response_cache.sql      — 응답 캐시
+016_pgvector_foundation.sql — 벡터 검색 기반
+017_crisis_tracking.sql     — 위기 이벤트 추적
+```
+
+---
+
 ## 자주 수정되는 파일
 
 | 파일 | 변경 빈도 | 이유 |

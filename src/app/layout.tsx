@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import { Footer } from "@/components/layout/Footer";
+import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -116,6 +117,7 @@ export default async function RootLayout({
         </main>
         <ConsentGatedScripts />
         <CookieConsent />
+        <ErrorReporter />
         <Toaster
           position="top-center"
           toastOptions={{

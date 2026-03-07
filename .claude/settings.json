@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git push.*main|git push -f|git push --force)",
+        "hook": {
+          "type": "command",
+          "command": "echo '🚫 main 브랜치 직접 push 금지. PR을 통해 머지하거나, 승인 후 push하세요.' && exit 1"
+        }
+      },
+      {
+        "matcher": "Bash(rm -rf /|rm -rf ~|rm -rf \\.|rm -rf src)",
+        "hook": {
+          "type": "command",
+          "command": "echo '🚫 위험한 삭제 명령어가 차단되었습니다.' && exit 1"
+        }
+      },
+      {
+        "matcher": "Edit(.env|credentials|secret)",
+        "hook": {
+          "type": "command",
+          "command": "echo '🚫 환경변수/인증정보 파일 수정 차단. 직접 수정하세요.' && exit 1"
+        }
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git commit)",
+        "hook": {
+          "type": "command",
+          "command": "cd /Users/minjunekang/Desktop/엄마엄마동화/mamastale && npm run build 2>&1 | tail -5 && npm test 2>&1 | tail -10"
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(node *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)"
+    ]
+  }
+}
