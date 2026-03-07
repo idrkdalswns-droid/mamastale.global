@@ -148,7 +148,8 @@ function PaymentSuccessContent() {
   if (status === "confirming") {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
-        <div className="text-center">
+        <div className="text-center" role="status" aria-live="polite">
+          <div className="w-8 h-8 mx-auto mb-4 border-2 border-coral/30 border-t-coral rounded-full animate-spin" />
           <h2 className="font-serif text-xl font-bold text-brown mb-3">
             결제 확인 중...
           </h2>

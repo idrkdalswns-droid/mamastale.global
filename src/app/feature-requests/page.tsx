@@ -63,7 +63,7 @@ export default function FeatureRequestsPage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+              className={`shrink-0 px-3 py-2 rounded-full text-[11px] font-medium transition-all min-h-[44px] ${
                 filter === f.key
                   ? "bg-brown text-white"
                   : "bg-white/50 text-brown-light border border-brown-pale/15"

@@ -100,11 +100,15 @@ export default function CommunityBrowsePage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="동화 제목이나 내용 검색..."
-              className="w-full pl-4 pr-4 py-2.5 rounded-xl text-sm font-sans outline-none"
+              className="w-full pl-4 pr-4 py-2.5 rounded-xl font-sans outline-none min-h-[44px]"
               style={{
                 background: "rgba(255,255,255,0.6)",
                 border: "1.5px solid rgba(196,149,106,0.15)",
+                fontSize: 16,
               }}
+              inputMode="search"
+              enterKeyHint="search"
+              autoComplete="off"
               aria-label="동화 검색"
             />
             {search && (
@@ -126,7 +130,7 @@ export default function CommunityBrowsePage() {
               key={t.key}
               onClick={() => setTopic(t.key)}
               aria-pressed={topic === t.key}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+              className={`shrink-0 px-3 py-2 rounded-full text-[11px] font-medium transition-all min-h-[44px] ${
                 topic === t.key
                   ? "bg-brown text-white"
                   : "bg-white/50 text-brown-light border border-brown-pale/15"
@@ -142,7 +146,7 @@ export default function CommunityBrowsePage() {
           <button
             onClick={() => setSort("recent")}
             aria-pressed={sort === "recent"}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all min-h-[44px] flex items-center ${
               sort === "recent"
                 ? "bg-coral text-white"
                 : "bg-white/50 text-brown-light border border-brown-pale/15"
@@ -153,7 +157,7 @@ export default function CommunityBrowsePage() {
           <button
             onClick={() => setSort("popular")}
             aria-pressed={sort === "popular"}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all min-h-[44px] flex items-center ${
               sort === "popular"
                 ? "bg-coral text-white"
                 : "bg-white/50 text-brown-light border border-brown-pale/15"

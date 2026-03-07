@@ -7,6 +7,7 @@ import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalNav } from "@/components/layout/GlobalNav";
 import { ErrorReporter } from "@/components/ui/ErrorReporter";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -112,6 +113,7 @@ export default async function RootLayout({
           본문으로 건너뛰기
         </a>
         <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-x-hidden">
+          <ScrollToTop />
           <GlobalNav />
           {children}
           <Footer />

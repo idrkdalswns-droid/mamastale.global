@@ -526,7 +526,7 @@ export default function Home() {
               {ticketsRemaining <= 0 && (
                 <Link
                   href="/pricing"
-                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10"
+                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
                 >
                   구매하기
                 </Link>
@@ -545,7 +545,7 @@ export default function Home() {
           <div className="flex gap-2 mb-4">
             <Link
               href="/reviews"
-              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
               style={{
                 background: "rgba(224,122,95,0.08)",
                 color: "#E07A5F",
@@ -556,7 +556,7 @@ export default function Home() {
             </Link>
             <Link
               href="/community"
-              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
               style={{
                 background: "rgba(109,76,145,0.08)",
                 color: "#6D4C91",
@@ -567,7 +567,7 @@ export default function Home() {
             </Link>
             <Link
               href="/pricing"
-              className="flex-1 py-2 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97]"
+              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
               style={{
                 background: "rgba(196,149,106,0.08)",
                 color: "#8B7355",
@@ -662,7 +662,7 @@ export default function Home() {
           </p>
           <a
             href="/feature-requests"
-            className="block text-[10px] text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2"
+            className="block text-xs text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2 min-h-[44px] inline-flex items-center justify-center w-full"
           >
             개발 요청 보드
           </a>

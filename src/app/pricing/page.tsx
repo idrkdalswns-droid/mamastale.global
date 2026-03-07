@@ -661,7 +661,7 @@ function PricingContent() {
                 <button
                   id={`faq-btn-${i}`}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                  className="w-full flex items-center justify-between px-4 py-3 text-left min-h-[44px]"
                   aria-expanded={openFaq === i}
                   aria-controls={`faq-panel-${i}`}
                 >

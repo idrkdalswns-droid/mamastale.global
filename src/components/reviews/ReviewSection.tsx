@@ -19,7 +19,7 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
           key={n}
           type="button"
           onClick={() => onChange(n)}
-          className="text-lg transition-transform active:scale-110"
+          className="w-11 h-11 flex items-center justify-center text-xl transition-transform active:scale-110"
           style={{ color: n <= value ? "#E07A5F" : "#D0C8C0" }}
         >
           {n <= value ? "\u2605" : "\u2606"}
@@ -157,8 +157,8 @@ export function ReviewSection() {
               onChange={(e) => setAlias(e.target.value)}
               placeholder="별명 (필수)"
               maxLength={20}
-              className="flex-1 px-3 py-2.5 rounded-lg text-xs outline-none"
-              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
+              className="flex-1 px-3 py-2.5 rounded-lg outline-none min-h-[44px]"
+              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
             />
             <input
               type="text"
@@ -166,8 +166,8 @@ export function ReviewSection() {
               onChange={(e) => setChildInfo(e.target.value)}
               placeholder="자녀 정보 (선택)"
               maxLength={30}
-              className="flex-1 px-3 py-2.5 rounded-lg text-xs outline-none"
-              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
+              className="flex-1 px-3 py-2.5 rounded-lg outline-none min-h-[44px]"
+              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
             />
           </div>
 
@@ -182,8 +182,8 @@ export function ReviewSection() {
             placeholder="mamastale 사용 후기를 남겨주세요..."
             maxLength={500}
             rows={4}
-            className="w-full px-3 py-2.5 rounded-lg text-xs outline-none resize-none mb-2"
-            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444" }}
+            className="w-full px-3 py-2.5 rounded-lg outline-none resize-none mb-2"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />
 
           <div className="flex justify-between items-center mb-3">
