@@ -123,35 +123,22 @@ export async function POST(request: NextRequest) {
           console.error("[Stripe] Invalid user_id in metadata");
           break;
         }
-        const VALID_STRIPE_TICKET_COUNTS = [1, 4];
-        const rawTicketCount = parseInt(session.metadata?.ticket_count || "1", 10);
-        const ticketCount = VALID_STRIPE_TICKET_COUNTS.includes(rawTicketCount) ? rawTicketCount : 1;
 
-        // ─── DB-level idempotency: check if this session was already processed ───
-        const { data: existingSub } = await supabase
-          .from("subscriptions")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("stripe_customer_id", session.id)
-          .maybeSingle();
-
-        if (existingSub) {
-          console.log(`[Stripe] Session ${session.id} already processed, skipping`);
-          break;
+        // P0-3 FIX: Determine ticket count from actual payment amount (not metadata)
+        // KRW is a zero-decimal currency in Stripe, so amount_total is in Won
+        const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {
+          4900: 1,    // ₩4,900 = 1 ticket
+          14900: 4,   // ₩14,900 = 4 tickets (bundle)
+        };
+        const paidAmount = session.amount_total;
+        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount];
+        if (!ticketCount) {
+          console.error(`[Stripe] Unknown payment amount: ${paidAmount}, session: ${session.id}`);
+          break; // Return 200 to stop Stripe retries, log for manual review
         }
 
-        // ─── Atomic ticket increment ───
-        try {
-          await incrementTickets(supabase, userId, ticketCount);
-        } catch (err) {
-          console.error("[Stripe] Ticket increment failed:", err);
-          processedEvents.delete(event.id); // Allow retry
-          return NextResponse.json({ error: "Ticket increment failed" }, { status: 500 });
-        }
-
-        // LAUNCH-FIX: Check insert result + store session.id in both columns
-        // stripe_customer_id stores checkout session ID for idempotency lookups above
-        // stripe_subscription_id stores subscription ID for lifecycle event matching below
+        // P1-3 FIX: INSERT subscription record BEFORE incrementing tickets
+        // If INSERT fails with unique violation, another isolate already processed this session
         const { error: subInsertErr } = await supabase.from("subscriptions").insert({
           user_id: userId,
           stripe_customer_id: session.id,
@@ -161,8 +148,25 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         });
         if (subInsertErr) {
-          // Tickets already granted — log error but return 200 to prevent Stripe retry (which would double-grant)
-          console.error("[Stripe][CRITICAL] Subscription insert failed after ticket grant:", subInsertErr.code, subInsertErr.message, "sessionId:", session.id, "userId:", userId);
+          // Check if it's a unique violation (already processed)
+          if (subInsertErr.code === "23505") {
+            console.log(`[Stripe] Session ${session.id} already processed (unique constraint), skipping`);
+            break;
+          }
+          console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
+          // Non-unique error → allow Stripe to retry
+          return NextResponse.json({ error: "DB insert failed" }, { status: 500 });
+        }
+
+        // ─── Atomic ticket increment (only reached if INSERT succeeded) ───
+        try {
+          await incrementTickets(supabase, userId, ticketCount);
+        } catch (err) {
+          console.error("[Stripe] Ticket increment failed:", err);
+          // Rollback: delete the subscription record to allow retry
+          await supabase.from("subscriptions").delete().eq("stripe_customer_id", session.id);
+          processedEvents.delete(event.id); // Allow in-memory retry
+          return NextResponse.json({ error: "Ticket increment failed" }, { status: 500 });
         }
       }
       break;
