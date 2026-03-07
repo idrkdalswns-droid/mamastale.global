@@ -16,6 +16,7 @@ import {
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
+import { recordCrisisEvent, getPostCrisisState, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
 import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/utils/response-cache";
 import { z } from "zod";
@@ -261,6 +262,15 @@ export async function POST(request: NextRequest) {
             reasoning: crisisResult.reasoning,
           },
         }).catch(() => {});
+        // Record to crisis_events table for persistent tracking & post-crisis mode
+        recordCrisisEvent({
+          sessionId: parsed.data.sessionId || `anon_${Date.now()}`,
+          userId,
+          severity: "HIGH",
+          cssrsLevel: crisisResult.cssrsLevel,
+          keywords: crisisResult.detectedKeywords.slice(0, 5),
+          reasoning: crisisResult.reasoning,
+        }).catch(() => {});
 
         return NextResponse.json({
           content: crisisResult.response!,
@@ -283,6 +293,17 @@ export async function POST(request: NextRequest) {
             reasoning: crisisResult.reasoning,
           },
         }).catch(() => {});
+        // Record MEDIUM events to crisis_events for persistent tracking
+        if (crisisResult.severity === "MEDIUM") {
+          recordCrisisEvent({
+            sessionId: parsed.data.sessionId || `anon_${Date.now()}`,
+            userId,
+            severity: "MEDIUM",
+            cssrsLevel: crisisResult.cssrsLevel,
+            keywords: crisisResult.detectedKeywords.slice(0, 5),
+            reasoning: crisisResult.reasoning,
+          }).catch(() => {});
+        }
       }
     }
 
@@ -292,6 +313,11 @@ export async function POST(request: NextRequest) {
     const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
     const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
     const safeTurnCount = turnCountInCurrentPhase ?? 0;
+
+    // ─── POST-CRISIS MODE CHECK (decrement turns if in post-crisis) ───
+    if (parsed.data.sessionId && crisisResult.severity === null) {
+      decrementPostCrisisTurn(parsed.data.sessionId).catch(() => {});
+    }
 
     // ─── RESPONSE CACHE CHECK (Phase 1 only) ───
     if (safePhase === 1 && latestUserMsg && crisisResult.severity === null) {

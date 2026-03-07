@@ -21,6 +21,13 @@
           "type": "command",
           "command": "echo '🚫 환경변수/인증정보 파일 수정 차단. 직접 수정하세요.' && exit 1"
         }
+      },
+      {
+        "matcher": "Edit(system-prompt\\.ts)",
+        "hook": {
+          "type": "command",
+          "command": "echo '⚠️ 위기감지 시스템 프롬프트 수정 감지. plan.md 작성 후 승인 받으셨나요? (CSSRS 임상 검증 영역)' && exit 0"
+        }
       }
     ],
     "PostToolUse": [
@@ -28,7 +35,7 @@
         "matcher": "Bash(git commit)",
         "hook": {
           "type": "command",
-          "command": "cd /Users/minjunekang/Desktop/엄마엄마동화/mamastale && npm run build 2>&1 | tail -5 && npm test 2>&1 | tail -10"
+          "command": "cd /Users/minjunekang/Desktop/엄마엄마동화/mamastale && export PATH=/usr/bin:/bin:/usr/local/bin:$PATH && npm run build 2>&1 | tail -5 && npm test 2>&1 | tail -10"
         }
       }
     ]
@@ -40,7 +47,9 @@
       "Bash(git *)",
       "Bash(ls *)",
       "Bash(cat *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(mkdir *)",
+      "Bash(wc *)"
     ],
     "deny": [
       "Bash(rm -rf /)",

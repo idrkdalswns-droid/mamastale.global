@@ -709,7 +709,70 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 ## 알려진 제약사항
 
 - Edge Runtime에서는 Node.js 전용 모듈 사용 불가 (@react-pdf/renderer는 `serverComponentsExternalPackages`로 예외 처리)
-- Rate limiting은 Edge 인스턴스별 인메모리 (인스턴스 간 공유 안 됨)
+- Rate limiting: Supabase 기반 영속적 (014_rate_limiting.sql) + 인메모리 폴백
 - Toss Payments는 한국 결제 전용
 - 이미지 프롬프트(`imagePrompt`)는 현재 메타데이터만 저장 (실제 이미지 생성 미구현)
 - PDF는 브라우저 프린트 다이얼로그 방식 (서버사이드 렌더링)
+
+---
+
+## 스펙 문서 (Single Source of Truth)
+
+> Red Hat: "코드가 아니라 스펙을 수정하고, 코드는 재생성한다"
+
+| 스펙 | 경로 | 설명 |
+|------|------|------|
+| Phase 시스템 | `docs/specs/phase-system.md` | 4단계 대화 엔진 전체 설계 |
+| 위기감지 | `docs/specs/crisis-detection.md` | CSSRS 기반 3단계 대응 체계 |
+
+스펙 변경 → plan.md 작성 → 승인 → 코드 구현 순서를 따릅니다.
+
+---
+
+## 템플릿
+
+| 템플릿 | 경로 | 용도 |
+|--------|------|------|
+| plan.md | `.claude/templates/plan.md` | 기능 개발 계획서 |
+| task.md | `.claude/templates/task.md` | 서브태스크 계획서 |
+
+---
+
+## Skills (슬래시 커맨드)
+
+> Shankar: "Skills가 MCP보다 더 큰 거래일 수 있다"
+
+| 커맨드 | 파일 | 용도 |
+|--------|------|------|
+| `/deploy` | `.claude/commands/deploy.md` | 빌드→테스트→커밋→푸시 |
+| `/crisis-test` | `.claude/commands/crisis-test.md` | 위기감지 회귀 테스트 |
+| `/i18n-add` | `.claude/commands/i18n-add.md` | 6개 언어 번역 키 추가 |
+| `/catchup` | `.claude/commands/catchup.md` | `/clear` 후 컨텍스트 복원 |
+| `/review` | `.claude/commands/review.md` | AI 보안 코드 리뷰 |
+| `/simplify` | `.claude/commands/simplify.md` | 코드 간소화 |
+
+---
+
+## CI/CD
+
+- `.github/workflows/ci.yml` — PR 시 자동: TypeScript 체크 + ESLint + 테스트 + 빌드 + 보안 검사
+- Cloudflare Pages — `main` push 시 자동 배포
+
+---
+
+## 옵저버빌리티 & 모니터링
+
+### LLM 호출 추적
+- 모든 API 호출이 `llm_call_logs` 테이블에 자동 기록
+- 비용, 토큰 사용량, 레이턴시, 캐시 히트율 추적
+- 관리자 대시보드: `/admin` (ADMIN_USER_IDS 환경변수 필요)
+
+### 위기 이벤트 추적
+- HIGH/MEDIUM crisis가 `crisis_events` 테이블에 기록
+- Post-crisis 모드: 5턴 동안 강화된 모니터링
+- `crisis_sessions` 테이블로 세션별 위기 상태 관리
+
+### 에러 추적
+- 서버: `trackServerError()` / `trackApiError()` (error-tracker.ts)
+- 클라이언트: `ErrorReporter` 컴포넌트 (window.onerror + unhandledrejection)
+- 에러 리포트 API: `/api/errors/report`

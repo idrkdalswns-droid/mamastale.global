@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MammasTale — 3D Immersive Concept v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    /* Vivid Pastel Palette — bright, clean, not muddy */
+    --bg-cream: #FEFBF6;
+    --lilac: #C58AF9;
+    --lilac-soft: #E8D5FA;
+    --pistachio: #81C995;
+    --pistachio-soft: #C8F0D4;
+    --sky: #8EBEF9;
+    --sky-soft: #C5DDFA;
+    --coral: #F2836B;
+    --coral-soft: #FBBFB0;
+    --gold: #F5C563;
+    --gold-soft: #FDE8A8;
+    --charcoal: #2D2D2D;
+    --warm-gray: #6B5E52;
+    --light-gray: #A89888;
+    --off-white: #F9F9F9;
+    /* Dawn → Sunset Sky Colors */
+    --dawn-top: #D6E6F9;
+    --dawn-bottom: #FDE8D8;
+    --morning-top: #B0D4F1;
+    --morning-bottom: #E8F5E0;
+    --noon-top: #87CEEB;
+    --noon-bottom: #F0F8FF;
+    --golden-top: #F5D0A9;
+    --golden-bottom: #FFE4C4;
+    --sunset-top: #E8837C;
+    --sunset-bottom: #F5C563;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg-cream);
+    color: var(--charcoal);
+    overflow-x: hidden;
+  }
+
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Scroll Container */
+  .scroll-container {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── Section Base ─── */
+  .scene {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 40px 20px;
+  }
+
+  /* ─── Claymorphism 3D Panel ─── */
+  .clay-panel {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border-radius: 32px;
+    padding: 48px 36px;
+    max-width: 520px;
+    width: 92%;
+    text-align: center;
+    position: relative;
+    /* Claymorphism: inner shadows for puffy look */
+    box-shadow:
+      inset 2px 2px 6px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 6px rgba(0, 0, 0, 0.04),
+      8px 12px 40px rgba(0, 0, 0, 0.06),
+      0 2px 8px rgba(0, 0, 0, 0.03);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    opacity: 0;
+    transform: translateY(50px) scale(0.96);
+    transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .clay-panel.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .clay-panel h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 26px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+    line-height: 1.4;
+  }
+
+  .clay-panel .subtitle {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--light-gray);
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .clay-panel .divider {
+    width: 48px;
+    height: 4px;
+    border-radius: 4px;
+    margin: 0 auto 20px;
+  }
+
+  .clay-panel p {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--warm-gray);
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .clay-panel p + p {
+    margin-top: 12px;
+  }
+
+  .clay-panel .highlight {
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  /* Phase-specific accent */
+  .phase-1 h2 { color: var(--pistachio); }
+  .phase-1 .divider { background: linear-gradient(135deg, var(--pistachio), var(--pistachio-soft)); }
+  .phase-2 h2 { color: var(--sky); }
+  .phase-2 .divider { background: linear-gradient(135deg, var(--sky), var(--sky-soft)); }
+  .phase-3 h2 { color: var(--lilac); }
+  .phase-3 .divider { background: linear-gradient(135deg, var(--lilac), var(--lilac-soft)); }
+  .phase-4 h2 { color: var(--coral); }
+  .phase-4 .divider { background: linear-gradient(135deg, var(--coral), var(--gold)); }
+
+  /* ─── Feature Pills ─── */
+  .feature-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: inset 1px 1px 3px rgba(255,255,255,0.9),
+                inset -1px -1px 3px rgba(0,0,0,0.03),
+                2px 4px 12px rgba(0,0,0,0.04);
+    border: 1px solid rgba(255,255,255,0.6);
+    color: var(--warm-gray);
+  }
+
+  .pill .icon { font-size: 14px; }
+
+  /* ─── Hero Section ─── */
+  .hero-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-logo {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--charcoal);
+    opacity: 0;
+    animation: heroFadeUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+    letter-spacing: -1px;
+  }
+
+  .hero-tagline {
+    font-size: 16px;
+    color: var(--warm-gray);
+    margin-top: 8px;
+    opacity: 0;
+    animation: heroFadeUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .hero-desc {
+    font-size: 13px;
+    color: var(--light-gray);
+    margin-top: 16px;
+    max-width: 380px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: heroFadeUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.9s forwards;
+  }
+
+  .hero-cta {
+    margin-top: 32px;
+    padding: 16px 48px;
+    background: linear-gradient(135deg, var(--coral), #E86B55);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow:
+      0 8px 32px rgba(242, 131, 107, 0.35),
+      inset 1px 1px 2px rgba(255,255,255,0.3);
+    opacity: 0;
+    animation: heroFadeUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.2s forwards;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    letter-spacing: 0.5px;
+  }
+
+  .hero-cta:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(242, 131, 107, 0.45);
+  }
+
+  /* Trust badges below CTA */
+  .trust-badges {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+    opacity: 0;
+    animation: heroFadeUp 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.5s forwards;
+  }
+
+  .trust-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .trust-badge .number {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--charcoal);
+  }
+
+  .trust-badge .label {
+    font-size: 10px;
+    color: var(--light-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── Scroll Hint ─── */
+  .scroll-hint {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.5;
+    animation: gentleBounce 3s ease-in-out infinite;
+    transition: opacity 0.6s;
+  }
+
+  .scroll-hint.hidden { opacity: 0; pointer-events: none; }
+
+  .scroll-hint span {
+    font-size: 10px;
+    color: var(--light-gray);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .scroll-hint .arrow {
+    width: 16px; height: 16px;
+    border-right: 1.5px solid var(--light-gray);
+    border-bottom: 1.5px solid var(--light-gray);
+    transform: rotate(45deg);
+  }
+
+  /* ─── Safety Section ─── */
+  .safety-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .safety-card {
+    background: rgba(255,255,255,0.6);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    box-shadow:
+      inset 1px 1px 3px rgba(255,255,255,0.8),
+      inset -1px -1px 2px rgba(0,0,0,0.02),
+      3px 6px 16px rgba(0,0,0,0.04);
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  .safety-card .icon { font-size: 24px; margin-bottom: 8px; }
+  .safety-card .title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 4px;
+  }
+  .safety-card .desc {
+    font-size: 10px;
+    color: var(--light-gray);
+    line-height: 1.5;
+  }
+
+  /* ─── Finale ─── */
+  .finale-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .finale-section h2 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.5;
+    color: var(--charcoal);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .finale-section.visible h2 {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .finale-section .finale-sub {
+    margin-top: 16px;
+    font-size: 15px;
+    color: var(--warm-gray);
+    line-height: 1.8;
+    max-width: 400px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+  }
+
+  .finale-section.visible .finale-sub {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .finale-section .finale-cta {
+    margin-top: 32px;
+    padding: 18px 56px;
+    background: linear-gradient(135deg, var(--gold), var(--coral));
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    box-shadow: 0 8px 32px rgba(245, 197, 99, 0.4);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.6s;
+  }
+
+  .finale-section.visible .finale-cta {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── Progress Bar ─── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    z-index: 100;
+    transition: width 0.1s linear;
+    background: linear-gradient(90deg,
+      var(--dawn-top),
+      var(--pistachio),
+      var(--sky),
+      var(--lilac),
+      var(--coral),
+      var(--gold)
+    );
+  }
+
+  /* ─── Tech Badge ─── */
+  .tech-badge {
+    position: fixed;
+    top: 12px; right: 12px;
+    z-index: 100;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(12px);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--light-gray);
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+
+  /* ─── Keyframes ─── */
+  @keyframes heroFadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes gentleBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-6px); }
+  }
+
+  /* ─── Spacer between sections ─── */
+  .section-spacer {
+    height: 20vh;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .hero-logo { font-size: 36px; }
+    .clay-panel { padding: 32px 24px; }
+    .clay-panel h2 { font-size: 22px; }
+    .safety-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="tech-badge">3D Concept v2 — Dawn to Sunset</div>
+
+<div class="scroll-hint" id="scrollHint">
+  <span>scroll</span>
+  <div class="arrow"></div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="scroll-container">
+
+  <!-- ═══ HERO: Dawn — 희망의 새벽 ═══ -->
+  <div class="hero-section scene" id="hero">
+    <div class="hero-logo">mamastale</div>
+    <div class="hero-tagline">당신의 상처가, 아이의 동화가 됩니다</div>
+    <div class="hero-desc">
+      임상심리학 4대 이론 기반 AI 치료 엔진이<br>
+      15분의 대화를 세상에 하나뿐인 치유의 동화로 완성합니다
+    </div>
+    <button class="hero-cta">이야기 시작하기</button>
+    <div class="trust-badges">
+      <div class="trust-badge">
+        <span class="number">4</span>
+        <span class="label">임상 이론 융합</span>
+      </div>
+      <div class="trust-badge">
+        <span class="number">10</span>
+        <span class="label">장면 동화 생성</span>
+      </div>
+      <div class="trust-badge">
+        <span class="number">6</span>
+        <span class="label">개 언어 지원</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Phase 1: 공감적 치유자 — Early Morning ═══ -->
+  <div class="scene">
+    <div class="clay-panel phase-1" data-phase="1">
+      <div class="subtitle">Phase 1 · Pennebaker's Expressive Writing</div>
+      <h2>공감적 치유자</h2>
+      <div class="divider"></div>
+      <p>
+        <span class="highlight">판단 없는 무조건적 수용.</span>
+        제임스 페니베이커의 표현적 글쓰기 이론에 기반하여,
+        어머니가 억눌러왔던 감정을 있는 그대로 꺼낼 수 있는
+        안전한 공간을 열어드립니다.
+      </p>
+      <p>
+        정서 명명(Affect Labeling)을 통해 과활성화된 편도체를 안정시키고,
+        파편화된 부정적 감정에 언어라는 형태를 부여합니다.
+        이 과정만으로도 <span class="highlight">심리적 부하가 유의미하게 감소</span>합니다.
+      </p>
+      <div class="feature-pills">
+        <span class="pill"><span class="icon">🫧</span> 무조건적 수용</span>
+        <span class="pill"><span class="icon">🧠</span> 편도체 안정화</span>
+        <span class="pill"><span class="icon">✍️</span> 감정 환기</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Phase 2: 소크라테스식 철학자 — Late Morning ═══ -->
+  <div class="scene">
+    <div class="clay-panel phase-2" data-phase="2">
+      <div class="subtitle">Phase 2 · Socratic Questioning</div>
+      <h2>소크라테스식 철학자</h2>
+      <div class="divider"></div>
+      <p>
+        <span class="highlight">부드러운 질문이 인지의 틀을 바꿉니다.</span>
+        "정말 그럴까요?", "다른 가능성은 없을까요?"
+        소크라테스식 질문법으로 내담자 스스로 인지 왜곡을 해체하고
+        대안적 서사를 발견하도록 안내합니다.
+      </p>
+      <p>
+        이 단계에서 어머니의 이야기 속에 숨겨진
+        <span class="highlight">'스토리 씨앗(Story Seed)'</span>을 발굴합니다.
+        가장 아팠던 기억 안에 동화의 씨앗이 있습니다.
+        자기 자비(Self-Compassion)가 싹트는 순간입니다.
+      </p>
+      <div class="feature-pills">
+        <span class="pill"><span class="icon">🌱</span> 스토리 씨앗 발굴</span>
+        <span class="pill"><span class="icon">💎</span> 인지 왜곡 해체</span>
+        <span class="pill"><span class="icon">🪞</span> 자기 자비 유도</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Phase 3: 은유의 마법사 — Golden Hour ═══ -->
+  <div class="scene">
+    <div class="clay-panel phase-3" data-phase="3">
+      <div class="subtitle">Phase 3 · Narrative Therapy (Michael White)</div>
+      <h2>은유의 마법사</h2>
+      <div class="divider"></div>
+      <p>
+        <span class="highlight">고통이 캐릭터로 다시 태어납니다.</span>
+        마이클 화이트의 내러티브 테라피에서 핵심인
+        '문제의 외재화(Externalization)' 기법을 적용합니다.
+      </p>
+      <p>
+        통제 불능의 분노는 '불을 뿜는 아기 용'으로,
+        우울감은 '숲을 뒤덮는 회색 안개 괴물'로 변환됩니다.
+        <span class="highlight">심리적 안전 거리(Psychological Distance)</span>를 확보하여
+        외면하고 싶었던 감정을 안전하게 직면할 수 있게 합니다.
+      </p>
+      <div class="feature-pills">
+        <span class="pill"><span class="icon">✨</span> 감정 외재화</span>
+        <span class="pill"><span class="icon">🐉</span> 메타포 생성</span>
+        <span class="pill"><span class="icon">🛡️</span> 심리적 안전 거리</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Phase 4: 동화 편집장 — Sunset ═══ -->
+  <div class="scene">
+    <div class="clay-panel phase-4" data-phase="4">
+      <div class="subtitle">Phase 4 · Louise DeSalvo's Healing Writing</div>
+      <h2>동화 편집장</h2>
+      <div class="divider"></div>
+      <p>
+        <span class="highlight">파편화된 트라우마가 10장면의 동화로 완성됩니다.</span>
+        루이즈 디살보의 치유의 글쓰기 이론에 기반하여,
+        어머니의 경험을 기승전결의 서사 구조로 통합합니다.
+      </p>
+      <p>
+        완성된 동화는 아이에게 읽어줄 수 있는
+        세상에 하나뿐인 예술 작품이자 사랑의 유산이 됩니다.
+        <span class="highlight">자아 효능감의 영구적 복원</span> —
+        "나는 아이를 망치는 엄마가 아니라,
+        가장 아름다운 이야기를 만들어낸 작가입니다."
+      </p>
+      <div class="feature-pills">
+        <span class="pill"><span class="icon">📖</span> 10장면 동화</span>
+        <span class="pill"><span class="icon">🎨</span> PDF 동화책</span>
+        <span class="pill"><span class="icon">💝</span> 자아 효능감 회복</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Safety & Trust ═══ -->
+  <div class="scene">
+    <div class="clay-panel" data-phase="safety" style="max-width: 560px;">
+      <div class="subtitle">Clinical-Grade Safety</div>
+      <h2 style="color: var(--charcoal);">완벽하게 설계된 안전 시스템</h2>
+      <div class="divider" style="background: linear-gradient(135deg, var(--pistachio), var(--sky));"></div>
+      <p style="text-align: center;">
+        마마스테일은 <span class="highlight">CSSRS(컬럼비아 자살 심각도 평가 척도)</span> 기반의<br>
+        다층 위기 감지 시스템을 탑재하고 있습니다.
+      </p>
+      <div class="safety-grid">
+        <div class="safety-card">
+          <div class="icon">🚨</div>
+          <div class="title">3단계 위기 감지</div>
+          <div class="desc">HIGH·MEDIUM·LOW<br>6개 언어 실시간 모니터링</div>
+        </div>
+        <div class="safety-card">
+          <div class="icon">🛡️</div>
+          <div class="title">출력 안전 검증</div>
+          <div class="desc">독성 긍정·의료 조언<br>자동 필터링 가드레일</div>
+        </div>
+        <div class="safety-card">
+          <div class="icon">🔐</div>
+          <div class="title">데이터 보호</div>
+          <div class="desc">Supabase RLS<br>Edge Runtime 격리</div>
+        </div>
+        <div class="safety-card">
+          <div class="icon">📊</div>
+          <div class="title">LLM 옵저버빌리티</div>
+          <div class="desc">모든 AI 호출 추적<br>비용·지연시간 모니터링</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer"></div>
+
+  <!-- ═══ Finale: Sunset — 해질녘의 절정 ═══ -->
+  <div class="finale-section scene" id="finale">
+    <h2>당신의 가장 아픈 기억이<br>세상에서 가장 아름다운<br>동화가 됩니다</h2>
+    <div class="finale-sub">
+      상처를 서사로 직조하는 심리적 연금술.<br>
+      15분의 대화로, 아이에게 들려줄<br>
+      세상에 하나뿐인 치유의 동화를 만들어보세요.
+    </div>
+    <button class="finale-cta">무료로 시작하기</button>
+  </div>
+
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+// ─── Scene ───
+const canvas = document.getElementById('canvas');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.3;
+
+// Post Processing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.35, 0.4, 0.88
+);
+composer.addPass(bloomPass);
+
+// ─── VIVID Pastel Colors ───
+const C = {
+  lilac: 0xC58AF9,
+  lilacSoft: 0xE8D5FA,
+  pistachio: 0x81C995,
+  pistachioSoft: 0xC8F0D4,
+  sky: 0x8EBEF9,
+  skySoft: 0xC5DDFA,
+  coral: 0xF2836B,
+  coralSoft: 0xFBBFB0,
+  gold: 0xF5C563,
+  goldSoft: 0xFDE8A8,
+  white: 0xFFFFFF,
+  cream: 0xFEFBF6,
+  warmWhite: 0xFFF8F0,
+  brown: 0x8B6F55,
+};
+
+// ─── Dawn → Sunset Sky Colors ───
+const skyStages = [
+  { top: new THREE.Color('#D6E6F9'), bottom: new THREE.Color('#FDE8D8'), fog: new THREE.Color('#E8EFF8') },  // Dawn
+  { top: new THREE.Color('#C0DFF5'), bottom: new THREE.Color('#E0F0DA'), fog: new THREE.Color('#DAE8E0') },  // Early morning
+  { top: new THREE.Color('#A8D4F0'), bottom: new THREE.Color('#EDF5E8'), fog: new THREE.Color('#D5E5DD') },  // Late morning
+  { top: new THREE.Color('#F0D8B0'), bottom: new THREE.Color('#FEE8C0'), fog: new THREE.Color('#F2E0C8') },  // Golden hour
+  { top: new THREE.Color('#F0C090'), bottom: new THREE.Color('#F8D0A0'), fog: new THREE.Color('#F0D0A5') },  // Late golden
+  { top: new THREE.Color('#E8837C'), bottom: new THREE.Color('#F5C563'), fog: new THREE.Color('#F0A880') },  // Sunset peak
+  { top: new THREE.Color('#D06A70'), bottom: new THREE.Color('#E8A050'), fog: new THREE.Color('#D89068') },  // Deep sunset
+];
+
+// ─── Fog ───
+scene.fog = new THREE.FogExp2(0xE8EFF8, 0.012);
+scene.background = new THREE.Color(0xD6E6F9);
+
+// ─── Lighting (changes with time of day) ───
+const ambientLight = new THREE.AmbientLight(0xfff8f0, 0.55);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xfff0dd, 1.0);
+sunLight.position.set(5, 12, 5);
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0xC5DDFA, 0.25);
+fillLight.position.set(-5, 6, -5);
+scene.add(fillLight);
+
+// ─── Soft material helper ───
+function softMat(color, emissive = null) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.82,
+    metalness: 0.02,
+    emissive: emissive || color,
+    emissiveIntensity: emissive ? 0.15 : 0.03,
+  });
+}
+
+// ─── Ground (rolling hills) ───
+function createGround() {
+  const geo = new THREE.PlaneGeometry(80, 80, 40, 40);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getY(i);
+    pos.setZ(i, Math.sin(x*0.2)*0.3 + Math.cos(z*0.15)*0.4 + Math.sin(x*0.5+z*0.3)*0.15);
+  }
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xB8D9A4,
+    roughness: 1.0,
+    metalness: 0.0,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = -0.2;
+  return mesh;
+}
+
+// ─── Stylized Tree (brighter foliage) ───
+function createTree(x, y, z, scale = 1, leafColor = C.pistachio) {
+  const g = new THREE.Group();
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08*scale, 0.12*scale, 1.0*scale, 8),
+    softMat(C.brown)
+  );
+  trunk.position.y = 0.5*scale;
+  g.add(trunk);
+  // Foliage layers
+  const leafMat = softMat(leafColor);
+  [[0.55, 1.3], [0.4, 1.7], [0.25, 2.0]].forEach(([r, h]) => {
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(r*scale, 12, 10), leafMat);
+    sphere.position.y = h*scale;
+    sphere.scale.y = 0.85;
+    g.add(sphere);
+  });
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── Helper: place mesh ───
+function placeMesh(mesh, px=0, py=0, pz=0, sx=1, sy=1, sz=1) {
+  mesh.position.set(px, py, pz);
+  mesh.scale.set(sx, sy, sz);
+  return mesh;
+}
+
+// ─── Mushroom ───
+function createMushroom(x, y, z, s=1) {
+  const g = new THREE.Group();
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05*s, 0.07*s, 0.25*s, 8), softMat(0xFFF8F0)
+  );
+  stem.position.set(0, 0.125*s, 0);
+  g.add(stem);
+  const cap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16*s, 10, 8, 0, Math.PI*2, 0, Math.PI/2), softMat(C.coral, new THREE.Color(C.coralSoft))
+  );
+  cap.position.set(0, 0.25*s, 0);
+  g.add(cap);
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── Fairy House ───
+function createHouse(x, y, z, roofColor = C.coral) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.7, 8), softMat(0xFFF8F0));
+  body.position.set(0, 0.35, 0);
+  g.add(body);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.55, 8), softMat(roofColor));
+  roof.position.set(0, 0.98, 0);
+  g.add(roof);
+  const windowMat = new THREE.MeshStandardMaterial({
+    color: 0xFFE4B0, emissive: 0xFFE4B0, emissiveIntensity: 1.0
+  });
+  const win = new THREE.Mesh(new THREE.CircleGeometry(0.07, 16), windowMat);
+  win.position.set(0.22, 0.5, 0.4);
+  g.add(win);
+  g.position.set(x, y, z);
+  g.scale.setScalar(0.75);
+  return g;
+}
+
+// ─── Floating Crystal ───
+function createCrystal(x, y, z, color, s=1) {
+  const mesh = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.12*s),
+    new THREE.MeshStandardMaterial({
+      color, roughness: 0.15, metalness: 0.35,
+      emissive: color, emissiveIntensity: 0.4,
+      transparent: true, opacity: 0.75,
+    })
+  );
+  mesh.position.set(x, y, z);
+  return mesh;
+}
+
+// ─── 3D Character: Mama ───
+function createMama(x, y, z) {
+  const g = new THREE.Group();
+  // Body (dress)
+  const dress = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.35, 0.7, 12), softMat(C.lilac));
+  dress.position.set(0, 0.35, 0);
+  g.add(dress);
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 14), softMat(0xFFE0CC));
+  head.position.set(0, 0.9, 0);
+  g.add(head);
+  // Hair (bun)
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), softMat(0x5A3E2B));
+  hair.position.set(0, 1.0, -0.05);
+  hair.scale.set(1, 0.9, 0.9);
+  g.add(hair);
+  // Hair bun top
+  const bunTop = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), softMat(0x5A3E2B));
+  bunTop.position.set(0, 1.2, -0.05);
+  g.add(bunTop);
+  // Arms
+  [-1, 1].forEach(side => {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.4, 8), softMat(0xFFE0CC));
+    arm.position.set(side * 0.3, 0.55, 0);
+    arm.rotation.z = side * -0.4;
+    g.add(arm);
+  });
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── 3D Character: Child ───
+function createChild(x, y, z) {
+  const g = new THREE.Group();
+  // Body (overalls)
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 0.45, 10), softMat(C.sky));
+  body.position.set(0, 0.225, 0);
+  g.add(body);
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 12), softMat(0xFFE0CC));
+  head.position.set(0, 0.6, 0);
+  g.add(head);
+  // Hair (pigtails style)
+  const hairBase = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), softMat(0x8B6040));
+  hairBase.position.set(0, 0.68, 0);
+  hairBase.scale.set(1, 0.85, 0.85);
+  g.add(hairBase);
+  [-1, 1].forEach(side => {
+    const pigtail = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), softMat(0x8B6040));
+    pigtail.position.set(side * 0.15, 0.75, 0);
+    g.add(pigtail);
+  });
+  // Arms (reaching up)
+  [-1, 1].forEach(side => {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.28, 8), softMat(0xFFE0CC));
+    arm.position.set(side * 0.22, 0.4, 0);
+    arm.rotation.z = side * -0.6;
+    g.add(arm);
+  });
+  g.position.set(x, y, z);
+  return g;
+}
+
+// ─── Fireflies ───
+function createFireflies(count = 120) {
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const sparkColors = [
+    new THREE.Color(0xFFE4B0), new THREE.Color(0xC58AF9),
+    new THREE.Color(0x81C995), new THREE.Color(0xFBBFB0),
+    new THREE.Color(0xF5C563), new THREE.Color(0x8EBEF9),
+  ];
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = (Math.random()-0.5)*40;
+    positions[i*3+1] = Math.random()*6 + 0.5;
+    positions[i*3+2] = (Math.random()-0.5)*50;
+    const c = sparkColors[Math.floor(Math.random()*sparkColors.length)];
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return new THREE.Points(geo, new THREE.PointsMaterial({
+    size: 0.07, vertexColors: true, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+}
+
+// ─── Build World ───
+scene.add(createGround());
+
+// Trees — vivid palette
+const leafPalette = [C.pistachio, C.lilacSoft, C.coralSoft, C.skySoft, C.pistachioSoft, C.goldSoft];
+const treeData = [
+  [-5,0,-3],[-7,0,-5],[-3,0,-8],[5,0,-4],[7,0,-6],
+  [-9,0,-2],[9,0,-3],[-6,0,-11],[6,0,-10],[0,0,-13],
+  [-8,0,-9],[8,0,-8],[-2,0,-16],[3,0,-15],[-10,0,-13],
+  [10,0,-12],[-5,0,-19],[5,0,-18],[0,0,-22],[-7,0,-24],
+  [7,0,-23],[-3,0,-27],[3,0,-26],[-9,0,-21],[9,0,-20],
+  [-4,0,-30],[4,0,-29],[0,0,-33],[-6,0,-35],[6,0,-34],
+];
+treeData.forEach(([x,y,z], i) => {
+  scene.add(createTree(x, y, z, 0.65 + Math.random()*0.7, leafPalette[i % leafPalette.length]));
+});
+
+// Mushrooms
+[[-1.5,0,-2],[2,0,-6],[-3,0,-10],[1,0,-15],[-2,0,-20],[3,0,-25],[0,0,-30],[-4,0,-34]].forEach(([x,y,z]) => {
+  scene.add(createMushroom(x, y, z, 0.5+Math.random()*0.5));
+});
+
+// Houses
+scene.add(createHouse(-2, 0, -8, C.coral));
+scene.add(createHouse(3, 0, -17, C.lilac));
+scene.add(createHouse(-4, 0, -28, C.gold));
+
+// Floating crystals
+const crystals = [];
+[
+  [0,2.5,-5,C.pistachio], [-1.5,3,-12,C.sky], [1.5,2.8,-20,C.lilac],
+  [0,3.5,-27,C.gold], [-2,2.2,-8,C.coralSoft], [2,2.5,-16,C.lilacSoft],
+  [-1,3.2,-24,C.skySoft], [1,2.8,-32,C.coral],
+].forEach(([x,y,z,color]) => {
+  const c = createCrystal(x, y, z, color, 1+Math.random()*0.5);
+  crystals.push(c);
+  scene.add(c);
+});
+
+// Mama & Child characters
+const mama = createMama(-1, 0, -5);
+const child = createChild(-0.3, 0, -4.8);
+scene.add(mama);
+scene.add(child);
+
+// Second pair further along the path
+const mama2 = createMama(2, 0, -22);
+const child2 = createChild(2.7, 0, -21.8);
+scene.add(mama2);
+scene.add(child2);
+
+// Fireflies
+const fireflies = createFireflies(120);
+scene.add(fireflies);
+
+// ─── Camera Path ───
+camera.position.set(0, 2.5, 6);
+camera.lookAt(0, 1.5, 0);
+
+const cameraPath = [
+  { pos: [0, 2.5, 6], look: [0, 1.5, 0] },       // Hero (dawn)
+  { pos: [0, 2.2, 0], look: [0, 1.5, -5] },       // Phase 1
+  { pos: [-0.5, 2.5, -7], look: [-1, 1.5, -12] },  // Phase 2
+  { pos: [0.5, 2.8, -15], look: [0, 1.5, -20] },   // Phase 3
+  { pos: [0, 2.3, -22], look: [0, 2, -27] },        // Phase 4
+  { pos: [0, 2.5, -27], look: [0, 1.8, -32] },      // Safety
+  { pos: [0, 3.5, -32], look: [0, 2, -38] },        // Finale (sunset)
+];
+
+// ─── Scroll Handling ───
+let scrollProgress = 0;
+
+function updateScroll() {
+  const scrollTop = window.scrollY;
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  scrollProgress = Math.min(scrollTop / maxScroll, 1);
+
+  document.getElementById('progressBar').style.width = `${scrollProgress * 100}%`;
+
+  const hint = document.getElementById('scrollHint');
+  if (scrollProgress > 0.03) hint.classList.add('hidden');
+  else hint.classList.remove('hidden');
+
+  // Clay panels visibility
+  document.querySelectorAll('.clay-panel').forEach(panel => {
+    const rect = panel.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.78 && rect.bottom > window.innerHeight * 0.15) {
+      panel.classList.add('visible');
+    }
+  });
+
+  // Finale visibility
+  const finale = document.getElementById('finale');
+  if (finale.getBoundingClientRect().top < window.innerHeight * 0.65) {
+    finale.classList.add('visible');
+  }
+}
+
+window.addEventListener('scroll', updateScroll, { passive: true });
+
+// ─── Animation ───
+const clock = new THREE.Clock();
+const lerp = (a, b, t) => a + (b-a) * t;
+const tmpColor = new THREE.Color();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Camera interpolation
+  const sectionFloat = scrollProgress * (cameraPath.length - 1);
+  const idx = Math.floor(sectionFloat);
+  const frac = sectionFloat - idx;
+  const from = cameraPath[Math.min(idx, cameraPath.length-1)];
+  const to = cameraPath[Math.min(idx+1, cameraPath.length-1)];
+  const sf = frac * frac * (3 - 2 * frac); // smoothstep
+
+  camera.position.set(
+    lerp(from.pos[0], to.pos[0], sf),
+    lerp(from.pos[1], to.pos[1], sf),
+    lerp(from.pos[2], to.pos[2], sf),
+  );
+  camera.lookAt(new THREE.Vector3(
+    lerp(from.look[0], to.look[0], sf),
+    lerp(from.look[1], to.look[1], sf),
+    lerp(from.look[2], to.look[2], sf),
+  ));
+
+  // ─── Dawn → Sunset sky transition ───
+  const skyFloat = scrollProgress * (skyStages.length - 1);
+  const skyIdx = Math.floor(skyFloat);
+  const skyFrac = skyFloat - skyIdx;
+  const skyFrom = skyStages[Math.min(skyIdx, skyStages.length-1)];
+  const skyTo = skyStages[Math.min(skyIdx+1, skyStages.length-1)];
+
+  // Blend background (top sky)
+  tmpColor.copy(skyFrom.top).lerp(skyTo.top, skyFrac);
+  scene.background.copy(tmpColor);
+
+  // Blend fog
+  tmpColor.copy(skyFrom.fog).lerp(skyTo.fog, skyFrac);
+  scene.fog.color.copy(tmpColor);
+  scene.fog.density = 0.012 + scrollProgress * 0.004;
+
+  // Sun color shifts warmer
+  const sunWarmth = scrollProgress;
+  sunLight.color.setRGB(
+    1.0,
+    1.0 - sunWarmth * 0.2,
+    0.87 - sunWarmth * 0.3
+  );
+  sunLight.intensity = 1.0 + sunWarmth * 0.4;
+
+  // Ground color shifts
+  const groundColor = new THREE.Color(0xB8D9A4).lerp(new THREE.Color(0xC8B880), scrollProgress * 0.6);
+  scene.children.forEach(child => {
+    if (child.isMesh && child.geometry.type === 'PlaneGeometry') {
+      child.material.color.copy(groundColor);
+    }
+  });
+
+  // Crystals float + rotate
+  crystals.forEach((c, i) => {
+    c.position.y += Math.sin(t*0.6 + i*1.3) * 0.002;
+    c.rotation.y = t*0.25 + i;
+    c.rotation.x = Math.sin(t*0.4 + i) * 0.15;
+  });
+
+  // Fireflies
+  const ffPos = fireflies.geometry.attributes.position;
+  for (let i = 0; i < ffPos.count; i++) {
+    ffPos.setX(i, ffPos.getX(i) + Math.sin(t*0.4+i)*0.002);
+    ffPos.setY(i, ffPos.getY(i) + Math.sin(t*0.6+i*0.3)*0.0015);
+  }
+  ffPos.needsUpdate = true;
+  fireflies.material.opacity = 0.3 + Math.sin(t*1.5)*0.25 + scrollProgress * 0.3;
+
+  // Character gentle animation
+  [mama, mama2].forEach((m, i) => {
+    m.rotation.y = Math.sin(t*0.3 + i*2) * 0.15;
+    m.position.y = Math.sin(t*0.5 + i) * 0.03;
+  });
+  [child, child2].forEach((c, i) => {
+    c.rotation.y = Math.sin(t*0.5 + i*3) * 0.2 + 0.3;
+    c.position.y = Math.sin(t*0.7 + i) * 0.04;
+    // Child bounces slightly
+    c.position.y += Math.abs(Math.sin(t*1.2 + i)) * 0.02;
+  });
+
+  // Bloom intensity increases toward sunset
+  bloomPass.strength = 0.3 + scrollProgress * 0.3;
+
+  composer.render();
+}
+
+animate();
+
+// ─── Resize ───
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+updateScroll();
+</script>
+</body>
+</html>
