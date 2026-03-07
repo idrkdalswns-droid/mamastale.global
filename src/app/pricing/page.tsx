@@ -95,13 +95,19 @@ export default function PricingPage() {
         successUrl: `${window.location.origin}/payment/success?mode=standard`,
         failUrl: `${window.location.origin}/payment/fail`,
       });
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "";
+    } catch (err: unknown) {
+      console.error("[TossPayments] requestPayment error:", err);
+      const errObj = err as { code?: string; message?: string };
+      const errCode = errObj?.code || "";
+      const errMsg = errObj?.message || (err instanceof Error ? err.message : "");
+      console.error("[TossPayments] code:", errCode, "message:", errMsg);
       if (
+        !errCode.includes("USER_CANCEL") &&
+        !errCode.includes("PAY_PROCESS_CANCELED") &&
         !errMsg.includes("USER_CANCEL") &&
         !errMsg.includes("PAY_PROCESS_CANCELED")
       ) {
-        setError("결제 중 오류가 발생했습니다. 다시 시도해 주세요.");
+        setError(`결제 오류: ${errCode || errMsg || "알 수 없는 오류"}. 다시 시도해 주세요.`);
       }
     } finally {
       setIsProcessing(false);
