@@ -329,7 +329,7 @@ export default function Home() {
         alt=""
         fill
         priority
-        sizes="100vw"
+        sizes="(max-width: 430px) 100vw, 430px"
         className="object-cover object-top pointer-events-none"
         style={{ opacity: 0.22 }}
       />

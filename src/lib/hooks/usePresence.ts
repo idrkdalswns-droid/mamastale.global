@@ -53,14 +53,15 @@ export function usePresence(page: "home" | "chat" | "other"): PresenceCounts {
       }
     };
 
-    // Initial heartbeat
-    sendHeartbeat();
+    // Defer initial heartbeat to avoid competing with critical resources (fonts, LCP)
+    const initialTimer = setTimeout(sendHeartbeat, 3000);
 
     // Repeat every 30 seconds
     intervalId = setInterval(sendHeartbeat, 30_000);
 
     return () => {
       mounted = false;
+      clearTimeout(initialTimer);
       clearInterval(intervalId);
     };
   }, []); // Only on mount/unmount
