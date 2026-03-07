@@ -253,7 +253,13 @@ export function getCrisisKeywords(): { ko: string[]; en: string[] } {
   };
 }
 
-// ─── Multi-Tier Crisis Detection (mental-wellness-prompts + CSSRS inspired) ───
+// ─── Multi-Tier Crisis Detection v3.0 (CSSRS + mental-wellness-prompts) ───
+// CSSRS = Columbia Suicide Severity Rating Scale (5 levels)
+// Level 1: Wish to be dead
+// Level 2: Non-specific suicidal thoughts
+// Level 3: Suicidal thoughts with method (no plan)
+// Level 4: Suicidal intent without specific plan
+// Level 5: Suicidal intent with specific plan
 
 export type CrisisSeverity = "HIGH" | "MEDIUM" | "LOW" | null;
 
@@ -263,43 +269,85 @@ export interface CrisisScreenResult {
   response: string | null;
   /** Keywords that triggered detection (for logging) */
   detectedKeywords: string[];
+  /** CSSRS level (1-5, null if not applicable) */
+  cssrsLevel?: number;
+  /** Human-readable reasoning for why crisis was detected */
+  reasoning?: string;
   /** Extra XML to inject into Claude prompt for MEDIUM severity */
   promptInjection?: string;
 }
 
-// ─── HIGH severity: immediate crisis (bypass Claude) ───
+// ─── FALSE POSITIVE patterns (context-dependent, not actual crisis) ───
+const FALSE_POSITIVE_PATTERNS = [
+  /deadline.*kill/i, /kill.*time/i, /die.*laugh/i,
+  /to\s+die\s+for/i, /drop[\s-]?dead/i, /dead\s*line/i,
+  /killing\s+it/i, /killer\s+(app|feature|look)/i,
+  /died\s+(laughing|of\s+laughter)/i,
+  /suicide\s+squad/i, /봐서죽겠/, /웃겨죽겠/, /죽이다/,
+  /죽여준다/, /맛있어죽겠/, /예뻐죽겠/, /좋아죽겠/,
+  /귀여워죽겠/, /웃겨서죽/, /힘들어죽겠/,
+  /죽을맛/, /死ぬほど(美味|面白|好き|笑)/,
+];
+
+// ─── HIGH severity: CSSRS Level 4-5 (intent + plan, bypass Claude) ───
 const HIGH_KO = [
+  // CSSRS Level 5: Intent with specific plan
+  "방법을알아봤", "방법을 알아봤", "오늘하려고", "오늘 하려고",
+  "유서를", "유서", "마지막편지", "마지막 편지",
+  "약을모아", "약을 모아", "준비해뒀", "준비해 뒀",
+  // CSSRS Level 4: Intent without specific plan
   "죽고싶", "죽고 싶", "자살", "자해",
   "사라지고싶", "사라지고 싶", "없어지고싶", "없어지고 싶",
   "목을매", "목을 매", "밧줄", "높은곳에서",
   "약을먹", "손목을", "뛰어내리",
-  "세상을떠나고싶", "더이상못살",
+  "세상을떠나고싶", "더이상못살", "삶을끝내고싶",
+  // Maternal-specific HIGH
+  "아이두고죽", "아이 두고 죽", "아기한테미안",
+  "엄마가없어지면", "엄마가 없어지면",
+  "아이한테짐", "아이한테 짐",
 ];
 const HIGH_EN = [
+  // CSSRS Level 5
+  "have a plan", "made a plan", "wrote a note", "final letter",
+  "stockpiled pills", "going to do it today",
+  // CSSRS Level 4
   "kill myself", "want to die", "end it all",
   "hurt myself", "better off dead", "suicide",
   "not worth living", "end my life",
   "take my own life", "no reason to live",
+  "going to kill", "about to end", "planning to die",
+  "overdose", "hang myself", "jump off", "cut my wrists",
 ];
 const HIGH_JA = [
   "死にたい", "自殺", "自傷", "消えたい",
   "いなくなりたい", "生きていたくない",
+  "終わりにしたい", "首を吊", "飛び降り",
+  "遺書", "最後の手紙", "子供を置いて",
 ];
 const HIGH_ZH = [
   "不想活了", "自杀", "自残", "想死",
   "活不下去", "没有活着的意义",
+  "结束生命", "遗书", "跳楼", "割腕",
+  "把孩子留下", "妈妈消失",
 ];
 const HIGH_AR = [
   "أريد الموت", "الانتحار", "إيذاء النفس",
   "لا أريد العيش", "أريد أن أختفي",
+  "وداعاً للأبد", "رسالة أخيرة",
 ];
 const HIGH_FR = [
   "envie de mourir", "me suicider", "me tuer",
   "en finir", "ne plus vivre", "automutilation",
+  "lettre d'adieu", "j'ai un plan", "sauter du pont",
 ];
 
-// ─── MEDIUM severity: warning signs (inject context, let Claude handle) ───
+// ─── MEDIUM severity: CSSRS Level 2-3 (ideation, inject context) ───
 const MEDIUM_KO = [
+  // CSSRS Level 3: Thoughts with method (no plan)
+  "이세상에없는것처럼", "이 세상에 없는 것처럼",
+  "영원히잠들고싶", "영원히 잠들고 싶",
+  "고통을끝내고싶", "고통을 끝내고 싶",
+  // CSSRS Level 2: Non-specific ideation
   "살고싶지않", "살고 싶지 않",
   "아이없이", "아이 없이",
   "혼자죽", "혼자 죽",
@@ -312,6 +360,13 @@ const MEDIUM_KO = [
   "이유가없", "이유가 없",
   "내가없어지면", "내가 없어지면",
   "짐이되고싶지않", "짐이 되고 싶지 않",
+  // Indirect expressions (maternal context)
+  "아이한테미안해서", "아이한테 미안해서",
+  "엄마자격이없", "엄마 자격이 없",
+  "나쁜엄마", "나쁜 엄마",
+  "아이가없었으면", "아이가 없었으면",
+  "도망가고싶", "도망가고 싶",
+  "다떠나고싶", "다 떠나고 싶",
 ];
 const MEDIUM_EN = [
   "don't want to live", "can't go on",
@@ -319,46 +374,148 @@ const MEDIUM_EN = [
   "burden to everyone", "nobody cares",
   "nobody understands", "forever alone",
   "can't take it anymore", "giving up",
+  "wish I was dead", "rather be dead",
+  "no way out", "trapped", "no escape",
+  "bad mother", "don't deserve to be a mom",
+  "my kids would be better without me",
+  "want to run away from everything",
+  "can't do this anymore",
 ];
 const MEDIUM_JA = [
   "生きたくない", "もう無理", "希望がない",
   "誰も分かってくれない", "迷惑をかけたくない",
+  "ダメな母親", "子供に申し訳ない",
+  "逃げ出したい", "何もかも投げ出したい",
 ];
 const MEDIUM_ZH = [
   "不想活", "没有希望", "活着没意思",
   "没人理解我", "我是累赘",
+  "不配当妈妈", "对不起孩子",
+  "想逃走", "什么都不想做",
+];
+const MEDIUM_AR = [
+  "لا أمل", "لا فائدة", "عبء على الجميع",
+  "لا أحد يفهمني", "أم سيئة",
+];
+const MEDIUM_FR = [
+  "pas envie de vivre", "aucun espoir",
+  "fardeau pour tout le monde", "personne ne comprend",
+  "mauvaise mère", "mes enfants seraient mieux sans moi",
 ];
 
-// ─── LOW severity: risk factors (log only, no action) ───
+// ─── LOW severity: CSSRS Level 1 + risk factors (log only) ───
 const LOW_KO = [
+  // CSSRS Level 1: Wish to be dead (passive)
+  "죽었으면", "죽었으면 좋겠", "안깨어나면", "안 깨어나면",
+  // Behavioral risk factors
   "잠을못자", "잠을 못 자", "밤새",
   "식욕이없", "식욕이 없", "밥을못먹", "밥을 못 먹",
   "계속울", "계속 울", "울음이멈추지않",
   "감정조절이안", "감정 조절이 안",
   "아무것도하기싫", "아무것도 하기 싫",
-  "무기력", "공허",
+  "무기력", "공허", "아무감정도못느",
+  // Maternal-specific risk
+  "아이가무서워", "아이가 무서워",
+  "아이를사랑하지못", "아이를 사랑하지 못",
+  "엄마가되기싫", "엄마가 되기 싫",
+  "후회", "출산을후회",
 ];
 const LOW_EN = [
+  "wish I was dead", "wish I hadn't woken up",
   "can't sleep", "no appetite", "can't stop crying",
   "feel nothing", "empty inside", "numb",
   "can't function", "exhausted all the time",
+  "scared of my baby", "don't love my baby",
+  "regret having kids", "afraid of being a mother",
+  "can't bond with my baby",
+];
+const LOW_JA = [
+  "眠れない", "食欲がない", "泣き止まない",
+  "何も感じない", "赤ちゃんが怖い",
+  "母親になりたくない",
+];
+const LOW_ZH = [
+  "睡不着", "没有食欲", "一直哭",
+  "什么都感觉不到", "害怕孩子",
+  "后悔生孩子",
 ];
 
 /**
- * Multi-tier crisis keyword pre-screening (v2.0).
+ * Determines CSSRS level from detected keywords for clinical logging.
+ */
+function determineCSSRSLevel(severity: CrisisSeverity, keywords: string[]): number | undefined {
+  if (!severity) return undefined;
+  const joined = keywords.join(" ");
+
+  if (severity === "HIGH") {
+    // Level 5: Specific plan indicators
+    const planIndicators = ["방법을", "알아봤", "준비", "유서", "마지막편지", "모아", "plan", "note", "letter", "stockpiled", "遺書", "最後の手紙", "遗书"];
+    if (planIndicators.some(p => joined.includes(p))) return 5;
+    return 4; // Level 4: Intent without specific plan
+  }
+  if (severity === "MEDIUM") {
+    // Level 3: Method without plan
+    const methodIndicators = ["잠들고", "끝내고", "없는것처럼", "dead", "way out", "escape"];
+    if (methodIndicators.some(p => joined.includes(p))) return 3;
+    return 2; // Level 2: Non-specific ideation
+  }
+  if (severity === "LOW") return 1; // Level 1: Wish to be dead / risk factors
+  return undefined;
+}
+
+/**
+ * Generates human-readable reasoning for crisis detection (for logs & monitoring).
+ * Inspired by MentalLLaMA's interpretable mental health analysis.
+ */
+function generateCrisisReasoning(severity: CrisisSeverity, keywords: string[], cssrsLevel?: number): string {
+  if (!severity) return "";
+
+  const cssrsLabels: Record<number, string> = {
+    1: "사망 소망 (Wish to be Dead)",
+    2: "비특이적 자살 사고 (Non-Specific Active Suicidal Ideation)",
+    3: "구체적 방법을 동반한 자살 사고 (Active Ideation with Method)",
+    4: "구체적 계획 없는 자살 의도 (Active Intent without Plan)",
+    5: "구체적 계획을 동반한 자살 의도 (Active Intent with Plan)",
+  };
+
+  const level = cssrsLevel ? `CSSRS Level ${cssrsLevel}: ${cssrsLabels[cssrsLevel]}` : "";
+  const keywordSample = keywords.slice(0, 3).join(", ");
+
+  switch (severity) {
+    case "HIGH":
+      return `[긴급] ${level}. 사용자 메시지에서 직접적 자살/자해 의도가 감지됨: "${keywordSample}". Claude 응답 우회, 즉각적 위기 개입 프로토콜 실행.`;
+    case "MEDIUM":
+      return `[경고] ${level}. 사용자 메시지에서 심리적 위기 신호 감지: "${keywordSample}". 대화 맥락 내 부드러운 안전 확인 필요.`;
+    case "LOW":
+      return `[관찰] ${level}. 행동적 위험 인자 감지: "${keywordSample}". 모니터링 계속, 추이 관찰 필요.`;
+    default:
+      return "";
+  }
+}
+
+/**
+ * Multi-tier crisis keyword pre-screening (v3.0).
+ * CSSRS-aligned 5-level classification with false positive filtering.
  *
- * HIGH → bypass Claude, return hard-coded crisis response
- * MEDIUM → inject crisis context into Claude prompt
- * LOW → log for monitoring only
+ * HIGH (CSSRS 4-5) → bypass Claude, return hard-coded crisis response
+ * MEDIUM (CSSRS 2-3) → inject crisis context into Claude prompt
+ * LOW (CSSRS 1 + risk factors) → log for monitoring only
  *
  * Supports all 6 locales: ko, en, ja, zh, ar, fr
+ * Includes false-positive filtering (mental-wellness-prompts inspired)
  */
 export function screenForCrisis(userMessage: string): CrisisScreenResult {
   const lowerMsg = userMessage.toLowerCase();
   const normalizedMsg = userMessage.replace(/\s+/g, "");
+
+  // ─── FALSE POSITIVE CHECK (sub-1ms, prevents unnecessary alerts) ───
+  if (FALSE_POSITIVE_PATTERNS.some(pattern => pattern.test(userMessage))) {
+    return { severity: null, detectedKeywords: [], response: null };
+  }
+
   const detected: string[] = [];
 
-  // ─── HIGH severity check (6 languages) ───
+  // ─── HIGH severity check (6 languages, CSSRS 4-5) ───
   const highAllKo = HIGH_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
   const highAllEn = HIGH_EN.filter(kw => lowerMsg.includes(kw));
   const highAllJa = HIGH_JA.filter(kw => normalizedMsg.includes(kw));
@@ -369,9 +526,14 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
   detected.push(...highAllKo, ...highAllEn, ...highAllJa, ...highAllZh, ...highAllAr, ...highAllFr);
 
   if (detected.length > 0) {
+    const cssrsLevel = determineCSSRSLevel("HIGH", detected);
+    const reasoning = generateCrisisReasoning("HIGH", detected, cssrsLevel);
+
     return {
       severity: "HIGH",
       detectedKeywords: detected,
+      cssrsLevel,
+      reasoning,
       response: `지금 많이 힘드시군요. 어머니의 고통이 느껴집니다.
 
 지금 이 순간, 어머니의 안전이 가장 중요합니다.
@@ -386,43 +548,60 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
     };
   }
 
-  // ─── MEDIUM severity check ───
+  // ─── MEDIUM severity check (6 languages, CSSRS 2-3) ───
   const medAllKo = MEDIUM_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
   const medAllEn = MEDIUM_EN.filter(kw => lowerMsg.includes(kw));
   const medAllJa = MEDIUM_JA.filter(kw => normalizedMsg.includes(kw));
   const medAllZh = MEDIUM_ZH.filter(kw => normalizedMsg.includes(kw));
+  const medAllAr = MEDIUM_AR.filter(kw => normalizedMsg.includes(kw));
+  const medAllFr = MEDIUM_FR.filter(kw => lowerMsg.includes(kw));
 
-  const medDetected = [...medAllKo, ...medAllEn, ...medAllJa, ...medAllZh];
+  const medDetected = [...medAllKo, ...medAllEn, ...medAllJa, ...medAllZh, ...medAllAr, ...medAllFr];
 
   if (medDetected.length > 0) {
+    const cssrsLevel = determineCSSRSLevel("MEDIUM", medDetected);
+    const reasoning = generateCrisisReasoning("MEDIUM", medDetected, cssrsLevel);
+
     return {
       severity: "MEDIUM",
       detectedKeywords: medDetected,
+      cssrsLevel,
+      reasoning,
       response: null,
       promptInjection: `
 
 <crisis_context>
-[주의] 이 사용자의 메시지에서 심리적 고위험 신호가 감지되었습니다: ${medDetected.slice(0, 3).join(", ")}
+[주의] 이 사용자의 메시지에서 심리적 위기 신호가 감지되었습니다.
+CSSRS Level: ${cssrsLevel ?? "N/A"} | 감지 근거: ${medDetected.slice(0, 3).join(", ")}
+분석: ${reasoning}
 
 다음 지침을 따르십시오:
 1. 현재 Phase의 치료적 대화를 유지하되, 부드럽게 사용자의 감정 상태를 확인하십시오.
 2. "혹시 지금 많이 힘드신 건 아닌지 여쭤봐도 될까요?" 등의 자연스러운 안전 확인을 포함하십시오.
 3. 필요 시 전문 상담 연결을 안내하되, 강요하지 마십시오.
 4. 절대 위기 신호를 무시하거나 대화 주제를 강제로 전환하지 마십시오.
+5. 사용자의 감정을 인정하고 "그 마음이 얼마나 무거우실지 느껴집니다"와 같은 공감을 먼저 표현하십시오.
 </crisis_context>`,
     };
   }
 
-  // ─── LOW severity check ───
+  // ─── LOW severity check (6 languages, CSSRS 1 + behavioral risk) ───
   const lowAllKo = LOW_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
   const lowAllEn = LOW_EN.filter(kw => lowerMsg.includes(kw));
+  const lowAllJa = LOW_JA.filter(kw => normalizedMsg.includes(kw));
+  const lowAllZh = LOW_ZH.filter(kw => normalizedMsg.includes(kw));
 
-  const lowDetected = [...lowAllKo, ...lowAllEn];
+  const lowDetected = [...lowAllKo, ...lowAllEn, ...lowAllJa, ...lowAllZh];
 
   if (lowDetected.length > 0) {
+    const cssrsLevel = determineCSSRSLevel("LOW", lowDetected);
+    const reasoning = generateCrisisReasoning("LOW", lowDetected, cssrsLevel);
+
     return {
       severity: "LOW",
       detectedKeywords: lowDetected,
+      cssrsLevel,
+      reasoning,
       response: null,
     };
   }

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "react-hot-toast";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import { Footer } from "@/components/layout/Footer";
@@ -50,13 +52,16 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
       <head>
         {/* Schema.org structured data */}
         <script
@@ -101,6 +106,7 @@ export default function RootLayout({
         {/* GR-4/GR-5: GA/AdSense moved to ConsentGatedScripts — loaded only after cookie consent */}
       </head>
       <body className="bg-cream antialiased">
+        <NextIntlClientProvider messages={messages}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
           본문으로 건너뛰기
         </a>
@@ -120,6 +126,7 @@ export default function RootLayout({
             },
           }}
         />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,0 +1,25 @@
+{
+  "name": "mamastale — 엄마의 삶이 아이의 동화가 되다",
+  "short_name": "mamastale",
+  "description": "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#E8927C",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "health"],
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

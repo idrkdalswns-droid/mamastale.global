@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
 
       // HIGH severity → bypass Claude, return hard-coded response
       if (crisisResult.severity === "HIGH") {
-        console.warn("[Chat] HIGH crisis detected:", crisisResult.detectedKeywords.slice(0, 3).join(", "));
+        console.warn("[Chat] HIGH crisis detected (CSSRS", crisisResult.cssrsLevel, "):", crisisResult.detectedKeywords.slice(0, 3).join(", "));
         logLLMCall({
           sessionId: parsed.data.sessionId,
           userId,
@@ -254,7 +254,12 @@ export async function POST(request: NextRequest) {
           eventType: "crisis_detection",
           endpoint: "/api/chat",
           userId,
-          metadata: { severity: "HIGH", keywords: crisisResult.detectedKeywords.slice(0, 3) },
+          metadata: {
+            severity: "HIGH",
+            cssrsLevel: crisisResult.cssrsLevel,
+            keywords: crisisResult.detectedKeywords.slice(0, 3),
+            reasoning: crisisResult.reasoning,
+          },
         }).catch(() => {});
 
         return NextResponse.json({
@@ -265,13 +270,18 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // MEDIUM/LOW severity → log for monitoring
+      // MEDIUM/LOW severity → log for monitoring with CSSRS detail
       if (crisisResult.severity === "MEDIUM" || crisisResult.severity === "LOW") {
         logEvent({
           eventType: "crisis_detection",
           endpoint: "/api/chat",
           userId,
-          metadata: { severity: crisisResult.severity, keywords: crisisResult.detectedKeywords.slice(0, 3) },
+          metadata: {
+            severity: crisisResult.severity,
+            cssrsLevel: crisisResult.cssrsLevel,
+            keywords: crisisResult.detectedKeywords.slice(0, 3),
+            reasoning: crisisResult.reasoning,
+          },
         }).catch(() => {});
       }
     }

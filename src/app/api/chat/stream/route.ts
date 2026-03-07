@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
     crisisResult = screenForCrisis(latestUserMsg.content);
     if (crisisResult.severity === "HIGH") {
       // Return crisis response as JSON (not SSE — immediate response)
+      console.warn("[Stream] HIGH crisis (CSSRS", crisisResult.cssrsLevel, "):", crisisResult.detectedKeywords.slice(0, 3).join(", "));
       logLLMCall({
         sessionId: parsed.data.sessionId, userId,
         model: "crisis_bypass", phase: clientPhase || 1,
@@ -147,12 +148,37 @@ export async function POST(request: NextRequest) {
         latencyMs: Date.now() - requestStartTime,
         wasCrisisIntercepted: true,
       }).catch(() => {});
+      logEvent({
+        eventType: "crisis_detection",
+        endpoint: "/api/chat/stream",
+        userId,
+        metadata: {
+          severity: "HIGH",
+          cssrsLevel: crisisResult.cssrsLevel,
+          keywords: crisisResult.detectedKeywords.slice(0, 3),
+          reasoning: crisisResult.reasoning,
+        },
+      }).catch(() => {});
       return NextResponse.json({
         content: crisisResult.response!,
         phase: clientPhase || 1,
         isStoryComplete: false,
         isCrisisIntervention: true,
       });
+    }
+    // MEDIUM/LOW severity → log with CSSRS detail
+    if (crisisResult.severity === "MEDIUM" || crisisResult.severity === "LOW") {
+      logEvent({
+        eventType: "crisis_detection",
+        endpoint: "/api/chat/stream",
+        userId,
+        metadata: {
+          severity: crisisResult.severity,
+          cssrsLevel: crisisResult.cssrsLevel,
+          keywords: crisisResult.detectedKeywords.slice(0, 3),
+          reasoning: crisisResult.reasoning,
+        },
+      }).catch(() => {});
     }
   }
 
