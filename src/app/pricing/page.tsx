@@ -1,31 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { useAuth } from "@/lib/hooks/useAuth";
 
-// ─── Toss Payment Widget SDK v2 Type Declarations ───
-// Based on: https://docs.tosspayments.com/sdk/v2/js
-
-// Widget sub-objects returned by renderPaymentMethods / renderAgreement
-interface WidgetPaymentMethodWidget {
-  getSelectedPaymentMethod: () => Promise<{ code: string }>;
-  on: (event: "paymentMethodSelect", callback: (method: { code: string }) => void) => void;
-  destroy: () => Promise<void>;
-}
-
-interface WidgetAgreementWidget {
-  on: (event: "agreementStatusChange", callback: (status: { agreedRequiredTerms: boolean }) => void) => void;
-  destroy: () => Promise<void>;
-}
-
+// ─── Toss Payments SDK v2 Type Declarations ───
+// Standard payment mode: 구매 버튼 클릭 → 토스 결제 페이지로 리다이렉트
 declare global {
   interface Window {
     TossPayments?: (clientKey: string) => {
-      widgets: (opts: { customerKey: string }) => TossWidgets;
       payment: (opts: { customerKey: string }) => {
         requestPayment: (params: {
           method: string;
@@ -38,29 +24,6 @@ declare global {
       };
     };
   }
-}
-
-interface TossWidgets {
-  setAmount: (amount: { currency: string; value: number }) => Promise<void>;
-  renderPaymentMethods: (opts: {
-    selector: string;
-    variantKey?: string;
-  }) => Promise<WidgetPaymentMethodWidget>;
-  renderAgreement: (opts: {
-    selector: string;
-    variantKey?: string;
-  }) => Promise<WidgetAgreementWidget>;
-  requestPayment: (params: {
-    orderId: string;
-    orderName: string;
-    successUrl: string;
-    failUrl: string;
-    customerEmail?: string;
-    customerName?: string;
-    customerMobilePhone?: string;
-    metadata?: Record<string, string>;
-    windowTarget?: "self" | "iframe";
-  }) => Promise<void>;
 }
 
 // ─── Product Configuration ───
@@ -83,159 +46,54 @@ const PRODUCTS: Record<
 };
 
 export default function PricingPage() {
-  const [selectedProduct, setSelectedProduct] = useState<PriceType | null>(
-    null
-  );
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
-  const [widgetReady, setWidgetReady] = useState(false);
-  const [widgetLoading, setWidgetLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [termsAgreed, setTermsAgreed] = useState(false);
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { user, loading: authLoading } = useAuth();
 
-  const widgetsRef = useRef<TossWidgets | null>(null);
-  const paymentMethodWidgetRef = useRef<WidgetPaymentMethodWidget | null>(null);
-  const agreementWidgetRef = useRef<WidgetAgreementWidget | null>(null);
-  const widgetInitProductRef = useRef<PriceType | null>(null);
-  const checkoutRef = useRef<HTMLDivElement>(null);
-
-  // ─── Keys ───
-  const tossWidgetKey = process.env.NEXT_PUBLIC_TOSS_WIDGET_KEY;
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-  const useWidgetMode = !!tossWidgetKey;
 
   // Check if SDK already loaded (e.g., from cache)
   useEffect(() => {
     if (window.TossPayments) setSdkReady(true);
   }, []);
 
-  // ─── Widget Init / Amount Update ───
-  useEffect(() => {
-    if (!selectedProduct || !sdkReady || !window.TossPayments || !user) return;
-    if (!useWidgetMode) return;
+  // ─── Direct Redirect Payment ───
+  // 구매하기 클릭 → 바로 토스 결제 페이지로 리다이렉트
+  const handlePayment = useCallback(async (productType: PriceType) => {
+    if (isProcessing) return;
 
-    const product = PRODUCTS[selectedProduct];
-
-    // Widget already initialized → just update amount
-    if (widgetsRef.current && widgetInitProductRef.current !== null) {
-      widgetInitProductRef.current = selectedProduct;
-      widgetsRef.current
-        .setAmount({ currency: "KRW", value: product.amount })
-        .catch(() => setError("결제 금액 변경에 실패했습니다."));
+    // Must be logged in
+    if (!user && !authLoading) {
+      window.location.href = "/login?redirect=/pricing";
       return;
     }
 
-    // First initialization
-    widgetInitProductRef.current = selectedProduct;
-    setWidgetLoading(true);
-    setWidgetReady(false);
-    setTermsAgreed(false);
+    if (!window.TossPayments || !tossClientKey || !user) {
+      setError("결제 시스템을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
 
-    const initWidget = async () => {
-      try {
-        const toss = window.TossPayments!(tossWidgetKey!);
-        const widgets = toss.widgets({ customerKey: user.id });
-        widgetsRef.current = widgets;
-
-        await widgets.setAmount({ currency: "KRW", value: product.amount });
-
-        // SDK docs: renderPaymentMethods returns a widget object with
-        // getSelectedPaymentMethod(), on(), destroy() methods
-        const paymentMethodWidget = await widgets.renderPaymentMethods({
-          selector: "#payment-methods",
-        });
-        paymentMethodWidgetRef.current = paymentMethodWidget;
-
-        // SDK docs: renderAgreement returns a widget object with
-        // on('agreementStatusChange'), destroy() methods
-        const agreementWidget = await widgets.renderAgreement({
-          selector: "#agreement",
-        });
-        agreementWidgetRef.current = agreementWidget;
-
-        // Subscribe to agreement status changes (per SDK docs)
-        // Enable/disable payment button based on required terms agreement
-        agreementWidget.on("agreementStatusChange", (status) => {
-          setTermsAgreed(status.agreedRequiredTerms);
-        });
-
-        setWidgetReady(true);
-      } catch (err) {
-        console.error("Widget init error:", err);
-        setError(
-          "결제 위젯을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요."
-        );
-      } finally {
-        setWidgetLoading(false);
-      }
-    };
-
-    initWidget();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProduct, sdkReady, user?.id, useWidgetMode]);
-
-  // ─── Widget Cleanup on Unmount ───
-  // SDK docs: "한 페이지에서 두 개의 결제 UI를 렌더링할 수 없어요.
-  // destroy() 메서드로 기존 UI를 제거한 다음에 렌더링하세요."
-  useEffect(() => {
-    return () => {
-      paymentMethodWidgetRef.current?.destroy().catch(() => {});
-      agreementWidgetRef.current?.destroy().catch(() => {});
-    };
-  }, []);
-
-  // ─── Select Product ───
-  const handleSelectProduct = useCallback(
-    (type: PriceType) => {
-      setError("");
-
-      // Must be logged in
-      if (!user && !authLoading) {
-        window.location.href = "/login?redirect=/pricing";
-        return;
-      }
-
-      setSelectedProduct(type);
-
-      // Scroll to checkout section
-      setTimeout(() => {
-        checkoutRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 150);
-    },
-    [user, authLoading]
-  );
-
-  // ─── Widget Mode: requestPayment ───
-  const handleWidgetPayment = useCallback(async () => {
-    if (!widgetsRef.current || !selectedProduct || isProcessing) return;
     setIsProcessing(true);
     setError("");
 
     try {
-      const product = PRODUCTS[selectedProduct];
+      const product = PRODUCTS[productType];
       const orderId = `order_${crypto.randomUUID()}`;
 
-      await widgetsRef.current.requestPayment({
+      const toss = window.TossPayments(tossClientKey);
+      const payment = toss.payment({ customerKey: user.id });
+
+      // 토스 결제 페이지로 리다이렉트 — 익숙한 토스 UI에서 결제 진행
+      await payment.requestPayment({
+        method: "CARD",
+        amount: { currency: "KRW", value: product.amount },
         orderId,
         orderName: product.name,
-        // Toss appends paymentKey, orderId, amount to these URLs
-        // mode param tells our confirm API which secret key to use (gsk_ vs sk_)
-        successUrl: `${window.location.origin}/payment/success?mode=widget`,
+        successUrl: `${window.location.origin}/payment/success?mode=standard`,
         failUrl: `${window.location.origin}/payment/fail`,
-        // Pass customer info for payment receipt (per SDK docs)
-        customerEmail: user?.email || undefined,
-        customerName: (user?.user_metadata?.display_name as string) || (user?.user_metadata?.name as string) || undefined,
-        // SDK docs: metadata — 최대 5개 키-값 쌍, 토스 대시보드에서 확인 가능
-        metadata: {
-          productType: selectedProduct,
-          tickets: String(product.tickets),
-        },
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "";
@@ -248,46 +106,7 @@ export default function PricingPage() {
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedProduct, isProcessing, user]); // CTO-FIX: Added 'user' to prevent stale closure for customerEmail/customerName
-
-  // ─── Standard Mode Fallback: card-only popup ───
-  const handleStandardPayment = useCallback(async () => {
-    if (
-      !selectedProduct ||
-      isProcessing ||
-      !window.TossPayments ||
-      !tossClientKey ||
-      !user
-    )
-      return;
-    setIsProcessing(true);
-    setError("");
-
-    try {
-      const product = PRODUCTS[selectedProduct];
-      const orderId = `order_${crypto.randomUUID()}`;
-
-      const toss = window.TossPayments(tossClientKey);
-      const payment = toss.payment({ customerKey: user.id });
-
-      await payment.requestPayment({
-        method: "CARD",
-        amount: { currency: "KRW", value: product.amount },
-        orderId,
-        orderName: product.name,
-        // Standard mode uses ck_/sk_ key pair (different from widget gck_/gsk_ pair)
-        successUrl: `${window.location.origin}/payment/success?mode=standard`,
-        failUrl: `${window.location.origin}/payment/fail`,
-      });
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : "";
-      if (!errMsg.includes("PAY_PROCESS_CANCELED")) {
-        setError("결제 중 오류가 발생했습니다. 다시 시도해 주세요.");
-      }
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [selectedProduct, isProcessing, tossClientKey, user]);
+  }, [isProcessing, user, authLoading, tossClientKey]);
 
   return (
     <div className="min-h-dvh bg-cream px-6 pt-12 pb-20 relative overflow-hidden">
@@ -331,25 +150,17 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Payment method badges */}
+        {/* Payment method badge */}
         <div className="flex flex-wrap items-center justify-center gap-1.5 mb-8">
-          {[
-            { icon: "💳", label: "카드" },
-            { icon: "🟡", label: "카카오페이" },
-            { icon: "🟢", label: "네이버페이" },
-            { icon: "🔵", label: "토스페이" },
-          ].map((m, i) => (
-            <span
-              key={i}
-              className="px-2.5 py-1 rounded-full text-[10px] text-brown-mid font-medium"
-              style={{
-                background: "rgba(255,255,255,0.7)",
-                border: "1px solid rgba(0,0,0,0.06)",
-              }}
-            >
-              {m.icon} {m.label}
-            </span>
-          ))}
+          <span
+            className="px-3 py-1 rounded-full text-[10px] text-brown-mid font-medium"
+            style={{
+              background: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(0,0,0,0.06)",
+            }}
+          >
+            💳 토스페이먼츠 안전 결제
+          </span>
         </div>
 
         {/* SDK load error */}
@@ -429,11 +240,7 @@ export default function PricingPage() {
             Ticket (₩4,900) Card
             ════════════════════════════════════════════════ */}
         <div
-          className={`rounded-2xl p-5 mb-4 relative transition-all duration-300 ${
-            selectedProduct === "ticket"
-              ? "ring-2 ring-coral ring-offset-2 ring-offset-cream"
-              : ""
-          }`}
+          className="rounded-2xl p-5 mb-4 relative transition-all duration-300"
           style={{
             background: "rgba(255,255,255,0.7)",
             border: "2px solid #E07A5F",
@@ -483,19 +290,16 @@ export default function PricingPage() {
           </ul>
 
           <button
-            onClick={() => handleSelectProduct("ticket")}
-            disabled={isProcessing}
+            onClick={() => handlePayment("ticket")}
+            disabled={isProcessing || !sdkReady}
             className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background:
-                selectedProduct === "ticket"
-                  ? "linear-gradient(135deg, #C96B52, #B85A43)"
-                  : "linear-gradient(135deg, #E07A5F, #C96B52)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            {selectedProduct === "ticket"
-              ? "✓ 선택됨 · 아래에서 결제하기"
+            {isProcessing
+              ? "결제 페이지로 이동 중..."
               : "🎫 티켓 구매하기 · ₩4,900"}
           </button>
         </div>
@@ -504,11 +308,7 @@ export default function PricingPage() {
             Bundle (₩18,900) Card
             ════════════════════════════════════════════════ */}
         <div
-          className={`rounded-2xl p-5 mb-4 relative transition-all duration-300 ${
-            selectedProduct === "bundle"
-              ? "ring-2 ring-purple ring-offset-2 ring-offset-cream"
-              : ""
-          }`}
+          className="rounded-2xl p-5 mb-4 relative transition-all duration-300"
           style={{
             background: "rgba(255,255,255,0.7)",
             border: "1px solid rgba(109,76,145,0.15)",
@@ -567,157 +367,26 @@ export default function PricingPage() {
           </ul>
 
           <button
-            onClick={() => handleSelectProduct("bundle")}
-            disabled={isProcessing}
+            onClick={() => handlePayment("bundle")}
+            disabled={isProcessing || !sdkReady}
             className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background:
-                selectedProduct === "bundle"
-                  ? "linear-gradient(135deg, #5C3F7E, #6D4C91)"
-                  : "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
               boxShadow: "0 6px 20px rgba(109,76,145,0.25)",
             }}
           >
-            {selectedProduct === "bundle"
-              ? "✓ 선택됨 · 아래에서 결제하기"
+            {isProcessing
+              ? "결제 페이지로 이동 중..."
               : "✨ 5권 묶음 구매 · ₩18,900"}
           </button>
         </div>
 
-        {/* ════════════════════════════════════════════════
-            Checkout Section — Payment Widget
-            ════════════════════════════════════════════════ */}
-        {selectedProduct && (
-          <div
-            ref={checkoutRef}
-            className="rounded-2xl p-5 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
-            style={{
-              background: "linear-gradient(180deg, #FFFFFF, #FFF9F5)",
-              border: "2px solid rgba(224,122,95,0.2)",
-              boxShadow: "0 8px 32px rgba(224,122,95,0.08)",
-            }}
-          >
-            {/* Product summary bar */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-brown-pale/10">
-              <div>
-                <p className="text-sm font-medium text-brown">
-                  {PRODUCTS[selectedProduct].name}
-                </p>
-                <p className="text-[11px] text-brown-pale font-light mt-0.5">
-                  {selectedProduct === "bundle"
-                    ? "5권 묶음 · 23% 할인"
-                    : "1권"}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-serif text-lg font-bold text-brown">
-                  ₩{PRODUCTS[selectedProduct].amount.toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            {/* Change product link */}
-            <div className="flex justify-end mb-3">
-              <button
-                onClick={() => {
-                  const other =
-                    selectedProduct === "ticket" ? "bundle" : "ticket";
-                  handleSelectProduct(other);
-                }}
-                className="text-[11px] text-coral font-medium"
-              >
-                {selectedProduct === "ticket"
-                  ? "5권 묶음으로 변경 (23% 할인) →"
-                  : "1권 단품으로 변경 →"}
-              </button>
-            </div>
-
-            {/* Widget Mode: Embedded Payment UI */}
-            {useWidgetMode ? (
-              <>
-                {/* Widget loading spinner */}
-                {widgetLoading && (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <div className="text-3xl animate-pulse mb-2">💳</div>
-                      <p className="text-xs text-brown-pale font-light">
-                        결제 수단 불러오는 중...
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Toss Payment Methods Widget — renders here */}
-                <div
-                  id="payment-methods"
-                  className="mb-3"
-                  style={{
-                    minHeight: widgetLoading ? 0 : 200,
-                    display: widgetLoading ? "none" : "block",
-                  }}
-                />
-
-                {/* Toss Agreement Widget — renders here */}
-                <div
-                  id="agreement"
-                  className="mb-4"
-                  style={{ display: widgetLoading ? "none" : "block" }}
-                />
-
-                {/* Pay button — disabled until widget ready AND terms agreed */}
-                {/* SDK docs: agreementStatusChange 이벤트로 약관 동의 확인 */}
-                <button
-                  onClick={handleWidgetPayment}
-                  disabled={!widgetReady || !termsAgreed || isProcessing}
-                  className="w-full py-4 rounded-full text-white text-[15px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
-                  style={{
-                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                    boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
-                  }}
-                >
-                  {isProcessing
-                    ? "결제 진행 중..."
-                    : !termsAgreed && widgetReady
-                      ? "약관에 동의해 주세요"
-                      : `₩${PRODUCTS[selectedProduct].amount.toLocaleString()} 결제하기`}
-                </button>
-              </>
-            ) : (
-              /* Standard Mode Fallback: Card-only popup */
-              <>
-                <div className="text-center py-6">
-                  <p className="text-sm text-brown-light font-light mb-1">
-                    카드 결제로 진행됩니다
-                  </p>
-                  <p className="text-[10px] text-brown-pale font-light">
-                    간편결제를 원하시면 새로고침 후 다시 시도해 주세요
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleStandardPayment}
-                  disabled={!sdkReady || isProcessing}
-                  className="w-full py-4 rounded-full text-white text-[15px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
-                  style={{
-                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                    boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
-                  }}
-                >
-                  {isProcessing
-                    ? "결제 창 여는 중..."
-                    : `💳 카드로 ₩${PRODUCTS[selectedProduct].amount.toLocaleString()} 결제하기`}
-                </button>
-              </>
-            )}
-
-            {/* Security badges */}
-            <div className="flex items-center justify-center gap-3 mt-4 text-[10px] text-brown-pale font-light">
-              <span>🔒 안전 결제</span>
-              <span>📄 전자영수증 발급</span>
-              <span>🔄 7일 환불</span>
-            </div>
-          </div>
-        )}
+        {/* Security badges */}
+        <div className="flex items-center justify-center gap-3 mb-4 text-[10px] text-brown-pale font-light">
+          <span>🔒 토스페이먼츠 안전 결제</span>
+          <span>📄 전자영수증 발급</span>
+          <span>🔄 7일 환불</span>
+        </div>
 
         {/* ════════════════════════════════════════════════
             Why Ticket Model
