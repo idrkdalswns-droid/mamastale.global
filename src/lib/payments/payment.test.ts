@@ -472,30 +472,29 @@ describe("payment method labels", () => {
 
 describe("secret key selection by mode", () => {
   // Simulates the key selection logic from confirm/route.ts
+  // P0-1 FIX: NO cross-mode fallback — matches actual production code
   function selectKey(
     mode: "widget" | "standard",
     widgetKey: string | undefined,
     apiKey: string | undefined
   ): string | undefined {
-    return mode === "standard"
-      ? (apiKey || widgetKey)
-      : (widgetKey || apiKey);
+    return mode === "standard" ? apiKey : widgetKey;
   }
 
-  it("widget mode prefers gsk_ key", () => {
+  it("widget mode uses gsk_ key", () => {
     expect(selectKey("widget", "gsk_widget", "sk_api")).toBe("gsk_widget");
   });
 
-  it("standard mode prefers sk_ key", () => {
+  it("standard mode uses sk_ key", () => {
     expect(selectKey("standard", "gsk_widget", "sk_api")).toBe("sk_api");
   });
 
-  it("widget mode falls back to sk_ key if gsk_ not set", () => {
-    expect(selectKey("widget", undefined, "sk_api")).toBe("sk_api");
+  it("widget mode returns undefined if gsk_ not set (NO fallback to sk_)", () => {
+    expect(selectKey("widget", undefined, "sk_api")).toBeUndefined();
   });
 
-  it("standard mode falls back to gsk_ key if sk_ not set", () => {
-    expect(selectKey("standard", "gsk_widget", undefined)).toBe("gsk_widget");
+  it("standard mode returns undefined if sk_ not set (NO fallback to gsk_)", () => {
+    expect(selectKey("standard", "gsk_widget", undefined)).toBeUndefined();
   });
 
   it("returns undefined if no keys configured", () => {
