@@ -42,44 +42,6 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store, must-revalidate");
   }
 
-  // ─── Site Access Gate ───
-  // Set SITE_ACCESS_KEY env var to enable (Cloudflare dashboard)
-  // Remove or leave empty to disable the gate
-  const accessKey = process.env.SITE_ACCESS_KEY;
-  if (accessKey) {
-    // Allow social media crawlers through so OG link previews work
-    const ua = request.headers.get("user-agent") || "";
-    const isCrawler = /kakaotalk-scrap|facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|TelegramBot|LineBot|Discordbot|Googlebot|bingbot|Yeti/i.test(ua);
-
-    const isAccessPage = pathname === "/access";
-    const isVerifyApi = pathname === "/api/verify-access";
-    const isApiRoute = pathname.startsWith("/api/");
-    // Auth callbacks must bypass access gate (email verification links, OAuth callbacks)
-    const isAuthCallback = pathname === "/auth/callback" || pathname === "/api/auth/callback";
-    // Auth pages must bypass access gate (users from email links in different browser won't have cookie)
-    const isAuthRoute = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password";
-    const hasAccess = request.cookies.get("site-access")?.value === "verified";
-
-    if (!hasAccess && !isAccessPage && !isVerifyApi && !isAuthCallback && !isAuthRoute && !isCrawler) {
-      // Block API routes with 403, redirect pages to /access
-      if (isApiRoute) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
-      // Preserve original URL (including ?ref= query params) for redirect after access
-      const originalPath = pathname + (request.nextUrl.search || "");
-      const accessUrl = new URL("/access", request.url);
-      if (originalPath !== "/") {
-        accessUrl.searchParams.set("next", originalPath);
-      }
-      return NextResponse.redirect(accessUrl);
-    }
-
-    // Already verified — skip access page
-    if (hasAccess && isAccessPage) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-  }
-
   // ─── Safety net: redirect /?code= to /auth/callback ───
   // Handles legacy email links or misconfigured redirects
   // CTO-FIX: Forward all auth params (code, type, error_description, etc.)

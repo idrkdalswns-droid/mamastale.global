@@ -17,7 +17,7 @@ export default function AuthCallbackPage() {
     const searchStr = window.location.search;
     const hashStr = window.location.hash;
 
-    console.log("[AuthCallback] URL:", callbackUrl);
+    // Debug info captured for error reporting only (not logged in production)
 
     // Parse all possible auth params from URL
     const queryParams = new URLSearchParams(searchStr);
@@ -35,7 +35,7 @@ export default function AuthCallbackPage() {
       hashError = hp.get("error_description") || hp.get("error");
     }
 
-    console.log("[AuthCallback] code:", !!code, "hashToken:", !!hashAccessToken, "error:", queryError || hashError || "none");
+    // Auth params captured: code, hashToken, error status
 
     // ─── 2. Check for errors in URL ───
     const urlError = queryError || hashError;
@@ -72,7 +72,7 @@ export default function AuthCallbackPage() {
       // OAuth uses implicit flow (see oauth.ts), so tokens arrive in hash fragment.
       // We manually call setSession() on the SSR client to store them in cookies.
       if (hashAccessToken && hashRefreshToken) {
-        console.log("[AuthCallback] Implicit flow: setting session from hash tokens");
+        // Implicit flow: setting session from hash tokens
         window.history.replaceState({}, "", "/auth/callback");
 
         const { error } = await supabase.auth.setSession({
@@ -96,7 +96,7 @@ export default function AuthCallbackPage() {
       // ─── 4B. PKCE flow: code from email verification ───
       // Email confirmation uses PKCE (via @supabase/ssr), so code arrives in query params.
       if (code) {
-        console.log("[AuthCallback] PKCE flow: exchanging code for session");
+        // PKCE flow: exchanging code for session
         window.history.replaceState({}, "", "/auth/callback");
 
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -127,7 +127,7 @@ export default function AuthCallbackPage() {
 
       // ─── 4C. Fallback: auto-detection or existing session ───
       // Wait for Supabase client's _initialize() auto-detection to complete
-      console.log("[AuthCallback] No code or hash tokens, waiting for auto-detection...");
+      // No code or hash tokens — waiting for auto-detection
       await new Promise((r) => setTimeout(r, 2000));
 
       const { data: { user } } = await supabase.auth.getUser();

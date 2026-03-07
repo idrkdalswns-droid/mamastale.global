@@ -9,8 +9,9 @@ import { z } from "zod";
 
 // ─── Extracted from /api/payments/confirm/route.ts ───
 const VALID_PRICES: Record<number, number> = {
+  3920: 1,
   4900: 1,
-  18900: 5,
+  14900: 4,
 };
 
 // mode: "widget" uses gsk_ key, "standard" uses sk_ key (per official Toss sample)
@@ -76,7 +77,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 // ─── Product config (from pricing page) ───
 const PRODUCTS = {
   ticket: { name: "동화 스토리 하나 완성 티켓", amount: 4900, tickets: 1 },
-  bundle: { name: "동화 다섯 스토리 완성 티켓", amount: 18900, tickets: 5 },
+  bundle: { name: "동화 네 스토리 완성 티켓", amount: 14900, tickets: 4 },
 };
 
 // ════════════════════════════════════════════════════════════
@@ -88,8 +89,12 @@ describe("VALID_PRICES", () => {
     expect(VALID_PRICES[4900]).toBe(1);
   });
 
-  it("maps ₩18,900 to 5 tickets", () => {
-    expect(VALID_PRICES[18900]).toBe(5);
+  it("maps ₩14,900 to 4 tickets", () => {
+    expect(VALID_PRICES[14900]).toBe(4);
+  });
+
+  it("maps ₩3,920 to 1 ticket (first purchase)", () => {
+    expect(VALID_PRICES[3920]).toBe(1);
   });
 
   it("rejects unknown amounts", () => {
@@ -130,7 +135,7 @@ describe("confirmRequestSchema", () => {
 
   it("accepts bundle amount", () => {
     expect(
-      confirmRequestSchema.safeParse({ ...validPayload, amount: 18900 }).success
+      confirmRequestSchema.safeParse({ ...validPayload, amount: 14900 }).success
     ).toBe(true);
   });
 
@@ -387,16 +392,16 @@ describe("product configuration", () => {
     expect(PRODUCTS.ticket.amount).toBe(4900);
   });
 
-  it("bundle product has correct price (₩18,900)", () => {
-    expect(PRODUCTS.bundle.amount).toBe(18900);
+  it("bundle product has correct price (₩14,900)", () => {
+    expect(PRODUCTS.bundle.amount).toBe(14900);
   });
 
   it("ticket gives 1 ticket", () => {
     expect(PRODUCTS.ticket.tickets).toBe(1);
   });
 
-  it("bundle gives 5 tickets", () => {
-    expect(PRODUCTS.bundle.tickets).toBe(5);
+  it("bundle gives 4 tickets", () => {
+    expect(PRODUCTS.bundle.tickets).toBe(4);
   });
 
   it("all product amounts are in VALID_PRICES", () => {

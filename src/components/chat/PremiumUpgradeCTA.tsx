@@ -185,9 +185,35 @@ export default function PremiumUpgradeCTA({
             >
               프리미엄 동화 만들기 — ₩4,900
             </button>
-            <p className="text-[10px] text-brown-pale font-light mb-3">
+            <p className="text-[10px] text-brown-pale font-light mb-4">
               커피 한 잔 값으로 아이가 매일 읽는 동화를 ☕
             </p>
+
+            {/* Bundle upsell with Pennebaker research */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-px" style={{ background: "rgba(196,149,106,0.15)" }} />
+              <span className="text-[10px] text-brown-pale font-light">또는</span>
+              <div className="flex-1 h-px" style={{ background: "rgba(196,149,106,0.15)" }} />
+            </div>
+
+            <p className="text-[11px] text-brown-light font-light leading-relaxed mb-3 text-center break-keep">
+              💬 매일 15~20분, 4일 연속 마음 이야기를<br />
+              꺼낸 사람들의 마음이 가벼워졌다는<br />
+              연구 결과가 있어요.
+            </p>
+
+            <button
+              onClick={() => router.push("/pricing")}
+              className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] mb-3"
+              style={{
+                background: "transparent",
+                color: "#6D4C91",
+                border: "1.5px solid rgba(109,76,145,0.4)",
+              }}
+            >
+              4편 묶음으로 시작하기 · ₩14,900
+              <span className="text-[10px] font-normal ml-1 opacity-70">(24% 할인)</span>
+            </button>
 
             {trigger === "story_complete" && onViewStory ? (
               <button

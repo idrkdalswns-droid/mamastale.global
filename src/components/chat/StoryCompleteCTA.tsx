@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 
 interface StoryCompleteCTAProps {
-  storyId: string;
   onViewStory: () => void;
 }
 
@@ -19,7 +18,6 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 export default function StoryCompleteCTA({
-  storyId,
   onViewStory,
 }: StoryCompleteCTAProps) {
   return (

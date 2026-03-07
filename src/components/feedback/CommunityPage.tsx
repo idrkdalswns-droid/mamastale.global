@@ -325,7 +325,14 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                     boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                   }}
                 >
-                  다음 동화 만들기 · ₩2,000
+                  다음 동화 만들기 · ₩4,900
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="block w-full mt-2 text-[11px] text-center no-underline py-1.5"
+                  style={{ color: "#6D4C91" }}
+                >
+                  또는 4권 묶음으로 24% 할인받기 →
                 </Link>
               </>
             )}

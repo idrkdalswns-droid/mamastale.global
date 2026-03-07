@@ -65,8 +65,6 @@ export async function DELETE(request: NextRequest) {
 
     // Phase 2: Delete dependent records (sequential, dependency order)
     await serviceClient.from("stories").delete().eq("user_id", userId);
-    await serviceClient.from("referrals").delete().eq("referrer_id", userId);
-    await serviceClient.from("referrals").delete().eq("referred_id", userId);
     await serviceClient.from("subscriptions").delete().eq("user_id", userId);
     await serviceClient.from("profiles").delete().eq("id", userId);
 

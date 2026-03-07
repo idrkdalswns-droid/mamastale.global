@@ -21,10 +21,10 @@ export default function TermsPage() {
           <p>본 서비스는 의료 행위를 대체하지 않습니다. AI 상담은 참고용이며, 전문 의료 상담이 필요한 경우 반드시 전문가의 도움을 받으시기 바랍니다. 긴급 상황 시 자살예방상담전화 1393, 정신건강위기상담 1577-0199로 연락해 주세요.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제4조 (이용 요금)</h2>
-          <p>무료 체험: 1회 완전한 동화 창작 가능<br/>
-          동화 스토리 하나 완성 티켓: ₩2,000 / 1권<br/>
-          동화 다섯 스토리 완성 티켓: ₩8,000 / 5권 (20% 할인)<br/>
-          티켓은 소멸 기한이 없으며, 결제는 Stripe를 통해 처리됩니다.</p>
+          <p>무료 체험: 1회 완전한 동화 창작 가능 (회원가입 불필요, 5턴 제한)<br/>
+          동화 스토리 하나 완성 티켓: ₩4,900 / 1권 (첫 구매 시 ₩3,920)<br/>
+          동화 네 스토리 완성 티켓: ₩14,900 / 4권 (24% 할인, 1권당 ₩3,725)<br/>
+          티켓은 구매일로부터 30일 이내에 사용해야 하며, 결제는 토스페이먼츠를 통해 처리됩니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제5조 (저작권)</h2>
           <p>이용자가 서비스를 통해 생성한 동화의 저작권은 이용자에게 귀속됩니다. 서비스의 UI, 시스템 프롬프트, 브랜드 자산의 저작권은 마마스테일에 귀속됩니다.</p>
@@ -41,11 +41,11 @@ export default function TermsPage() {
             <li>대화 내용은 동화 생성이라는 서비스 제공 목적으로만 사용됩니다.</li>
             <li>대화 데이터는 Anthropic의 서버에서 처리되며, Anthropic의 데이터 처리 방침에 따릅니다.</li>
             <li>완성된 동화 및 대화 기록은 이용자의 계정에 저장되며, 이용자가 직접 삭제를 요청할 수 있습니다.</li>
-            <li>대화 내용 삭제를 원하시는 경우 support@mamastale.com으로 문의해 주세요.</li>
+            <li>대화 내용 삭제를 원하시는 경우 kang.minjune@icloud.com으로 문의해 주세요.</li>
           </ul>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제9조 (환불 정책)</h2>
-          <p>미사용 티켓은 구매일로부터 7일 이내에 환불이 가능합니다. 환불 요청은 support@mamastale.com으로 문의해 주세요. 이미 동화 생성에 사용된 티켓은 환불이 불가합니다.</p>
+          <p>미사용 티켓은 구매일로부터 7일 이내에 환불이 가능합니다. 환불 요청은 kang.minjune@icloud.com으로 문의해 주세요. 이미 동화 생성에 사용된 티켓은 환불이 불가합니다.</p>
 
           <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 3일</p>
         </div>

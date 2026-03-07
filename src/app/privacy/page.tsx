@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           <p>마마스테일(이하 &quot;서비스&quot;)은 이용자의 개인정보를 소중히 여기며, 대한민국 개인정보보호법 및 EU 일반개인정보보호규정(GDPR)을 준수합니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">1. 수집하는 개인정보</h2>
-          <p>회원가입 시: 이메일, 이름(별명), 비밀번호<br/>
+          <p>회원가입 시: 이메일, 이름(별명) (카카오·Google OAuth 인증 시 제공되는 정보)<br/>
           서비스 이용 시: 대화 내용, 생성된 동화, 피드백 응답<br/>
           자동 수집: 접속 로그, 기기 정보, 쿠키 (동의 시에만)</p>
 
@@ -57,13 +57,8 @@ export default function PrivacyPage() {
                 <td className="py-2">미국/EU</td>
               </tr>
               <tr className="border-b border-brown-pale/10">
-                <td className="py-2">Stripe</td>
-                <td className="py-2">결제 처리 (해외)</td>
-                <td className="py-2">미국</td>
-              </tr>
-              <tr className="border-b border-brown-pale/10">
                 <td className="py-2">Toss Payments</td>
-                <td className="py-2">결제 처리 (한국 시장)</td>
+                <td className="py-2">결제 처리</td>
                 <td className="py-2">한국</td>
               </tr>
               <tr className="border-b border-brown-pale/10">
@@ -107,7 +102,7 @@ export default function PrivacyPage() {
           <p>대화 내용은 암호화되어 저장되며, API 키는 서버 측에서만 관리합니다. 인증에는 PKCE 흐름을 사용하며, 모든 데이터 전송은 TLS로 암호화됩니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">10. 개인정보 보호 책임자</h2>
-          <p>개인정보 관련 문의 및 권리 행사: <strong>hello@mamastale.com</strong></p>
+          <p>개인정보 관련 문의 및 권리 행사: <strong>kang.minjune@icloud.com</strong></p>
 
           <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 2일 (최종 개정)</p>
         </div>

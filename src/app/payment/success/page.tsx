@@ -123,6 +123,10 @@ function PaymentSuccessContent() {
     );
   }
 
+  // Check if there's a saved chat to resume
+  const hasSavedChat = typeof window !== "undefined" &&
+    !!localStorage.getItem("mamastale_chat_state");
+
   return (
     <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
       <div
@@ -145,19 +149,21 @@ function PaymentSuccessContent() {
           </p>
         )}
         <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
-          이제 아이를 위한 아름다운<br />
-          <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
-          만들어 볼까요?
+          {hasSavedChat ? (
+            <>이전 대화를 이어서<br /><span className="text-coral font-medium">동화를 완성</span>해 볼까요?</>
+          ) : (
+            <>이제 아이를 위한 아름다운<br /><span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />만들어 볼까요?</>
+          )}
         </p>
         <button
-          onClick={() => router.push("/?payment=success")}
+          onClick={() => router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success")}
           className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
           style={{
             background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
           }}
         >
-          지금 바로 동화 만들기
+          {hasSavedChat ? "대화 이어서 동화 만들기" : "지금 바로 동화 만들기"}
         </button>
         <button
           onClick={() => router.push("/")}

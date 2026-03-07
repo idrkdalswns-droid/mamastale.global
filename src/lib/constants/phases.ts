@@ -12,7 +12,7 @@ export interface Phase {
 export const PHASES: Record<number, Phase> = {
   1: {
     id: 1,
-    name: "공감적 상담사",
+    name: "하은이 · 감정 표현 안내자",
     theory: "있는 그대로 들어줘요",
     icon: "🫧",
     bg: "#EEF6F3",
@@ -22,7 +22,7 @@ export const PHASES: Record<number, Phase> = {
   },
   2: {
     id: 2,
-    name: "소크라테스식 철학자",
+    name: "민서 · 소크라틱 질문자",
     theory: "새로운 시선으로 바라봐요",
     icon: "🌿",
     bg: "#FEF7ED",
@@ -32,7 +32,7 @@ export const PHASES: Record<number, Phase> = {
   },
   3: {
     id: 3,
-    name: "은유의 마법사",
+    name: "지우 · 은유의 마법사",
     theory: "이야기로 바꿔줘요",
     icon: "✨",
     bg: "#F4EEF8",
@@ -42,7 +42,7 @@ export const PHASES: Record<number, Phase> = {
   },
   4: {
     id: 4,
-    name: "동화 편집장",
+    name: "서연 · 동화 편집장",
     theory: "동화로 완성해요",
     icon: "📖",
     bg: "#FFF6EE",

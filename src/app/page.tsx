@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { PHASES } from "@/lib/constants/phases";
@@ -28,20 +27,16 @@ export default function Home() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showNoTickets, setShowNoTickets] = useState(false);
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-  const [referralCopied, setReferralCopied] = useState(false);
-  const [referralApplied, setReferralApplied] = useState(false);
-  const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
   const [showTicketConfirm, setShowTicketConfirm] = useState(false);
+  const [ticketUsedForSession, setTicketUsedForSession] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const [editSaveError, setEditSaveError] = useState(false);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
-  const router = useRouter();
 
-  // Detect URL params: payment success, referral code, action=start
+  // Detect URL params: payment success, action=start
   const [actionStart, setActionStart] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,14 +47,8 @@ export default function Home() {
       window.history.replaceState({}, "", "/");
       setActionStart(true);
     }
-    // Save referral code to localStorage + show welcome popup
-    const ref = params.get("ref");
-    if (ref) {
-      try { localStorage.setItem("mamastale_ref", ref.trim().toUpperCase()); } catch {}
-      setShowReferralWelcome(true);
-    }
     // Clean URL
-    if (params.get("payment") || ref) {
+    if (params.get("payment")) {
       window.history.replaceState({}, "", "/");
     }
   }, []);
@@ -115,72 +104,6 @@ export default function Home() {
     }
   }, [authLoading, user, actionStart, restoreFromStorage, restoreDraft, screen, retrySaveStory, getDraftInfo]);
 
-  // Auto-apply referral code after login
-  useEffect(() => {
-    if (authLoading || !user || referralApplied) return;
-    const savedRef = (() => { try { return localStorage.getItem("mamastale_ref"); } catch { return null; } })();
-    if (!savedRef) return;
-    // CTO-FIX(CRITICAL): Don't remove from localStorage until API confirms success.
-    // Previous: removed before fetch → network failure = referral benefit permanently lost
-    setReferralApplied(true);
-
-    // IIFE for async Bearer token retrieval
-    (async () => {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      } catch {}
-
-      fetch("/api/referral", {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ referralCode: savedRef }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            // Only remove from localStorage AFTER successful API response
-            try { localStorage.removeItem("mamastale_ref"); } catch {}
-            // Re-fetch ticket balance to show updated count
-            fetch("/api/tickets", { credentials: "include" })
-              .then((r) => r.ok ? r.json() : null)
-              .then((d) => { if (d) setTicketsRemaining(d.remaining ?? 0); });
-          }
-          // On failure, savedRef stays in localStorage → retried next time
-        })
-        .catch(() => {
-          // Network error → savedRef stays in localStorage for next attempt
-          setReferralApplied(false);
-        });
-    })();
-  }, [authLoading, user, referralApplied]);
-
-  // Fetch my referral code for logged-in users
-  // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
-  useEffect(() => {
-    if (!user) { setReferralCode(null); return; }
-    (async () => {
-      try {
-        const headers: Record<string, string> = {};
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-        const res = await fetch("/api/referral", { headers, credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.code) setReferralCode(data.code);
-        }
-      } catch {}
-    })();
-  }, [user]);
-
   // Fetch ticket balance for logged-in users
   // Re-fetches when returning to landing (e.g. after completing a story)
   // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
@@ -218,28 +141,33 @@ export default function Home() {
     // Logged-in: wait for ticket balance
     if (ticketsRemaining === null) return; // still loading
     setStartPending(false);
-    if (ticketsRemaining <= 0) {
-      setShowNoTickets(true);
-    } else {
-      // Show ticket confirmation popup instead of direct start
+    if (ticketsRemaining > 0) {
+      // Has tickets: show confirmation popup (deduct before starting)
       setShowTicketConfirm(true);
+    } else {
+      // No tickets: start free trial (5 turns free, then Turn-5 popup)
+      setScreen("onboarding");
     }
   }, [startPending, authLoading, user, ticketsRemaining]);
+
+  // After payment, user returns with tickets → lift the free trial turn limit
+  useEffect(() => {
+    if (screen !== "chat" || !user || ticketsRemaining === null) return;
+    if (ticketsRemaining > 0 && !ticketUsedForSession) {
+      setTicketUsedForSession(true);
+    }
+  }, [screen, user, ticketsRemaining, ticketUsedForSession]);
 
   // Handle "새 동화 만들기" click with ticket confirmation
   const handleStartStory = () => {
     // Block clicks while ticket balance is still loading for logged-in users
     if (user && ticketsRemaining === null) return;
-    if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
-      setShowNoTickets(true);
-      return;
-    }
-    // Logged-in users: show ticket confirmation popup (deduct before starting)
+    // Logged-in users with tickets: show ticket confirmation popup (deduct before starting)
     if (user && ticketsRemaining !== null && ticketsRemaining > 0) {
       setShowTicketConfirm(true);
       return;
     }
-    // Guests: go directly to onboarding (no ticket needed for free trial)
+    // Logged-in users with 0 tickets OR guests: start free trial (5 turns free)
     setScreen("onboarding");
   };
 
@@ -289,6 +217,7 @@ export default function Home() {
         <ChatPage
           onComplete={() => setScreen("edit")}
           onGoHome={() => { setShow(false); setScreen("landing"); }}
+          freeTrialMode={!ticketUsedForSession}
         />
       </ErrorBoundary>
     );
@@ -508,22 +437,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
-              <span className="text-[11px]">🧠</span>
-              <span className="text-[10px] text-brown-mid font-medium">전문가 감수</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
-              <span className="text-[11px]">📖</span>
-              <span className="text-[10px] text-brown-mid font-medium">실제 엄마 이야기</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/50 border border-brown-pale/10">
-              <span className="text-[11px]">🔒</span>
-              <span className="text-[10px] text-brown-mid font-medium">100% 비공개</span>
-            </div>
-          </div>
-
           {/* Draft resume card */}
           {draftInfo && (
             <div
@@ -601,41 +514,6 @@ export default function Home() {
                 </Link>
               )}
             </div>
-          )}
-
-          {/* Referral link for logged-in users */}
-          {user && referralCode && (
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}?ref=${referralCode}`;
-                navigator.clipboard.writeText(url).then(() => {
-                  setReferralCopied(true);
-                  setTimeout(() => setReferralCopied(false), 2000);
-                }).catch(() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: "mamastale 추천",
-                      text: "엄마의 이야기가 아이의 동화가 되는 곳, mamastale을 추천합니다!",
-                      url,
-                    });
-                  }
-                });
-              }}
-              className="w-full mb-3 py-2.5 rounded-full text-xs font-medium transition-all active:scale-[0.97]"
-              style={{
-                background: referralCopied
-                  ? "rgba(127,191,176,0.15)"
-                  : "rgba(224,122,95,0.08)",
-                color: referralCopied ? "#5A9E8F" : "#E07A5F",
-                border: referralCopied
-                  ? "1.5px solid rgba(127,191,176,0.3)"
-                  : "1.5px solid rgba(224,122,95,0.2)",
-              }}
-            >
-              {referralCopied
-                ? "추천 링크가 복사되었어요!"
-                : "친구 추천하고 무료 티켓 받기"}
-            </button>
           )}
 
           {/* Free trial + time hint for non-logged-in users */}
@@ -782,6 +660,7 @@ export default function Home() {
           remainingTickets={ticketsRemaining}
           onConfirm={() => {
             setShowTicketConfirm(false);
+            setTicketUsedForSession(true);
             // Update local ticket count (already deducted on server)
             setTicketsRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
             setScreen("onboarding");
@@ -885,71 +764,6 @@ export default function Home() {
               className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
             >
               나중에 할게요
-            </button>
-          </div>
-        </div>
-      )}
-      {/* SG-1: Referral Welcome Modal — accessible dialog */}
-      {showReferralWelcome && !user && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="친구 추천 안내"
-          onKeyDown={(e) => { if (e.key === "Escape") setShowReferralWelcome(false); }}
-        >
-          <div
-            className="w-full max-w-sm rounded-3xl p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"
-            style={{
-              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-            }}
-          >
-            <h2 className="font-serif text-xl font-bold text-brown mb-2 leading-tight">
-              친구가 초대했어요!
-            </h2>
-            <p className="text-[13px] text-brown-light font-light leading-relaxed mb-4 break-keep">
-              <span className="text-coral font-semibold">mamastale</span>은
-              엄마의 이야기를 아이를 위한{" "}
-              <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>
-              로 만들어주는 서비스예요.
-            </p>
-            <div
-              className="rounded-2xl p-4 mb-5"
-              style={{ background: "rgba(224,122,95,0.08)", border: "1.5px solid rgba(224,122,95,0.15)" }}
-            >
-              <p className="text-sm text-brown font-medium leading-relaxed break-keep">
-                지금 회원가입하시면<br />
-                <span className="text-coral font-bold text-base">무료 티켓 1장</span>을 드려요!
-              </p>
-              <p className="text-[11px] text-brown-pale font-light mt-1">
-                추천인에게도 티켓 1장이 지급됩니다
-              </p>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowReferralWelcome(false);
-                router.push("/signup");
-              }}
-              className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              이메일로 회원가입
-            </button>
-            <p className="text-[11px] text-brown-pale font-light text-center mb-1">
-              카카오 · Google로도 간편 가입 가능
-            </p>
-            <div className="h-[1px] bg-brown-pale/15 my-2" />
-            <button
-              onClick={() => setShowReferralWelcome(false)}
-              className="block w-full py-2 text-xs font-light text-brown-pale transition-all"
-            >
-              먼저 둘러볼게요
             </button>
           </div>
         </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import Script from "next/script";
+import { useSearchParams } from "next/navigation";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -29,23 +30,31 @@ declare global {
 // ─── Product Configuration ───
 type PriceType = "ticket" | "bundle";
 
-const PRODUCTS: Record<
-  PriceType,
-  { name: string; amount: number; tickets: number }
-> = {
+type PricingProduct = { name: string; amount: number; tickets: number };
+
+const PRODUCTS: Record<PriceType, PricingProduct> = {
   ticket: {
     name: "동화 스토리 하나 완성 티켓",
     amount: 4900,
     tickets: 1,
   },
   bundle: {
-    name: "동화 다섯 스토리 완성 티켓",
-    amount: 18900,
-    tickets: 5,
+    name: "동화 네 스토리 완성 티켓",
+    amount: 14900,
+    tickets: 4,
   },
 };
 
-export default function PricingPage() {
+// First-purchase discount product
+const FIRST_PURCHASE_PRODUCT: PricingProduct = {
+  name: "동화 스토리 하나 완성 티켓 (첫 구매 할인)",
+  amount: 3920,
+  tickets: 1,
+};
+
+function PricingContent() {
+  const searchParams = useSearchParams();
+  const isFirstPurchase = searchParams.get("first") === "1";
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,7 +89,9 @@ export default function PricingPage() {
     setError("");
 
     try {
-      const product = PRODUCTS[productType];
+      const product = (productType === "ticket" && isFirstPurchase)
+        ? FIRST_PURCHASE_PRODUCT
+        : PRODUCTS[productType];
       const orderId = `order_${crypto.randomUUID()}`;
 
       const toss = window.TossPayments(tossClientKey);
@@ -266,24 +277,39 @@ export default function PricingPage() {
             <h3 className="font-serif text-lg text-brown font-semibold">
               동화 스토리 하나 완성 티켓
             </h3>
-            <div className="flex items-baseline justify-center gap-1 mt-2">
-              <span className="font-serif text-3xl font-bold text-brown">
-                ₩4,900
-              </span>
-              <span className="text-sm text-brown-light font-light">/1권</span>
-            </div>
-            <p className="text-xs text-brown-pale mt-1">
-              커피 한 잔 값으로 새로운 동화를
-            </p>
+            {isFirstPurchase ? (
+              <>
+                <div className="flex items-baseline justify-center gap-2 mt-2">
+                  <span className="text-sm text-brown-pale line-through">₩4,900</span>
+                  <span className="font-serif text-3xl font-bold text-brown">₩3,920</span>
+                  <span className="text-sm text-brown-light font-light">/1권</span>
+                </div>
+                <span
+                  className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white"
+                  style={{ background: "#E07A5F" }}
+                >
+                  첫 구매 20% OFF
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="flex items-baseline justify-center gap-1 mt-2">
+                  <span className="font-serif text-3xl font-bold text-brown">₩4,900</span>
+                  <span className="text-sm text-brown-light font-light">/1권</span>
+                </div>
+                <p className="text-xs text-brown-pale mt-1">
+                  커피 한 잔 값으로 새로운 동화를
+                </p>
+              </>
+            )}
           </div>
 
           <ul className="space-y-2.5 mb-5">
             {[
               "4단계 마음 대화 전 과정 1회",
-              "새로운 상처, 새로운 은유, 새로운 동화",
               "10장면 동화 완성 + PDF 다운로드",
-              "티켓은 소멸 기한 없음",
-              "구독 부담 없이 원할 때만 결제",
+              "마음속 이야기를 글로 꺼내면 흩어진 생각이 정리돼요",
+              "티켓은 구매 후 30일 이내 사용",
             ].map((f, i) => (
               <li
                 key={i}
@@ -306,12 +332,14 @@ export default function PricingPage() {
           >
             {isProcessing
               ? "결제 페이지로 이동 중..."
-              : "🎫 티켓 구매하기 · ₩4,900"}
+              : isFirstPurchase
+                ? "🎫 첫 구매 할인 · ₩3,920"
+                : "🎫 티켓 구매하기 · ₩4,900"}
           </button>
         </div>
 
         {/* ════════════════════════════════════════════════
-            Bundle (₩18,900) Card
+            Bundle (₩14,900) Card — 페니베이커 4일 프로그램
             ════════════════════════════════════════════════ */}
         <div
           className="rounded-2xl p-5 mb-4 relative transition-all duration-300"
@@ -331,36 +359,36 @@ export default function PricingPage() {
           <div className="text-center mb-4 pt-1">
             <div className="text-3xl mb-2">✨</div>
             <h3 className="font-serif text-lg text-brown font-semibold">
-              동화 다섯 스토리 완성 티켓
+              동화 네 스토리 완성 티켓
             </h3>
             <div className="flex items-baseline justify-center gap-1 mt-2">
               <span className="text-sm text-brown-pale font-light line-through mr-1">
-                ₩24,500
+                ₩19,600
               </span>
               <span className="font-serif text-3xl font-bold text-brown">
-                ₩18,900
+                ₩14,900
               </span>
-              <span className="text-sm text-brown-light font-light">/5권</span>
+              <span className="text-sm text-brown-light font-light">/4권</span>
             </div>
             <div className="flex items-center justify-center gap-2 mt-1.5">
               <span
                 className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
                 style={{ background: "#E07A5F" }}
               >
-                23% OFF
+                24% OFF
               </span>
               <span className="text-xs text-coral font-medium">
-                1권당 ₩3,780
+                1권당 ₩3,725
               </span>
             </div>
           </div>
 
           <ul className="space-y-2.5 mb-5">
             {[
-              "동화 5권 티켓 묶음",
-              "다양한 주제로 시리즈 동화 제작",
-              "가족·친구에게 선물 가능",
-              "소멸 기한 없음",
+              "페니베이커 교수 40년 연구 기반 4일 프로그램",
+              "연속 4일, 매일 15~20분 마음 이야기를 꺼낸 사람들의 마음이 한결 가벼워졌어요",
+              "서로 다른 감정, 서로 다른 동화",
+              "구매 후 30일 이내 사용",
             ].map((f, i) => (
               <li
                 key={i}
@@ -383,7 +411,7 @@ export default function PricingPage() {
           >
             {isProcessing
               ? "결제 페이지로 이동 중..."
-              : "✨ 5권 묶음 구매 · ₩18,900"}
+              : "✨ 4권 묶음 구매 · ₩14,900"}
           </button>
         </div>
 
@@ -449,7 +477,7 @@ export default function PricingPage() {
               },
               {
                 q: "환불은 가능한가요?",
-                a: "미사용 티켓은 구매일로부터 7일 이내에 환불 가능합니다. 고객센터(support@mamastale.com)로 문의해 주세요.",
+                a: "미사용 티켓은 구매일로부터 7일 이내에 환불 가능합니다. 고객센터(kang.minjune@icloud.com)로 문의해 주세요.",
               },
               {
                 q: "카카오페이, 네이버페이로 결제 가능한가요?",
@@ -486,7 +514,7 @@ export default function PricingPage() {
         {/* Refund & Trust */}
         <div className="text-center mb-4">
           <p className="text-[10px] text-brown-pale font-light leading-relaxed">
-            미사용 티켓 7일 이내 환불 가능 · 문의: support@mamastale.com
+            미사용 티켓 7일 이내 환불 가능 · 문의: kang.minjune@icloud.com
           </p>
         </div>
 
@@ -502,5 +530,17 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh bg-cream flex items-center justify-center">
+        <div className="text-3xl animate-pulse">🎫</div>
+      </div>
+    }>
+      <PricingContent />
+    </Suspense>
   );
 }

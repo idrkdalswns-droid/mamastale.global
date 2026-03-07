@@ -28,8 +28,9 @@ function checkPaymentRate(ip: string): boolean {
 
 // ─── Valid prices (server-side source of truth) ───
 const VALID_PRICES: Record<number, number> = {
+  3920: 1,   // ₩3,920 = 1 ticket (첫 구매 20% 할인)
   4900: 1,   // ₩4,900 = 1 ticket
-  18900: 5,  // ₩18,900 = 5 tickets
+  14900: 4,  // ₩14,900 = 4 tickets (4일 프로그램)
 };
 
 // ─── Zod schema for payment confirmation request ───
@@ -161,6 +162,28 @@ export async function POST(request: NextRequest) {
         { error: "유효하지 않은 결제 금액입니다." },
         { status: 400 }
       ));
+    }
+
+    // ─── First-purchase discount validation ───
+    // ₩3,920 is only valid for users with no prior purchase history
+    if (numericAmount === 3920) {
+      try {
+        const { data: profile } = await sb.client
+          .from("profiles")
+          .select("metadata")
+          .eq("id", user.id)
+          .single();
+        const meta = (profile?.metadata as Record<string, unknown>) || {};
+        const priorOrders = (meta.processed_orders as string[]) || [];
+        if (priorOrders.length > 0) {
+          return sb.applyCookies(NextResponse.json(
+            { error: "첫 구매 할인은 한 번만 사용 가능합니다." },
+            { status: 400 }
+          ));
+        }
+      } catch {
+        // If metadata check fails, allow the purchase (graceful degradation)
+      }
     }
 
     // Confirm payment with Toss Payments API (10s timeout)

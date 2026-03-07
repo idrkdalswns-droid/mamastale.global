@@ -15,15 +15,18 @@ import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
 import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import { SignupModal } from "@/components/auth/SignupModal";
+import TurnFivePopup from "./TurnFivePopup";
 
-const GUEST_TURN_LIMIT = 5;
+const FREE_TURN_LIMIT = 5;
 
 interface ChatPageProps {
   onComplete: () => void;
   onGoHome: () => void;
+  /** When true, 5-turn free trial limit applies (no ticket consumed at start) */
+  freeTrialMode?: boolean;
 }
 
-export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
+export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPageProps) {
   const {
     messages,
     currentPhase,
@@ -56,7 +59,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
   const [showScrollDown, setShowScrollDown] = useState(false);
   const userScrolledRef = useRef(false);
   // P3-FIX(IL-4): Delayed guest signup modal (1.5s after AI responds)
-  const [guestModalReady, setGuestModalReady] = useState(false);
+  const [turnFiveReady, setGuestModalReady] = useState(false);
 
   // Count user messages for guest turn limit
   const userMsgCount = useMemo(
@@ -64,7 +67,8 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
     [messages]
   );
   const isGuest = !authLoading && !user;
-  const guestLimitReached = isGuest && userMsgCount >= GUEST_TURN_LIMIT;
+  // Free trial limit: applies to guests always, and logged-in users in freeTrialMode
+  const freeLimitReached = freeTrialMode && userMsgCount >= FREE_TURN_LIMIT;
 
   useEffect(() => {
     initSession(`session_${Date.now()}`);
@@ -87,11 +91,11 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
 
   // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
   useEffect(() => {
-    if (guestLimitReached && !storyDone && !isLoading && !guestModalReady) {
+    if (freeLimitReached && !storyDone && !isLoading && !turnFiveReady) {
       const timer = setTimeout(() => setGuestModalReady(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [guestLimitReached, storyDone, isLoading, guestModalReady]);
+  }, [freeLimitReached, storyDone, isLoading, turnFiveReady]);
 
   // P2-FIX(IL-1): Only auto-scroll if user hasn't manually scrolled up
   useEffect(() => {
@@ -191,94 +195,39 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
         </div>
       </div>
 
-      {/* Guest turn counter — show remaining free messages */}
-      {/* P3-FIX(IL-3): Enhanced warning at 4/5 messages for conversion */}
-      {isGuest && !guestLimitReached && !storyDone && userMsgCount > 0 && (
+      {/* Free trial turn counter — show remaining free messages */}
+      {freeTrialMode && !freeLimitReached && !storyDone && userMsgCount > 0 && (
         <div className="absolute top-[70px] right-3 z-[60]">
           <div
             className="px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all duration-300"
             style={{
-              background: userMsgCount >= GUEST_TURN_LIMIT - 1
+              background: userMsgCount >= FREE_TURN_LIMIT - 1
                 ? "rgba(224,122,95,0.25)"
                 : userMsgCount >= 2
                   ? "rgba(224,122,95,0.12)"
                   : "rgba(0,0,0,0.04)",
               color: userMsgCount >= 2 ? "#E07A5F" : "#999",
-              border: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "1.5px solid rgba(224,122,95,0.4)" : "1px solid transparent",
-              animation: userMsgCount >= GUEST_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
+              border: userMsgCount >= FREE_TURN_LIMIT - 1 ? "1.5px solid rgba(224,122,95,0.4)" : "1px solid transparent",
+              animation: userMsgCount >= FREE_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
             }}
           >
-            {userMsgCount >= GUEST_TURN_LIMIT - 1 ? "⚡ " : ""}
-            무료 대화 {userMsgCount}/{GUEST_TURN_LIMIT}회
-            {userMsgCount === GUEST_TURN_LIMIT - 1 && " · 마지막 무료 대화예요!"}
+            {userMsgCount >= FREE_TURN_LIMIT - 1 ? "⚡ " : ""}
+            무료 대화 {userMsgCount}/{FREE_TURN_LIMIT}회
+            {userMsgCount === FREE_TURN_LIMIT - 1 && " · 마지막 무료 대화예요!"}
           </div>
         </div>
       )}
 
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
-      {!storyDone && !guestLimitReached && <PhaseRuleHint phase={currentPhase} />}
+      {!storyDone && !freeLimitReached && <PhaseRuleHint phase={currentPhase} />}
 
-      {/* Guest turn limit reached — signup prompt
-          P3-FIX(IL-4): 1.5s delay after last AI response to let user read it */}
-      {/* CTO-FIX: Add isGuest check — after in-modal signup, user becomes authenticated
-          but guestModalReady stays true, blocking the entire chat UI */}
-      {guestModalReady && isGuest && !storyDone && (
-        <div
-          className="absolute inset-0 z-[80] flex items-end justify-center pb-[160px]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="회원가입 안내"
-          onKeyDown={(e) => { if (e.key === "Escape") router.push("/"); }}
-        >
-          <div
-            className="mx-4 w-full max-w-sm rounded-3xl p-7 text-center animate-in fade-in slide-in-from-bottom-4 duration-500"
-            style={{
-              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
-              boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
-            }}
-          >
-            <div className="text-[48px] mb-3">🌿</div>
-            <h3 className="font-serif text-lg font-bold text-brown mb-2 leading-tight">
-              이야기가 깊어지고 있어요
-            </h3>
-            <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
-              지금 꺼내주신 마음, 정말 소중합니다.<br />
-              회원가입 후 <span className="text-coral font-medium">이 대화를 그대로 이어서</span><br />
-              나만의 마음 동화를 완성할 수 있어요.
-            </p>
-            <div className="flex items-center justify-center gap-3 my-3 text-[11px] text-brown-mid font-medium">
-              <span>✅ 대화 이어가기</span>
-              <span>✅ 영구 보관</span>
-              <span>✅ 무료 1회</span>
-            </div>
-            <p className="text-[11px] text-brown-pale font-light mb-4">
-              대화 내용은 안전하게 보관됩니다
-            </p>
-            {/* S7-03: Primary CTA style for signup — conversion critical */}
-            <button
-              onClick={() => setShowSignupModal(true)}
-              className="block w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              회원가입하고 이어서 만들기
-            </button>
-            <button
-              onClick={() => {
-                persistToStorage();
-                router.push("/login");
-              }}
-              className="block w-full py-2.5 text-xs font-light text-brown-mid transition-all"
-            >
-              이미 계정이 있으신가요? <span className="text-coral font-medium">로그인</span>
-            </button>
-            <p className="text-[10px] text-brown-pale font-light text-center mt-2">
-              카카오 · Google로도 간편 가입 가능
-            </p>
-          </div>
-        </div>
+      {/* Turn-5 conversion popup — shown after 1.5s delay when free trial limit reached */}
+      {turnFiveReady && freeLimitReached && !storyDone && (
+        <TurnFivePopup
+          isLoggedIn={!!user}
+          onPersistChat={persistToStorage}
+          onGoHome={onGoHome}
+        />
       )}
 
       {/* "다음" button — shown after story is done, before celebration */}
@@ -302,7 +251,6 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
       {/* Story complete celebration — only after user reads farewell */}
       {showCelebration && !showPremiumUpgrade && (
         <StoryCompleteCTA
-          storyId={completedStoryId || ""}
           onViewStory={() => {
             // For non-premium stories, show upgrade CTA before navigating
             if (!isPremiumStory && user) {
@@ -421,7 +369,7 @@ export function ChatPage({ onComplete, onGoHome }: ChatPageProps) {
           onSend={handleSend}
           isLoading={isLoading}
           phase={currentPhase}
-          disabled={guestLimitReached}
+          disabled={freeLimitReached}
         />
       )}
 

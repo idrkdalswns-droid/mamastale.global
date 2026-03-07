@@ -17,10 +17,10 @@ export function Footer() {
           <p>
             문의:{" "}
             <a
-              href="mailto:support@mamastale.com"
+              href="mailto:kang.minjune@icloud.com"
               className="underline underline-offset-2"
             >
-              support@mamastale.com
+              kang.minjune@icloud.com
             </a>
           </p>
         </div>
