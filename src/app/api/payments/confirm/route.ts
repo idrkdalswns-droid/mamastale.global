@@ -149,10 +149,8 @@ export async function POST(request: NextRequest) {
 
     // ─── Server-side idempotency guard ───
     if (isOrderProcessed(orderId)) {
-      const ticketCount = VALID_PRICES[Number(amount)] || 1;
       return sb.applyCookies(NextResponse.json({
         success: true,
-        ticketsAdded: ticketCount,
         alreadyProcessed: true,
       }));
     }
@@ -229,10 +227,9 @@ export async function POST(request: NextRequest) {
       // Toss returns ALREADY_PROCESSED_PAYMENT when payment was already confirmed.
       // Return success WITHOUT incrementing tickets again to prevent double-charge.
       if (confirmData?.code === "ALREADY_PROCESSED_PAYMENT") {
-        const ticketCount = VALID_PRICES[numericAmount] || 1;
+        markOrderProcessed(orderId);
         return sb.applyCookies(NextResponse.json({
           success: true,
-          ticketsAdded: ticketCount,
           alreadyProcessed: true,
         }));
       }

@@ -45,7 +45,7 @@ export default function PhaseHeader({
       className="sticky top-0 z-[100] border-b border-black/[0.04]"
       style={{
         paddingTop: "env(safe-area-inset-top, 0px)",
-        background: "rgba(255,255,255,0.72)",
+        background: "rgb(var(--surface) / 0.72)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}
@@ -98,7 +98,7 @@ export default function PhaseHeader({
         {onGoHome && (
           <button
             onClick={onGoHome}
-            className="absolute left-2 top-1/2 -translate-y-1/2 h-9 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+            className="absolute left-2 top-1/2 -translate-y-1/2 h-11 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
             aria-label="홈으로 돌아가기"
             style={{ fontSize: 12 }}
           >
@@ -111,7 +111,7 @@ export default function PhaseHeader({
           {onSaveDraft && (
             <button
               onClick={onSaveDraft}
-              className="h-9 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+              className="h-11 px-2.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
               aria-label="임시 저장"
               style={{ fontSize: 11 }}
             >
@@ -120,7 +120,7 @@ export default function PhaseHeader({
           )}
           <button
             onClick={() => setShowSettings((v) => !v)}
-            className="w-9 h-9 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+            className="w-9 h-11 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
             aria-label="글씨 크기 설정"
             aria-expanded={showSettings}
             style={{ fontSize: 14 }}
@@ -149,7 +149,7 @@ export default function PhaseHeader({
                 style={{
                   fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,
                   background: fontSize === s ? p.accent : "transparent",
-                  color: fontSize === s ? "#fff" : "#8B7355",
+                  color: fontSize === s ? "#fff" : "rgb(var(--brown-pale))",
                   fontWeight: fontSize === s ? 600 : 400,
                 }}
               >

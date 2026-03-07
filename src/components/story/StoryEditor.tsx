@@ -123,7 +123,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
           </div>
           <button
             onClick={handleDone}
-            className="text-xs font-medium px-3 py-1.5 rounded-full"
+            className="text-xs font-medium px-3 py-1.5 rounded-full min-h-[44px] flex items-center justify-center"
             style={{ background: "rgba(224,122,95,0.1)", color: "#E07A5F" }}
           >
             완료
@@ -175,7 +175,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 {isModified ? (
                   <button
                     onClick={() => resetScene(index)}
-                    className="text-[11px] text-brown-pale underline underline-offset-2"
+                    className="text-[11px] text-brown-pale underline underline-offset-2 min-h-[44px] inline-flex items-center"
                   >
                     ↩ 원래대로
                   </button>

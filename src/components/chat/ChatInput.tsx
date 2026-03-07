@@ -62,7 +62,7 @@ export default function ChatInput({
     <div
       className="fixed bottom-0 left-0 right-0 z-[90] border-t border-black/[0.04]"
       style={{
-        background: "rgba(255,255,255,0.88)",
+        background: "rgb(var(--surface) / 0.88)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}
@@ -95,8 +95,7 @@ export default function ChatInput({
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
           style={{
             border: `1.5px solid ${p.accent}22`,
-            background: "rgba(255,255,255,0.5)",
-            color: "#444",
+            background: "rgb(var(--surface) / 0.5)",
             transition: "border-color 0.3s",
             maxHeight: 110,
             WebkitAppearance: "none",
@@ -110,7 +109,7 @@ export default function ChatInput({
           className="w-[46px] h-[46px] rounded-full border-none flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer"
           style={{
             background: isDisabled
-              ? "#E0D8D0"
+              ? "rgb(var(--brown-pale) / 0.3)"
               : `linear-gradient(135deg, ${p.accent}, ${p.accent}CC)`,
             color: "#fff",
             boxShadow:

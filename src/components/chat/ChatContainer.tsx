@@ -283,7 +283,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
         <div className="fixed bottom-[140px] left-1/2 -translate-x-1/2 z-[75] w-[90%] max-w-sm">
           <div
             className="rounded-2xl p-4 text-center"
-            style={{ background: "rgba(255,255,255,0.95)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", backdropFilter: "blur(8px)" }}
+            style={{ background: "rgb(var(--surface) / 0.95)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", backdropFilter: "blur(8px)" }}
           >
             <p className="text-sm text-brown font-medium mb-2">
               {storySaveError === "login_required" ? "동화 저장을 위해 로그인이 필요해요" :
@@ -292,7 +292,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
             </p>
             <button
               onClick={() => retrySaveStory()}
-              className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97]"
+              className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] min-h-[44px]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
             >
               다시 저장하기
@@ -305,7 +305,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
       {storyDone && completedScenes.length === 0 && !isLoading && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center px-6"
-          style={{ background: "rgba(253,249,244,0.88)", backdropFilter: "blur(14px)" }}
+          style={{ background: "rgb(var(--cream) / 0.88)", backdropFilter: "blur(14px)" }}
         >
           <div className="w-full max-w-sm text-center">
             <h2 className="font-serif text-xl font-bold text-brown mb-2">
@@ -399,7 +399,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
         >
           <div
             className="w-full max-w-xs rounded-2xl p-6 text-center"
-            style={{ background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
+            style={{ background: "linear-gradient(180deg, rgb(var(--cream)), rgb(var(--surface)))", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
           >
             <h3 className="font-serif text-base font-bold text-brown mb-2">대화를 나가시겠어요?</h3>
             <p className="text-xs text-brown-light font-light mb-5 leading-relaxed">
@@ -418,13 +418,13 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
             </button>
             <button
               onClick={() => { setShowHomeConfirm(false); onGoHome(); }}
-              className="w-full py-2.5 text-xs font-light text-brown-pale"
+              className="w-full py-2.5 text-xs font-light text-brown-pale min-h-[44px]"
             >
               저장 없이 나가기
             </button>
             <button
               onClick={() => setShowHomeConfirm(false)}
-              className="w-full py-2 text-xs font-light text-brown-pale mt-1"
+              className="w-full py-2 text-xs font-light text-brown-pale mt-1 min-h-[44px]"
             >
               계속 대화하기
             </button>

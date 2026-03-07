@@ -108,14 +108,12 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
-      {/* KR-10: Progress dots with accessible tablist pattern */}
-      <div className="flex gap-1.5 justify-center pt-5" role="tablist" aria-label="온보딩 단계">
+      {/* Progress dots — decorative indicators (not interactive, so role="group" not "tablist") */}
+      <div className="flex gap-1.5 justify-center pt-5" role="group" aria-label="온보딩 진행 상태">
         {slides.map((_, i) => (
           <div
             key={i}
-            role="tab"
-            aria-selected={i === idx}
-            aria-label={`${i + 1}단계${i === idx ? " (현재)" : ""}`}
+            aria-hidden="true"
             className="h-1.5 rounded-sm transition-all duration-[400ms]"
             style={{
               width: i === idx ? 22 : 6,
@@ -123,6 +121,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             }}
           />
         ))}
+        <span className="sr-only">{idx + 1} / {slides.length} 단계</span>
       </div>
 
       {/* Content */}

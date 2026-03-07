@@ -10,6 +10,10 @@ export async function incrementTickets(
   userId: string,
   count: number
 ): Promise<number> {
+  if (!Number.isInteger(count) || count < 1 || count > 10) {
+    throw new Error(`Invalid ticket count: ${count}`);
+  }
+
   // Try atomic RPC first
   try {
     const { data, error } = await supabase.rpc("increment_tickets", {

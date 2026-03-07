@@ -28,6 +28,9 @@ export async function middleware(request: NextRequest) {
       } catch {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
+    } else {
+      // Neither Origin nor Referer present — block to prevent CSRF
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 

@@ -28,7 +28,7 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
       <div
         className="w-full sm:max-w-sm sm:rounded-3xl rounded-t-3xl p-6 sm:p-7 max-h-[90dvh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-500"
         style={{
-          background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
+          background: "linear-gradient(180deg, rgb(var(--cream)), rgb(var(--surface)))",
           boxShadow: "0 -8px 40px rgba(0,0,0,0.12)",
         }}
       >

@@ -46,7 +46,7 @@ export default function MessageBubble({
             : "20px 20px 20px 5px",
           background: isUser
             ? `linear-gradient(135deg, ${mp.accent}, ${mp.accent}DD)`
-            : "rgba(255,255,255,0.82)",
+            : "rgb(var(--surface) / 0.82)",
           color: isUser ? "#fff" : mp.text,
           fontSize: FONT_SIZE_MAP[fontSize],
           lineHeight: 1.8,

@@ -38,7 +38,7 @@ export default function PremiumUpgradeCTA({
       role="dialog"
       aria-modal="true"
       aria-label="프리미엄 동화 안내"
-      style={{ background: "rgba(253,249,244,0.92)", backdropFilter: "blur(16px)" }}
+      style={{ background: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(16px)" }}
     >
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -50,7 +50,7 @@ export default function PremiumUpgradeCTA({
         <div
           className="rounded-3xl p-7 text-center relative overflow-hidden"
           style={{
-            background: "linear-gradient(180deg, #FFFAF6, #FFFFFF)",
+            background: "linear-gradient(180deg, rgb(var(--cream)), rgb(var(--surface)))",
             boxShadow: "0 20px 60px rgba(0,0,0,0.10)",
           }}
         >

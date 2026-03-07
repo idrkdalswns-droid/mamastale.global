@@ -161,7 +161,8 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         });
         if (subInsertErr) {
-          console.error("[Stripe] Subscription insert failed:", subInsertErr.code, "user=", userId.slice(0, 8) + "…");
+          console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
+          return NextResponse.json({ error: "Subscription record failed" }, { status: 500 });
         }
       }
       break;
