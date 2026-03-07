@@ -263,8 +263,9 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // IL-03: DB-level idempotency — store orderId before incrementing tickets
-    // ROOT-CAUSE FIX: Graceful fallback if metadata column doesn't exist
+    // ─── DB-level idempotency + first-purchase race guard ───
+    // HIGH #2 FIX: Claim orderId in metadata BEFORE incrementing tickets
+    // so concurrent requests on different Edge isolates see it and abort.
     let metadata: Record<string, unknown> = {};
     let processedOrderIds: string[] = [];
     try {
@@ -280,10 +281,42 @@ export async function POST(request: NextRequest) {
     } catch {
       // metadata column doesn't exist — skip dedup check, rely on in-memory dedup
     }
+
+    // DB-level dedup: check if orderId already processed across all isolates
     if (processedOrderIds.includes(orderId)) {
+      markOrderProcessed(orderId); // Sync in-memory state
       return sb.applyCookies(NextResponse.json({
         success: true, alreadyProcessed: true,
       }));
+    }
+
+    // HIGH #1 FIX: Post-confirmation first-purchase race guard
+    // If another concurrent request already claimed the first-purchase discount,
+    // log a security warning (payment confirmed by Toss — still grant tickets but flag for review)
+    if (confirmedAmount === 3920 && metadata.first_purchase_claimed) {
+      console.warn(
+        `[SECURITY] First-purchase discount race detected: user=${user.id.slice(0, 8)}..., ` +
+        `order=${orderId}, prior_claim=${metadata.first_purchase_claimed}`
+      );
+    }
+
+    // HIGH #2 FIX: Pre-claim orderId in metadata BEFORE incrementing tickets.
+    // Narrows the cross-isolate race window: another isolate reading metadata
+    // will see this orderId and return alreadyProcessed instead of double-granting.
+    const preClaimOrders = [...processedOrderIds.slice(-19), orderId];
+    const preClaimMeta = {
+      ...metadata,
+      processed_orders: preClaimOrders,
+      // HIGH #1 FIX: Atomically set first_purchase_claimed flag with orderId
+      ...(confirmedAmount === 3920 ? { first_purchase_claimed: orderId } : {}),
+    };
+    try {
+      await sb.client
+        .from("profiles")
+        .update({ metadata: preClaimMeta })
+        .eq("id", user.id);
+    } catch {
+      console.warn("[Toss] metadata pre-claim failed — relying on in-memory dedup");
     }
 
     // ─── Atomic ticket increment ───
@@ -292,27 +325,24 @@ export async function POST(request: NextRequest) {
       newTotal = await incrementTickets(sb.client, user.id, ticketCount);
     } catch (ticketErr) {
       console.error(`[CRITICAL] Payment ${orderId} confirmed but ticket increment failed for user ${user.id.slice(0, 8)}...`, ticketErr);
-      // Do NOT mark as processed — allow retry
+      // HIGH #2 FIX: Rollback metadata claim to allow retry
+      try {
+        await sb.client
+          .from("profiles")
+          .update({ metadata: { ...metadata, processed_orders: processedOrderIds } })
+          .eq("id", user.id);
+      } catch {
+        console.error("[Toss] metadata rollback failed for order:", orderId);
+      }
+      // Do NOT mark in-memory as processed — allow retry
       return sb.applyCookies(NextResponse.json(
         { error: "결제는 완료되었으나 티켓 충전에 실패했습니다. 잠시 후 다시 시도하시거나 고객센터에 문의해 주세요.", code: "TICKET_INCREMENT_FAILED" },
         { status: 500 }
       ));
     }
 
-    // Mark as processed ONLY after successful ticket increment
+    // Mark as processed in-memory after successful ticket increment
     markOrderProcessed(orderId);
-
-    // Record orderId in profile metadata to prevent cross-isolate double processing
-    // Graceful: if metadata column doesn't exist, ticket increment still succeeds
-    try {
-      const updatedOrders = [...processedOrderIds.slice(-19), orderId]; // Keep last 20
-      await sb.client
-        .from("profiles")
-        .update({ metadata: { ...metadata, processed_orders: updatedOrders } })
-        .eq("id", user.id);
-    } catch {
-      console.warn("[Toss] metadata column update failed — dedup relies on in-memory guard");
-    }
 
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";

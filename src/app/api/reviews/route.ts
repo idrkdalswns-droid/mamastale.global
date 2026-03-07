@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 // CA-1/CA-2: Use shared utilities instead of local duplicates
 import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
+// HIGH #4 FIX: Use authenticated client to require login for review submission
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
 
@@ -52,9 +54,10 @@ export async function GET() {
   return NextResponse.json({ reviews: reviews || [] });
 }
 
-// POST: Submit review (rate-limited)
+// POST: Submit review (authenticated + rate-limited)
+// HIGH #4 FIX: Require authentication to prevent unauthenticated review spam
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  // Rate limiting (kept as secondary defense even with auth)
   const ip = getClientIP(request);
   if (!checkReviewRateLimit(ip)) {
     return NextResponse.json(
@@ -63,9 +66,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // HIGH #4 FIX: Authenticate user — only logged-in users can submit reviews
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  let user = (await sb.client.auth.getUser()).data.user;
+  if (!user) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
+      user = tokenData.user;
+    }
+  }
+  if (!user) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "로그인 후 후기를 작성할 수 있습니다." }, { status: 401 })
+    );
+  }
+
   const supabase = createAnonClient();
   if (!supabase) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return sb.applyCookies(NextResponse.json({ error: "DB not configured" }, { status: 503 }));
   }
 
   // Safe JSON parsing

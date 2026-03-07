@@ -7,24 +7,49 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 export const runtime = "edge";
 
 // ─── Guest like rate limiting (per-IP, per-isolate) ───
-const GUEST_LIKE_WINDOW = 60_000; // 1 minute
-const GUEST_LIKE_LIMIT = 5; // max 5 guest likes per minute per IP
+// HIGH #3 FIX: Tightened from 5/min to 2/5min per IP + daily cap
+const GUEST_LIKE_WINDOW = 300_000; // 5 minutes
+const GUEST_LIKE_LIMIT = 2; // max 2 guest likes per 5 minutes per IP
 const guestLikeMap = new Map<string, { count: number; resetAt: number }>();
+
+// HIGH #3 FIX: Daily cap to limit total guest likes per IP per day (per-isolate)
+const GUEST_DAILY_LIMIT = 10; // max 10 guest likes per day per IP
+const guestDailyMap = new Map<string, { count: number; resetAt: number }>();
 
 function checkGuestLikeLimit(ip: string): boolean {
   const now = Date.now();
+  // Lazy cleanup
   if (guestLikeMap.size > 300) {
     for (const [k, v] of guestLikeMap) {
       if (now > v.resetAt) guestLikeMap.delete(k);
     }
   }
+  if (guestDailyMap.size > 300) {
+    for (const [k, v] of guestDailyMap) {
+      if (now > v.resetAt) guestDailyMap.delete(k);
+    }
+  }
+
+  // Check daily cap first
+  const daily = guestDailyMap.get(ip);
+  if (daily && now < daily.resetAt && daily.count >= GUEST_DAILY_LIMIT) return false;
+
+  // Check burst rate
   const entry = guestLikeMap.get(ip);
   if (!entry || now > entry.resetAt) {
     guestLikeMap.set(ip, { count: 1, resetAt: now + GUEST_LIKE_WINDOW });
-    return true;
+  } else {
+    if (entry.count >= GUEST_LIKE_LIMIT) return false;
+    entry.count++;
   }
-  if (entry.count >= GUEST_LIKE_LIMIT) return false;
-  entry.count++;
+
+  // Increment daily counter
+  if (!daily || now > daily.resetAt) {
+    guestDailyMap.set(ip, { count: 1, resetAt: now + 86_400_000 }); // 24h
+  } else {
+    daily.count++;
+  }
+
   return true;
 }
 
