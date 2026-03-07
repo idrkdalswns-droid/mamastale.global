@@ -37,7 +37,8 @@ export default function LoginPage() {
       <div className="relative z-[1] w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="font-serif text-3xl font-bold text-brown mb-2">mamastale</h1>
-          <p className="text-sm text-brown-light font-light">간편하게 로그인하고 시작하세요</p>
+          <p className="text-sm text-brown-light font-light mb-1">다시 오셨군요, 반갑습니다</p>
+          <p className="text-[11px] text-brown-pale font-light">로그인하고 나만의 동화를 이어서 만들어보세요</p>
         </div>
 
         <Suspense fallback={null}>

@@ -181,11 +181,11 @@ export default function ReviewsPage() {
                 </p>
               </div>
               {(i === 2 || i === 6) && (
-                <div className="rounded-2xl p-5 text-center" style={{ background: "linear-gradient(135deg, rgba(224,122,95,0.06), rgba(109,76,145,0.04))", border: "1.5px solid rgba(224,122,95,0.12)" }}>
-                  <p className="text-sm text-brown font-medium mb-2">나도 동화를 만들어볼까?</p>
-                  <p className="text-xs text-brown-light font-light mb-3">커피 한 잔 값으로 세상에 하나뿐인 동화를 만들어보세요</p>
-                  <Link href="/pricing" className="inline-flex items-center justify-center px-6 py-2.5 rounded-full text-sm font-medium text-white no-underline" style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}>
-                    요금 안내 보기
+                <div className="rounded-2xl p-6 text-center" style={{ background: "linear-gradient(135deg, rgba(224,122,95,0.10), rgba(109,76,145,0.06))", border: "2px solid rgba(224,122,95,0.20)", boxShadow: "0 4px 20px rgba(224,122,95,0.08)" }}>
+                  <p className="font-serif text-base text-brown font-semibold mb-2">나도 동화를 만들어볼까?</p>
+                  <p className="text-xs text-brown-light font-light mb-4 break-keep">15분 대화로 아이만의 동화책이 완성돼요</p>
+                  <Link href="/pricing" className="inline-flex items-center justify-center px-8 py-3 rounded-full text-sm font-bold text-white no-underline min-h-[44px] transition-transform active:scale-[0.97]" style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 6px 20px rgba(224,122,95,0.3)" }}>
+                    동화 만들기 · ₩4,900
                   </Link>
                 </div>
               )}
@@ -199,14 +199,14 @@ export default function ReviewsPage() {
         {/* CTA */}
         <div className="mt-10 text-center space-y-3">
           <Link
-            href="/?action=start"
+            href="/pricing"
             className="inline-flex items-center justify-center min-h-[44px] px-8 py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97]"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            나도 동화 만들어보기
+            나도 동화 만들어보기 · ₩4,900
           </Link>
           <div>
             <Link

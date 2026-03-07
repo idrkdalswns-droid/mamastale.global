@@ -147,10 +147,10 @@ export default function TicketConfirmModal({
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              사용 중...
+              준비 중...
             </span>
           ) : (
-            "네, 시작할게요"
+            "티켓 1장 사용하고 시작하기"
           )}
         </button>
 

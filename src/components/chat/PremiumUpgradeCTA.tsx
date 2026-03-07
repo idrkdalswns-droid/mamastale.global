@@ -126,8 +126,8 @@ export default function PremiumUpgradeCTA({
                 <p className="text-[10px] text-brown-pale font-medium mb-2 uppercase tracking-wider">기본</p>
                 <ul className="space-y-1.5 text-[11px] text-brown-mid font-light leading-snug">
                   <li>· 장면당 3~4문장</li>
-                  <li>· 기본 AI</li>
-                  <li>· 기본 삽화 안내</li>
+                  <li>· 표준 문장 품질</li>
+                  <li>· 간단한 삽화 설명</li>
                 </ul>
               </div>
               {/* Premium tier */}
@@ -147,8 +147,8 @@ export default function PremiumUpgradeCTA({
                 <p className="text-[10px] text-coral font-semibold mb-2 uppercase tracking-wider">유료 결제</p>
                 <ul className="space-y-1.5 text-[11px] text-brown font-medium leading-snug">
                   <li>· 장면당 5~7문장</li>
-                  <li>· 최상위 AI</li>
-                  <li>· 상세 삽화 안내</li>
+                  <li>· 문학적 표현 품질</li>
+                  <li>· 세밀한 장면 묘사</li>
                 </ul>
               </div>
             </div>

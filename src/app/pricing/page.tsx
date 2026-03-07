@@ -86,6 +86,7 @@ const FAQS = [
 function PricingContent() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -237,11 +238,11 @@ function PricingContent() {
         color="rgba(184,216,208,0.07)"
       />
 
-      <div className="relative z-[1] max-w-lg mx-auto px-6 pt-12 pb-20">
+      <div className="relative z-[1] max-w-lg mx-auto px-6 pt-12 pb-28">
         {/* ════════════════════════════════════════
             HERO
             ════════════════════════════════════════ */}
-        <section className="text-center mb-10">
+        <section className="text-center mb-10" aria-label="요금 안내">
           <h1 className="font-serif text-2xl text-brown font-bold mb-3 leading-tight">
             아이를 위한
             <br />
@@ -265,14 +266,27 @@ function PricingContent() {
               boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
             }}
           >
-            <iframe
-              src="https://www.youtube.com/embed/S7Fs_Kvpr40?rel=0"
-              title="mamastale 완성 동화 미리보기"
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-            />
+            {videoLoaded ? (
+              <iframe
+                src="https://www.youtube.com/embed/S7Fs_Kvpr40?rel=0&autoplay=1"
+                title="mamastale 완성 동화 미리보기"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setVideoLoaded(true)}
+                className="w-full h-full flex flex-col items-center justify-center bg-brown/5 transition-colors hover:bg-brown/10 cursor-pointer"
+                aria-label="동화 영상 재생하기"
+              >
+                <span className="w-14 h-14 rounded-full bg-coral/90 flex items-center justify-center mb-2" style={{ boxShadow: "0 4px 16px rgba(224,122,95,0.4)" }}>
+                  <span className="ml-1 border-l-[14px] border-y-[9px] border-l-white border-y-transparent" />
+                </span>
+                <span className="text-[12px] text-brown-light font-light">영상으로 미리보기</span>
+              </button>
+            )}
           </div>
           <p className="text-[11px] text-brown-pale font-light text-center mt-2">
             실제 완성된 동화 영상 미리보기
@@ -290,7 +304,18 @@ function PricingContent() {
             className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            {Array.from({ length: 10 }, (_, i) => (
+            {[
+              "엄마의 마음이 열리는 순간",
+              "숲속에서 만난 작은 친구",
+              "별빛 아래 속삭이는 이야기",
+              "용기를 내어 한 걸음",
+              "따뜻한 포옹의 기억",
+              "비 오는 날의 약속",
+              "무지개 너머의 꿈",
+              "함께 걷는 길",
+              "마음의 씨앗이 피어나다",
+              "세상에 하나뿐인 우리 이야기",
+            ].map((title, i) => (
               <div
                 key={i}
                 className="flex-shrink-0 snap-center rounded-xl overflow-hidden"
@@ -301,15 +326,18 @@ function PricingContent() {
               >
                 <img
                   src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
-                  alt={`동화 장면 ${i + 1}`}
+                  alt={`동화 장면 ${i + 1}: ${title}`}
                   width={200}
                   height={150}
                   className="w-full aspect-[4/3] object-cover"
                   loading="lazy"
                 />
                 <div className="px-3 py-2 bg-white/80">
-                  <p className="text-[11px] text-brown-light font-light">
-                    장면 {i + 1}/10
+                  <p className="text-[11px] text-brown font-medium leading-tight">
+                    {title}
+                  </p>
+                  <p className="text-[9px] text-brown-pale font-light mt-0.5">
+                    {i + 1}/10
                   </p>
                 </div>
               </div>
@@ -448,7 +476,7 @@ function PricingContent() {
               background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
             }}
           >
-            Best Value
+            가장 인기
           </div>
 
           <div className="text-center mb-5 pt-2">
@@ -486,7 +514,7 @@ function PricingContent() {
               "매일 15~20분, 마음속 이야기를 꺼내는 시간",
               "서로 다른 감정으로 서로 다른 동화 4편 완성",
               "완성된 동화는 영구 보관 + PDF 다운로드",
-              "구매 후 30일 이내 사용",
+              "30일간 여유롭게 사용 가능",
             ].map((f, i) => (
               <li
                 key={i}
@@ -509,8 +537,11 @@ function PricingContent() {
           >
             {isProcessing
               ? "결제 페이지로 이동 중..."
-              : "4권 묶음 구매 · ₩14,900"}
+              : "4일 프로그램 시작하기"}
           </button>
+          <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
+            ₩14,900 · 1권당 ₩3,725
+          </p>
         </div>
 
         {/* ════════════════════════════════════════
@@ -569,7 +600,7 @@ function PricingContent() {
             {[
               "4단계 마음 대화 + 10장면 동화 완성",
               "PDF 다운로드 + 영구 보관",
-              "구매 후 30일 이내 사용",
+              "30일간 여유롭게 사용 가능",
             ].map((f, i) => (
               <li
                 key={i}
@@ -593,9 +624,12 @@ function PricingContent() {
             {isProcessing
               ? "결제 페이지로 이동 중..."
               : isFirstPurchase
-                ? "첫 구매 할인 · ₩3,920"
-                : "티켓 구매하기 · ₩4,900"}
+                ? "첫 동화 만들기"
+                : "동화 한 편 만들기"}
           </button>
+          <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
+            {isFirstPurchase ? "₩3,920 (20% 할인)" : "₩4,900"}
+          </p>
         </div>
 
         {/* ════════════════════════════════════════
@@ -719,6 +753,42 @@ function PricingContent() {
       </div>
 
       {/* ════════════════════════════════════════
+          STICKY BOTTOM CTA (mobile conversion boost)
+          ════════════════════════════════════════ */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom,6px)+6px)] pt-3"
+        style={{
+          background: "linear-gradient(180deg, transparent 0%, rgb(var(--cream)) 25%)",
+        }}
+      >
+        <div className="max-w-lg mx-auto flex gap-2">
+          <button
+            onClick={() => initiatePayment("bundle")}
+            disabled={isProcessing || !sdkReady}
+            className="flex-[2] py-3 rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
+            style={{
+              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+              boxShadow: "0 4px 16px rgba(109,76,145,0.3)",
+            }}
+          >
+            4일 프로그램 · ₩14,900
+          </button>
+          <button
+            onClick={() => initiatePayment("ticket")}
+            disabled={isProcessing || !sdkReady}
+            className="flex-1 py-3 rounded-full text-[13px] font-medium text-coral transition-all active:scale-[0.97] disabled:opacity-60"
+            style={{
+              background: "rgba(255,255,255,0.9)",
+              border: "1.5px solid rgba(224,122,95,0.3)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+            }}
+          >
+            {isFirstPurchase ? "1편 · ₩3,920" : "1편 · ₩4,900"}
+          </button>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════
           PAYMENT CONFIRMATION MODAL
           ════════════════════════════════════════ */}
       {confirmModal && (
@@ -752,31 +822,28 @@ function PricingContent() {
               ₩{confirmModal.amount.toLocaleString()}
             </p>
             <p className="text-[11px] text-brown-pale font-light text-center mb-5 leading-relaxed">
-              결제 후 환불이 불가합니다.
-              <br />
-              확인 후 결제를 진행해 주세요.
+              지금까지 동화를 만든 어머니 중<br />
+              <span className="text-coral font-medium">98%</span>가 만족하셨어요
             </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmModal(null)}
-                className="flex-1 py-3 rounded-full text-sm font-medium text-brown-mid transition-all active:scale-[0.97]"
-                style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmPayment}
-                className="flex-1 py-3 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97]"
-                style={{
-                  background:
-                    confirmModal.type === "bundle"
-                      ? "linear-gradient(135deg, #6D4C91, #8B6FB0)"
-                      : "linear-gradient(135deg, #E07A5F, #C96B52)",
-                }}
-              >
-                결제하기
-              </button>
-            </div>
+            <button
+              onClick={confirmPayment}
+              className="w-full py-3.5 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97] mb-2"
+              style={{
+                background:
+                  confirmModal.type === "bundle"
+                    ? "linear-gradient(135deg, #6D4C91, #8B6FB0)"
+                    : "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
+              }}
+            >
+              결제하기
+            </button>
+            <button
+              onClick={() => setConfirmModal(null)}
+              className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"
+            >
+              취소
+            </button>
           </div>
         </div>
       )}

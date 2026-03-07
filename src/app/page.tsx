@@ -420,8 +420,11 @@ export default function Home() {
             mamastale
           </h1>
 
-          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-1.5">
-            나의 이야기가 아이의 동화가 되다
+          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
+            엄마의 이야기가 아이만의 동화가 되다
+          </p>
+          <p className="text-[12px] text-brown-pale font-light mb-3 break-keep">
+            15분 AI 대화 → 10장면 동화책 완성
           </p>
           <div className="text-[11px] text-brown-pale font-light mb-5 space-y-0.5">
             {presenceLoaded && liveTotal > 0 ? (
@@ -447,12 +450,11 @@ export default function Home() {
             <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
               <span className="text-coral font-semibold">&ldquo;엄마, 엄마 동화 들려줘!&rdquo;</span>
               <br />
-              엄마의 삶이 아이를 위한{" "}
-              <span className="text-coral font-medium">세상에 하나뿐인 동화</span>
-              가 됩니다.
+              AI와 따뜻한 대화를 나누면,
               <br />
-              따뜻한 대화를 나누며 4단계 마음 여정을 체험하고,
-              아이에게 들려줄 나만의 동화를 만들어 보세요.
+              엄마의 경험이{" "}
+              <span className="text-coral font-medium">10장면 동화책</span>
+              이 됩니다.
             </p>
           </div>
 
@@ -574,7 +576,7 @@ export default function Home() {
                 border: "1px solid rgba(196,149,106,0.12)",
               }}
             >
-              티켓 구매
+              요금 안내
             </Link>
           </div>
 
@@ -614,7 +616,7 @@ export default function Home() {
           {/* Social proof — testimonials as horizontal scroll */}
           <div className="mt-6">
             <p className="text-[11px] text-brown-pale font-medium text-center mb-3">
-              4.8 / 5.0 · 이용자 후기
+              ★ 4.8 / 5.0 · 이용자 후기 <span className="text-brown-pale/50">→ 밀어서 더 보기</span>
             </p>
             <div
               className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
@@ -642,7 +644,7 @@ export default function Home() {
                   className="flex-shrink-0 w-[75%] rounded-2xl px-4 py-3 snap-start"
                   style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
                 >
-                  <div className="text-[10px] text-amber-400 mb-1">
+                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }}>
                     {"★".repeat(review.stars)}
                   </div>
                   <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
@@ -660,13 +662,11 @@ export default function Home() {
           <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
             본 서비스는 실제 의료 행위를 대체하지 않습니다
           </p>
-          <Link
-            href="/feature-requests"
-            className="block text-xs text-brown-pale/70 font-sans font-light text-center mt-2 underline underline-offset-2 min-h-[44px] w-full no-underline"
-            style={{ textDecoration: "underline", textUnderlineOffset: "2px" }}
-          >
-            개발 요청 보드
-          </Link>
+          <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-brown-pale/60 font-light">
+            <Link href="/terms" className="no-underline hover:text-brown-pale transition-colors">이용약관</Link>
+            <span>·</span>
+            <Link href="/privacy" className="no-underline hover:text-brown-pale transition-colors">개인정보처리방침</Link>
+          </div>
 
           {/* Bottom breathing room */}
           <div className="h-20" />

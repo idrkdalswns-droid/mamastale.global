@@ -115,13 +115,32 @@ export default function StoryCompleteCTA({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 1.0 }}
           onClick={onViewStory}
-          className="w-full py-4 rounded-full text-white text-base font-medium transition-transform active:scale-[0.97]"
+          className="w-full py-4 rounded-full text-white text-base font-medium transition-transform active:scale-[0.97] mb-3"
           style={{
             background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
           }}
         >
           내 동화 보러가기
+        </motion.button>
+
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 1.2 }}
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: "나만의 마음 동화가 완성되었어요",
+                text: "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
+                url: "https://mamastale-global.pages.dev",
+              }).catch(() => {});
+            }
+          }}
+          className="w-full py-3 rounded-full text-[13px] font-medium text-brown-mid transition-all active:scale-[0.97]"
+          style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+        >
+          친구에게 공유하기
         </motion.button>
       </motion.div>
     </motion.div>

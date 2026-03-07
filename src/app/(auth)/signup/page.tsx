@@ -13,11 +13,16 @@ export default function SignupPage() {
       <div className="relative z-[1] w-full max-w-sm">
         <div className="text-center mb-6">
           <h1 className="font-serif text-3xl font-bold text-brown mb-2">mamastale</h1>
-          <p className="text-sm text-brown-light font-light mb-4">새로운 여정을 시작하세요</p>
-          <div className="flex items-center justify-center gap-4 text-[11px] text-brown-mid font-medium">
-            <span>나만의 동화</span>
-            <span>영구 보관</span>
-            <span>커뮤니티</span>
+          <p className="text-sm text-brown-light font-light mb-2 break-keep">
+            엄마의 이야기가 아이만의 동화가 됩니다
+          </p>
+          <p className="text-[12px] text-brown-pale font-light mb-4 break-keep">
+            15분 AI 대화 → 10장면 동화책 완성 · 영구 보관
+          </p>
+          <div className="flex items-center justify-center gap-3 text-[10px] text-brown-pale font-light">
+            <span>★ 4.8/5.0</span>
+            <span>·</span>
+            <span>237+ 이용</span>
           </div>
         </div>
 
