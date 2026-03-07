@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 interface TurnFivePopupProps {
@@ -12,6 +13,12 @@ interface TurnFivePopupProps {
 }
 
 export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: TurnFivePopupProps) {
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   const handleBuyTicket = () => {
     onPersistChat();
     window.location.href = "/pricing?first=1";

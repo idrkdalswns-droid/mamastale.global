@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 interface SignupModalProps {
@@ -9,6 +10,12 @@ interface SignupModalProps {
 }
 
 export function SignupModal({ onClose, onBeforeAuthRedirect }: SignupModalProps) {
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center"

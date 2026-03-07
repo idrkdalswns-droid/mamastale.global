@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,6 +25,12 @@ export default function TicketConfirmModal({
   // P0-FIX(US-3): Ref-based mutex to prevent double-click race condition.
   // React state updates are async; useRef provides synchronous guard.
   const submittingRef = useRef(false);
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   const handleConfirm = async () => {
     if (submittingRef.current) return; // Already in-flight — ignore duplicate clicks
@@ -152,7 +158,7 @@ export default function TicketConfirmModal({
         <button
           onClick={onCancel}
           disabled={isLoading}
-          className="w-full py-2.5 text-[12px] font-light text-brown-pale transition-all disabled:opacity-40"
+          className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all disabled:opacity-40"
         >
           다음에 할게요
         </button>
