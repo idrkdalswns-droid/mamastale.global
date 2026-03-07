@@ -182,7 +182,11 @@ export async function POST(request: NextRequest) {
           ));
         }
       } catch {
-        // If metadata check fails, allow the purchase (graceful degradation)
+        // If metadata check fails, DENY the discount (safe default)
+        return sb.applyCookies(NextResponse.json(
+          { error: "첫 구매 할인 자격을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요." },
+          { status: 400 }
+        ));
       }
     }
 

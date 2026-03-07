@@ -58,12 +58,6 @@ export async function incrementTickets(
     }
   }
 
-  // All retries failed — read current value and return it (don't apply change)
-  console.error(`[Tickets] CAS failed after ${MAX_CAS_RETRIES} retries for user=${userId.slice(0, 8)}…`);
-  const { data: finalProfile } = await supabase
-    .from("profiles")
-    .select("free_stories_remaining")
-    .eq("id", userId)
-    .single();
-  return finalProfile?.free_stories_remaining ?? 0;
+  // All retries failed — throw error instead of silently returning stale count
+  throw new Error(`CAS ticket increment failed after ${MAX_CAS_RETRIES} retries for user ${userId}`);
 }

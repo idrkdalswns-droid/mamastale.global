@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const ticketCount = priceType === "bundle" ? 5 : 1;
+    const ticketCount = priceType === "bundle" ? 4 : 1;
 
     // Use request origin for reliable URL (works on all environments)
     const appUrl = new URL(request.url).origin;

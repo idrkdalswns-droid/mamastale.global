@@ -127,7 +127,9 @@ export default function Home() {
           const data = await res.json();
           if (data) setTicketsRemaining(data.remaining ?? 0);
         }
-      } catch {}
+      } catch {
+        setTicketsRemaining(0);
+      }
     })();
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
 
@@ -335,7 +337,7 @@ export default function Home() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "linear-gradient(180deg, rgba(253,249,244,0.3) 0%, rgba(253,249,244,0.65) 30%, rgba(253,249,244,0.92) 55%, rgba(253,249,244,1) 75%)",
+          background: "linear-gradient(180deg, rgb(var(--cream) / 0.3) 0%, rgb(var(--cream) / 0.65) 30%, rgb(var(--cream) / 0.92) 55%, rgb(var(--cream)) 75%)",
         }}
       />
 

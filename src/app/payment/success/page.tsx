@@ -6,16 +6,16 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 // Map Toss payment methods to user-friendly labels
-const PAYMENT_METHOD_LABELS: Record<string, { icon: string; label: string }> = {
-  카드: { icon: "", label: "카드" },
-  간편결제: { icon: "", label: "간편결제" },
-  계좌이체: { icon: "", label: "계좌이체" },
-  가상계좌: { icon: "", label: "가상계좌" },
-  휴대폰: { icon: "", label: "휴대폰" },
+const PAYMENT_METHOD_LABELS: Record<string, { label: string }> = {
+  카드: { label: "카드" },
+  간편결제: { label: "간편결제" },
+  계좌이체: { label: "계좌이체" },
+  가상계좌: { label: "가상계좌" },
+  휴대폰: { label: "휴대폰" },
   // Specific easy pay providers (returned via easyPay.provider)
-  카카오페이: { icon: "", label: "카카오페이" },
-  네이버페이: { icon: "", label: "네이버페이" },
-  토스페이: { icon: "", label: "토스페이" },
+  카카오페이: { label: "카카오페이" },
+  네이버페이: { label: "네이버페이" },
+  토스페이: { label: "토스페이" },
 };
 
 function PaymentSuccessContent() {
@@ -25,6 +25,7 @@ function PaymentSuccessContent() {
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketsAdded, setTicketsAdded] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [hasSavedChat, setHasSavedChat] = useState(false);
   const confirmedRef = useRef(false);
 
   useEffect(() => {
@@ -84,6 +85,11 @@ function PaymentSuccessContent() {
       });
   }, [searchParams, router]);
 
+  // Check if there's a saved chat to resume
+  useEffect(() => {
+    setHasSavedChat(!!localStorage.getItem("mamastale_chat_state"));
+  }, []);
+
   if (status === "confirming") {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
@@ -120,10 +126,6 @@ function PaymentSuccessContent() {
       </div>
     );
   }
-
-  // Check if there's a saved chat to resume
-  const hasSavedChat = typeof window !== "undefined" &&
-    !!localStorage.getItem("mamastale_chat_state");
 
   return (
     <div className="min-h-dvh bg-cream flex items-center justify-center px-8">

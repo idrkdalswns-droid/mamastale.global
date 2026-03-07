@@ -29,7 +29,8 @@ export default function LibraryPage() {
     fetchStories();
     const info = getDraftInfo();
     if (info) setDraftInfo(info);
-  }, [getDraftInfo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchStories = async () => {
     try {

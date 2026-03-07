@@ -271,6 +271,7 @@ function PricingContent() {
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              loading="lazy"
             />
           </div>
           <p className="text-[11px] text-brown-pale font-light text-center mt-2">
@@ -419,6 +420,12 @@ function PricingContent() {
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
             <p className="text-xs text-red-600 text-center">{error}</p>
           </div>
+        )}
+
+        {!sdkReady && !sdkError && (
+          <p className="text-xs text-brown-pale text-center mb-2 animate-pulse">
+            결제 시스템을 불러오는 중...
+          </p>
         )}
 
         {/* ════════════════════════════════════════
@@ -618,7 +625,7 @@ function PricingContent() {
               "구독 부담 없이 필요할 때만 결제",
               "한 권 한 권이 완전한 마음 여정",
               "소중한 사람에게 티켓 선물 가능",
-              "소멸 기한 없어서 여유롭게 사용",
+              "구매 후 30일 이내 여유롭게 사용",
             ].map((text, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="text-[10px] text-brown-pale flex-shrink-0">
@@ -652,6 +659,7 @@ function PricingContent() {
                 className="border border-brown-pale/10 rounded-xl overflow-hidden"
               >
                 <button
+                  id={`faq-btn-${i}`}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left"
                   aria-expanded={openFaq === i}
@@ -668,6 +676,7 @@ function PricingContent() {
                   <div
                     id={`faq-panel-${i}`}
                     role="region"
+                    aria-labelledby={`faq-btn-${i}`}
                     className="px-4 pb-3"
                   >
                     <p className="text-[11px] text-brown-light font-light leading-relaxed">
@@ -713,12 +722,18 @@ function PricingContent() {
       {confirmModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="결제 확인"
           style={{
             background: "rgba(0,0,0,0.4)",
             backdropFilter: "blur(4px)",
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) setConfirmModal(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setConfirmModal(null);
           }}
         >
           <div

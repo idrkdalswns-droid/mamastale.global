@@ -384,7 +384,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }],
       }));
 
-      const reader = res.body!.getReader();
+      if (!res.body) {
+        set({
+          messages: get().messages,
+          turnCountInCurrentPhase: get().turnCountInCurrentPhase,
+          isLoading: false,
+        });
+        return;
+      }
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
       let buffer = "";

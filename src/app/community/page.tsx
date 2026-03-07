@@ -104,7 +104,6 @@ export default function CommunityBrowsePage() {
               style={{
                 background: "rgba(255,255,255,0.6)",
                 border: "1.5px solid rgba(196,149,106,0.15)",
-                color: "#444",
               }}
               aria-label="동화 검색"
             />

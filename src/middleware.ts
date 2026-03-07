@@ -7,6 +7,17 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
+  const pathname = request.nextUrl.pathname;
+
+  // CSRF: validate Origin for state-changing API requests
+  if (pathname.startsWith("/api/") && ["POST", "DELETE", "PATCH", "PUT"].includes(request.method)) {
+    const origin = request.headers.get("origin");
+    const allowedOrigin = new URL(request.url).origin;
+    if (origin && origin !== allowedOrigin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   // ─── Security Response Headers ───
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
@@ -20,7 +31,7 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://*.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://*.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://t1.kakaocdn.net https://k.kakaocdn.net",
@@ -34,8 +45,6 @@ export async function middleware(request: NextRequest) {
       "upgrade-insecure-requests",
     ].join("; ")
   );
-
-  const pathname = request.nextUrl.pathname;
 
   // No-store for API responses with sensitive data
   if (pathname.startsWith("/api/")) {

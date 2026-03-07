@@ -25,7 +25,7 @@ export function GlobalNav() {
   return (
     <nav
       className="sticky top-0 z-40 backdrop-blur-lg border-b border-brown-pale/10 transition-shadow"
-      style={{ background: "rgba(251,245,236,0.85)" }}
+      style={{ background: "rgb(var(--cream) / 0.85)" }}
     >
       <div className="flex items-center justify-between h-12 px-4">
         {/* Left: Logo + theme */}

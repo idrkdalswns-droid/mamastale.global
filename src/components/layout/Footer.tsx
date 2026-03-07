@@ -27,15 +27,15 @@ export function Footer() {
 
         {/* Links */}
         <div className="flex items-center justify-center gap-3 text-[10px] text-brown-pale font-light">
-          <Link href="/terms" className="underline underline-offset-2 no-underline hover:underline">
+          <Link href="/terms" className="underline underline-offset-2 decoration-brown-pale/40">
             이용약관
           </Link>
           <span>·</span>
-          <Link href="/privacy" className="underline underline-offset-2 no-underline hover:underline">
+          <Link href="/privacy" className="underline underline-offset-2 decoration-brown-pale/40">
             개인정보처리방침
           </Link>
           <span>·</span>
-          <Link href="/pricing" className="underline underline-offset-2 no-underline hover:underline">
+          <Link href="/pricing" className="underline underline-offset-2 decoration-brown-pale/40">
             요금안내
           </Link>
         </div>

@@ -32,10 +32,10 @@ export const metadata: Metadata = {
     siteName: "mamastale",
     images: [
       {
-        url: "/images/hero.jpg",
-        width: 600,
-        height: 1067,
-        alt: "엄마와 아이가 함께 동화책을 읽는 수채화 일러스트",
+        url: "https://mamastale-global.pages.dev/images/hero.jpg",
+        width: 1200,
+        height: 630,
+        alt: "mamastale - 엄마의 삶이 아이의 동화가 되다",
       },
     ],
   },
@@ -82,12 +82,6 @@ export default async function RootLayout({
                 "price": "4900",
                 "priceCurrency": "KRW",
                 "description": "동화 스토리 하나 완성 티켓"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "reviewCount": "11",
-                "bestRating": "5"
               }
             }),
           }}

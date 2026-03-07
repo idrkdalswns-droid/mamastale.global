@@ -60,7 +60,7 @@ export function SignupModal({ onClose, onBeforeAuthRedirect }: SignupModalProps)
         <div className="text-center mt-4">
           <button
             onClick={onClose}
-            className="text-xs font-light text-brown-pale"
+            className="text-xs font-light text-brown-pale min-h-[44px] px-6 flex items-center justify-center"
           >
             나중에 할게요
           </button>

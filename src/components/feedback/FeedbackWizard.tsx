@@ -176,7 +176,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                 value={freeText}
                 onChange={(e) => setFreeText(e.target.value)}
                 placeholder="편하게 이야기해 주세요..."
-                className="w-full min-h-[120px] resize-none rounded-[18px] p-4 text-base font-sans font-light leading-relaxed outline-none text-gray-700"
+                className="w-full min-h-[120px] resize-none rounded-[18px] p-4 text-base font-sans font-light leading-relaxed outline-none text-brown"
                 style={{
                   border: "1.5px solid rgba(196,149,106,0.2)",
                   background: "rgba(255,255,255,0.5)",
