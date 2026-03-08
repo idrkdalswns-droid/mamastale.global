@@ -165,9 +165,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Sanitize scene content — use lightweight sanitizer for AI text
-    // (sanitizeText would encode entities → double-encoding in DB)
+    // R2-FIX(A1): Scene titles also use sanitizeSceneText (not sanitizeText) to avoid
+    // HTML entity double-encoding. React JSX auto-escapes on render, so entity-encoding
+    // at DB save time causes "Tom &amp; Jerry" to display as "Tom &amp;amp; Jerry".
     for (const s of scenes as Array<{ sceneNumber: number; title: string; text: string }>) {
-      s.title = sanitizeText(s.title.slice(0, 200));
+      s.title = sanitizeSceneText(s.title.slice(0, 200));
       s.text = sanitizeSceneText(s.text.slice(0, 5000));
     }
 

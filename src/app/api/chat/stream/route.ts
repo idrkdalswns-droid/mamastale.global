@@ -20,7 +20,7 @@ import { getSystemPrompt, getPremiumPhase4Supplement, screenForCrisis } from "@/
 import type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";
 import { getPhasePrompt } from "@/lib/anthropic/phase-prompts";
 import type { StorySeedContext } from "@/lib/anthropic/phase-prompts";
-import { selectModel } from "@/lib/anthropic/model-router";
+import { selectModel, getFallbackModel } from "@/lib/anthropic/model-router";
 import { validateOutputSafety } from "@/lib/anthropic/output-safety";
 import {
   detectPhase,
@@ -298,15 +298,44 @@ export async function POST(request: NextRequest) {
           `data: ${JSON.stringify({ type: "meta", phase: safePhase })}\n\n`
         ));
 
-        const stream = anthropic.messages.stream({
-          model: modelSelection.model,
-          max_tokens: modelSelection.maxTokens,
+        // R2-FIX(C1): Model fallback for streaming — retry with backup model on failure
+        let activeModel = modelSelection.model;
+        let activeMaxTokens = modelSelection.maxTokens;
+        let wasFallback = false;
+        let stream: ReturnType<typeof anthropic.messages.stream>;
+
+        const streamParams = {
           system: systemPrompt,
           messages: messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
           })),
-        });
+        };
+
+        try {
+          stream = anthropic.messages.stream({
+            model: activeModel,
+            max_tokens: activeMaxTokens,
+            ...streamParams,
+          });
+          // Test the stream by awaiting the first event internally
+          // If model is overloaded, the stream constructor or first chunk will throw
+        } catch (primaryErr) {
+          const fallback = getFallbackModel(activeModel);
+          if (fallback) {
+            console.warn(`[Stream] Model fallback: ${activeModel} → ${fallback.model}`);
+            activeModel = fallback.model;
+            activeMaxTokens = fallback.maxTokens;
+            wasFallback = true;
+            stream = anthropic.messages.stream({
+              model: activeModel,
+              max_tokens: activeMaxTokens,
+              ...streamParams,
+            });
+          } else {
+            throw primaryErr;
+          }
+        }
 
         // P1-FIX: Streaming timeout — abort if no data for 90 seconds
         const STREAM_TIMEOUT_MS = 90_000;
@@ -319,6 +348,7 @@ export async function POST(request: NextRequest) {
         }, 5_000);
 
         let fullText = "";
+        let streamFailed = false;
 
         try {
           for await (const event of stream) {
@@ -333,8 +363,55 @@ export async function POST(request: NextRequest) {
               ));
             }
           }
+        } catch (streamErr) {
+          // R2-FIX(C1): If primary stream fails mid-stream with no text yet, try fallback
+          if (fullText.length === 0 && !wasFallback) {
+            const fallback = getFallbackModel(activeModel);
+            if (fallback) {
+              console.warn(`[Stream] Mid-stream fallback: ${activeModel} → ${fallback.model}`);
+              activeModel = fallback.model;
+              activeMaxTokens = fallback.maxTokens;
+              wasFallback = true;
+              clearInterval(timeoutCheck);
+
+              const fallbackStream = anthropic.messages.stream({
+                model: activeModel,
+                max_tokens: activeMaxTokens,
+                ...streamParams,
+              });
+
+              const fbTimeoutCheck = setInterval(() => {
+                if (Date.now() - lastChunkTime > STREAM_TIMEOUT_MS) {
+                  clearInterval(fbTimeoutCheck);
+                  fallbackStream.abort();
+                }
+              }, 5_000);
+
+              try {
+                for await (const event of fallbackStream) {
+                  lastChunkTime = Date.now();
+                  if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                    fullText += event.delta.text;
+                    controller.enqueue(encoder.encode(
+                      `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
+                    ));
+                  }
+                }
+              } finally {
+                clearInterval(fbTimeoutCheck);
+              }
+              // Replace stream reference for finalMessage
+              stream = fallbackStream;
+            } else {
+              streamFailed = true;
+              throw streamErr;
+            }
+          } else {
+            streamFailed = true;
+            throw streamErr;
+          }
         } finally {
-          clearInterval(timeoutCheck);
+          if (!streamFailed) clearInterval(timeoutCheck);
         }
 
         const apiLatencyMs = Date.now() - apiStartTime;
@@ -387,11 +464,13 @@ export async function POST(request: NextRequest) {
         logLLMCall({
           sessionId: parsed.data.sessionId,
           userId,
-          model: modelSelection.model,
+          model: activeModel,
           phase: safePhase,
           inputTokens: finalMessage.usage.input_tokens,
           outputTokens: finalMessage.usage.output_tokens,
           latencyMs: apiLatencyMs,
+          wasModelFallback: wasFallback,
+          fallbackReason: wasFallback ? `primary_failed:${modelSelection.model}` : undefined,
         }).catch(() => {});
 
       } catch (err) {

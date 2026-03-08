@@ -219,9 +219,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!updated) {
+      // R2-FIX(B1): Changed error code from "no_tickets" to "concurrent_conflict"
+      // so the client can distinguish "out of tickets" (403) from "retry needed" (409).
+      // Previously, both cases returned "no_tickets", causing the client to show
+      // a "buy tickets" prompt when the user actually had tickets (just a write conflict).
       console.warn("[Tickets/Use] CAS deduction failed after retry");
       return sb.applyCookies(NextResponse.json(
-        { error: "no_tickets", message: "티켓이 부족합니다. 다시 시도해 주세요." },
+        { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
         { status: 409 }
       ));
     }

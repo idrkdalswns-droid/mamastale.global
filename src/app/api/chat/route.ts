@@ -333,8 +333,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── RESPONSE CACHE CHECK (Phase 1 only) ───
+    // R2-FIX(C2): Include user context in cache key to prevent cross-user personalization leaks
+    // (e.g., "아빠" user receiving cached response that addresses "어머니")
+    const cacheKey = parentRole || childAge
+      ? `${latestUserMsg?.content || ""}|role:${parentRole || ""}|age:${childAge || ""}`
+      : latestUserMsg?.content || "";
     if (safePhase === 1 && latestUserMsg && crisisResult.severity === null) {
-      const cached = await getCachedResponse(latestUserMsg.content, safePhase);
+      const cached = await getCachedResponse(cacheKey, safePhase);
       if (cached) {
         logLLMCall({
           sessionId: parsed.data.sessionId,
@@ -482,8 +487,9 @@ export async function POST(request: NextRequest) {
     }).catch(() => {});
 
     // ─── CACHE Phase 1 response (if applicable) ───
+    // R2-FIX(C2): Use context-aware cache key to prevent cross-user personalization leaks
     if (safePhase === 1 && !storyComplete && latestUserMsg && crisisResult.severity === null) {
-      setCachedResponse(latestUserMsg.content, safePhase, cleanText, phase ?? 1).catch(() => {});
+      setCachedResponse(cacheKey, safePhase, cleanText, phase ?? 1).catch(() => {});
     }
 
     let storyId: string | undefined;
