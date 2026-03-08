@@ -411,7 +411,9 @@ export async function POST(request: NextRequest) {
             throw streamErr;
           }
         } finally {
-          if (!streamFailed) clearInterval(timeoutCheck);
+          // R4-FIX(A1): Always clear interval — previously guarded by !streamFailed,
+          // causing interval leak when stream fails without fallback
+          clearInterval(timeoutCheck);
         }
 
         const apiLatencyMs = Date.now() - apiStartTime;

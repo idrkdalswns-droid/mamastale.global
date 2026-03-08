@@ -16,7 +16,8 @@ import {
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
-import { recordCrisisEvent, getPostCrisisState, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
+// R4-FIX(A2): Removed unused getPostCrisisState import
+import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
 import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/utils/response-cache";
 import { z } from "zod";
