@@ -64,18 +64,28 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
 
   // Fetch ticket balance to show context-aware next-story CTA
   // KR-J1: AbortController for cleanup on unmount
+  // R3-FIX(A1): Include Bearer token + credentials for mobile/WebView compatibility
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/tickets", { signal: controller.signal })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data) setTicketsRemaining(data.remaining ?? 0);
-      })
-      .catch((err) => {
-        if (err?.name !== "AbortError") { /* silent */ }
-      });
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        delete headers["Content-Type"]; // GET request doesn't need Content-Type
+        const res = await fetch("/api/tickets", {
+          headers,
+          credentials: "include",
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) setTicketsRemaining(data.remaining ?? 0);
+        }
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== "AbortError") { /* silent */ }
+      }
+    })();
     return () => controller.abort();
-  }, []);
+  }, [getAuthHeaders]);
 
   const handleShare = async () => {
     if (!completedScenes.length) return;
