@@ -618,70 +618,42 @@ export default function Home() {
             </div>
           )}
 
-          {/* Quick browse links */}
-          <div className="flex gap-2 mb-4">
+          {/* About & navigation links */}
+          <div className="flex flex-col items-center gap-2 mb-5">
             <Link
-              href="/reviews"
-              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+              href="/about"
+              className="w-full py-3.5 rounded-xl text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2"
               style={{
-                background: "rgba(224,122,95,0.08)",
-                color: "#E07A5F",
-                border: "1px solid rgba(224,122,95,0.12)",
+                background: "rgba(196,149,106,0.08)",
+                color: "#5A3E2B",
+                border: "1.5px solid rgba(196,149,106,0.18)",
               }}
             >
-              후기 보기
+              마마스테일이란 →
             </Link>
-            <Link
-              href="/community"
-              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-              style={{
-                background: "rgba(109,76,145,0.08)",
-                color: "#6D4C91",
-                border: "1px solid rgba(109,76,145,0.12)",
-              }}
-            >
-              커뮤니티
-            </Link>
-            <Link
-              href="/pricing"
-              className="flex-1 py-3 rounded-xl text-xs font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-              style={{
-                background: "rgba(224,122,95,0.12)",
-                color: "#E07A5F",
-                border: "1.5px solid rgba(224,122,95,0.25)",
-              }}
-            >
-              요금 안내
-            </Link>
-          </div>
-
-          {/* How it works — simplified 4-step flow */}
-          <div className="mb-5">
-            <p className="text-[11px] text-brown-pale font-medium text-center mb-2">
-              4단계 AI 대화로 동화가 만들어져요
-            </p>
-            <div className="flex items-center justify-between gap-1 px-2">
-              {[
-                { id: 1, label: "마음 열기", accent: "#7FBFB0" },
-                { id: 2, label: "새 시선", accent: "#E07A5F" },
-                { id: 3, label: "이야기화", accent: "#8B6AAF" },
-                { id: 4, label: "동화 완성", accent: "#C4956A" },
-              ].map((step, i) => (
-                <div key={step.id} className="flex items-center gap-1">
-                  <div className="flex flex-col items-center gap-1">
-                    <span
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                      style={{ background: step.accent }}
-                    >
-                      {step.id}
-                    </span>
-                    <span className="text-[9px] text-brown-light font-medium whitespace-nowrap">{step.label}</span>
-                  </div>
-                  {i < 3 && (
-                    <span className="text-[10px] text-brown-pale/40 -mt-3 mx-0.5">→</span>
-                  )}
-                </div>
-              ))}
+            <div className="flex gap-2 w-full">
+              <Link
+                href="/reviews"
+                className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+                style={{
+                  background: "rgba(224,122,95,0.06)",
+                  color: "#E07A5F",
+                  border: "1px solid rgba(224,122,95,0.10)",
+                }}
+              >
+                후기 보기
+              </Link>
+              <Link
+                href="/pricing"
+                className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+                style={{
+                  background: "rgba(224,122,95,0.10)",
+                  color: "#E07A5F",
+                  border: "1.5px solid rgba(224,122,95,0.20)",
+                }}
+              >
+                요금 안내
+              </Link>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const NAV_ITEMS = [
+  { href: "/about", label: "소개" },
   { href: "/library", label: "서재" },
   { href: "/community", label: "커뮤니티" },
   { href: "/pricing", label: "구매" },
