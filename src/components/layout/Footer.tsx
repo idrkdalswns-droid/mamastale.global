@@ -40,9 +40,6 @@ export function Footer() {
           </Link>
         </div>
 
-        <p className="text-[10px] text-brown-pale/50 font-light">
-          Global service coming soon
-        </p>
         <p className="text-[9px] text-brown-pale/60 font-light">
           &copy; {new Date().getFullYear()} mamastale. All rights reserved.
         </p>

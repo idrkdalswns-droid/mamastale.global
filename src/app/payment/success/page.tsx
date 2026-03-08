@@ -34,6 +34,7 @@ function PaymentSuccessContent() {
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [hasSavedChat, setHasSavedChat] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const confirmedRef = useRef(false);
   // Store payment params for retry (URL is cleaned before fetch)
   const paymentParamsRef = useRef<{ paymentKey: string; orderId: string; amount: number; mode: string } | null>(null);
@@ -312,12 +313,14 @@ function PaymentSuccessContent() {
               } else {
                 try {
                   await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                  setShareCopied(true);
+                  setTimeout(() => setShareCopied(false), 2000);
                 } catch { /* ignore */ }
               }
             }}
             className="w-full py-2.5 rounded-full text-sm font-medium text-brown-pale no-underline transition-all active:scale-[0.97]"
           >
-            친구에게 공유하기
+            {shareCopied ? "✓ 링크가 복사되었어요" : "친구에게 공유하기"}
           </button>
         </div>
       </div>

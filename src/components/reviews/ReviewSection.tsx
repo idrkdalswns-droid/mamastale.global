@@ -19,6 +19,7 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
           key={n}
           type="button"
           onClick={() => onChange(n)}
+          aria-label={`${n}점`}
           className="w-11 h-11 flex items-center justify-center text-xl transition-transform active:scale-110"
           style={{ color: n <= value ? "#E07A5F" : "#D0C8C0" }}
         >

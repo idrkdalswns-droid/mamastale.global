@@ -38,6 +38,8 @@ export default function PremiumUpgradeCTA({
       role="dialog"
       aria-modal="true"
       aria-label="프리미엄 동화 안내"
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       style={{ background: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(16px)" }}
     >
       <motion.div

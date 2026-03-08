@@ -29,6 +29,8 @@ export default function StoryCompleteCTA({
       role="dialog"
       aria-modal="true"
       aria-label="동화 완성"
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === "Escape") onViewStory(); }}
       style={{ background: "rgb(var(--cream) / 0.88)", backdropFilter: "blur(14px)" }}
     >
       {/* Celebration particles */}
