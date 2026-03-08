@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { Footer } from "@/components/layout/Footer";
 import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
 import { ChatPage } from "@/components/chat/ChatContainer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -705,32 +704,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Secondary CTA after testimonials */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={handleStartStory}
-              className="w-full py-3.5 rounded-full text-white text-sm font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] mb-2"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
-              }}
-            >
-              {user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
-            </button>
-            <Link
-              href="/pricing"
-              className="text-[11px] text-brown-pale font-light no-underline hover:text-coral transition-colors min-h-[44px] inline-flex items-center"
-            >
-              요금 안내 보기 →
-            </Link>
-          </div>
-
-          {/* Footer with business info (전자상거래법 필수) */}
-          <div className="-mt-4">
-            <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mb-2">
+          {/* Medical disclaimer */}
+          <div className="mt-6">
+            <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center">
               본 서비스는 실제 의료 행위를 대체하지 않습니다
             </p>
-            <Footer />
           </div>
         </div>
       </div>
