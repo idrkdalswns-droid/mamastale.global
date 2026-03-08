@@ -551,12 +551,15 @@ export default function Home() {
                     loading={i === 0 ? "eager" : "lazy"}
                   />
                   <div
-                    className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
+                    className="absolute inset-x-0 bottom-0 px-3 pt-16 pb-3 flex flex-col justify-end"
                     style={{
-                      background: "linear-gradient(to top, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.86) 50%, rgba(255,255,255,0) 100%)",
+                      background: "linear-gradient(to top, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.93) 40%, rgba(255,255,255,0.7) 70%, rgba(255,255,255,0) 100%)",
                     }}
                   >
-                    <p className="font-serif text-[10.5px] text-brown leading-[1.85] break-keep">
+                    <p
+                      className="font-serif text-[10.5px] text-brown leading-[1.85] break-keep"
+                      style={{ textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
+                    >
                       {text}
                     </p>
                     <p className="text-[8px] text-brown-pale font-light mt-1.5 text-right">
