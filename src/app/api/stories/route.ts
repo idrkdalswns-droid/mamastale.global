@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { containsProfanity, sanitizeText, sanitizeSceneText } from "@/lib/utils/validation";
 
+// R2-FIX(B1): Valid topic allowlist for community story categorization
+const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", "경력단절", "자존감"];
+
 export const runtime = "edge";
 
 // P1-FIX(KR-1): Rate limit + size limits for story save endpoint
@@ -196,6 +199,10 @@ export async function POST(request: NextRequest) {
     if (hasCommunityFields) {
       storyInsert.is_public = isPublic || false;
       storyInsert.author_alias = authorAlias || null;
+      // R2-FIX(B1): Save topic if valid (community topic filter support)
+      if (typeof body.topic === "string" && VALID_TOPICS.includes(body.topic)) {
+        storyInsert.topic = body.topic;
+      }
     }
 
     // Try insert

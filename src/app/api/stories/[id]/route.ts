@@ -4,6 +4,9 @@ import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID } from 
 
 export const runtime = "edge";
 
+// R2-FIX(B1): Valid topic allowlist for community story categorization
+const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", "경력단절", "자존감"];
+
 /** Try cookie auth first, then fallback to Authorization bearer token */
 async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
   const { data, error } = await sb.client.auth.getUser();
@@ -107,6 +110,14 @@ export async function PATCH(
       }
       updates.title = safeTitle;
     }
+    // R2-FIX(B1): Allow topic update for community categorization
+    if (typeof body.topic === "string") {
+      if (VALID_TOPICS.includes(body.topic)) {
+        updates.topic = body.topic;
+      } else if (body.topic === "") {
+        updates.topic = null;
+      }
+    }
     if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
       const validScenes = body.scenes.every(
         (s: unknown) =>
@@ -118,7 +129,7 @@ export async function PATCH(
       if (validScenes) {
         // Sanitize scene content — lightweight sanitizer for AI text
         for (const s of body.scenes as Array<{ title: string; text: string }>) {
-          s.title = sanitizeText(s.title.slice(0, 200));
+          s.title = sanitizeSceneText(s.title.slice(0, 200));
           s.text = sanitizeSceneText(s.text.slice(0, 5000));
         }
         updates.scenes = body.scenes;
