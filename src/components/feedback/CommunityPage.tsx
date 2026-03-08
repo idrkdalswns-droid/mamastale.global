@@ -431,7 +431,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 </Link>
                 <Link
                   href="/pricing"
-                  className="block w-full mt-2 text-[11px] text-center no-underline py-1.5"
+                  className="block w-full mt-2 text-[11px] text-center no-underline py-1.5 min-h-[44px] flex items-center justify-center"
                   style={{ color: "#6D4C91" }}
                 >
                   또는 4권 묶음으로 24% 할인받기 →

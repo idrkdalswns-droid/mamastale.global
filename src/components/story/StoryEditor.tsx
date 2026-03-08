@@ -212,7 +212,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
           {!hasAnyChanges && (
             <button
               onClick={handleDone}
-              className="w-full py-2.5 text-[12px] font-light text-brown-pale underline underline-offset-2 decoration-brown-pale/30 mt-2"
+              className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale underline underline-offset-2 decoration-brown-pale/30 mt-2"
             >
               수정 없이 바로 보기
             </button>
