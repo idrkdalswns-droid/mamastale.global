@@ -829,7 +829,7 @@ export default function Home() {
             }}
           >
             <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
-              감사합니다, 어머니
+              결제가 완료되었어요
             </h2>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
               티켓 구매가 완료되었어요.

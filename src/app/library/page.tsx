@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { BookshelfGrid } from "@/components/story/Bookshelf";
+import { motion } from "framer-motion";
+import Room3D from "@/components/library/Room3D";
+import Shelf3D, { BOOKS_PER_SHELF } from "@/components/library/Shelf3D";
+import EmptyRoom from "@/components/library/EmptyRoom";
+import RoomDecorations from "@/components/library/RoomDecorations";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
@@ -46,7 +49,7 @@ export default function LibraryPage() {
         }
       } catch { /* ignore */ }
 
-      const res = await fetch("/api/stories", { headers });
+      const res = await fetch("/api/stories", { headers, credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setStories(data.stories || []);
@@ -57,30 +60,83 @@ export default function LibraryPage() {
     }
   };
 
+  // Split stories into shelf chunks
+  const shelves: StoryItem[][] = [];
+  for (let i = 0; i < stories.length; i += BOOKS_PER_SHELF) {
+    shelves.push(stories.slice(i, i + BOOKS_PER_SHELF));
+  }
+
   return (
-    <div className="min-h-dvh bg-cream px-6 pt-8 pb-20 relative overflow-hidden">
-      <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
-      <WatercolorBlob bottom={100} left={-60} size={200} color="rgba(184,216,208,0.07)" />
-
-      <div className="relative z-[1] max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="font-serif text-lg text-brown font-semibold">
-            내 서재
-          </h1>
-          <p className="text-xs text-brown-light font-light mt-1">
-            나만의 동화 컬렉션
-          </p>
-        </div>
-
-        {/* Draft in progress */}
-        {draftInfo && (
-          <div
-            className="rounded-2xl p-4 mb-6"
-            style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
+    <div className="min-h-dvh bg-cream pb-20 relative overflow-hidden">
+      <div className="relative z-[1] max-w-2xl mx-auto px-4 pt-6">
+        {/* ── Room Header — hanging banner style ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5, ease: "easeOut" }}
+          className="relative text-center mb-4"
+        >
+          {/* Hanging strings */}
+          <svg
+            className="absolute -top-3 left-1/2 -translate-x-1/2"
+            width="100"
+            height="16"
+            viewBox="0 0 100 16"
+            aria-hidden="true"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white" style={{ background: PHASES[draftInfo.phase]?.accent || '#E07A5F' }}>{draftInfo.phase}</span>
+            <line x1="25" y1="0" x2="30" y2="16" stroke="rgba(var(--brown-pale), 0.3)" strokeWidth="1" />
+            <line x1="75" y1="0" x2="70" y2="16" stroke="rgba(var(--brown-pale), 0.3)" strokeWidth="1" />
+          </svg>
+          {/* Banner plank */}
+          <div
+            className="inline-block px-8 py-3 rounded-lg relative"
+            style={{
+              background: "linear-gradient(180deg, rgba(var(--brown-pale), 0.15) 0%, rgba(var(--brown-mid), 0.12) 100%)",
+              border: "1px solid rgba(var(--brown-pale), 0.12)",
+              boxShadow: "0 2px 8px rgba(var(--brown), 0.06)",
+            }}
+          >
+            <h1 className="font-serif text-lg text-brown font-semibold">
+              내 서재
+            </h1>
+            <p className="text-[10px] text-brown-light font-light mt-0.5">
+              나만의 동화 컬렉션
+            </p>
+          </div>
+        </motion.div>
+
+        {/* ── Draft in progress (DraftDesk) ── */}
+        {draftInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.4 }}
+            className="rounded-2xl p-4 mb-5 relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(var(--brown-pale), 0.08) 0%, rgba(var(--peach), 0.06) 100%)",
+              border: "1.5px solid rgba(224,122,95,0.15)",
+              boxShadow: "0 4px 12px rgba(var(--brown), 0.04)",
+            }}
+          >
+            {/* Desk texture overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: "repeating-linear-gradient(90deg, transparent 0px, rgba(var(--brown), 0.01) 1px, transparent 2px, transparent 40px)",
+              }}
+              aria-hidden="true"
+            />
+
+            <div className="flex items-center gap-3 mb-3 relative z-[1]">
+              {/* Pencil icon (SVG) */}
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: PHASES[draftInfo.phase]?.accent || '#E07A5F' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                  <path d="M14 2L18 6L8 16H4V12L14 2Z" fill="white" fillOpacity="0.9" />
+                </svg>
+              </div>
               <div>
                 <p className="text-sm font-semibold text-brown">진행 중인 대화</p>
                 <p className="text-[11px] text-brown-pale font-light">
@@ -88,7 +144,7 @@ export default function LibraryPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 relative z-[1]">
               <Link
                 href="/?action=start"
                 className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white text-center no-underline transition-all active:scale-[0.97] inline-flex items-center justify-center"
@@ -104,12 +160,13 @@ export default function LibraryPage() {
                 삭제
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Content */}
+        {/* ── Content ── */}
         {loading ? (
           <div className="text-center py-20">
+            <div className="w-6 h-6 mx-auto mb-3 border-2 border-brown-pale/30 border-t-brown-pale rounded-full animate-spin" />
             <p className="text-sm text-brown-light font-light">불러오는 중...</p>
           </div>
         ) : error ? (
@@ -123,27 +180,23 @@ export default function LibraryPage() {
               다시 시도
             </button>
           </div>
-        ) : stories.length === 0 ? (
-          <div>
-            <BookshelfGrid stories={[]} />
-            <div className="text-center mt-6">
-              <p className="text-sm text-brown-light font-light mb-4">
-                아직 완성된 동화가 없어요
-              </p>
-              <Link
-                href="/?action=start"
-                className="inline-flex items-center justify-center min-h-[44px] px-8 py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97]"
-                style={{
-                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                  boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-                }}
-              >
-                첫 동화 만들러 가기 →
-              </Link>
-            </div>
-          </div>
         ) : (
-          <BookshelfGrid stories={stories} />
+          <Room3D>
+            {stories.length === 0 ? (
+              <EmptyRoom />
+            ) : (
+              shelves.map((shelfStories, idx) => (
+                <Shelf3D
+                  key={idx}
+                  stories={shelfStories}
+                  shelfIndex={idx}
+                  colorOffset={idx * BOOKS_PER_SHELF}
+                  showEmptySlot={idx === shelves.length - 1}
+                />
+              ))
+            )}
+            <RoomDecorations />
+          </Room3D>
         )}
       </div>
     </div>

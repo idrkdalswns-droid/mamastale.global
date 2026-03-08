@@ -88,7 +88,7 @@ export default function CommunityBrowsePage() {
           <p className="text-xs text-brown-light font-light mt-1">
             {totalCount !== null && totalCount > 0
               ? `${totalCount}개의 이야기가 공유되었어요`
-              : "다른 엄마들의 마음 동화를 읽어보세요"}
+              : "다른 분들의 마음 동화를 읽어보세요"}
           </p>
         </div>
 
@@ -217,7 +217,7 @@ export default function CommunityBrowsePage() {
                   scenes={story.scenes}
                   createdAt={story.created_at}
                   href={`/community/${story.id}`}
-                  authorAlias={story.author_alias || "익명의 엄마"}
+                  authorAlias={story.author_alias || "익명"}
                   topic={story.topic || undefined}
                   viewCount={story.view_count}
                   likeCount={story.like_count}
