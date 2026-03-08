@@ -432,10 +432,10 @@ export default function Home() {
           </h1>
 
           <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
-            엄마의 이야기가 아이의 동화가 되다
+            엄마의 삶이 아이의 동화가 되다
           </p>
           <p className="text-[12px] text-brown-pale font-light mb-3 break-keep">
-            따뜻한 AI 대화 한 번이면, 세상에 단 하나뿐인 동화가 완성돼요
+            우리 아이를 위한 세상에 단 하나뿐인 동화를 만들어 보세요
           </p>
           {presenceLoaded && liveTotal > 0 ? (
             <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-full bg-coral/5 border border-coral/10 w-fit">
@@ -450,18 +450,63 @@ export default function Home() {
             </p>
           )}
 
-          {/* Description card */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
-            <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
-              <span className="text-coral font-semibold">&ldquo;엄마, 엄마 동화 들려줘!&rdquo;</span>
-              <br />
-              AI와 따뜻한 대화를 나누면,
-              <br />
-              엄마의 경험이{" "}
-              <span className="text-coral font-medium">10장면 동화책</span>
-              이 됩니다.
+          {/* 마마스테일이란 */}
+          <Link
+            href="/about"
+            className="w-full py-3.5 rounded-xl text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            style={{
+              background: "rgba(196,149,106,0.08)",
+              color: "#5A3E2B",
+              border: "1.5px solid rgba(196,149,106,0.18)",
+            }}
+          >
+            마마스테일이란 →
+          </Link>
+
+          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
+          {!user && !authLoading && (
+            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
+              회원가입 없이 바로 시작할 수 있어요
             </p>
-          </div>
+          )}
+
+          {/* CTA button */}
+          <button
+            onClick={handleStartStory}
+            disabled={!!user && ticketsRemaining === null && !authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {user && ticketsRemaining === null && !authLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                불러오는 중...
+              </span>
+            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+          </button>
+
+          {/* Ticket balance display for logged-in users */}
+          {user && ticketsRemaining !== null && (
+            <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
+              <span className="text-xs text-brown font-medium">
+                {ticketsRemaining > 0
+                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
+                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
+                }
+              </span>
+              {ticketsRemaining <= 0 && (
+                <Link
+                  href="/pricing"
+                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
+                >
+                  구매하기
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* ════════════════════════════════════════
               STORYBOOK GALLERY — Product showcase
@@ -571,88 +616,30 @@ export default function Home() {
             </div>
           )}
 
-          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
-          {!user && !authLoading && (
-            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
-              회원가입 없이 바로 시작할 수 있어요
-            </p>
-          )}
-
-          {/* CTA button */}
-          <button
-            onClick={handleStartStory}
-            disabled={!!user && ticketsRemaining === null && !authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {user && ticketsRemaining === null && !authLoading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                불러오는 중...
-              </span>
-            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
-          </button>
-
-          {/* Ticket balance display for logged-in users */}
-          {user && ticketsRemaining !== null && (
-            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
-              <span className="text-xs text-brown font-medium">
-                {ticketsRemaining > 0
-                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
-                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
-                }
-              </span>
-              {ticketsRemaining <= 0 && (
-                <Link
-                  href="/pricing"
-                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
-                >
-                  구매하기
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* About & navigation links */}
-          <div className="flex flex-col items-center gap-2 mb-5">
+          {/* Navigation links */}
+          <div className="flex gap-2 w-full mb-5">
             <Link
-              href="/about"
-              className="w-full py-3.5 rounded-xl text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2"
+              href="/reviews"
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
               style={{
-                background: "rgba(196,149,106,0.08)",
-                color: "#5A3E2B",
-                border: "1.5px solid rgba(196,149,106,0.18)",
+                background: "rgba(224,122,95,0.06)",
+                color: "#E07A5F",
+                border: "1px solid rgba(224,122,95,0.10)",
               }}
             >
-              마마스테일이란 →
+              후기 보기
             </Link>
-            <div className="flex gap-2 w-full">
-              <Link
-                href="/reviews"
-                className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-                style={{
-                  background: "rgba(224,122,95,0.06)",
-                  color: "#E07A5F",
-                  border: "1px solid rgba(224,122,95,0.10)",
-                }}
-              >
-                후기 보기
-              </Link>
-              <Link
-                href="/pricing"
-                className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-                style={{
-                  background: "rgba(224,122,95,0.10)",
-                  color: "#E07A5F",
-                  border: "1.5px solid rgba(224,122,95,0.20)",
-                }}
-              >
-                요금 안내
-              </Link>
-            </div>
+            <Link
+              href="/pricing"
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+              style={{
+                background: "rgba(224,122,95,0.10)",
+                color: "#E07A5F",
+                border: "1.5px solid rgba(224,122,95,0.20)",
+              }}
+            >
+              요금 안내
+            </Link>
           </div>
         </div>
 
