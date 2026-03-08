@@ -155,7 +155,9 @@ export default function AuthCallbackPage() {
   if (status === "success") {
     return (
       <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
-        <div className="text-[48px] mb-4">🌷</div>
+        <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(127,191,176,0.15)" }}>
+          <span className="text-2xl font-serif font-bold" style={{ color: "#7FBFB0" }}>M</span>
+        </div>
         <h2
           className="text-lg font-semibold mb-2"
           style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
@@ -172,7 +174,9 @@ export default function AuthCallbackPage() {
   if (status === "error") {
     return (
       <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
-        <div className="text-[48px] mb-4">😔</div>
+        <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(224,122,95,0.12)" }}>
+          <span className="text-2xl font-serif font-bold" style={{ color: "#E07A5F" }}>!</span>
+        </div>
         <h2
           className="text-lg font-semibold mb-3"
           style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
@@ -203,7 +207,9 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
-      <div className="text-[48px] mb-4 animate-pulse">🌿</div>
+      <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse" style={{ background: "rgba(127,191,176,0.15)" }}>
+        <span className="text-lg font-serif font-bold" style={{ color: "#7FBFB0" }}>M</span>
+      </div>
       <p className="text-sm text-brown-light font-light">로그인 처리 중...</p>
     </div>
   );
