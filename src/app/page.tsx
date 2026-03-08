@@ -60,6 +60,18 @@ export default function Home() {
   useEffect(() => {
     if (authLoading || screen !== "landing") return;
 
+    // Path 0: Post-login redirect (e.g. pricing → login → home → redirect back to pricing)
+    if (user) {
+      try {
+        const postLoginRedirect = sessionStorage.getItem("mamastale_post_login_redirect");
+        if (postLoginRedirect) {
+          sessionStorage.removeItem("mamastale_post_login_redirect");
+          window.location.href = postLoginRedirect;
+          return;
+        }
+      } catch { /* sessionStorage not available */ }
+    }
+
     // Path A: ?action=start — explicit restore request (from auth callback / library)
     if (actionStart) {
       // Try draft first, then auth save — both work with or without user

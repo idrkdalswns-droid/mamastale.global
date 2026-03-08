@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -14,7 +13,6 @@ import ChatInput from "./ChatInput";
 import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
 import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
-import { SignupModal } from "@/components/auth/SignupModal";
 import TurnFivePopup from "./TurnFivePopup";
 import { usePresence } from "@/lib/hooks/usePresence";
 
@@ -50,8 +48,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
   // Track this user as "creating a story" for live presence counting
   usePresence("chat");
 
-  const router = useRouter();
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -431,13 +427,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
         </div>
       )}
 
-      {/* Signup modal — overlays chat without losing context */}
-      {showSignupModal && (
-        <SignupModal
-          onClose={() => setShowSignupModal(false)}
-          onBeforeAuthRedirect={persistToStorage}
-        />
-      )}
     </div>
   );
 }

@@ -137,6 +137,7 @@ function PricingContent() {
       if (isProcessing) return;
 
       if (!user && !authLoading) {
+        try { sessionStorage.setItem("mamastale_post_login_redirect", "/pricing"); } catch {}
         window.location.href = "/login?redirect=/pricing";
         return;
       }
@@ -195,6 +196,7 @@ function PricingContent() {
   // Payment with confirmation step
   const initiatePayment = (productType: PriceType) => {
     if (!user && !authLoading) {
+      try { sessionStorage.setItem("mamastale_post_login_redirect", "/pricing"); } catch {}
       window.location.href = "/login?redirect=/pricing";
       return;
     }
