@@ -17,7 +17,7 @@ export default function Icon() {
           borderRadius: 6,
         }}
       >
-        <div style={{ fontSize: 22, lineHeight: 1 }}>📖</div>
+        <div style={{ fontSize: 18, lineHeight: 1, fontWeight: 700, color: "#5A3E2B", fontFamily: "serif" }}>M</div>
       </div>
     ),
     { ...size },

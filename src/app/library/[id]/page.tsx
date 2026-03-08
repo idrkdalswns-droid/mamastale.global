@@ -154,7 +154,9 @@ export default function LibraryStoryPage() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
         <div className="text-center">
-          <div className="text-3xl mb-3 animate-pulse">📖</div>
+          <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center animate-pulse" style={{ background: "rgba(196,149,106,0.12)" }}>
+            <span className="text-lg font-serif font-bold" style={{ color: "#C4956A" }}>M</span>
+          </div>
           <p className="text-sm text-brown-light font-light">
             {saving ? "저장하는 중..." : "불러오는 중..."}
           </p>

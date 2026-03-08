@@ -37,7 +37,7 @@ export function ThemeToggle() {
       }}
       aria-label={dark ? "라이트 모드로 전환" : "다크 모드로 전환"}
     >
-      {dark ? "☀️" : "🌙"}
+      {dark ? "밝게" : "어둡게"}
     </button>
   );
 }

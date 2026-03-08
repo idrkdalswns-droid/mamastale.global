@@ -225,7 +225,7 @@ export function StoryPDFDocument({
 
       {/* End Page */}
       <Page size="A5" style={styles.endPage}>
-        <Text style={styles.endEmoji}>✨</Text>
+        <Text style={styles.endEmoji}>M</Text>
         <Text style={styles.endTitle}>축하합니다</Text>
         <Text style={styles.endText}>
           {`당신은 방금 당신의 고통을\n당신의 사랑스러운 동화로 변환했습니다.\n\n이 동화는 단순한 이야기가 아니에요.\n이건 당신의 여정입니다.\n당신의 강함의 기록입니다.\n당신의 사랑의 증거입니다.\n\n이제 이 동화를 아기에게 읽어주세요.\n그리고 당신 자신에게도 읽어주세요.`}

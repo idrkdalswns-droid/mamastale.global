@@ -50,7 +50,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className={containerClass}>
-          <div className="text-4xl mb-4">🌿</div>
+          <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: "rgba(224,122,95,0.12)" }}>
+            <span className="text-xl font-serif font-bold" style={{ color: "#E07A5F" }}>!</span>
+          </div>
           <h2 className="font-serif text-lg font-bold text-brown mb-2">
             일시적인 오류가 발생했어요
           </h2>

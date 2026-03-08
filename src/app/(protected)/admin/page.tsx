@@ -49,10 +49,10 @@ interface DashboardData {
 }
 
 const PHASE_NAMES: Record<string, string> = {
-  "1": "🫧 공감",
-  "2": "🌿 소크라테스",
-  "3": "✨ 은유",
-  "4": "📖 동화",
+  "1": "1 공감",
+  "2": "2 소크라테스",
+  "3": "3 은유",
+  "4": "4 동화",
 };
 
 const MODEL_SHORT: Record<string, string> = {
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-dvh bg-cream dark:bg-gray-900 flex items-center justify-center px-6">
         <div className="text-center">
-          <p className="text-4xl mb-4">🔒</p>
+          <p className="text-4xl mb-4 font-serif font-bold text-brown">X</p>
           <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">접근 불가</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">{error}</p>
         </div>
