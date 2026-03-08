@@ -54,7 +54,9 @@ export default function Home() {
   const [startPending, setStartPending] = useState(false);
   const [showTicketConfirm, setShowTicketConfirm] = useState(false);
   const [showNoTicketsModal, setShowNoTicketsModal] = useState(false);
-  const [ticketUsedForSession, setTicketUsedForSession] = useState(false);
+  const [ticketUsedForSession, setTicketUsedForSession] = useState(() => {
+    try { return sessionStorage.getItem("mamastale_ticket_session") === "1"; } catch { return false; }
+  });
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const [editSaveError, setEditSaveError] = useState(false);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
@@ -190,15 +192,26 @@ export default function Home() {
   }, [startPending, authLoading, user, ticketsRemaining]);
 
   // After payment, user returns with tickets → lift the free trial turn limit
+  // ticketUsedForSession is now persisted in sessionStorage (survives page reload)
+  // This effect handles the "buy ticket after free trial" flow (auto-restore + new tickets)
   useEffect(() => {
     if (screen !== "chat" || !user || ticketsRemaining === null) return;
     if (ticketsRemaining > 0 && !ticketUsedForSession) {
       setTicketUsedForSession(true);
+      try { sessionStorage.setItem("mamastale_ticket_session", "1"); } catch {}
     }
   }, [screen, user, ticketsRemaining, ticketUsedForSession]);
 
+  // Clear ticket session flag (called when explicitly going home or starting fresh)
+  const clearTicketSession = useCallback(() => {
+    setTicketUsedForSession(false);
+    try { sessionStorage.removeItem("mamastale_ticket_session"); } catch {}
+  }, []);
+
   // Handle "새 동화 만들기" click with ticket confirmation
   const handleStartStory = () => {
+    // Reset previous session flag before starting new flow
+    clearTicketSession();
     // Block clicks while ticket balance is still loading for logged-in users
     if (user && ticketsRemaining === null) return;
     // Logged-in users with tickets: show ticket confirmation popup (deduct before starting)
@@ -260,7 +273,7 @@ export default function Home() {
       <ErrorBoundary>
         <ChatPage
           onComplete={() => setScreen("edit")}
-          onGoHome={() => { setShow(false); setScreen("landing"); }}
+          onGoHome={() => { clearTicketSession(); setShow(false); setScreen("landing"); }}
           freeTrialMode={!ticketUsedForSession}
         />
       </ErrorBoundary>
@@ -352,6 +365,7 @@ export default function Home() {
         <CommunityPage
           onRestart={() => {
             reset(); // LOW-11 fix: reset chat store
+            clearTicketSession();
             setShow(false);
             setScreen("landing");
           }}
@@ -739,6 +753,7 @@ export default function Home() {
           onConfirm={() => {
             setShowTicketConfirm(false);
             setTicketUsedForSession(true);
+            try { sessionStorage.setItem("mamastale_ticket_session", "1"); } catch {}
             // Update local ticket count (already deducted on server)
             setTicketsRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
             setScreen("onboarding");

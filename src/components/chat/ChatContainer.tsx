@@ -153,7 +153,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
 
   return (
     <div
-      className="h-dvh flex flex-col font-sans relative transition-colors duration-700"
+      className="fixed inset-0 z-[30] flex flex-col font-sans transition-colors duration-700"
       style={{ background: p.bg }}
     >
       {/* Header */}

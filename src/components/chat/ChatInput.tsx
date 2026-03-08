@@ -48,6 +48,10 @@ export default function ChatInput({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       // Prevent sending during Korean IME composition (한글 조합 중 전송 방지)
       if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+      // Mobile: Enter creates newline (send via button only)
+      // Desktop: Enter sends (Shift+Enter for newline)
+      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isTouchDevice) return;
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
