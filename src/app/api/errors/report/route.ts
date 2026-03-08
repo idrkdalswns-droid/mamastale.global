@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "too many reports" }, { status: 429 });
   }
 
+  // LAUNCH-FIX: Body size limit (error reports with stack traces, 32KB max)
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 32_000) {
+    return NextResponse.json({ error: "payload too large" }, { status: 413 });
+  }
+
   let body;
   try {
     body = await request.json();

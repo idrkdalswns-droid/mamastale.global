@@ -73,6 +73,15 @@ export async function POST(request: NextRequest) {
   const userId = user.id;
 
   try {
+    // LAUNCH-FIX: Body size limit (checkout requests are tiny)
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > 4_000) {
+      return sb.applyCookies(NextResponse.json(
+        { error: "요청 데이터가 너무 큽니다." },
+        { status: 413 }
+      ));
+    }
+
     // Safe JSON parsing
     let body;
     try {

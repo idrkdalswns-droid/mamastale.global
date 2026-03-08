@@ -49,6 +49,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // LAUNCH-FIX: Body size limit (feedback payloads are small, 16KB max)
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > 16_000) {
+      return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+    }
+
     // Safe JSON parsing
     let body;
     try {

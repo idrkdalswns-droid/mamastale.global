@@ -176,22 +176,45 @@ export async function POST(request: NextRequest) {
 
     // P0-FIX(US-4): Truly atomic deduction using exact expected value.
     // Verifies the EXACT current value to ensure only one concurrent request can succeed.
-    const { data: updated, error: deductError } = await sb.client
-      .from("profiles")
-      .update({
-        free_stories_remaining: remaining - 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id)
-      .eq("free_stories_remaining", remaining) // CAS (Compare-And-Swap)
-      .select("free_stories_remaining")
-      .single();
+    // LAUNCH-FIX: Auto-retry on CAS miss (concurrent write ≠ no tickets)
+    let updated: { free_stories_remaining: number } | null = null;
+    for (let casAttempt = 0; casAttempt < 2; casAttempt++) {
+      const currentRemaining = casAttempt === 0 ? remaining : (
+        await sb.client.from("profiles").select("free_stories_remaining").eq("id", user.id).single()
+      ).data?.free_stories_remaining ?? 0;
 
-    if (deductError || !updated) {
-      console.warn("[Tickets/Use] CAS deduction failed:", deductError?.code);
+      if (currentRemaining <= 0) {
+        return sb.applyCookies(NextResponse.json(
+          { error: "no_tickets", message: "티켓이 부족합니다." },
+          { status: 403 }
+        ));
+      }
+
+      const { data: casResult, error: deductError } = await sb.client
+        .from("profiles")
+        .update({
+          free_stories_remaining: currentRemaining - 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .eq("free_stories_remaining", currentRemaining) // CAS (Compare-And-Swap)
+        .select("free_stories_remaining")
+        .single();
+
+      if (!deductError && casResult) {
+        updated = casResult;
+        break;
+      }
+      if (casAttempt === 0) {
+        console.warn("[Tickets/Use] CAS miss (concurrent write), retrying...");
+      }
+    }
+
+    if (!updated) {
+      console.warn("[Tickets/Use] CAS deduction failed after retry");
       return sb.applyCookies(NextResponse.json(
-        { error: "no_tickets", message: "티켓이 부족합니다." },
-        { status: 403 }
+        { error: "no_tickets", message: "티켓이 부족합니다. 다시 시도해 주세요." },
+        { status: 409 }
       ));
     }
 

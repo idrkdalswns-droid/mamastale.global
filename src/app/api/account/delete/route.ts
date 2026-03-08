@@ -65,9 +65,13 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Phase 2: Delete dependent records (sequential, dependency order)
-    await serviceClient.from("stories").delete().eq("user_id", userId);
-    await serviceClient.from("subscriptions").delete().eq("user_id", userId);
-    await serviceClient.from("profiles").delete().eq("id", userId);
+    // LAUNCH-FIX: Add error logging for each step to detect orphaned data
+    const { error: storiesErr } = await serviceClient.from("stories").delete().eq("user_id", userId);
+    if (storiesErr) console.error(`[Account] Stories delete failed for user=${maskedId}: ${storiesErr.code}`);
+    const { error: subsErr } = await serviceClient.from("subscriptions").delete().eq("user_id", userId);
+    if (subsErr) console.error(`[Account] Subscriptions delete failed for user=${maskedId}: ${subsErr.code}`);
+    const { error: profileErr } = await serviceClient.from("profiles").delete().eq("id", userId);
+    if (profileErr) console.error(`[Account] Profile delete failed for user=${maskedId}: ${profileErr.code}`);
 
     // Delete auth user
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);

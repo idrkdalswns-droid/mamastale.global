@@ -136,6 +136,10 @@ export async function POST(request: NextRequest) {
       return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
     }
 
+    // LAUNCH-FIX: Validate metadata is an object (not string/number/array)
+    if (metadata !== undefined && metadata !== null && (typeof metadata !== "object" || Array.isArray(metadata))) {
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 메타데이터 형식입니다." }, { status: 400 }));
+    }
     // UK-5: Limit metadata size to prevent DB bloat
     if (metadata && JSON.stringify(metadata).length > 10_000) {
       return sb.applyCookies(NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 }));

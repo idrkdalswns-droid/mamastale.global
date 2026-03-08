@@ -58,12 +58,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Upsert presence (ON CONFLICT anonymous_id DO UPDATE)
-  await supabase
+  // LAUNCH-FIX: Check upsert result for error logging
+  const { error: upsertErr } = await supabase
     .from("presence")
     .upsert(
       { anonymous_id, page, last_seen: new Date().toISOString() },
       { onConflict: "anonymous_id" }
     );
+  if (upsertErr) {
+    console.error("[Presence] Upsert failed:", upsertErr.code);
+  }
 
   // ~10% chance: cleanup stale entries
   if (Math.random() < 0.1) {

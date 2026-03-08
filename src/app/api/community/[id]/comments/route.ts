@@ -130,6 +130,12 @@ export async function POST(
   }
 
   try {
+    // LAUNCH-FIX: Body size limit (comments are small text, 8KB max)
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > 8_000) {
+      return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+    }
+
     // Safe JSON parsing
     let body;
     try {

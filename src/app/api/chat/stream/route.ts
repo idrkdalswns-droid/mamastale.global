@@ -29,7 +29,7 @@ import {
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
-import { recordCrisisEvent } from "@/lib/utils/crisis-tracker";
+import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
@@ -207,6 +207,11 @@ export async function POST(request: NextRequest) {
         }).catch(() => {});
       }
     }
+  }
+
+  // LAUNCH-FIX: Decrement post-crisis turn counter (parity with non-stream endpoint)
+  if (parsed.data.sessionId && crisisResult.severity === null) {
+    decrementPostCrisisTurn(parsed.data.sessionId).catch(() => {});
   }
 
   // ─── Phase context ───

@@ -26,7 +26,17 @@ function checkRateLimitInMemory(
       if (now > v.resetAt) rateLimitFallbackMap.delete(k);
     }
   }
-  if (rateLimitFallbackMap.size > 1000) rateLimitFallbackMap.clear();
+  // LAUNCH-FIX: Selective eviction instead of map.clear() to prevent rate limit reset attack
+  // An attacker could fill the map with dummy IPs to clear all legitimate rate limits
+  if (rateLimitFallbackMap.size > 1000) {
+    // Remove oldest 50% of entries by checking reset time
+    const entries = Array.from(rateLimitFallbackMap.entries());
+    entries.sort((a, b) => a[1].resetAt - b[1].resetAt);
+    const removeCount = Math.floor(entries.length / 2);
+    for (let i = 0; i < removeCount; i++) {
+      rateLimitFallbackMap.delete(entries[i][0]);
+    }
+  }
 
   const entry = rateLimitFallbackMap.get(key);
   if (!entry || now > entry.resetAt) {

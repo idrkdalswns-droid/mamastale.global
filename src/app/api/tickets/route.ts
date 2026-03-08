@@ -93,14 +93,15 @@ export async function GET(request: NextRequest) {
   }
 
   // Check first purchase eligibility: no prior processed orders in metadata
+  // LAUNCH-FIX: Renamed inner variable to avoid shadowing outer `profile`
   let isFirstPurchase = false;
   try {
-    const { data: profile } = await sb.client
+    const { data: metaProfile } = await sb.client
       .from("profiles")
       .select("metadata")
       .eq("id", user.id)
       .single();
-    const meta = (profile?.metadata as Record<string, unknown>) || {};
+    const meta = (metaProfile?.metadata as Record<string, unknown>) || {};
     const priorOrders = (meta.processed_orders as string[]) || [];
     isFirstPurchase = priorOrders.length === 0;
   } catch {

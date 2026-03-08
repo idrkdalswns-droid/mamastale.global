@@ -264,6 +264,14 @@ export async function POST(request: NextRequest) {
 
     // ─── Use Toss-confirmed amount (not client-supplied) ───
     const confirmedAmount = confirmData.totalAmount;
+
+    // LAUNCH-FIX: Verify Toss-confirmed amount matches client request (detect tampering/mismatch)
+    if (confirmedAmount !== numericAmount) {
+      console.error(`[SECURITY] Amount mismatch: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
+      // Still grant tickets based on Toss-confirmed amount (payment already charged)
+      // but log for security review
+    }
+
     const ticketCount = VALID_PRICES[confirmedAmount];
 
     if (!ticketCount) {

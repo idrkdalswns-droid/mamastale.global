@@ -56,9 +56,11 @@ export async function incrementTickets(
       return updated.free_stories_remaining;
     }
 
-    // CAS miss — another concurrent write changed the value; retry
+    // CAS miss — another concurrent write changed the value; retry with backoff
     if (attempt < MAX_CAS_RETRIES - 1) {
       console.warn(`[Tickets] CAS miss for user=${userId.slice(0, 8)}…, retry ${attempt + 1}/${MAX_CAS_RETRIES}`);
+      // LAUNCH-FIX: Add exponential backoff between CAS retries to reduce collision probability
+      await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
     }
   }
 

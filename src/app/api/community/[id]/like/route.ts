@@ -139,13 +139,25 @@ export async function POST(
     return sb.applyCookies(NextResponse.json({ liked: true, guest: true }));
   }
 
+  // LAUNCH-FIX: Verify story is public for authenticated likes (parity with guest check)
+  const { data: authPublicStory } = await sb.client
+    .from("stories")
+    .select("id")
+    .eq("id", storyId)
+    .eq("is_public", true)
+    .maybeSingle();
+  if (!authPublicStory) {
+    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+  }
+
   // Authenticated user — toggle like
+  // LAUNCH-FIX: Use maybeSingle() to avoid Supabase error on no-row-found
   const { data: existing } = await sb.client
     .from("likes")
     .select("id")
     .eq("user_id", user.id)
     .eq("story_id", storyId)
-    .single();
+    .maybeSingle();
 
   // Use service role for atomic counter updates
   const serviceClient = createServiceRoleClient();
