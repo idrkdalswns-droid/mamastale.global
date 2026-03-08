@@ -25,7 +25,6 @@ export default function Home() {
   const [show, setShow] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const [showNoTickets, setShowNoTickets] = useState(false);
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
@@ -726,53 +725,6 @@ export default function Home() {
           }}
           onCancel={() => setShowTicketConfirm(false)}
         />
-      )}
-
-      {/* SG-1: No Tickets Modal — accessible dialog */}
-      {showNoTickets && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="티켓 부족 안내"
-          tabIndex={-1}
-          onKeyDown={(e) => { if (e.key === "Escape") setShowNoTickets(false); }}
-        >
-          <div
-            className="w-full max-w-sm rounded-3xl p-8 text-center"
-            style={{
-              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-            }}
-          >
-            <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
-              티켓이 필요해요
-            </h2>
-            <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
-              동화를 만들려면 티켓이 필요합니다.<br />
-              티켓을 구매하고 나만의<br />
-              <span className="text-coral font-medium">마음 동화</span>를 만들어 보세요.
-            </p>
-            <Link
-              href="/pricing"
-              onClick={() => setShowNoTickets(false)}
-              className="block w-full py-3.5 rounded-full text-white text-sm font-medium no-underline transition-transform active:scale-[0.97] mb-3"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              티켓 구매하기
-            </Link>
-            <button
-              onClick={() => setShowNoTickets(false)}
-              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
       )}
 
       {/* SG-1: Payment Success Modal — accessible dialog */}

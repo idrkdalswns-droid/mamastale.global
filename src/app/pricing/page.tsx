@@ -115,7 +115,7 @@ function PricingContent() {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
         }
-        const res = await fetch("/api/tickets", { headers });
+        const res = await fetch("/api/tickets", { headers, credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           if (data.isFirstPurchase) setIsFirstPurchase(true);
@@ -749,7 +749,7 @@ function PricingContent() {
           <p className="text-[11px] text-brown-light font-light leading-relaxed">
             이 서비스는 전문 심리 상담을 대체하지 않습니다.
             <br />
-            심리적 위기 시 1393 (자살예방상담전화) 또는 109
+            심리적 위기 시 1393 (자살예방상담전화) 또는 1577-0199
             (정신건강위기상담전화)
           </p>
         </div>
