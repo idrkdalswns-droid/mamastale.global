@@ -38,6 +38,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
+  // LAUNCH-FIX: Body size limit (presence payloads are tiny, 4KB max)
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 4_000) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();

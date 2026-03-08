@@ -228,12 +228,13 @@ export async function GET(
     return sb.applyCookies(NextResponse.json({ liked: false, guest: true }));
   }
 
+  // LAUNCH-FIX: Use maybeSingle() to avoid PostgREST error on no-like-found
   const { data } = await sb.client
     .from("likes")
     .select("id")
     .eq("user_id", user.id)
     .eq("story_id", storyId)
-    .single();
+    .maybeSingle();
 
   return sb.applyCookies(NextResponse.json({ liked: !!data }));
 }

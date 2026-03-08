@@ -110,41 +110,49 @@ export async function POST(request: NextRequest) {
 
     // New user — no profile row yet → create with 1 free ticket
     if (!profile) {
-      const { data: newProfile, error: insertErr } = await sb.client
+      // LAUNCH-FIX: Use ignoreDuplicates to prevent overwriting existing profile
+      // Without this, concurrent requests for a new user would each reset
+      // free_stories_remaining to 1, allowing unlimited free ticket exploitation.
+      const { error: insertErr } = await sb.client
         .from("profiles")
         .upsert({
           id: user.id,
           free_stories_remaining: 1,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "id" })
-        .select("free_stories_remaining")
-        .single();
+        }, { onConflict: "id", ignoreDuplicates: true });
 
-      if (insertErr || !newProfile) {
-        console.error("[Tickets/Use] Profile create error:", insertErr?.code);
+      if (insertErr) {
+        console.error("[Tickets/Use] Profile create error:", insertErr.code);
         return sb.applyCookies(NextResponse.json(
           { error: "프로필 생성에 실패했습니다. 다시 시도해 주세요." },
           { status: 500 }
         ));
       }
 
-      const remaining = newProfile.free_stories_remaining ?? 0;
-      if (remaining <= 0) {
+      // Re-read actual profile (another concurrent request may have created it first)
+      const { data: actualProfile } = await sb.client
+        .from("profiles")
+        .select("free_stories_remaining")
+        .eq("id", user.id)
+        .single();
+
+      const actualRemaining = actualProfile?.free_stories_remaining ?? 0;
+      if (actualRemaining <= 0) {
         return sb.applyCookies(NextResponse.json(
           { error: "no_tickets", message: "티켓이 부족합니다." },
           { status: 403 }
         ));
       }
 
-      // Deduct 1 ticket from newly created profile (CAS guard)
+      // Deduct 1 ticket from actual remaining (CAS guard)
       const { data: updated, error: deductError } = await sb.client
         .from("profiles")
         .update({
-          free_stories_remaining: remaining - 1,
+          free_stories_remaining: actualRemaining - 1,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
-        .eq("free_stories_remaining", remaining)
+        .eq("free_stories_remaining", actualRemaining)
         .select("free_stories_remaining")
         .single();
 

@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
     const parsedStars = Number.isFinite(Number(stars)) ? Math.round(Number(stars)) : 5;
     const safeStars = Math.min(5, Math.max(1, parsedStars));
 
-    if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
+    // LAUNCH-FIX: Check childInfo for profanity too (visible in community)
+    if (containsProfanity(safeContent) || containsProfanity(safeAlias) || (safeChildInfo && containsProfanity(safeChildInfo))) {
       return sb.applyCookies(NextResponse.json(
         { error: "부적절한 표현이 포함되어 있습니다." },
         { status: 400 }

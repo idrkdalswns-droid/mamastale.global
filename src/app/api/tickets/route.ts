@@ -72,22 +72,29 @@ export async function GET(request: NextRequest) {
 
   // New user — no profile row yet → auto-create with 1 free ticket
   if (!profile) {
-    const { data: newProfile, error: upsertErr } = await sb.client
+    // LAUNCH-FIX: Use ignoreDuplicates to prevent overwriting existing profile
+    // (race between GET /api/tickets and POST /api/tickets/use could reset remaining to 1)
+    const { error: upsertErr } = await sb.client
       .from("profiles")
       .upsert({
         id: user.id,
         free_stories_remaining: 1,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "id" })
-      .select("free_stories_remaining")
-      .single();
+      }, { onConflict: "id", ignoreDuplicates: true });
 
     if (upsertErr) {
       console.error("[Tickets] Profile create error:", upsertErr.code);
       return sb.applyCookies(NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 }));
     }
 
-    remaining = newProfile?.free_stories_remaining ?? 1;
+    // Re-read actual value (insert may have been a no-op if profile already existed)
+    const { data: actualProfile } = await sb.client
+      .from("profiles")
+      .select("free_stories_remaining")
+      .eq("id", user.id)
+      .single();
+
+    remaining = actualProfile?.free_stories_remaining ?? 1;
   } else {
     remaining = profile.free_stories_remaining ?? 0;
   }

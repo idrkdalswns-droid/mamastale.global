@@ -12,6 +12,12 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
+  // LAUNCH-FIX: Body size limit (delete confirmation is tiny, 4KB max)
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 4_000) {
+    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+  }
+
   // JP-06: Require explicit confirmation in request body
   let body;
   try {

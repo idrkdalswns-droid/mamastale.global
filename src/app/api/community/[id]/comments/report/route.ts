@@ -65,6 +65,12 @@ export async function POST(
   }
 
   try {
+    // LAUNCH-FIX: Body size limit (report payloads are tiny, 4KB max)
+    const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+    if (contentLength > 4_000) {
+      return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+    }
+
     let body;
     try {
       body = await request.json();
