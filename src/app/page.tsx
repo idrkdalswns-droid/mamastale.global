@@ -466,7 +466,7 @@ export default function Home() {
           {user && !authLoading && (
             <div className="mb-4 px-4 py-2.5 rounded-2xl" style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}>
               <p className="text-sm text-brown font-light">
-                <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 환영합니다
+                <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0] || "회원"}</span>님, 환영합니다
               </p>
             </div>
           )}
@@ -567,14 +567,15 @@ export default function Home() {
           {/* CTA button */}
           <button
             onClick={handleStartStory}
-            disabled={!!user && ticketsRemaining === null && !authLoading}
+            disabled={authLoading || (!!user && ticketsRemaining === null)}
             className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
             }}
           >
-            {user && ticketsRemaining === null && !authLoading ? (
+            {/* R3-FIX(A3): Show spinner during authLoading too */}
+            {authLoading || (user && ticketsRemaining === null) ? (
               <span className="inline-flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 불러오는 중...

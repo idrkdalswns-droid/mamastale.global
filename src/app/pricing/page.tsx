@@ -192,7 +192,8 @@ function PricingContent() {
         setIsProcessing(false);
       }
     },
-    [isProcessing, user, authLoading, tossClientKey]
+    // R3-FIX(A1): Added isFirstPurchase to prevent stale closure on first-purchase discount
+    [isProcessing, user, authLoading, tossClientKey, isFirstPurchase]
   );
 
   // Payment with confirmation step
