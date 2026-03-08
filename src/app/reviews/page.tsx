@@ -124,7 +124,7 @@ export default function ReviewsPage() {
 
         {/* Aggregate rating */}
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-amber-400 text-lg">{"★".repeat(5)}</span>
+          <span className="text-lg" style={{ color: "#E07A5F" }}>{"★".repeat(5)}</span>
           <span className="text-sm text-brown font-semibold">
             4.8 <span className="text-brown-pale font-light">/ 5.0</span>
           </span>

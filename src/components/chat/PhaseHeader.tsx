@@ -149,7 +149,7 @@ export default function PhaseHeader({
                   setFontSize(s);
                   setShowSettings(false);
                 }}
-                className="flex-1 py-1.5 rounded-lg text-center transition-all"
+                className="flex-1 py-1.5 min-h-[44px] rounded-lg text-center transition-all flex items-center justify-center"
                 role="menuitem"
                 style={{
                   fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,

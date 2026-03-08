@@ -165,7 +165,7 @@ function PaymentSuccessContent() {
 
   // Check if there's a saved chat to resume
   useEffect(() => {
-    setHasSavedChat(!!localStorage.getItem("mamastale_chat_state"));
+    try { setHasSavedChat(!!localStorage.getItem("mamastale_chat_state")); } catch { /* private browsing */ }
   }, []);
 
   if (status === "confirming") {
