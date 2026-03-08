@@ -296,7 +296,7 @@ function PaymentSuccessContent() {
         <div className="mt-4 pt-4 border-t border-brown-pale/10 space-y-2">
           <button
             onClick={() => router.push("/community")}
-            className="w-full py-2.5 rounded-full text-sm font-medium text-brown-mid no-underline transition-all active:scale-[0.97]"
+            className="w-full py-2.5 min-h-[44px] rounded-full text-sm font-medium text-brown-mid no-underline transition-all active:scale-[0.97]"
             style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
           >
             커뮤니티 둘러보기
@@ -319,7 +319,7 @@ function PaymentSuccessContent() {
                 } catch { /* ignore */ }
               }
             }}
-            className="w-full py-2.5 rounded-full text-sm font-medium text-brown-pale no-underline transition-all active:scale-[0.97]"
+            className="w-full py-2.5 min-h-[44px] rounded-full text-sm font-medium text-brown-pale no-underline transition-all active:scale-[0.97]"
           >
             {shareCopied ? "✓ 링크가 복사되었어요" : "친구에게 공유하기"}
           </button>

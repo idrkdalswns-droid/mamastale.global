@@ -114,7 +114,7 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
               결제 후 대화가 그대로 이어집니다 · 완성된 동화는 서재에 영구 보관
             </p>
             {onGoHome && (
-              <button onClick={onGoHome} className="block w-full mt-3 text-[11px] text-brown-pale font-light text-center py-2">
+              <button onClick={onGoHome} className="block w-full mt-3 text-[11px] text-brown-pale font-light text-center py-2 min-h-[44px]">
                 홈으로 돌아가기
               </button>
             )}
@@ -141,7 +141,7 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
               대화 내용은 안전하게 보관됩니다
             </p>
             {onGoHome && (
-              <button onClick={onGoHome} className="block w-full mt-2 text-[11px] text-brown-pale font-light text-center py-2">
+              <button onClick={onGoHome} className="block w-full mt-2 text-[11px] text-brown-pale font-light text-center py-2 min-h-[44px]">
                 홈으로 돌아가기
               </button>
             )}

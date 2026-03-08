@@ -91,14 +91,14 @@ export default function LibraryPage() {
             <div className="flex gap-2">
               <Link
                 href="/?action=start"
-                className="flex-1 py-2.5 rounded-full text-sm font-medium text-white text-center no-underline transition-all active:scale-[0.97]"
+                className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white text-center no-underline transition-all active:scale-[0.97] inline-flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
               >
                 이어서 대화하기
               </Link>
               <button
                 onClick={() => { clearStorage(); setDraftInfo(null); }}
-                className="px-4 py-2.5 rounded-full text-xs font-light text-brown-pale transition-all"
+                className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
                 style={{ border: "1px solid rgba(196,149,106,0.2)" }}
               >
                 삭제
