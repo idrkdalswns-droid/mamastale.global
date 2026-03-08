@@ -141,9 +141,10 @@ export async function POST(request: NextRequest) {
     if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
       return NextResponse.json({ error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." }, { status: 403 });
     }
-  } else if (!hasActiveTickets && userMsgCount > GUEST_TURN_LIMIT) {
-    // CR2-FIX: Authenticated users without tickets also have a server-side turn limit.
-    // Previously missing in stream endpoint, allowing unlimited free usage via API.
+  } else if (!hasActiveTickets && !isPremiumUser && userMsgCount > GUEST_TURN_LIMIT) {
+    // CR2-FIX: Authenticated users without tickets AND no purchase history have a turn limit.
+    // Users who purchased (isPremiumUser) already used a ticket to start the session —
+    // remaining balance may be 0 but the session is legitimate.
     return NextResponse.json({ error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." }, { status: 403 });
   }
 
