@@ -215,7 +215,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
               animation: userMsgCount >= FREE_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
             }}
           >
-            {userMsgCount >= FREE_TURN_LIMIT - 1 ? "" : ""}
             대화 {userMsgCount}/{FREE_TURN_LIMIT}회
             {userMsgCount === FREE_TURN_LIMIT - 1 && " · 마지막 대화예요!"}
           </div>

@@ -198,7 +198,7 @@ export function ReviewSection() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowForm(false)}
-              className="flex-1 py-2.5 rounded-full text-xs font-medium text-brown-pale"
+              className="flex-1 py-2.5 rounded-full text-xs font-medium text-brown-pale min-h-[44px]"
               style={{ border: "1px solid rgba(196,149,106,0.15)" }}
             >
               취소
@@ -206,7 +206,7 @@ export function ReviewSection() {
             <button
               onClick={handleSubmit}
               disabled={loading || !content.trim() || !alias.trim()}
-              className="flex-1 py-2.5 rounded-full text-xs font-medium text-white disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-full text-xs font-medium text-white disabled:opacity-50 min-h-[44px]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
             >
               {loading ? "등록 중..." : "후기 등록"}

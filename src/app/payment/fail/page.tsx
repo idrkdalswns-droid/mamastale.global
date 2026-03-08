@@ -75,7 +75,7 @@ function PaymentFailContent() {
         )}
 
         <p className="text-sm text-brown-light font-light mb-6 break-keep">
-          카드 정보를 확인하거나 다른 카드로 다시 시도해 주세요
+          결제 정보를 확인하시거나 다른 결제 수단으로 다시 시도해 주세요
         </p>
 
         <Link
