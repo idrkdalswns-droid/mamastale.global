@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 
+const PARENT_ROLE_OPTIONS = [
+  { value: "엄마", label: "엄마" },
+  { value: "아빠", label: "아빠" },
+  { value: "할머니", label: "할머니" },
+  { value: "할아버지", label: "할아버지" },
+  { value: "기타", label: "기타 보호자" },
+];
+
+const PARENT_AGE_OPTIONS = [
+  { value: "", label: "선택 안함" },
+  { value: "20s", label: "20대" },
+  { value: "30s", label: "30대" },
+  { value: "40s", label: "40대" },
+  { value: "50+", label: "50대 이상" },
+];
+
 const CHILD_AGE_OPTIONS = [
   { value: "", label: "선택 안함" },
   { value: "0-2", label: "0~2세 (영아)" },
@@ -74,13 +90,21 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   const [idx, setIdx] = useState(hasSeenOnboarding ? slides.length - 1 : 0);
   const [anim, setAnim] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
-  // Restore previous child age selection for returning users
+  // Restore previous selections for returning users
+  const [parentRole, setParentRole] = useState(() => {
+    try { return localStorage.getItem("mamastale_parent_role") || ""; } catch { return ""; }
+  });
+  const [parentAge, setParentAge] = useState(() => {
+    try { return localStorage.getItem("mamastale_parent_age") || ""; } catch { return ""; }
+  });
   const [childAge, setChildAge] = useState(() => {
     try { return localStorage.getItem("mamastale_child_age") || ""; } catch { return ""; }
   });
 
   const saveAndDone = () => {
     try {
+      if (parentRole) localStorage.setItem("mamastale_parent_role", parentRole);
+      if (parentAge) localStorage.setItem("mamastale_parent_age", parentAge);
       if (childAge) localStorage.setItem("mamastale_child_age", childAge);
       localStorage.setItem("mamastale_onboarding_done", "1");
     } catch {}
@@ -166,25 +190,103 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
         </h2>
 
         {s.body === "_childAge_" ? (
-          <div className="w-full max-w-xs space-y-5">
+          <div className="w-full max-w-xs space-y-4">
+            {/* Parent role selector — chip buttons */}
+            <div>
+              <label className="block text-xs text-brown font-medium mb-2.5 text-left">
+                아이와의 관계
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {PARENT_ROLE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setParentRole(o.value)}
+                    className="px-4 py-2.5 rounded-full text-[13px] font-medium transition-all active:scale-[0.96] min-h-[40px]"
+                    style={{
+                      background: parentRole === o.value
+                        ? "linear-gradient(135deg, #E07A5F, #C96B52)"
+                        : "rgba(255,255,255,0.7)",
+                      color: parentRole === o.value ? "#FFF" : "#5A3E2B",
+                      border: parentRole === o.value
+                        ? "1.5px solid transparent"
+                        : "1.5px solid rgba(196,149,106,0.2)",
+                      boxShadow: parentRole === o.value
+                        ? "0 4px 12px rgba(224,122,95,0.25)"
+                        : "none",
+                    }}
+                    aria-pressed={parentRole === o.value}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Parent age selector */}
+            <div>
+              <label className="block text-xs text-brown font-medium mb-2 text-left">
+                연령대 (선택)
+              </label>
+              <div className="flex gap-2">
+                {PARENT_AGE_OPTIONS.filter(o => o.value).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setParentAge(parentAge === o.value ? "" : o.value)}
+                    className="flex-1 py-2.5 rounded-xl text-[13px] font-medium transition-all active:scale-[0.96] min-h-[40px]"
+                    style={{
+                      background: parentAge === o.value
+                        ? "linear-gradient(135deg, #6D4C91, #8B6FB0)"
+                        : "rgba(255,255,255,0.7)",
+                      color: parentAge === o.value ? "#FFF" : "#5A3E2B",
+                      border: parentAge === o.value
+                        ? "1.5px solid transparent"
+                        : "1.5px solid rgba(196,149,106,0.2)",
+                      boxShadow: parentAge === o.value
+                        ? "0 4px 12px rgba(109,76,145,0.25)"
+                        : "none",
+                    }}
+                    aria-pressed={parentAge === o.value}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Child age selector */}
             <div>
-              <label className="block text-xs text-brown-pale font-light mb-2 text-left">
-                아이의 연령대 (선택)
+              <label className="block text-xs text-brown font-medium mb-2 text-left">
+                자녀 연령대 (선택)
               </label>
-              <select
-                value={childAge}
-                onChange={(e) => setChildAge(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl text-sm bg-white/70 border border-brown-pale/15 text-brown outline-none"
-                aria-label="자녀 연령대 선택"
-              >
-                {CHILD_AGE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+              <div className="flex gap-2">
+                {CHILD_AGE_OPTIONS.filter(o => o.value).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setChildAge(childAge === o.value ? "" : o.value)}
+                    className="flex-1 py-2.5 rounded-xl text-[12px] font-medium transition-all active:scale-[0.96] min-h-[40px]"
+                    style={{
+                      background: childAge === o.value
+                        ? "linear-gradient(135deg, #7FBFB0, #5FA89A)"
+                        : "rgba(255,255,255,0.7)",
+                      color: childAge === o.value ? "#FFF" : "#5A3E2B",
+                      border: childAge === o.value
+                        ? "1.5px solid transparent"
+                        : "1.5px solid rgba(196,149,106,0.2)",
+                      boxShadow: childAge === o.value
+                        ? "0 4px 12px rgba(127,191,176,0.25)"
+                        : "none",
+                    }}
+                    aria-pressed={childAge === o.value}
+                  >
+                    {o.label}
+                  </button>
                 ))}
-              </select>
+              </div>
               <p className="text-[10px] text-brown-pale font-light mt-1.5 text-left">
-                동화의 언어 수준이 아이 연령에 맞게 조절됩니다<br />
-                자녀가 여러 명이면 동화를 들려줄 아이 기준으로 선택해 주세요
+                동화의 언어 수준이 아이 연령에 맞게 조절됩니다
               </p>
             </div>
 

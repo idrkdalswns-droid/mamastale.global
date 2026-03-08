@@ -44,7 +44,7 @@ const PRODUCTS: Record<PriceType, PricingProduct> = {
 };
 
 const FIRST_PURCHASE_PRODUCT: PricingProduct = {
-  name: "동화 스토리 하나 완성 티켓 (첫 구매 할인)",
+  name: "동화 스토리 하나 완성 티켓 (론칭 할인)",
   amount: 3920,
   tickets: 1,
 };
@@ -154,7 +154,7 @@ function PricingContent() {
 
       try {
         const product =
-          productType === "ticket" && isFirstPurchase
+          productType === "ticket"
             ? FIRST_PURCHASE_PRODUCT
             : PRODUCTS[productType];
         const orderId = `order_${crypto.randomUUID()}`;
@@ -190,7 +190,7 @@ function PricingContent() {
         setIsProcessing(false);
       }
     },
-    [isProcessing, user, authLoading, tossClientKey, isFirstPurchase]
+    [isProcessing, user, authLoading, tossClientKey]
   );
 
   // Payment with confirmation step
@@ -201,7 +201,7 @@ function PricingContent() {
       return;
     }
     const product =
-      productType === "ticket" && isFirstPurchase
+      productType === "ticket"
         ? FIRST_PURCHASE_PRODUCT
         : PRODUCTS[productType];
     setConfirmModal({
@@ -240,7 +240,7 @@ function PricingContent() {
         color="rgba(184,216,208,0.07)"
       />
 
-      <div className="relative z-[1] max-w-lg mx-auto px-6 pt-12 pb-28">
+      <div className="relative z-[1] max-w-lg mx-auto px-6 pt-12 pb-40">
         {/* ════════════════════════════════════════
             HERO
             ════════════════════════════════════════ */}
@@ -266,6 +266,9 @@ function PricingContent() {
           </h2>
           <p className="text-[11px] text-brown-light font-light text-center mb-5">
             마마스테일 강민준 대표의 실제 사연을 바탕으로 마마스테일 서비스의 탄생 배경을 알 수 있는 동화입니다
+          </p>
+          <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
+            ← 옆으로 넘겨보세요 →
           </p>
           <div
             className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
@@ -355,7 +358,10 @@ function PricingContent() {
             )}
           </div>
           <p className="text-[11px] text-brown-pale font-light text-center mt-2">
-            완성된 동화 스토리에 일러스트와 음성을 더한 영상 예시입니다 (영상 제작 기능은 준비 중)
+            완성된 동화 스토리에 일러스트와 음성을 더한 영상 예시입니다
+          </p>
+          <p className="text-[11px] text-brown-light font-light text-center mt-1.5 leading-relaxed break-keep">
+            곧 줌 클래스를 통해 마마스테일로 만든 스토리를 직접 일러스트·영상으로 제작하는 방법을 알려드릴 예정입니다
           </p>
         </section>
 
@@ -556,28 +562,29 @@ function PricingContent() {
           <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
             ₩14,900 · 1권당 ₩3,725
           </p>
+          <p className="text-[10px] text-center text-brown-pale/60 font-light mt-1">
+            구매 확정 후 환불이 불가합니다
+          </p>
         </div>
 
         {/* ════════════════════════════════════════
             SINGLE TICKET (₩4,900) — SECONDARY
             ════════════════════════════════════════ */}
         <div
-          className={`rounded-2xl p-5 mb-6 relative ${isFirstPurchase ? "pt-6" : ""}`}
+          className="rounded-2xl p-5 mb-6 relative pt-6"
           style={{
             background: "rgba(255,255,255,0.6)",
-            border: `1.5px solid ${isFirstPurchase ? "#E07A5F" : "rgba(224,122,95,0.15)"}`,
+            border: "1.5px solid #E07A5F",
           }}
         >
-          {isFirstPurchase && (
-            <div
-              className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              }}
-            >
-              첫 구매 20% 할인
-            </div>
-          )}
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+            }}
+          >
+            론칭 기념 20% 할인
+          </div>
 
           <div className="text-center mb-4">
             <h3 className="font-serif text-base text-brown font-semibold">
@@ -586,28 +593,17 @@ function PricingContent() {
             <p className="text-xs text-brown-light font-light mt-1 break-keep">
               15분 뒤, 아이가 매일 밤 읽어달라는 동화가 생깁니다
             </p>
-            {isFirstPurchase ? (
-              <div className="flex items-baseline justify-center gap-2 mt-2">
-                <span className="text-sm text-brown-pale line-through">
-                  ₩4,900
-                </span>
-                <span className="font-serif text-2xl font-bold text-brown">
-                  ₩3,920
-                </span>
-                <span className="text-sm text-brown-light font-light">
-                  /1권
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-baseline justify-center gap-1 mt-2">
-                <span className="font-serif text-2xl font-bold text-brown">
-                  ₩4,900
-                </span>
-                <span className="text-sm text-brown-light font-light">
-                  /1권
-                </span>
-              </div>
-            )}
+            <div className="flex items-baseline justify-center gap-2 mt-2">
+              <span className="text-sm text-brown-pale line-through">
+                ₩4,900
+              </span>
+              <span className="font-serif text-2xl font-bold text-brown">
+                ₩3,920
+              </span>
+              <span className="text-sm text-brown-light font-light">
+                /1권
+              </span>
+            </div>
           </div>
 
           <ul className="space-y-2 mb-4">
@@ -637,12 +633,13 @@ function PricingContent() {
           >
             {isProcessing
               ? "결제 페이지로 이동 중..."
-              : isFirstPurchase
-                ? "첫 동화 만들기"
-                : "동화 한 편 만들기"}
+              : "동화 한 편 만들기"}
           </button>
           <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
-            {isFirstPurchase ? "₩3,920 (20% 할인)" : "₩4,900"}
+            ₩3,920 (론칭 20% 할인)
+          </p>
+          <p className="text-[10px] text-center text-brown-pale/60 font-light mt-1">
+            구매 확정 후 환불이 불가합니다
           </p>
         </div>
 
@@ -684,6 +681,46 @@ function PricingContent() {
                 <span className="text-xs text-brown-light font-light">
                   {text}
                 </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ════════════════════════════════════════
+            UPCOMING FEATURES
+            ════════════════════════════════════════ */}
+        <div
+          className="rounded-2xl p-5 mb-4"
+          style={{
+            background: "linear-gradient(135deg, rgba(109,76,145,0.04), rgba(224,122,95,0.04))",
+            border: "1px solid rgba(109,76,145,0.10)",
+          }}
+        >
+          <h3 className="font-serif text-sm font-semibold text-brown mb-1 text-center">
+            준비 중인 기능
+          </h3>
+          <p className="text-[10px] text-brown-pale font-light text-center mb-3">
+            더 나은 경험을 위해 다음 기능들을 준비하고 있어요
+          </p>
+          <div className="space-y-2.5">
+            {[
+              { title: "선물하기", desc: "소중한 사람에게 동화 티켓을 선물할 수 있어요" },
+              { title: "종이책 인쇄", desc: "완성된 동화를 실물 그림책으로 만들어 드려요" },
+              { title: "다국어 동화", desc: "한국어 외 영어, 일본어 등 이중언어 동화를 지원해요" },
+              { title: "조부모 버전", desc: "할머니, 할아버지도 손주를 위한 동화를 만들 수 있어요" },
+              { title: "샘플 동화 읽어보기", desc: "구매 전 완성된 동화 샘플을 미리 읽어볼 수 있어요" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span
+                  className="flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold"
+                  style={{ background: "linear-gradient(135deg, #6D4C91, #8B6FB0)" }}
+                >
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-xs text-brown font-medium">{item.title}</p>
+                  <p className="text-[10px] text-brown-light font-light mt-0.5">{item.desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -797,7 +834,7 @@ function PricingContent() {
               boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
             }}
           >
-            {isFirstPurchase ? "1편 · ₩3,920" : "1편 · ₩4,900"}
+            1편 · ₩3,920
           </button>
         </div>
       </div>

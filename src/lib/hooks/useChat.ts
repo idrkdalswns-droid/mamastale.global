@@ -121,13 +121,28 @@ const AGE_LABELS: Record<string, string> = {
   "6-8": "초등학교에 들어간 아이를 돌보시느라",
 };
 
+const ROLE_TITLES: Record<string, { greeting: string; honorific: string }> = {
+  "엄마": { greeting: "어머니", honorific: "어머니" },
+  "아빠": { greeting: "아버지", honorific: "아버지" },
+  "할머니": { greeting: "할머니", honorific: "할머니" },
+  "할아버지": { greeting: "할아버지", honorific: "할아버지" },
+  "기타": { greeting: "보호자님", honorific: "보호자님" },
+};
+
 function buildInitialMessage(): string {
   let childAge = "";
-  try { childAge = localStorage?.getItem("mamastale_child_age") || ""; } catch {}
+  let parentRole = "";
+  try {
+    childAge = localStorage?.getItem("mamastale_child_age") || "";
+    parentRole = localStorage?.getItem("mamastale_parent_role") || "";
+  } catch {}
+
+  const role = ROLE_TITLES[parentRole] || ROLE_TITLES["엄마"];
   const ageNote = childAge && AGE_LABELS[childAge]
     ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
     : "";
-  return `안녕하세요, 어머니.\n\n${ageNote}이곳은 어머니의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. 어머니의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 어머니의 마음은 어떠신가요?`;
+
+  return `안녕하세요, ${role.greeting}.\n\n${ageNote}이곳은 ${role.honorific}의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. ${role.honorific}의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 ${role.honorific}의 마음은 어떠신가요?`;
 }
 
 const makeInitialMessages = (): Message[] => [
@@ -187,9 +202,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
           content: m.content,
         }));
 
-      // Read child age from localStorage (set during onboarding)
+      // Read onboarding data from localStorage (set during onboarding)
       let childAge: string | undefined;
-      try { childAge = localStorage.getItem("mamastale_child_age") || undefined; } catch {}
+      let parentRole: string | undefined;
+      let parentAge: string | undefined;
+      try {
+        childAge = localStorage.getItem("mamastale_child_age") || undefined;
+        parentRole = localStorage.getItem("mamastale_parent_role") || undefined;
+        parentAge = localStorage.getItem("mamastale_parent_age") || undefined;
+      } catch {}
 
       // CTO-FIX: Include Bearer token for premium detection in WebView/mobile
       const chatHeaders = await getAuthHeaders();
@@ -201,6 +222,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: apiMessages,
           sessionId: state.sessionId,
           childAge,
+          parentRole,
+          parentAge,
           currentPhase: state.currentPhase,
           turnCountInCurrentPhase: newTurnCount,
           storySeed: state.storySeed,
@@ -344,7 +367,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         .map((m) => ({ role: m.role, content: m.content }));
 
       let childAge: string | undefined;
-      try { childAge = localStorage.getItem("mamastale_child_age") || undefined; } catch {}
+      let parentRole: string | undefined;
+      let parentAge: string | undefined;
+      try {
+        childAge = localStorage.getItem("mamastale_child_age") || undefined;
+        parentRole = localStorage.getItem("mamastale_parent_role") || undefined;
+        parentAge = localStorage.getItem("mamastale_parent_age") || undefined;
+      } catch {}
 
       const chatHeaders = await getAuthHeaders();
 
@@ -355,6 +384,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: apiMessages,
           sessionId: state.sessionId,
           childAge,
+          parentRole,
+          parentAge,
           currentPhase: state.currentPhase,
           turnCountInCurrentPhase: newTurnCount,
           storySeed: state.storySeed,

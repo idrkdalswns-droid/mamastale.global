@@ -450,19 +450,6 @@ export default function Home() {
             </p>
           )}
 
-          {/* 마마스테일이란 */}
-          <Link
-            href="/about"
-            className="w-full py-3.5 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
-            style={{
-              background: "linear-gradient(135deg, rgba(109,76,145,0.13), rgba(224,122,95,0.10))",
-              color: "#6D4C91",
-              border: "1.5px solid rgba(109,76,145,0.22)",
-            }}
-          >
-            마마스테일이란 →
-          </Link>
-
           {/* ════════════════════════════════════════
               STORYBOOK GALLERY — Product showcase
               ════════════════════════════════════════ */}
@@ -470,8 +457,11 @@ export default function Home() {
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               이런 동화가 완성돼요
             </p>
-            <p className="text-[10px] text-brown-pale font-light text-center mb-3">
+            <p className="text-[10px] text-brown-pale font-light text-center mb-1">
               실제 완성된 동화의 한 장면이에요
+            </p>
+            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
+              ← 옆으로 넘겨보세요 →
             </p>
             <div
               className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
@@ -570,6 +560,19 @@ export default function Home() {
               )}
             </div>
           )}
+
+          {/* 서비스 소개 */}
+          <Link
+            href="/about"
+            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            style={{
+              background: "linear-gradient(135deg, rgba(109,76,145,0.13), rgba(224,122,95,0.10))",
+              color: "#6D4C91",
+              border: "1.5px solid rgba(109,76,145,0.22)",
+            }}
+          >
+            서비스 소개 →
+          </Link>
 
           {/* Draft resume card */}
           {draftInfo && (

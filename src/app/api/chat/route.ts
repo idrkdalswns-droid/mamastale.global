@@ -39,6 +39,8 @@ const chatRequestSchema = z.object({
   ).max(120),  // Generous limit for long conversations
   sessionId: z.string().optional(),
   childAge: z.enum(["0-2", "3-5", "6-8"]).optional(),  // JP-FIX(1): Strict enum at schema level
+  parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
+  parentAge: z.enum(["20s", "30s", "40s", "50+"]).optional(),
   currentPhase: z.number().min(1).max(4).optional(),
   turnCountInCurrentPhase: z.number().min(0).optional(),
   storySeed: storySeedSchema,
@@ -219,7 +221,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
+    const { messages, childAge, parentRole, parentAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
 
     // ─── Server-side turn limit (guests AND authenticated users without tickets) ───
     const userMsgCount = messages.filter((m) => m.role === "user").length;
@@ -364,6 +366,30 @@ export async function POST(request: NextRequest) {
     };
     if (childAge && (VALID_CHILD_AGES as readonly string[]).includes(childAge)) {
       systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge]}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
+    }
+
+    // Inject parent role & age context for personalized conversation
+    const roleLabels: Record<string, string> = {
+      "엄마": "어머니(엄마)",
+      "아빠": "아버지(아빠)",
+      "할머니": "할머니",
+      "할아버지": "할아버지",
+      "기타": "보호자",
+    };
+    const parentAgeLabels: Record<string, string> = {
+      "20s": "20대",
+      "30s": "30대",
+      "40s": "40대",
+      "50+": "50대 이상",
+    };
+    if (parentRole && roleLabels[parentRole]) {
+      let parentContext = `\n\n<parent_context>\n사용자의 역할: ${roleLabels[parentRole]}`;
+      if (parentAge && parentAgeLabels[parentAge]) {
+        parentContext += `\n사용자의 연령대: ${parentAgeLabels[parentAge]}`;
+      }
+      parentContext += `\n대화 시 "어머니" 대신 적절한 호칭을 사용하십시오. (예: 아버지→"아버지", 할머니→"할머니")`;
+      parentContext += `\n</parent_context>`;
+      systemPrompt += parentContext;
     }
 
     if (safeTurnCount >= MAX_TURNS_PER_PHASE && safePhase < 4) {

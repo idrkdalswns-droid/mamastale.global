@@ -140,12 +140,15 @@ export function EmptySlot({ isCTA, isEmpty }: EmptySlotProps) {
       }}
       aria-hidden="true"
     >
-      {/* Ghost book silhouette */}
-      <div className="w-full h-full flex items-center justify-center opacity-[0.08]">
-        <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+      {/* Ghost book with message */}
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+        <svg width="16" height="22" viewBox="0 0 20 28" fill="none" className="opacity-[0.08]">
           <rect x="1" y="1" width="18" height="26" rx="1" stroke="currentColor" strokeWidth="1.5" className="text-brown" />
           <line x1="5" y1="1" x2="5" y2="27" stroke="currentColor" strokeWidth="1" className="text-brown" />
         </svg>
+        <span className="text-[7px] text-brown-pale/30 font-light text-center leading-tight px-1">
+          아직 채워지지 않은 이야기
+        </span>
       </div>
     </div>
   );
