@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
   // ─── Auth check (optional — guests allowed with limits) ───
   let userId: string | null = null;
   let isPremiumUser = false;
+  let hasActiveTickets = false;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -149,17 +150,18 @@ export async function POST(request: NextRequest) {
       }
       userId = user?.id || null;
 
-      // ─── Premium user detection: check if user has ever purchased tickets ───
+      // ─── Premium user + ticket detection: check purchase history AND current balance ───
       if (userId) {
         try {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("metadata")
+            .select("metadata, free_stories_remaining")
             .eq("id", userId)
             .single();
           const metadata = (profile?.metadata as Record<string, unknown>) || {};
           const processedOrders = (metadata.processed_orders as string[]) || [];
           isPremiumUser = processedOrders.length > 0;
+          hasActiveTickets = (profile?.free_stories_remaining ?? 0) > 0;
         } catch {
           // Profile check failed — default to standard tier
         }
@@ -219,9 +221,9 @@ export async function POST(request: NextRequest) {
 
     const { messages, childAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
 
-    // ─── Server-side guest turn limit ───
+    // ─── Server-side turn limit (guests AND authenticated users without tickets) ───
+    const userMsgCount = messages.filter((m) => m.role === "user").length;
     if (!isAuthenticated) {
-      const userMsgCount = messages.filter((m) => m.role === "user").length;
       const totalTurns = Math.ceil(messages.length / 2);
       if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
         return NextResponse.json(
@@ -229,6 +231,13 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
+    } else if (!hasActiveTickets && userMsgCount > GUEST_TURN_LIMIT) {
+      // CTO-FIX: Authenticated users without tickets also have a server-side turn limit.
+      // Previously only client-side enforcement existed, allowing DOM/API bypass.
+      return NextResponse.json(
+        { error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." },
+        { status: 403 }
+      );
     }
 
     // ─── MULTI-TIER CRISIS PRE-SCREENING (v2.0) ───

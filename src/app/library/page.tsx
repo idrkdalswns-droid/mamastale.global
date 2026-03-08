@@ -117,7 +117,7 @@ export default function LibraryPage() {
             <p className="text-sm text-brown-light font-light mb-4">{error}</p>
             <button
               onClick={() => { setError(""); setLoading(true); fetchStories(); }}
-              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
               style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
             >
               다시 시도

@@ -131,10 +131,11 @@ export default function StoryCompleteCTA({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 1.2 }}
           onClick={async () => {
+            const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
             const shareData = {
               title: "나만의 마음 동화가 완성되었어요",
               text: "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
-              url: "https://mamastale-global.pages.dev",
+              url: siteUrl,
             };
             if (navigator.share) {
               navigator.share(shareData).catch(() => {});

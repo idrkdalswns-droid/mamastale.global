@@ -303,10 +303,11 @@ function PaymentSuccessContent() {
           </button>
           <button
             onClick={async () => {
+              const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
               const shareData = {
                 title: "mamastale - 엄마의 이야기가 아이의 동화가 됩니다",
                 text: "15분 AI 대화로 세상에 하나뿐인 동화를 만들어보세요",
-                url: "https://mamastale-global.pages.dev",
+                url: siteUrl,
               };
               if (navigator.share) {
                 navigator.share(shareData).catch(() => {});

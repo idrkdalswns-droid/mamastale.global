@@ -21,7 +21,7 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
 
   const handleBuyTicket = () => {
     onPersistChat();
-    window.location.href = "/pricing?first=1";
+    window.location.href = "/pricing";
   };
 
   return (
