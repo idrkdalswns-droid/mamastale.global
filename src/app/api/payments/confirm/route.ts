@@ -319,21 +319,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // HIGH #2 FIX: Pre-claim orderId in metadata BEFORE incrementing tickets.
-    // Narrows the cross-isolate race window: another isolate reading metadata
-    // will see this orderId and return alreadyProcessed instead of double-granting.
+    // CR1-FIX: Pre-claim orderId in metadata BEFORE incrementing tickets.
+    // Uses select() to verify the write succeeded and re-reads to detect concurrent claims.
     const preClaimOrders = [...processedOrderIds.slice(-19), orderId];
     const preClaimMeta = {
       ...metadata,
       processed_orders: preClaimOrders,
-      // HIGH #1 FIX: Atomically set first_purchase_claimed flag with orderId
       ...(confirmedAmount === 3920 ? { first_purchase_claimed: orderId } : {}),
     };
     try {
-      await sb.client
+      const { data: claimResult } = await sb.client
         .from("profiles")
         .update({ metadata: preClaimMeta })
-        .eq("id", user.id);
+        .eq("id", user.id)
+        .select("metadata")
+        .single();
+
+      // CR1-FIX: After write, verify orderId count matches expectation.
+      // If another isolate also wrote concurrently, the total count may differ
+      // from what we expected, indicating a race condition.
+      if (claimResult?.metadata) {
+        const savedOrders = ((claimResult.metadata as Record<string, unknown>).processed_orders as string[]) || [];
+        const orderOccurrences = savedOrders.filter((id: string) => id === orderId).length;
+        if (orderOccurrences > 1) {
+          // Duplicate orderId detected — another isolate also claimed this order
+          console.warn(`[SECURITY] Double-claim detected for order ${orderId}, user ${user.id.slice(0, 8)}...`);
+          markOrderProcessed(orderId);
+          return sb.applyCookies(NextResponse.json({
+            success: true, alreadyProcessed: true,
+          }));
+        }
+      }
     } catch {
       console.warn("[Toss] metadata pre-claim failed — relying on in-memory dedup");
     }

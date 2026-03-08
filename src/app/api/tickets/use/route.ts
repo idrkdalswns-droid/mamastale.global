@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
     // Verifies the EXACT current value to ensure only one concurrent request can succeed.
     // LAUNCH-FIX: Auto-retry on CAS miss (concurrent write ≠ no tickets)
     let updated: { free_stories_remaining: number } | null = null;
-    for (let casAttempt = 0; casAttempt < 2; casAttempt++) {
+    for (let casAttempt = 0; casAttempt < 3; casAttempt++) {
       const currentRemaining = casAttempt === 0 ? remaining : (
         await sb.client.from("profiles").select("free_stories_remaining").eq("id", user.id).single()
       ).data?.free_stories_remaining ?? 0;
