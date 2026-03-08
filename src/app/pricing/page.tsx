@@ -153,8 +153,10 @@ function PricingContent() {
       setError("");
 
       try {
+        // ROUND1-FIX: Only apply launch discount for first-time ticket buyers.
+        // Previously always used FIRST_PURCHASE_PRODUCT, causing revenue loss for repeat buyers.
         const product =
-          productType === "ticket"
+          productType === "ticket" && isFirstPurchase
             ? FIRST_PURCHASE_PRODUCT
             : PRODUCTS[productType];
         const orderId = `order_${crypto.randomUUID()}`;
@@ -200,8 +202,9 @@ function PricingContent() {
       window.location.href = "/login?redirect=/pricing";
       return;
     }
+    // ROUND1-FIX: Match handlePayment logic — only apply discount for first purchase
     const product =
-      productType === "ticket"
+      productType === "ticket" && isFirstPurchase
         ? FIRST_PURCHASE_PRODUCT
         : PRODUCTS[productType];
     setConfirmModal({
@@ -577,14 +580,17 @@ function PricingContent() {
             border: "1.5px solid #E07A5F",
           }}
         >
-          <div
-            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-            }}
-          >
-            론칭 기념 20% 할인
-          </div>
+          {/* ROUND1-FIX: Conditionally show launch discount badge */}
+          {isFirstPurchase && (
+            <div
+              className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] text-white font-bold"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              }}
+            >
+              첫 구매 20% 할인
+            </div>
+          )}
 
           <div className="text-center mb-4">
             <h3 className="font-serif text-base text-brown font-semibold">
@@ -593,17 +599,28 @@ function PricingContent() {
             <p className="text-xs text-brown-light font-light mt-1 break-keep">
               15분 뒤, 아이가 매일 밤 읽어달라는 동화가 생깁니다
             </p>
-            <div className="flex items-baseline justify-center gap-2 mt-2">
-              <span className="text-sm text-brown-pale line-through">
-                ₩4,900
-              </span>
-              <span className="font-serif text-2xl font-bold text-brown">
-                ₩3,920
-              </span>
-              <span className="text-sm text-brown-light font-light">
-                /1권
-              </span>
-            </div>
+            {isFirstPurchase ? (
+              <div className="flex items-baseline justify-center gap-2 mt-2">
+                <span className="text-sm text-brown-pale line-through">
+                  ₩4,900
+                </span>
+                <span className="font-serif text-2xl font-bold text-brown">
+                  ₩3,920
+                </span>
+                <span className="text-sm text-brown-light font-light">
+                  /1권
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-baseline justify-center gap-2 mt-2">
+                <span className="font-serif text-2xl font-bold text-brown">
+                  ₩4,900
+                </span>
+                <span className="text-sm text-brown-light font-light">
+                  /1권
+                </span>
+              </div>
+            )}
           </div>
 
           <ul className="space-y-2 mb-4">
@@ -636,7 +653,7 @@ function PricingContent() {
               : "동화 한 편 만들기"}
           </button>
           <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
-            ₩3,920 (론칭 20% 할인)
+            {isFirstPurchase ? "₩3,920 (첫 구매 20% 할인)" : "₩4,900"}
           </p>
           <p className="text-[10px] text-center text-brown-pale/60 font-light mt-1">
             구매 확정 후 환불이 불가합니다
@@ -834,7 +851,7 @@ function PricingContent() {
               boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
             }}
           >
-            1편 · ₩3,920
+            1편 · {isFirstPurchase ? "₩3,920" : "₩4,900"}
           </button>
         </div>
       </div>

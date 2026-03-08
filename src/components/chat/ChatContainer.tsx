@@ -262,7 +262,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
 
       {/* "다음" button — shown after story is done, before celebration */}
       {storyDone && completedScenes.length > 0 && !showCelebration && (
-        <div className="sticky bottom-0 z-[60] bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+        <div className="z-[60] bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
           <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
             <button
               onClick={() => setShowCelebration(true)}
@@ -369,15 +369,17 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
 
       {/* P3-FIX(IL-2): Error retry button — shown when last message is an error */}
       {hasErrorMessage && !isLoading && !storyDone && (
-        <div className="sticky bottom-[80px] z-[60] flex justify-center pb-2">
+        <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-[60] flex justify-center pb-2">
           <button
             onClick={() => {
-              // Remove the error message and resend the last user message
+              // ROUND1-FIX: Remove error messages AND the last user message, then re-send.
+              // sendMessage() adds a new user message internally, so we must remove the original
+              // to prevent duplicate user bubbles in the chat.
               const lastUserMsg = [...messages].reverse().find(m => m.role === "user" && !m.isError);
               if (lastUserMsg) {
-                // Remove error messages from the end
-                const cleaned = messages.filter(m => !m.isError);
-                useChatStore.setState({ messages: cleaned });
+                const withoutErrors = messages.filter(m => !m.isError);
+                const withoutLastUser = withoutErrors.filter(m => m.id !== lastUserMsg.id);
+                useChatStore.setState({ messages: withoutLastUser });
                 sendMessage(lastUserMsg.content);
               }
             }}

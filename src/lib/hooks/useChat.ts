@@ -216,9 +216,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // CTO-FIX: Include Bearer token for premium detection in WebView/mobile
       const chatHeaders = await getAuthHeaders();
 
+      // ROUND1-FIX: 90s timeout to prevent infinite hang when Claude API is slow
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: chatHeaders,
+        signal: controller.signal,
         body: JSON.stringify({
           messages: apiMessages,
           sessionId: state.sessionId,
@@ -230,6 +235,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           storySeed: state.storySeed,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

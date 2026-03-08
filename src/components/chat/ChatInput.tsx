@@ -18,6 +18,9 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const taRef = useRef<HTMLTextAreaElement>(null);
+  // ROUND1-FIX: Ref-based mutex to prevent duplicate sends from rapid button taps.
+  // React state (isLoading) updates asynchronously, so rapid clicks can slip through.
+  const sendingRef = useRef(false);
   const p = PHASES[phase];
 
   const PHASE_PLACEHOLDERS: Record<number, string> = {
@@ -36,11 +39,13 @@ export default function ChatInput({
   }, []);
 
   const handleSend = useCallback(() => {
-    if (!input.trim() || isLoading || disabled) return;
+    if (!input.trim() || isLoading || disabled || sendingRef.current) return;
+    sendingRef.current = true;
     const text = input.trim();
     setInput("");
     if (taRef.current) taRef.current.style.height = "auto";
     onSend(text);
+    setTimeout(() => { sendingRef.current = false; }, 500);
     setTimeout(() => taRef.current?.focus(), 150);
   }, [input, isLoading, disabled, onSend]);
 
