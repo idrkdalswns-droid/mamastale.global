@@ -199,6 +199,19 @@
   animation: bookEntry 0.45s ease both;
 }
 
+/* ── 3D Library Room: CSS 3D utilities ── */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* 3D Room: back wall dark mode */
+.dark .room-back-wall {
+  background: linear-gradient(180deg, rgb(var(--cream)) 0%, rgb(var(--paper)) 100%) !important;
+}
+.dark .room-floor {
+  background: linear-gradient(180deg, rgba(60,42,28,0.4) 0%, rgba(40,28,18,0.6) 100%) !important;
+}
+
 /* ── Accessibility: prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,
