@@ -26,7 +26,7 @@ export function CookieConsent() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[999] px-4 pb-[calc(env(safe-area-inset-bottom,8px)+8px)] animate-fade-up"
+      className="fixed bottom-0 left-0 right-0 z-[90] px-4 pb-[calc(env(safe-area-inset-bottom,8px)+8px)] animate-fade-up"
       role="alertdialog"
       aria-label="쿠키 사용 동의"
     >

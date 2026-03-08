@@ -80,8 +80,17 @@ function PaymentSuccessContent() {
       });
     };
 
+    // R7-FIX: 15s timeout fallback — prevents infinite spinner on slow/hung networks
+    const timeoutId = setTimeout(() => {
+      if (status === "confirming") {
+        setStatus("error");
+        setErrorMsg("결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    }, 15_000);
+
     callConfirm(params)
       .then(async (res) => {
+        clearTimeout(timeoutId);
         const data = await res.json();
         if (res.ok && data.success) {
           // ticketsAdded may be absent on alreadyProcessed responses -- derive from amount
@@ -114,6 +123,7 @@ function PaymentSuccessContent() {
         }
       })
       .catch(() => {
+        clearTimeout(timeoutId);
         setStatus("error");
         setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       });
