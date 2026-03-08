@@ -98,7 +98,8 @@ export default function StoryCompleteCTA({
           transition={{ duration: 0.5, delay: 0.7 }}
           className="text-[13px] text-brown-light font-normal leading-relaxed mb-3 break-keep"
         >
-          어머니의 이야기가 세상에 하나뿐인<br />
+          {/* R5-FIX(A1): Role-neutral phrasing (아빠/할머니도 사용) */}
+          소중한 이야기가 세상에 하나뿐인<br />
           마음 동화가 되었습니다.<br />
           완성된 동화는 내 서재에 저장되어 있어요.
         </motion.p>

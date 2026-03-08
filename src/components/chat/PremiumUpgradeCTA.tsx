@@ -106,7 +106,8 @@ export default function PremiumUpgradeCTA({
                 transition={{ duration: 0.4, delay: 0.55 }}
                 className="text-[13px] text-brown-light font-light leading-relaxed mb-5 break-keep"
               >
-                어머니의 이야기는 아직 더 있잖아요.<br />
+                {/* R5-FIX(A2): Role-neutral phrasing */}
+                전하고 싶은 이야기가 아직 더 있잖아요.<br />
                 <span className="text-coral font-semibold">프리미엄 동화</span>로 더 깊은 마음을<br />
                 아이에게 전해보세요.
               </motion.p>
