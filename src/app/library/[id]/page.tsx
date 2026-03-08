@@ -169,7 +169,9 @@ export default function LibraryStoryPage() {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
         <div className="text-center">
-          <div className="text-3xl mb-3">😕</div>
+          <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: "rgba(224,122,95,0.12)" }}>
+            <span className="text-lg font-serif font-bold" style={{ color: "#E07A5F" }}>!</span>
+          </div>
           <p className="text-sm text-brown-light font-light mb-4">{error || "동화를 찾을 수 없습니다."}</p>
           <button
             onClick={() => router.push("/library")}
