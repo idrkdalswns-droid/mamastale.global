@@ -453,11 +453,11 @@ export default function Home() {
           {/* 마마스테일이란 */}
           <Link
             href="/about"
-            className="w-full py-3.5 rounded-xl text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            className="w-full py-3.5 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
             style={{
-              background: "rgba(196,149,106,0.08)",
-              color: "#5A3E2B",
-              border: "1.5px solid rgba(196,149,106,0.18)",
+              background: "linear-gradient(135deg, rgba(109,76,145,0.13), rgba(224,122,95,0.10))",
+              color: "#6D4C91",
+              border: "1.5px solid rgba(109,76,145,0.22)",
             }}
           >
             마마스테일이란 →
