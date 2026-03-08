@@ -422,7 +422,7 @@ export default function Home() {
         <div>
           {/* Welcome message for logged-in users */}
           {user && !authLoading && (
-            <div className="mb-4 px-4 py-2.5 rounded-2xl bg-mint/20 border border-mint/30">
+            <div className="mb-4 px-4 py-2.5 rounded-2xl" style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}>
               <p className="text-sm text-brown font-light">
                 <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0]}</span>님, 환영합니다
               </p>
@@ -536,6 +536,14 @@ export default function Home() {
                   <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
                   <p className="text-[11px] text-brown-pale font-light">
                     {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
+                    {draftInfo.savedAt > 0 && <> · {(() => {
+                      const mins = Math.floor((Date.now() - draftInfo.savedAt) / 60000);
+                      if (mins < 1) return "방금 전";
+                      if (mins < 60) return `${mins}분 전`;
+                      const hrs = Math.floor(mins / 60);
+                      if (hrs < 24) return `${hrs}시간 전`;
+                      return `${Math.floor(hrs / 24)}일 전`;
+                    })()}</>}
                   </p>
                 </div>
               </div>
@@ -636,11 +644,11 @@ export default function Home() {
             </Link>
             <Link
               href="/pricing"
-              className="flex-1 py-3 rounded-xl text-xs font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+              className="flex-1 py-3 rounded-xl text-xs font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
               style={{
-                background: "rgba(196,149,106,0.08)",
-                color: "#8B7355",
-                border: "1px solid rgba(196,149,106,0.12)",
+                background: "rgba(224,122,95,0.12)",
+                color: "#E07A5F",
+                border: "1.5px solid rgba(224,122,95,0.25)",
               }}
             >
               요금 안내
@@ -670,7 +678,7 @@ export default function Home() {
                     <span className="text-[9px] text-brown-light font-medium whitespace-nowrap">{step.label}</span>
                   </div>
                   {i < 3 && (
-                    <span className="text-[10px] text-brown-pale/40 mb-3 mx-0.5">→</span>
+                    <span className="text-[10px] text-brown-pale/40 -mt-3 mx-0.5">→</span>
                   )}
                 </div>
               ))}
@@ -683,7 +691,7 @@ export default function Home() {
           {/* Social proof — testimonials as horizontal scroll */}
           <div className="mt-6">
             <p className="text-[11px] text-brown-pale font-medium text-center mb-3">
-              ★ 4.8 / 5.0 · 이용자 후기 <span className="text-brown-pale/50">→ 밀어서 더 보기</span>
+              <span style={{ color: "#E07A5F" }}>★</span> 4.8 / 5.0 · 이용자 후기 <span className="text-brown-pale/50">→ 밀어서 더 보기</span>
             </p>
             <div
               className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
@@ -725,8 +733,28 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Secondary CTA after testimonials */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleStartStory}
+              className="w-full py-3.5 rounded-full text-white text-sm font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] mb-2"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
+              }}
+            >
+              {user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+            </button>
+            <Link
+              href="/pricing"
+              className="text-[11px] text-brown-pale font-light no-underline hover:text-coral transition-colors"
+            >
+              요금 안내 보기 →
+            </Link>
+          </div>
+
           {/* Footer with business info (전자상거래법 필수) */}
-          <div className="mt-4">
+          <div className="-mt-4">
             <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mb-2">
               본 서비스는 실제 의료 행위를 대체하지 않습니다
             </p>
