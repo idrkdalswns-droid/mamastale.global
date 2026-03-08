@@ -229,7 +229,7 @@ export default function CommunityBrowsePage() {
               <button
                 onClick={loadMore}
                 disabled={loading}
-                className="w-full mt-4 py-3 rounded-full text-sm font-light text-brown-mid border border-brown-pale/20 active:scale-[0.98] transition-all"
+                className="w-full mt-4 py-3 rounded-full text-sm font-light text-brown-mid border border-brown-pale/20 active:scale-[0.98] transition-all min-h-[44px]"
               >
                 {loading ? "불러오는 중..." : "더 보기"}
               </button>

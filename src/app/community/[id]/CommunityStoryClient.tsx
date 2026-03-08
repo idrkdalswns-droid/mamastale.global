@@ -81,7 +81,7 @@ export default function CommunityStoryClient() {
           <p className="text-sm text-brown-light font-light mb-4">{error}</p>
           <button
             onClick={() => router.push("/community")}
-            className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid"
+            className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
             style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
           >
             커뮤니티로 돌아가기
@@ -162,7 +162,7 @@ export default function CommunityStoryClient() {
                   setTimeout(() => setShareCopied(false), 2000);
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all min-h-[44px]"
               style={{
                 background: shareCopied ? "rgba(127,191,176,0.12)" : "rgba(255,255,255,0.6)",
                 border: shareCopied ? "1.5px solid rgba(127,191,176,0.3)" : "1.5px solid rgba(196,149,106,0.15)",
@@ -174,7 +174,7 @@ export default function CommunityStoryClient() {
             <button
               onClick={() => setShowComments(!showComments)}
               aria-expanded={showComments}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium min-h-[44px]"
               style={{
                 background: "rgba(255,255,255,0.6)",
                 border: "1.5px solid rgba(196,149,106,0.15)",
