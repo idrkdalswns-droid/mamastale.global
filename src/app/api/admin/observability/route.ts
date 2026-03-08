@@ -18,7 +18,28 @@ import { createServerClient } from "@supabase/ssr";
 // Admin user IDs (hardcoded for now — move to env/DB later)
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
 
+// R8-FIX: Rate limit admin endpoint (10 requests/min per IP)
+const adminRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkAdminRate(ip: string): boolean {
+  const now = Date.now();
+  if (adminRateMap.size > 50) {
+    for (const [k, v] of adminRateMap) { if (now > v.resetAt) adminRateMap.delete(k); }
+  }
+  const entry = adminRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    adminRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false;
+  entry.count++;
+  return true;
+}
+
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("cf-connecting-ip") || "unknown";
+  if (!checkAdminRate(ip)) {
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+  }
   // ─── Auth check ───
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

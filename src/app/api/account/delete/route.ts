@@ -4,9 +4,30 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 
+// R8-FIX: Rate limit account deletion (1 attempt per hour per IP)
+const deleteRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkDeleteRate(ip: string): boolean {
+  const now = Date.now();
+  if (deleteRateMap.size > 100) {
+    for (const [k, v] of deleteRateMap) { if (now > v.resetAt) deleteRateMap.delete(k); }
+  }
+  const entry = deleteRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    deleteRateMap.set(ip, { count: 1, resetAt: now + 3_600_000 });
+    return true;
+  }
+  if (entry.count >= 3) return false;
+  entry.count++;
+  return true;
+}
+
 // GDPR Art. 17: Right to Erasure
 // JP-06: Require confirmation body to prevent CSRF-style abuse
 export async function DELETE(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("cf-connecting-ip") || "unknown";
+  if (!checkDeleteRate(ip)) {
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
   const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
