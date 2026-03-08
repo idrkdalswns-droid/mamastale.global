@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await sb.client
       .from("user_reviews")
       .insert({
+        user_id: user.id,
         author_alias: safeAlias,
         child_info: safeChildInfo,
         stars: safeStars,

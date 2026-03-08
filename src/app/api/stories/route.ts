@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
     .select("id, title, scenes, status, is_public, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (error) {
     console.error("[Stories] List error: code=", error.code);

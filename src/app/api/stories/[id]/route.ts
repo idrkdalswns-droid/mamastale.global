@@ -129,15 +129,21 @@ export async function PATCH(
       return sb.applyCookies(NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 }));
     }
 
-    const { error } = await sb.client
+    const { data: updated, error } = await sb.client
       .from("stories")
       .update(updates)
       .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       console.error("[Stories] Update error: code=", error.code);
       return sb.applyCookies(NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 }));
+    }
+
+    if (!updated) {
+      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));

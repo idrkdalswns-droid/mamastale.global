@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 </head>
 <body>
   <div class="cover">
-    <div class="emoji">📖✨</div>
+    <div class="emoji" style="font-size:3rem;color:#92400e;font-weight:700;">M</div>
     <h1>${storyTitle}</h1>
     <div class="author">글 · ${author}</div>
     <div class="date">${createdAt}</div>
