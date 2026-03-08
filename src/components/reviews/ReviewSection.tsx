@@ -157,6 +157,7 @@ export function ReviewSection() {
               onChange={(e) => setAlias(e.target.value)}
               placeholder="별명 (필수)"
               maxLength={20}
+              aria-label="별명"
               className="flex-1 px-3 py-2.5 rounded-lg outline-none min-h-[44px]"
               style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
             />
@@ -166,6 +167,7 @@ export function ReviewSection() {
               onChange={(e) => setChildInfo(e.target.value)}
               placeholder="자녀 정보 (선택)"
               maxLength={30}
+              aria-label="자녀 정보"
               className="flex-1 px-3 py-2.5 rounded-lg outline-none min-h-[44px]"
               style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
             />
@@ -182,6 +184,7 @@ export function ReviewSection() {
             placeholder="mamastale 사용 후기를 남겨주세요..."
             maxLength={500}
             rows={4}
+            aria-label="후기 내용"
             className="w-full px-3 py-2.5 rounded-lg outline-none resize-none mb-2"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />

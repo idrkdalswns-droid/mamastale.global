@@ -8,7 +8,8 @@ import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  // redirect param preserved for future post-login redirect
+  void searchParams.get("redirect");
 
   return (
     <>

@@ -338,6 +338,8 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                     } else {
                       try {
                         await navigator.clipboard.writeText(`${storyTitle} — ${authorName || "엄마"}가 만든 세상에 하나뿐인 동화 ${siteUrl}`);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
                       } catch { /* ignore */ }
                     }
                   }
@@ -464,6 +466,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
           role="dialog"
           aria-modal="true"
           aria-label="커뮤니티 공유"
+          tabIndex={-1}
           onClick={(e) => { if (e.target === e.currentTarget) setShowAliasModal(false); }}
           onKeyDown={(e) => { if (e.key === "Escape") setShowAliasModal(false); }}
         >

@@ -26,9 +26,12 @@ export default function SignupPage() {
 
         <OAuthButtons disabled={false} />
 
-        <div className="text-center mt-6">
-          <Link href="/login" className="text-sm text-brown-mid font-light no-underline">
+        <div className="text-center mt-6 space-y-3">
+          <Link href="/login" className="block text-sm text-brown-mid font-light no-underline">
             이미 계정이 있으신가요? <span className="text-coral font-medium">로그인</span>
+          </Link>
+          <Link href="/" className="block text-sm text-brown-pale font-light no-underline">
+            ← 홈으로 돌아가기
           </Link>
         </div>
       </div>

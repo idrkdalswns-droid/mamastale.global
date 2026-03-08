@@ -24,6 +24,7 @@ export function GlobalNav() {
 
   return (
     <nav
+      aria-label="메인 내비게이션"
       className="sticky top-0 z-40 backdrop-blur-lg border-b border-brown-pale/10 transition-shadow"
       style={{ background: "rgb(var(--cream) / 0.85)" }}
     >

@@ -59,11 +59,12 @@ export default function PremiumUpgradeCTA({
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center"
+            className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
             style={{
               background: "radial-gradient(circle, rgba(224,122,95,0.15) 0%, transparent 70%)",
             }}
           >
+            <span className="text-2xl font-serif font-bold" style={{ color: "#E07A5F" }}>P</span>
           </motion.div>
 
           {trigger === "story_complete" ? (

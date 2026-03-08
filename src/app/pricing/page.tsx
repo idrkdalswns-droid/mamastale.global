@@ -182,7 +182,7 @@ function PricingContent() {
           !errMsg.includes("PAY_PROCESS_CANCELED")
         ) {
           setError(
-            `결제 오류: ${errCode || errMsg || "알 수 없는 오류"}. 다시 시도해 주세요.`
+            "결제 처리 중 문제가 발생했습니다. 카드 정보를 확인하시거나 잠시 후 다시 시도해 주세요."
           );
         }
       } finally {
@@ -636,7 +636,7 @@ function PricingContent() {
             TRUST BADGES
             ════════════════════════════════════════ */}
         <div className="flex items-center justify-center gap-3 mb-8 text-[10px] text-brown-pale font-light">
-          <span>토스페이먼츠 안전 결제</span>
+          <span>카드 결제 보안 적용</span>
           <span>·</span>
           <span>전자영수증 발급</span>
           <span>·</span>
@@ -801,6 +801,7 @@ function PricingContent() {
             background: "rgba(0,0,0,0.4)",
             backdropFilter: "blur(4px)",
           }}
+          tabIndex={-1}
           onClick={(e) => {
             if (e.target === e.currentTarget) setConfirmModal(null);
           }}
@@ -842,7 +843,7 @@ function PricingContent() {
               onClick={() => setConfirmModal(null)}
               className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"
             >
-              취소
+              다시 생각해볼게요
             </button>
           </div>
         </div>

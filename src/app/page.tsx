@@ -696,6 +696,7 @@ export default function Home() {
           role="dialog"
           aria-modal="true"
           aria-label="티켓 부족 안내"
+          tabIndex={-1}
           onKeyDown={(e) => { if (e.key === "Escape") setShowNoTickets(false); }}
         >
           <div
@@ -742,6 +743,7 @@ export default function Home() {
           role="dialog"
           aria-modal="true"
           aria-label="결제 완료 안내"
+          tabIndex={-1}
           onKeyDown={(e) => { if (e.key === "Escape") closePaymentModal(); }}
         >
           <div

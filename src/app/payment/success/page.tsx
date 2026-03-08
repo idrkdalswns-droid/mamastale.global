@@ -92,6 +92,7 @@ function PaymentSuccessContent() {
           try {
             if (typeof window !== "undefined" && typeof window.gtag === "function") {
               window.gtag("event", "purchase", {
+                transaction_id: params.orderId,
                 currency: "KRW",
                 value: params.amount,
                 items: [{
@@ -300,13 +301,18 @@ function PaymentSuccessContent() {
             커뮤니티 둘러보기
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
+              const shareData = {
+                title: "mamastale - 엄마의 이야기가 아이의 동화가 됩니다",
+                text: "15분 AI 대화로 세상에 하나뿐인 동화를 만들어보세요",
+                url: "https://mamastale-global.pages.dev",
+              };
               if (navigator.share) {
-                navigator.share({
-                  title: "mamastale - 엄마의 이야기가 아이의 동화가 됩니다",
-                  text: "15분 AI 대화로 세상에 하나뿐인 동화를 만들어보세요",
-                  url: "https://mamastale-global.pages.dev",
-                }).catch(() => {});
+                navigator.share(shareData).catch(() => {});
+              } else {
+                try {
+                  await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                } catch { /* ignore */ }
               }
             }}
             className="w-full py-2.5 rounded-full text-sm font-medium text-brown-pale no-underline transition-all active:scale-[0.97]"

@@ -75,7 +75,12 @@ export default function PhaseHeader({
           className="flex items-center justify-center gap-2 transition-opacity duration-300"
           style={{ opacity: isTransitioning ? 0 : 1 }}
         >
-          <span className="text-base">{p.icon}</span>
+          <span
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+            style={{ background: p.accent }}
+          >
+            {p.icon}
+          </span>
           <div>
             <div
               className="text-xs font-semibold leading-tight"
@@ -89,7 +94,7 @@ export default function PhaseHeader({
             >
               <span>{p.theory}</span>
               <span className="inline-block w-0.5 h-0.5 rounded-full bg-current opacity-40" />
-              <span>{p.id <= 2 ? "~10분" : p.id === 3 ? "~5분" : "~5분"}</span>
+              <span>{p.id <= 2 ? "~10분" : "~5분"}</span>
             </div>
           </div>
         </div>
