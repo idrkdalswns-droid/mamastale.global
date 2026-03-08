@@ -23,6 +23,7 @@ export function SignupModal({ onClose, onBeforeAuthRedirect }: SignupModalProps)
       role="dialog"
       aria-modal="true"
       aria-label="회원가입"
+      tabIndex={-1}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
     >

@@ -142,6 +142,7 @@ export default function StoryCompleteCTA({
               } catch { /* ignore */ }
             }
           }}
+          aria-label="친구에게 공유하기"
           className="w-full py-3 rounded-full text-[13px] font-medium text-brown-mid transition-all active:scale-[0.97]"
           style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
         >
