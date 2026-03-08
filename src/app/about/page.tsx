@@ -56,7 +56,7 @@ const PHASE_DETAILS = [
     role: "동화 편집장",
     tagline: "동화로 완성해요",
     summary:
-      "서연이 모든 과정을 엮어 10장면의 마음 동화를 완성합니다. 엄마의 경험, 감정, 은유, 핵심 가치 — 모든 것이 도입, 갈등, 시도, 해결, 교훈의 구조로 짜여진 완성된 이야기가 됩니다. 각 장면에는 수채화 스타일의 일러스트가 함께 생성됩니다.",
+      "서연이 모든 과정을 엮어 10장면의 마음 동화 스토리를 완성합니다. 엄마의 경험, 감정, 은유, 핵심 가치 — 모든 것이 도입, 갈등, 시도, 해결, 교훈의 구조로 짜여진 완성된 이야기가 됩니다.",
     dialogue:
       "서연은 조셉 캠벨의 영웅의 여정 구조와 루이즈 드살보의 치유적 서사 5대 원칙을 따릅니다. 감각적이고 구체적인 묘사, 사건과 감정의 인과 관계, 긍정과 부정의 균형, 핵심 가치의 지혜로의 전환, 그리고 파편화된 기억을 하나의 완결된 이야기로 통합합니다.",
     theory:
@@ -126,13 +126,13 @@ export default function AboutPage() {
           </h2>
           <div className="space-y-3 text-[13px] text-brown-light font-light leading-7 break-keep">
             <p>
-              마마스테일(mamastale)은 엄마의 삶 속 이야기를 AI와의 따뜻한 대화를 통해 아이에게 읽어줄 수 있는 10장면 동화책으로 변환하는 서비스입니다.
+              마마스테일(mamastale)은 엄마의 삶 속 이야기를 AI와의 따뜻한 대화를 통해 아이에게 읽어줄 수 있는 10장면 동화 스토리로 변환하는 서비스입니다.
             </p>
             <p>
               육아의 기쁨과 고됨, 삶의 변화 속에서 느끼는 복잡한 감정들 — 이 모든 것이 아이의 눈높이에 맞춘 아름다운 동화로 다시 태어납니다. 단순한 이야기 생성이 아닌, 심리학적 근거에 기반한 4단계 치유적 대화 과정을 거칩니다.
             </p>
             <p>
-              약 15-20분의 대화면 충분합니다. 대화가 끝나면 수채화 일러스트와 함께 완성된 동화책이 만들어집니다.
+              약 15-20분의 대화면 충분합니다. 대화가 끝나면 10장면의 완성된 동화 스토리가 만들어지며, 내 서재에 영구 보관됩니다.
             </p>
           </div>
         </div>
@@ -149,8 +149,8 @@ export default function AboutPage() {
           {[
             { step: "AI 대화", sub: "15-20분", color: "#7FBFB0" },
             { step: "이야기 구성", sub: "자동 생성", color: "#E07A5F" },
-            { step: "일러스트", sub: "10장면", color: "#8B6AAF" },
-            { step: "동화 완성", sub: "읽어주기", color: "#C4956A" },
+            { step: "스토리 완성", sub: "10장면", color: "#8B6AAF" },
+            { step: "서재 보관", sub: "PDF 저장", color: "#C4956A" },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-1">
               <div className="flex flex-col items-center gap-1">
@@ -446,9 +446,69 @@ export default function AboutPage() {
       </section>
 
       {/* ════════════════════════════════════════
-          FUTURE SECTIONS — Extensibility point
-          개발자 의도, 탄생 기원/역사 등 추후 추가 예정
+          FUTURE VISION
           ════════════════════════════════════════ */}
+      <section className="mb-12">
+        <div className="text-center mb-5">
+          <h2 className="font-serif text-base font-bold text-brown mb-1.5">
+            앞으로의 방향
+          </h2>
+          <p className="text-[11px] text-brown-pale font-light break-keep leading-relaxed">
+            현재는 10장면 동화 스토리(텍스트) 완성 서비스를 제공하고 있으며,
+            <br />
+            앞으로 다음 기능들을 준비하고 있습니다.
+          </p>
+        </div>
+
+        <div className="space-y-2.5">
+          <div
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{
+              background: "rgba(139,106,175,0.06)",
+              border: "1px solid rgba(139,106,175,0.12)",
+            }}
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+              style={{ background: "#8B6AAF" }}
+            >
+              1
+            </span>
+            <div>
+              <p className="text-[12.5px] text-brown font-medium">
+                AI 일러스트 생성
+                <span className="text-[9px] text-brown-pale font-light ml-2">준비 중</span>
+              </p>
+              <p className="text-[11px] text-brown-light font-light leading-5 break-keep">
+                각 장면에 어울리는 수채화 스타일 일러스트를 AI가 자동으로 그려줍니다.
+              </p>
+            </div>
+          </div>
+          <div
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{
+              background: "rgba(224,122,95,0.06)",
+              border: "1px solid rgba(224,122,95,0.12)",
+            }}
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+              style={{ background: "#E07A5F" }}
+            >
+              2
+            </span>
+            <div>
+              <p className="text-[12.5px] text-brown font-medium">
+                영상 동화 제작
+                <span className="text-[9px] text-brown-pale font-light ml-2">준비 중</span>
+              </p>
+              <p className="text-[11px] text-brown-light font-light leading-5 break-keep">
+                완성된 동화를 나레이션과 함께 영상으로 만들어 아이에게 들려줄 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ════════════════════════════════════════
           CTA

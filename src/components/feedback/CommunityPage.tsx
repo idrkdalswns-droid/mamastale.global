@@ -342,9 +342,9 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 </>
               ) : (
                 <>
-                  <span className="text-sm font-medium text-brown block">삽화 생성</span>
+                  <span className="text-sm font-medium text-brown block">삽화 생성 <span className="text-[9px] text-brown-pale font-light">(준비 중)</span></span>
                   <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
-                    동화에 어울리는<br />일러스트를 AI가 그려드려요
+                    동화에 어울리는 일러스트를<br />AI가 그려주는 기능을 준비하고 있어요
                   </span>
                 </>
               )}
@@ -374,9 +374,9 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 </>
               ) : (
                 <>
-                  <span className="text-sm font-medium text-brown block">영상 동화</span>
+                  <span className="text-sm font-medium text-brown block">영상 동화 <span className="text-[9px] text-brown-pale font-light">(준비 중)</span></span>
                   <span className="text-[10px] text-brown-light font-light block mt-1 leading-relaxed break-keep">
-                    동화를 읽어주는<br />영상으로 만들어 드려요
+                    동화를 읽어주는 영상으로<br />만드는 기능을 준비하고 있어요
                   </span>
                 </>
               )}

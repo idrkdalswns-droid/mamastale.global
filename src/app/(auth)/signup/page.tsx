@@ -17,7 +17,7 @@ export default function SignupPage() {
             엄마의 이야기가 아이만의 동화가 됩니다
           </p>
           <p className="text-[12px] text-brown-pale font-light mb-4 break-keep">
-            15분 AI 대화 → 10장면 동화책 완성 · 영구 보관
+            15분 AI 대화 → 10장면 동화 스토리 완성 · 영구 보관
           </p>
           <div className="flex items-center justify-center gap-3 text-[10px] text-brown-pale font-light">
             <span>★ 4.8/5.0 만족도</span>

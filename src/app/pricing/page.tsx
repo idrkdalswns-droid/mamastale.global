@@ -253,7 +253,7 @@ function PricingContent() {
           <p className="text-sm text-brown-light font-light leading-relaxed break-keep">
             엄마의 마음 이야기가 AI 대화를 통해
             <br />
-            세상에 단 하나뿐인 10장면 동화책이 됩니다
+            세상에 단 하나뿐인 10장면 동화 스토리가 됩니다
           </p>
         </section>
 
@@ -355,7 +355,7 @@ function PricingContent() {
             )}
           </div>
           <p className="text-[11px] text-brown-pale font-light text-center mt-2">
-            실제 완성된 동화 영상 미리보기
+            완성된 동화 스토리에 일러스트와 음성을 더한 영상 예시입니다 (영상 제작 기능은 준비 중)
           </p>
         </section>
 

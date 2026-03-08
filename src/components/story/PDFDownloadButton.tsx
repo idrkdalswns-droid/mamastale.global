@@ -24,11 +24,11 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
     if (printWindow) {
       // CTO-FIX: Use DOM API instead of document.write() to avoid XSS vector
       const doc = printWindow.document;
-      doc.title = "동화책 만드는 중";
+      doc.title = "동화 저장 중";
       const body = doc.body;
       body.style.cssText = "font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#8B6F55";
       const p = doc.createElement("p");
-      p.textContent = "동화책을 만들고 있어요...";
+      p.textContent = "동화를 저장하고 있어요...";
       body.appendChild(p);
     }
 
@@ -99,7 +99,7 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
           : "1.5px solid rgba(196,149,106,0.2)",
       }}
     >
-      {error ? "저장 실패 · 다시 눌러주세요" : loading ? "동화책 만드는 중..." : "동화책 저장하기"}
+      {error ? "저장 실패 · 다시 눌러주세요" : loading ? "동화 저장 중..." : "동화 저장하기"}
     </button>
   );
 }

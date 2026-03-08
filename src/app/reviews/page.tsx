@@ -183,7 +183,7 @@ export default function ReviewsPage() {
               {(i === 2 || i === 6) && (
                 <div className="rounded-2xl p-6 text-center" style={{ background: "linear-gradient(135deg, rgba(224,122,95,0.10), rgba(109,76,145,0.06))", border: "2px solid rgba(224,122,95,0.20)", boxShadow: "0 4px 20px rgba(224,122,95,0.08)" }}>
                   <p className="font-serif text-base text-brown font-semibold mb-2">나도 동화를 만들어볼까?</p>
-                  <p className="text-xs text-brown-light font-light mb-4 break-keep">15분 대화로 아이만의 동화책이 완성돼요</p>
+                  <p className="text-xs text-brown-light font-light mb-4 break-keep">15분 대화로 아이만의 동화 스토리가 완성돼요</p>
                   <Link href="/pricing" className="inline-flex items-center justify-center px-8 py-3 rounded-full text-sm font-bold text-white no-underline min-h-[44px] transition-transform active:scale-[0.97]" style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 6px 20px rgba(224,122,95,0.3)" }}>
                     동화 만들기
                   </Link>
