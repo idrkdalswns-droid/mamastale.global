@@ -437,7 +437,7 @@ export default function Home() {
             엄마의 이야기가 아이의 동화가 되다
           </p>
           <p className="text-[12px] text-brown-pale font-light mb-3 break-keep">
-            15분 AI 대화 → 10장면 동화책 완성
+            따뜻한 AI 대화 한 번이면, 세상에 단 하나뿐인 동화가 완성돼요
           </p>
           {presenceLoaded && liveTotal > 0 ? (
             <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-full bg-coral/5 border border-coral/10 w-fit">
@@ -505,7 +505,7 @@ export default function Home() {
                     width={180}
                     height={320}
                     className="w-full aspect-[9/16] object-cover object-top"
-                    loading="lazy"
+                    loading={i === 0 ? "eager" : "lazy"}
                   />
                   <div
                     className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
@@ -573,10 +573,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Time hint — shown ABOVE CTA for non-logged-in users */}
+          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
           {!user && !authLoading && (
             <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
-              약 15분이면 나만의 동화가 완성돼요
+              회원가입 없이 바로 시작할 수 있어요
             </p>
           )}
 
@@ -747,7 +747,7 @@ export default function Home() {
             </button>
             <Link
               href="/pricing"
-              className="text-[11px] text-brown-pale font-light no-underline hover:text-coral transition-colors"
+              className="text-[11px] text-brown-pale font-light no-underline hover:text-coral transition-colors min-h-[44px] inline-flex items-center"
             >
               요금 안내 보기 →
             </Link>
