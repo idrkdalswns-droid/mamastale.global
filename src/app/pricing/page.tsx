@@ -301,14 +301,14 @@ function PricingContent() {
                 />
                 {/* Storybook text overlay */}
                 <div
-                  className="absolute inset-x-0 bottom-0 px-4 pt-20 pb-4 flex flex-col justify-end"
+                  className="absolute inset-x-0 bottom-0 px-4 pt-16 pb-4 flex flex-col justify-end"
                   style={{
-                    background: "linear-gradient(to top, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.93) 40%, rgba(255,255,255,0.7) 70%, rgba(255,255,255,0) 100%)",
+                    background: "linear-gradient(to top, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)",
                   }}
                 >
                   <p
-                    className="font-serif text-[11.5px] text-brown leading-[1.9] break-keep"
-                    style={{ textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
+                    className="font-serif text-[11.5px] leading-[1.9] break-keep"
+                    style={{ color: "#5A3E2B" }}
                   >
                     {text}
                   </p>

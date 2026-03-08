@@ -463,51 +463,6 @@ export default function Home() {
             마마스테일이란 →
           </Link>
 
-          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
-          {!user && !authLoading && (
-            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
-              회원가입 없이 바로 시작할 수 있어요
-            </p>
-          )}
-
-          {/* CTA button */}
-          <button
-            onClick={handleStartStory}
-            disabled={!!user && ticketsRemaining === null && !authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {user && ticketsRemaining === null && !authLoading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                불러오는 중...
-              </span>
-            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
-          </button>
-
-          {/* Ticket balance display for logged-in users */}
-          {user && ticketsRemaining !== null && (
-            <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
-              <span className="text-xs text-brown font-medium">
-                {ticketsRemaining > 0
-                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
-                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
-                }
-              </span>
-              {ticketsRemaining <= 0 && (
-                <Link
-                  href="/pricing"
-                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
-                >
-                  구매하기
-                </Link>
-              )}
-            </div>
-          )}
-
           {/* ════════════════════════════════════════
               STORYBOOK GALLERY — Product showcase
               ════════════════════════════════════════ */}
@@ -551,14 +506,14 @@ export default function Home() {
                     loading={i === 0 ? "eager" : "lazy"}
                   />
                   <div
-                    className="absolute inset-x-0 bottom-0 px-3 pt-16 pb-3 flex flex-col justify-end"
+                    className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
                     style={{
-                      background: "linear-gradient(to top, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.93) 40%, rgba(255,255,255,0.7) 70%, rgba(255,255,255,0) 100%)",
+                      background: "linear-gradient(to top, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.86) 50%, rgba(255,255,255,0) 100%)",
                     }}
                   >
                     <p
-                      className="font-serif text-[10.5px] text-brown leading-[1.85] break-keep"
-                      style={{ textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
+                      className="font-serif text-[10.5px] leading-[1.85] break-keep"
+                      style={{ color: "#5A3E2B" }}
                     >
                       {text}
                     </p>
@@ -570,6 +525,51 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
+          {!user && !authLoading && (
+            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
+              회원가입 없이 바로 시작할 수 있어요
+            </p>
+          )}
+
+          {/* CTA button */}
+          <button
+            onClick={handleStartStory}
+            disabled={!!user && ticketsRemaining === null && !authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {user && ticketsRemaining === null && !authLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                불러오는 중...
+              </span>
+            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+          </button>
+
+          {/* Ticket balance display for logged-in users */}
+          {user && ticketsRemaining !== null && (
+            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
+              <span className="text-xs text-brown font-medium">
+                {ticketsRemaining > 0
+                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
+                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
+                }
+              </span>
+              {ticketsRemaining <= 0 && (
+                <Link
+                  href="/pricing"
+                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
+                >
+                  구매하기
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* Draft resume card */}
           {draftInfo && (
