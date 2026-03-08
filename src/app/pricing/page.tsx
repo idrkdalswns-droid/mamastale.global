@@ -258,6 +258,67 @@ function PricingContent() {
         </section>
 
         {/* ════════════════════════════════════════
+            10-SCENE STORYBOOK GALLERY
+            ════════════════════════════════════════ */}
+        <section className="mb-10">
+          <h2 className="font-serif text-lg text-brown font-semibold text-center mb-1">
+            설거지 친구 아기 새
+          </h2>
+          <p className="text-[11px] text-brown-light font-light text-center mb-5">
+            엄마의 이야기로 만들어진 동화의 한 장면이에요
+          </p>
+          <div
+            className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {[
+              "옛날 옛적, 예쁜 아기를 낳은 엄마가 있었어요. 엄마는 매일매일 설거지를 했어요. 물소리가 졸졸졸, 그릇이 반짝반짝.",
+              "그런데 설거지를 할 때마다 엄마 마음이 이상했어요. 뭔가 쓸쓸하고, 뭔가 그리워요. \"내가 언제 이렇게 엄마가 되었지?\"",
+              "어느 날, 엄마가 설거지를 하고 있을 때였어요. 창가에 작은 새 한 마리가 날아왔어요. 아기 새였어요, 너무너무 작은.",
+              "아기 새는 말이 없었어요. 그냥 조용히 앉아 있었어요. 엄마도 말이 없었어요. 둘이 함께 조용조용.",
+              "매일매일 설거지 시간이 되면 아기 새가 왔어요. 엄마는 혼자가 아니었어요. \"안녕, 작은 새야.\"",
+              "어느 날 엄마가 물어봤어요. \"너는 왜 여기 오는 거야?\" 아기 새가 대답했어요. \"엄마도 새로 태어났거든요.\"",
+              "\"나도 새로 태어났다고?\" 엄마가 깜짝 놀랐어요. 아기 새가 말했어요. \"엄마가 되면서 새로운 마음이 생겼어요.\"",
+              "그때부터 엄마는 알았어요. 설거지할 때 느끼는 그 마음이 새로운 자신이라는 걸. 쓸쓸하지만 소중한 마음.",
+              "\"나라는 존재는 변하지 않았지만, 새로운 마음이 하나 더 생겼구나.\" 엄마가 웃으며 말했어요.",
+              "작은 아기야, 엄마에게도 새로운 마음이 자라고 있어요. 그 마음이 바로 너를 사랑하는 마음이야. 쓸쓸해도 괜찮아, 그것도 사랑이니까.",
+            ].map((text, i) => (
+              <div
+                key={i}
+                className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
+                style={{
+                  width: "220px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
+                }}
+              >
+                <img
+                  src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
+                  alt={`동화 장면 ${i + 1}`}
+                  width={220}
+                  height={392}
+                  className="w-full aspect-[9/16] object-cover object-top"
+                  loading="lazy"
+                />
+                {/* Storybook text overlay */}
+                <div
+                  className="absolute inset-x-0 bottom-0 px-4 pt-16 pb-4 flex flex-col justify-end"
+                  style={{
+                    background: "linear-gradient(to top, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)",
+                  }}
+                >
+                  <p className="font-serif text-[11.5px] text-brown leading-[1.9] break-keep">
+                    {text}
+                  </p>
+                  <p className="text-[9px] text-brown-pale font-light mt-2 text-right">
+                    {i + 1} / 10
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════
             VIDEO PREVIEW
             ════════════════════════════════════════ */}
         <section className="mb-10">
@@ -293,58 +354,6 @@ function PricingContent() {
           <p className="text-[11px] text-brown-pale font-light text-center mt-2">
             실제 완성된 동화 영상 미리보기
           </p>
-        </section>
-
-        {/* ════════════════════════════════════════
-            10-SCENE SAMPLE GALLERY
-            ════════════════════════════════════════ */}
-        <section className="mb-10">
-          <h2 className="font-serif text-base text-brown font-semibold text-center mb-4">
-            이런 동화가 만들어져요
-          </h2>
-          <div
-            className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            {[
-              "엄마의 마음이 열리는 순간",
-              "숲속에서 만난 작은 친구",
-              "별빛 아래 속삭이는 이야기",
-              "용기를 내어 한 걸음",
-              "따뜻한 포옹의 기억",
-              "비 오는 날의 약속",
-              "무지개 너머의 꿈",
-              "함께 걷는 길",
-              "마음의 씨앗이 피어나다",
-              "세상에 하나뿐인 우리 이야기",
-            ].map((title, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 snap-center rounded-xl overflow-hidden"
-                style={{
-                  width: "200px",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-                }}
-              >
-                <img
-                  src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
-                  alt={`동화 장면 ${i + 1}: ${title}`}
-                  width={200}
-                  height={356}
-                  className="w-full aspect-[9/16] object-cover object-top"
-                  loading="lazy"
-                />
-                <div className="px-3 py-2 bg-white/80">
-                  <p className="text-[11px] text-brown font-medium leading-tight">
-                    {title}
-                  </p>
-                  <p className="text-[9px] text-brown-pale font-light mt-0.5">
-                    {i + 1}/10
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* ════════════════════════════════════════
