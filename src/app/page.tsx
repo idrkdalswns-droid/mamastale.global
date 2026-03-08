@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { PHASES } from "@/lib/constants/phases";
+import { Footer } from "@/components/layout/Footer";
 import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
 import { ChatPage } from "@/components/chat/ChatContainer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
@@ -343,7 +343,8 @@ export default function Home() {
         priority
         sizes="(max-width: 430px) 100vw, 430px"
         className="object-cover object-top pointer-events-none"
-        style={{ opacity: 0.22 }}
+        role="presentation"
+        style={{ opacity: 0.30 }}
       />
       {/* Gradient overlay for readability — lighter at top to show image */}
       <div
@@ -433,32 +434,26 @@ export default function Home() {
           </h1>
 
           <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
-            엄마의 이야기가 아이만의 동화가 되다
+            엄마의 이야기가 아이의 동화가 되다
           </p>
           <p className="text-[12px] text-brown-pale font-light mb-3 break-keep">
             15분 AI 대화 → 10장면 동화책 완성
           </p>
-          <div className="text-[11px] text-brown-pale font-light mb-5 space-y-0.5">
-            {presenceLoaded && liveTotal > 0 ? (
-              <>
-                <p>
-                  현재 접속자 <span className="text-coral font-medium">{liveTotal}</span>명
-                </p>
-                {liveCreating > 0 && (
-                  <p>
-                    지금 동화를 만들고 있는 어머니 <span className="text-coral font-medium">{liveCreating}</span>명
-                  </p>
-                )}
-              </>
-            ) : (
-              <p>
-                많은 엄마들이 마음 동화를 만들고 있어요
+          {presenceLoaded && liveTotal > 0 ? (
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-full bg-coral/5 border border-coral/10 w-fit">
+              <span className="w-2 h-2 rounded-full bg-coral animate-pulse flex-shrink-0" />
+              <p className="text-[11px] text-brown font-medium">
+                지금 <span className="text-coral font-bold">{liveCreating > 0 ? liveCreating : liveTotal}</span>명의 엄마가 동화를 만들고 있어요
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-brown-pale font-light mb-5">
+              많은 엄마들이 마음 동화를 만들고 있어요
+            </p>
+          )}
 
           {/* Description card */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-4">
+          <div className="bg-white/60 backdrop-blur-xl rounded-[20px] p-5 border border-brown-pale/10 mb-5">
             <p className="text-[13px] text-brown-light leading-7 font-sans font-normal break-keep">
               <span className="text-coral font-semibold">&ldquo;엄마, 엄마 동화 들려줘!&rdquo;</span>
               <br />
@@ -468,6 +463,66 @@ export default function Home() {
               <span className="text-coral font-medium">10장면 동화책</span>
               이 됩니다.
             </p>
+          </div>
+
+          {/* ════════════════════════════════════════
+              STORYBOOK GALLERY — Product showcase
+              ════════════════════════════════════════ */}
+          <div className="mb-5">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+              이런 동화가 완성돼요
+            </p>
+            <p className="text-[10px] text-brown-pale font-light text-center mb-3">
+              실제 완성된 동화의 한 장면이에요
+            </p>
+            <div
+              className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
+              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+            >
+              {[
+                "옛날 옛적, 예쁜 아기를 낳은 엄마가 있었어요. 엄마는 매일매일 설거지를 했어요. 물소리가 졸졸졸, 그릇이 반짝반짝.",
+                "그런데 설거지를 할 때마다 엄마 마음이 이상했어요. 뭔가 쓸쓸하고, 뭔가 그리워요. \"내가 언제 이렇게 엄마가 되었지?\"",
+                "어느 날, 엄마가 설거지를 하고 있을 때였어요. 창가에 작은 새 한 마리가 날아왔어요. 아기 새였어요, 너무너무 작은.",
+                "아기 새는 말이 없었어요. 그냥 조용히 앉아 있었어요. 엄마도 말이 없었어요. 둘이 함께 조용조용.",
+                "매일매일 설거지 시간이 되면 아기 새가 왔어요. 엄마는 혼자가 아니었어요. \"안녕, 작은 새야.\"",
+                "어느 날 엄마가 물어봤어요. \"너는 왜 여기 오는 거야?\" 아기 새가 대답했어요. \"엄마도 새로 태어났거든요.\"",
+                "\"나도 새로 태어났다고?\" 엄마가 깜짝 놀랐어요. 아기 새가 말했어요. \"엄마가 되면서 새로운 마음이 생겼어요.\"",
+                "그때부터 엄마는 알았어요. 설거지할 때 느끼는 그 마음이 새로운 자신이라는 걸. 쓸쓸하지만 소중한 마음.",
+                "\"나라는 존재는 변하지 않았지만, 새로운 마음이 하나 더 생겼구나.\" 엄마가 웃으며 말했어요.",
+                "작은 아기야, 엄마에게도 새로운 마음이 자라고 있어요. 그 마음이 바로 너를 사랑하는 마음이야. 쓸쓸해도 괜찮아, 그것도 사랑이니까.",
+              ].map((text, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
+                  style={{
+                    width: "180px",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+                  }}
+                >
+                  <img
+                    src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
+                    alt={`동화 장면 ${i + 1}`}
+                    width={180}
+                    height={320}
+                    className="w-full aspect-[9/16] object-cover object-top"
+                    loading="lazy"
+                  />
+                  <div
+                    className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
+                    style={{
+                      background: "linear-gradient(to top, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.86) 50%, rgba(255,255,255,0) 100%)",
+                    }}
+                  >
+                    <p className="font-serif text-[10.5px] text-brown leading-[1.85] break-keep">
+                      {text}
+                    </p>
+                    <p className="text-[8px] text-brown-pale font-light mt-1.5 text-right">
+                      {i + 1} / 10
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Draft resume card */}
@@ -510,6 +565,13 @@ export default function Home() {
             </div>
           )}
 
+          {/* Time hint — shown ABOVE CTA for non-logged-in users */}
+          {!user && !authLoading && (
+            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
+              약 15분이면 나만의 동화가 완성돼요
+            </p>
+          )}
+
           {/* CTA button */}
           <button
             onClick={handleStartStory}
@@ -525,7 +587,7 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 불러오는 중...
               </span>
-            ) : user ? "새 동화 만들기" : "지금 동화 만들기"}
+            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
 
           {/* Ticket balance display for logged-in users */}
@@ -546,13 +608,6 @@ export default function Home() {
                 </Link>
               )}
             </div>
-          )}
-
-          {/* Free trial + time hint for non-logged-in users */}
-          {!user && !authLoading && (
-            <p className="text-[11px] text-brown-pale font-normal text-center mb-4 leading-relaxed">
-              약 15분이면 나만의 동화가 완성돼요
-            </p>
           )}
 
           {/* Quick browse links */}
@@ -592,34 +647,34 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Phase pills — compact */}
-          <div className="grid grid-cols-2 gap-1.5 mb-5">
-            {Object.values(PHASES).map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-2 px-3 py-2 rounded-[12px]"
-                style={{
-                  background: `${p.accent}0D`,
-                  border: `1px solid ${p.accent}18`,
-                }}
-              >
-                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: p.accent }}>{p.id}</span>
-                <div>
-                  <div
-                    className="text-[11px] font-semibold font-sans leading-tight"
-                    style={{ color: p.text }}
-                  >
-                    {p.name}
+          {/* How it works — simplified 4-step flow */}
+          <div className="mb-5">
+            <p className="text-[11px] text-brown-pale font-medium text-center mb-2">
+              4단계 AI 대화로 동화가 만들어져요
+            </p>
+            <div className="flex items-center justify-between gap-1 px-2">
+              {[
+                { id: 1, label: "마음 열기", accent: "#7FBFB0" },
+                { id: 2, label: "새 시선", accent: "#E07A5F" },
+                { id: 3, label: "이야기화", accent: "#8B6AAF" },
+                { id: 4, label: "동화 완성", accent: "#C4956A" },
+              ].map((step, i) => (
+                <div key={step.id} className="flex items-center gap-1">
+                  <div className="flex flex-col items-center gap-1">
+                    <span
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                      style={{ background: step.accent }}
+                    >
+                      {step.id}
+                    </span>
+                    <span className="text-[9px] text-brown-light font-medium whitespace-nowrap">{step.label}</span>
                   </div>
-                  <div
-                    className="text-[10px] font-sans font-normal"
-                    style={{ color: p.text, opacity: 0.7 }}
-                  >
-                    {p.theory}
-                  </div>
+                  {i < 3 && (
+                    <span className="text-[10px] text-brown-pale/40 mb-3 mx-0.5">→</span>
+                  )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
@@ -656,7 +711,7 @@ export default function Home() {
                   className="flex-shrink-0 w-[75%] rounded-2xl px-4 py-3 snap-start"
                   style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
                 >
-                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }}>
+                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }} aria-label={`${review.stars}점 만점에 ${review.stars}점`}>
                     {"★".repeat(review.stars)}
                   </div>
                   <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
@@ -670,18 +725,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Footer disclaimer */}
-          <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mt-4">
-            본 서비스는 실제 의료 행위를 대체하지 않습니다
-          </p>
-          <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-brown-pale/60 font-light">
-            <Link href="/terms" className="no-underline hover:text-brown-pale transition-colors">이용약관</Link>
-            <span>·</span>
-            <Link href="/privacy" className="no-underline hover:text-brown-pale transition-colors">개인정보처리방침</Link>
+          {/* Footer with business info (전자상거래법 필수) */}
+          <div className="mt-4">
+            <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center mb-2">
+              본 서비스는 실제 의료 행위를 대체하지 않습니다
+            </p>
+            <Footer />
           </div>
-
-          {/* Bottom breathing room */}
-          <div className="h-20" />
         </div>
       </div>
 
