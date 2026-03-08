@@ -82,11 +82,42 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
       const userMsgs = state.messages.filter(m => m.role === "user").length;
       // Save if user has sent at least 1 message and story isn't done
       if (userMsgs > 0 && !state.storyDone) {
-        state.persistToStorage();
+        state.saveDraft(); // Use persistent draft (30d) instead of auth save (24h)
+        state.persistToStorage(); // Also save auth copy as backup
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // ── DEFENSE LAYER 2: Periodic auto-save every 30s ──
+  // Mobile browsers don't reliably fire beforeunload (iOS kills process instantly).
+  // This ensures at most 30s of progress is lost if the app is force-closed.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const state = useChatStore.getState();
+      const userMsgs = state.messages.filter(m => m.role === "user").length;
+      if (userMsgs > 0 && !state.storyDone) {
+        state.saveDraft();
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── DEFENSE LAYER 3: Save when app goes to background ──
+  // visibilitychange fires reliably on mobile when switching apps or locking screen
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        const state = useChatStore.getState();
+        const userMsgs = state.messages.filter(m => m.role === "user").length;
+        if (userMsgs > 0 && !state.storyDone) {
+          state.saveDraft();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
   // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
