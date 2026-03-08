@@ -54,7 +54,44 @@ export async function DELETE(request: NextRequest) {
     // Non-transactional — track failures to ensure partial deletes are logged
     const maskedId = userId.slice(0, 8) + "…";
 
-    // Phase 1: Delete non-dependent records (can run in parallel)
+    // R4-FIX(A1): Phase 0 — Delete cross-user references to this user's content.
+    // Other users' likes/comments/reports may reference this user's stories/comments.
+    // Without cleanup, FK RESTRICT constraints block deletion → orphaned data (GDPR Art.17).
+    try {
+      const { data: userStoryRows } = await serviceClient
+        .from("stories").select("id").eq("user_id", userId).limit(500);
+      const storyIds = (userStoryRows || []).map((s: { id: string }) => s.id);
+
+      if (storyIds.length > 0) {
+        // Comments on this user's stories may have reports → delete reports first
+        const { data: storyCommentRows } = await serviceClient
+          .from("comments").select("id").in("story_id", storyIds).limit(5000);
+        const storyCommentIds = (storyCommentRows || []).map((c: { id: string }) => c.id);
+        if (storyCommentIds.length > 0) {
+          const { error: crErr } = await serviceClient.from("comment_reports").delete().in("comment_id", storyCommentIds);
+          if (crErr) console.error(`[Account] Phase0 story-comment reports cleanup failed: ${crErr.code}`);
+        }
+        // Delete other users' comments and likes on this user's stories
+        const { error: cErr } = await serviceClient.from("comments").delete().in("story_id", storyIds);
+        if (cErr) console.error(`[Account] Phase0 story comments cleanup failed: ${cErr.code}`);
+        const { error: lErr } = await serviceClient.from("likes").delete().in("story_id", storyIds);
+        if (lErr) console.error(`[Account] Phase0 story likes cleanup failed: ${lErr.code}`);
+      }
+
+      // Delete reports on THIS user's comments (filed by other reporters)
+      const { data: userCommentRows } = await serviceClient
+        .from("comments").select("id").eq("user_id", userId).limit(5000);
+      const commentIds = (userCommentRows || []).map((c: { id: string }) => c.id);
+      if (commentIds.length > 0) {
+        const { error: crErr2 } = await serviceClient.from("comment_reports").delete().in("comment_id", commentIds);
+        if (crErr2) console.error(`[Account] Phase0 user-comment reports cleanup failed: ${crErr2.code}`);
+      }
+    } catch (phase0Err) {
+      console.error(`[Account] Phase0 cross-ref cleanup error for user=${maskedId}:`, phase0Err instanceof Error ? phase0Err.message : "Unknown");
+      // Continue — Phase 1/2 may still succeed if DB uses CASCADE
+    }
+
+    // Phase 1: Delete this user's own non-dependent records (can run in parallel)
     // P1-FIX: Added "user_reviews" to prevent orphaned review records after account deletion
     const phase1Tables = ["comment_reports", "likes", "feedback", "comments", "user_reviews"] as const;
     const phase1Results = await Promise.allSettled(

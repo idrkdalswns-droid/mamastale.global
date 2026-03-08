@@ -67,6 +67,10 @@ export function containsProfanity(text: string): boolean {
   return PROFANITY_LIST.some((word) => normalized.includes(word));
 }
 
+// ─── Community topic allowlist (shared across story routes) ───
+// R4-FIX(B1): Extracted from stories/route.ts and stories/[id]/route.ts to prevent divergence
+export const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", "경력단절", "자존감"] as const;
+
 // ─── Client IP extraction (Cloudflare → forwarded → fallback) ───
 export function getClientIP(request: Request): string {
   const headers = request.headers;

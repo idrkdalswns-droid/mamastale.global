@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID } from "@/lib/utils/validation";
+import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, VALID_TOPICS } from "@/lib/utils/validation";
 
 export const runtime = "edge";
-
-// R2-FIX(B1): Valid topic allowlist for community story categorization
-const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", "경력단절", "자존감"];
 
 /** Try cookie auth first, then fallback to Authorization bearer token */
 async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
