@@ -292,7 +292,7 @@ function PricingContent() {
                 }}
               >
                 <img
-                  src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
+                  src={`/images/sample-tent/scene-${String(i + 1).padStart(2, "0")}.jpg`}
                   alt={`동화 장면 ${i + 1}`}
                   width={220}
                   height={392}
