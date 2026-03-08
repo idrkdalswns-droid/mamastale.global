@@ -22,6 +22,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mamastale-global.pages.dev";
+  const ogImage = `${siteUrl}/images/hero.jpg`;
+
   const fallback: Metadata = {
     title: "마음 동화 | mamastale",
     description: "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.",
@@ -29,6 +32,14 @@ export async function generateMetadata({
       title: "마음 동화 | mamastale",
       description: "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.",
       type: "article",
+      siteName: "mamastale",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "mamastale - 엄마의 마음 동화" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "마음 동화 | mamastale",
+      description: "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.",
+      images: [ogImage],
     },
   };
 
@@ -62,11 +73,13 @@ export async function generateMetadata({
         description,
         type: "article",
         siteName: "mamastale",
+        images: [{ url: ogImage, width: 1200, height: 630, alt: `${title} - mamastale` }],
       },
       twitter: {
-        card: "summary",
+        card: "summary_large_image",
         title: `${title} — ${author} | mamastale`,
         description,
+        images: [ogImage],
       },
     };
   } catch {

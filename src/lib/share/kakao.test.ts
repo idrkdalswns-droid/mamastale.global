@@ -72,6 +72,10 @@ describe("Kakao share utility — configuration", () => {
   it("falls back to hero.jpg for default image", () => {
     expect(kakaoSource).toContain("hero.jpg");
   });
+
+  it("includes a viral loop button for new story creation", () => {
+    expect(kakaoSource).toContain("나도 동화 만들기");
+  });
 });
 
 describe("Kakao share utility — type safety", () => {

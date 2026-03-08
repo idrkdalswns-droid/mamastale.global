@@ -111,6 +111,13 @@ export async function shareToKakao(params: {
             webUrl: params.url,
           },
         },
+        {
+          title: "나도 동화 만들기",
+          link: {
+            mobileWebUrl: origin,
+            webUrl: origin,
+          },
+        },
       ],
     });
 

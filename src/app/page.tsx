@@ -337,6 +337,7 @@ export default function Home() {
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
+          onNewStory={() => { reset(); clearTicketSession(); setShow(false); setScreen("landing"); }}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (

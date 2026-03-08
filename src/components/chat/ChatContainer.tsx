@@ -289,6 +289,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
               onComplete();
             }
           }}
+          onNewStory={onGoHome}
         />
       )}
 

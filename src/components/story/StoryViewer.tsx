@@ -32,9 +32,11 @@ interface StoryViewerProps {
   onUnpublish?: () => void;
   /** Whether this story was generated with the premium (Opus) AI model */
   isPremium?: boolean;
+  /** Callback for "new story" repurchase nudge */
+  onNewStory?: () => void;
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -422,6 +424,28 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               >
                 {onBackLabel || "다음 단계"}
               </button>
+            )}
+            {/* Repurchase nudge — next story CTA */}
+            {onNewStory && (
+              <div
+                className="mt-1 pt-3"
+                style={{ borderTop: "1px solid rgba(196,149,106,0.1)" }}
+              >
+                <p className="text-[11px] text-brown-pale font-normal text-center mb-2 break-keep">
+                  이번엔 어떤 이야기를 들려주실 건가요?
+                </p>
+                <button
+                  onClick={onNewStory}
+                  className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97]"
+                  style={{
+                    background: "transparent",
+                    color: "#8B6F55",
+                    border: "1.5px dashed rgba(196,149,106,0.3)",
+                  }}
+                >
+                  + 새로운 동화 만들기
+                </button>
+              </div>
             )}
             <button
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}

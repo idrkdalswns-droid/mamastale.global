@@ -2,8 +2,14 @@
 
 import { motion } from "framer-motion";
 
+/** Topic suggestions for next story nudge */
+const TOPIC_SUGGESTIONS = [
+  "양육 번아웃", "경력 단절", "자존감", "가족 갈등", "산후 우울",
+];
+
 interface StoryCompleteCTAProps {
   onViewStory: () => void;
+  onNewStory?: () => void;
 }
 
 // Soft floating particles for celebration feel
@@ -19,6 +25,7 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 
 export default function StoryCompleteCTA({
   onViewStory,
+  onNewStory,
 }: StoryCompleteCTAProps) {
   return (
     <motion.div
@@ -152,6 +159,43 @@ export default function StoryCompleteCTA({
         >
           친구에게 공유하기
         </motion.button>
+
+        {/* Repurchase nudge — next story suggestion */}
+        {onNewStory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 1.6 }}
+            className="mt-6 pt-5"
+            style={{ borderTop: "1px solid rgba(196,149,106,0.12)" }}
+          >
+            <p className="text-[11px] text-brown-pale font-normal mb-2 break-keep">
+              이번엔 어떤 이야기를 들려주실 건가요?
+            </p>
+            <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+              {TOPIC_SUGGESTIONS.map((topic) => (
+                <span
+                  key={topic}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-medium"
+                  style={{ background: "rgba(224,122,95,0.08)", color: "#C96B52" }}
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={onNewStory}
+              className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97]"
+              style={{
+                background: "transparent",
+                color: "#8B6F55",
+                border: "1.5px dashed rgba(196,149,106,0.3)",
+              }}
+            >
+              + 새로운 이야기 시작하기
+            </button>
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   );

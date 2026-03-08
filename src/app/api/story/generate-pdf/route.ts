@@ -139,43 +139,104 @@ export async function POST(request: NextRequest) {
     const author = escapeHtml(authorName || "어머니");
     const createdAt = new Date().toLocaleDateString("ko-KR");
 
-    // Generate printable HTML — 2 pages: cover + all story text
+    // Generate printable HTML — cover + scene-by-scene story + ending page
+    const sceneHtml = scenes.map((scene, idx) => {
+      const sceneTitle = escapeHtml(scene.title || `장면 ${scene.sceneNumber}`);
+      return `
+    <section class="scene">
+      <div class="scene-header">
+        <span class="scene-num">${idx + 1}</span>
+        <h3 class="scene-title">${sceneTitle}</h3>
+      </div>
+      <p class="scene-text">${safeHtml(scene.text)}</p>
+    </section>`;
+    }).join("\n");
+
     const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>${storyTitle}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&display=swap');
+    @page { margin: 20mm 25mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Serif KR', serif; color: #333; background: #fff; }
-    .cover { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 40px; background: linear-gradient(135deg, #fef3c7, #fde68a, #fbbf24); }
-    .cover h1 { font-size: 2.5rem; color: #92400e; margin-bottom: 16px; }
-    .cover .author { font-size: 1.2rem; color: #a16207; }
-    .cover .date { font-size: 0.9rem; color: #b45309; margin-top: 8px; }
-    .cover .emoji { font-size: 4rem; margin-bottom: 24px; }
-    .story-content { padding: 40px; page-break-before: always; }
-    .story-content h2 { font-size: 1.6rem; color: #92400e; margin-bottom: 28px; text-align: center; border-bottom: 2px solid #fbbf24; padding-bottom: 12px; }
-    .story-content p { font-size: 1.1rem; line-height: 2.2; color: #44403c; white-space: pre-wrap; margin-bottom: 20px; text-indent: 1em; }
-    .story-content p:last-of-type { margin-bottom: 0; }
-    .footer { text-align: center; padding: 40px; color: #a8a29e; font-size: 0.85rem; margin-top: 40px; border-top: 1px solid #e5e0da; }
-    @media print { .cover { min-height: auto; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    body { font-family: 'Noto Serif KR', 'Batang', serif; color: #3C1E1E; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* ── Cover page ── */
+    .cover {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; text-align: center; padding: 60px 40px;
+      background: linear-gradient(160deg, #FBF5EC 0%, #F8EDE0 40%, #F2DFCE 100%);
+      position: relative; overflow: hidden;
+    }
+    .cover::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(224,122,95,0.10) 0%, transparent 70%);
+    }
+    .cover::after {
+      content: ''; position: absolute; bottom: -40px; left: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(196,149,106,0.08) 0%, transparent 70%);
+    }
+    .cover-brand { font-size: 0.85rem; letter-spacing: 3px; color: #C4956A; font-weight: 300; margin-bottom: 40px; text-transform: uppercase; }
+    .cover-line { width: 48px; height: 1.5px; background: #E07A5F; margin: 0 auto 32px; border-radius: 1px; }
+    .cover h1 { font-size: 2.2rem; color: #3C1E1E; font-weight: 700; margin-bottom: 16px; line-height: 1.4; letter-spacing: -0.02em; }
+    .cover .author { font-size: 1rem; color: #8B6F55; font-weight: 300; }
+    .cover .date { font-size: 0.8rem; color: #C4956A; margin-top: 8px; font-weight: 300; }
+    .cover-footer { position: absolute; bottom: 40px; font-size: 0.7rem; color: #C4956A; font-weight: 300; letter-spacing: 1px; }
+
+    /* ── Story content ── */
+    .story-body { padding: 48px 40px; page-break-before: always; }
+    .scene { page-break-inside: avoid; margin-bottom: 40px; }
+    .scene:last-of-type { margin-bottom: 0; }
+    .scene-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .scene-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(224,122,95,0.10); color: #E07A5F;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .scene-title { font-size: 1rem; color: #8B6F55; font-weight: 400; letter-spacing: -0.01em; }
+    .scene-text { font-size: 1.05rem; line-height: 2.4; color: #44403c; white-space: pre-wrap; text-indent: 1em; font-weight: 300; }
+
+    /* ── Ending page ── */
+    .ending {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; text-align: center; padding: 60px 40px;
+      page-break-before: always;
+    }
+    .ending-line { width: 48px; height: 1.5px; background: #E07A5F; margin: 0 auto 28px; border-radius: 1px; }
+    .ending-msg { font-size: 1rem; color: #8B6F55; font-weight: 300; line-height: 2.2; margin-bottom: 32px; }
+    .ending-brand { font-size: 0.75rem; color: #C4956A; font-weight: 300; letter-spacing: 2px; }
+    .ending-sub { font-size: 0.7rem; color: #C4956A; font-weight: 300; margin-top: 6px; }
+
+    @media print {
+      .cover { min-height: auto; padding: 80px 40px; }
+      .ending { min-height: auto; padding: 80px 40px; }
+    }
   </style>
 </head>
 <body>
   <div class="cover">
-    <div class="emoji" style="font-size:3rem;color:#92400e;font-weight:700;">M</div>
+    <div class="cover-brand">mamastale</div>
+    <div class="cover-line"></div>
     <h1>${storyTitle}</h1>
-    <div class="author">글 · ${author}</div>
+    <div class="author">${author}</div>
     <div class="date">${createdAt}</div>
+    <div class="cover-footer">mamastale.com</div>
   </div>
-  <div class="story-content">
-    <h2>${storyTitle}</h2>
-    ${scenes.map((scene) => `<p>${safeHtml(scene.text)}</p>`).join("\n    ")}
-    <div class="footer">
-      <p>mamastale · 엄마의 마음 동화</p>
-      <p>이 동화는 AI와 함께 만든 특별한 이야기입니다.</p>
-    </div>
+  <div class="story-body">
+${sceneHtml}
+  </div>
+  <div class="ending">
+    <div class="ending-line"></div>
+    <p class="ending-msg">
+      이 동화는 ${author}의<br>마음에서 태어난 이야기입니다.
+    </p>
+    <div class="ending-brand">mamastale</div>
+    <p class="ending-sub">세상에 하나뿐인 마음 동화</p>
   </div>
   <script>window.onload = function() { window.print(); }</script>
 </body>
