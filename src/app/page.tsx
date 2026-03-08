@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
@@ -19,6 +19,30 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import TicketConfirmModal from "@/components/chat/TicketConfirmModal";
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "story" | "feedback" | "community";
+
+/** Horizontal scroll container that auto-scrolls to a specific child index on mount */
+function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cards = el.children;
+    if (cards.length <= initialIndex) return;
+    const card = cards[initialIndex] as HTMLElement;
+    // Center the target card in the scroll container
+    const scrollLeft = card.offsetLeft - el.offsetWidth / 2 + card.offsetWidth / 2;
+    el.scrollTo({ left: scrollLeft, behavior: "instant" });
+  }, [initialIndex]);
+  return (
+    <div
+      ref={scrollRef}
+      className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
+      style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
@@ -469,10 +493,7 @@ export default function Home() {
             <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
               ← 옆으로 넘겨보세요 →
             </p>
-            <div
-              className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
-            >
+            <GalleryScroller initialIndex={7}>
               {[
                 "옛날 옛적, 예쁜 아기를 낳은 엄마가 있었어요. 엄마는 매일매일 설거지를 했어요. 물소리가 졸졸졸, 그릇이 반짝반짝.",
                 "그런데 설거지를 할 때마다 엄마 마음이 이상했어요. 뭔가 쓸쓸하고, 뭔가 그리워요. \"내가 언제 이렇게 엄마가 되었지?\"",
@@ -499,7 +520,7 @@ export default function Home() {
                     width={180}
                     height={320}
                     className="w-full aspect-[9/16] object-cover object-top"
-                    loading={i === 0 ? "eager" : "lazy"}
+                    loading={i >= 6 && i <= 8 ? "eager" : "lazy"}
                   />
                   <div
                     className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
@@ -519,7 +540,7 @@ export default function Home() {
                   </div>
                 </div>
               ))}
-            </div>
+            </GalleryScroller>
           </div>
 
           {/* Value hint — shown ABOVE CTA for non-logged-in users */}
