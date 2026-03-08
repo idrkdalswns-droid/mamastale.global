@@ -201,6 +201,8 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
               <p className="text-[10px] text-brown-pale font-light mt-2 leading-5">
                 자살예방상담전화 <a href="tel:1393" className="underline font-medium text-brown-light">1393</a> (24시간)
                 <br />
+                정신건강위기상담전화 <a href="tel:1577-0199" className="underline font-medium text-brown-light">1577-0199</a> (24시간)
+                <br />
                 해외 거주 시 <a href="tel:988" className="underline font-medium text-brown-light">988</a> Suicide & Crisis Lifeline (미국)
               </p>
             </div>

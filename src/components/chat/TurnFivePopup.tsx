@@ -85,18 +85,14 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
         {isLoggedIn ? (
           /* ── Logged-in: Buy ticket ── */
           <>
-            {/* Discount pricing */}
+            {/* Pricing CTA — links to pricing page for accurate price display */}
             <div className="text-center mb-4">
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="text-sm text-brown-pale line-through">₩4,900</span>
-                <span className="font-serif text-2xl font-bold text-brown">₩3,920</span>
-              </div>
-              <span
-                className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white"
-                style={{ background: "#E07A5F" }}
-              >
-                첫 구매 20% OFF
-              </span>
+              <p className="text-sm text-brown font-medium">
+                티켓 1장이면 동화가 완성돼요
+              </p>
+              <p className="text-xs text-brown-pale font-light mt-1">
+                ₩4,900부터
+              </p>
             </div>
 
             <button
