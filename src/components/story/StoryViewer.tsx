@@ -364,6 +364,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
               </button>
               <button
                 onClick={handleCopy}
+                aria-label={copied ? "복사됨" : "전체 텍스트 복사"}
                 className="flex-1 py-3.5 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
                 style={{
                   background: copied ? "rgba(127,191,176,0.15)" : "rgba(127,191,176,0.1)",
@@ -371,7 +372,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                   border: "1.5px solid rgba(127,191,176,0.3)",
                 }}
               >
-                {copied ? "✓" : "복사"}
+                {copied ? "✓ 복사됨" : "복사"}
               </button>
             </div>
             <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />
