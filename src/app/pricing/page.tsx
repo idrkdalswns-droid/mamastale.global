@@ -330,8 +330,8 @@ function PricingContent() {
                   src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
                   alt={`동화 장면 ${i + 1}: ${title}`}
                   width={200}
-                  height={150}
-                  className="w-full aspect-[4/3] object-cover"
+                  height={356}
+                  className="w-full aspect-[9/16] object-cover object-top"
                   loading="lazy"
                 />
                 <div className="px-3 py-2 bg-white/80">
