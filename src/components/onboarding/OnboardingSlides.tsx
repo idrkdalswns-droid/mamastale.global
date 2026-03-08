@@ -11,7 +11,7 @@ const PARENT_ROLE_OPTIONS = [
 ];
 
 const PARENT_AGE_OPTIONS = [
-  { value: "", label: "선택 안함" },
+  { value: "10s", label: "10대" },
   { value: "20s", label: "20대" },
   { value: "30s", label: "30대" },
   { value: "40s", label: "40대" },
@@ -19,10 +19,10 @@ const PARENT_AGE_OPTIONS = [
 ];
 
 const CHILD_AGE_OPTIONS = [
-  { value: "", label: "선택 안함" },
-  { value: "0-2", label: "0~2세 (영아)" },
-  { value: "3-5", label: "3~5세 (유아)" },
-  { value: "6-8", label: "6~8세 (초등 저학년)" },
+  { value: "0-2", label: "0~2세" },
+  { value: "3-5", label: "3~5세" },
+  { value: "6-8", label: "6~8세" },
+  { value: "9-13", label: "9~13세" },
 ];
 
 interface Slide {

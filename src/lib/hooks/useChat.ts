@@ -119,6 +119,7 @@ const AGE_LABELS: Record<string, string> = {
   "0-2": "어린 아이를 돌보시느라",
   "3-5": "한창 호기심 많은 아이를 키우시느라",
   "6-8": "초등학교에 들어간 아이를 돌보시느라",
+  "9-13": "한창 자라나는 아이를 키우시느라",
 };
 
 const ROLE_TITLES: Record<string, { greeting: string; honorific: string }> = {

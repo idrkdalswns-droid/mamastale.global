@@ -29,6 +29,7 @@ export default function Home() {
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
   const [showTicketConfirm, setShowTicketConfirm] = useState(false);
+  const [showNoTicketsModal, setShowNoTicketsModal] = useState(false);
   const [ticketUsedForSession, setTicketUsedForSession] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const [editSaveError, setEditSaveError] = useState(false);
@@ -159,8 +160,8 @@ export default function Home() {
       // Has tickets: show confirmation popup (deduct before starting)
       setShowTicketConfirm(true);
     } else {
-      // No tickets: start free trial (5 turns free, then Turn-5 popup)
-      setScreen("onboarding");
+      // No tickets: show purchase prompt
+      setShowNoTicketsModal(true);
     }
   }, [startPending, authLoading, user, ticketsRemaining]);
 
@@ -181,7 +182,12 @@ export default function Home() {
       setShowTicketConfirm(true);
       return;
     }
-    // Logged-in users with 0 tickets OR guests: start free trial (5 turns free)
+    // Logged-in users with 0 tickets: show purchase prompt
+    if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
+      setShowNoTicketsModal(true);
+      return;
+    }
+    // Guests: start free trial (5 turns free)
     setScreen("onboarding");
   };
 
@@ -718,6 +724,53 @@ export default function Home() {
           }}
           onCancel={() => setShowTicketConfirm(false)}
         />
+      )}
+
+      {/* No tickets modal — prompt to purchase */}
+      {showNoTicketsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="티켓 구매 안내"
+          tabIndex={-1}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNoTicketsModal(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowNoTicketsModal(false); }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200"
+            style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
+          >
+            <h3 className="font-serif text-lg text-brown font-semibold text-center mb-2">
+              보유 티켓이 없습니다
+            </h3>
+            <p className="text-sm text-brown-light font-light text-center mb-1.5 leading-relaxed break-keep">
+              동화를 만들려면 티켓이 필요해요.
+            </p>
+            <p className="text-[11px] text-brown-pale font-light text-center mb-5 leading-relaxed break-keep">
+              티켓 구매 후 세상에 하나뿐인 동화를 만들어 보세요.
+            </p>
+
+            <Link
+              href="/pricing"
+              className="block w-full py-3.5 rounded-full text-sm font-bold text-white text-center no-underline transition-all active:scale-[0.97] mb-2"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
+              }}
+              onClick={() => setShowNoTicketsModal(false)}
+            >
+              티켓 구매하러 가기
+            </Link>
+            <button
+              onClick={() => setShowNoTicketsModal(false)}
+              className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"
+            >
+              다음에 할게요
+            </button>
+          </div>
+        </div>
       )}
 
       {/* SG-1: Payment Success Modal — accessible dialog */}

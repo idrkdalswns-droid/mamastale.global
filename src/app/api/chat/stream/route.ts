@@ -49,9 +49,9 @@ const chatRequestSchema = z.object({
     })
   ).max(120),
   sessionId: z.string().optional(),
-  childAge: z.enum(["0-2", "3-5", "6-8"]).optional(),
+  childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
-  parentAge: z.enum(["20s", "30s", "40s", "50+"]).optional(),
+  parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
   currentPhase: z.number().min(1).max(4).optional(),
   turnCountInCurrentPhase: z.number().min(0).optional(),
   storySeed: storySeedSchema,
@@ -231,11 +231,11 @@ export async function POST(request: NextRequest) {
 
   // ─── Build system prompt ───
   const ageLabels: Record<string, string> = {
-    "0-2": "0~2세 (영아)", "3-5": "3~5세 (유아)", "6-8": "6~8세 (초등 저학년)",
+    "0-2": "0~2세 (영아)", "3-5": "3~5세 (유아)", "6-8": "6~8세 (초등 저학년)", "9-13": "9~13세 (초등 고학년~중학생)",
   };
   let systemPrompt = getSystemPrompt("ko");
 
-  if (childAge && ["0-2", "3-5", "6-8"].includes(childAge)) {
+  if (childAge && ["0-2", "3-5", "6-8", "9-13"].includes(childAge)) {
     systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge]}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
   }
 
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
     "엄마": "어머니(엄마)", "아빠": "아버지(아빠)", "할머니": "할머니", "할아버지": "할아버지", "기타": "보호자",
   };
   const parentAgeLabels: Record<string, string> = {
-    "20s": "20대", "30s": "30대", "40s": "40대", "50+": "50대 이상",
+    "10s": "10대", "20s": "20대", "30s": "30대", "40s": "40대", "50+": "50대 이상",
   };
   if (parentRole && roleLabels[parentRole]) {
     let parentContext = `\n\n<parent_context>\n사용자의 역할: ${roleLabels[parentRole]}`;
