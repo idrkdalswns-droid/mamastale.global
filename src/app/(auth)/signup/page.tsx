@@ -20,9 +20,7 @@ export default function SignupPage() {
             15분 AI 대화 → 10장면 동화책 완성 · 영구 보관
           </p>
           <div className="flex items-center justify-center gap-3 text-[10px] text-brown-pale font-light">
-            <span>★ 4.8/5.0</span>
-            <span>·</span>
-            <span>237+ 이용</span>
+            <span>★ 4.8/5.0 만족도</span>
           </div>
         </div>
 

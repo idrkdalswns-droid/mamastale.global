@@ -116,6 +116,7 @@ export default function CommunityBrowsePage() {
                 type="button"
                 onClick={() => { setSearchInput(""); setSearch(""); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brown-pale"
+                aria-label="검색어 지우기"
               >
                 ✕
               </button>
@@ -190,7 +191,7 @@ export default function CommunityBrowsePage() {
               {topic ? "해당 주제의 동화가 없어요" : "아직 공유된 이야기가 없어요"}
             </h3>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-5">
-              {topic ? "다른 주제를 선택해 보세요" : "첫 번째 이야기를 나눠보세요!"}
+              {topic ? "다른 주제를 선택해 보세요" : "나만의 마음 동화를 만들고 공유해보세요"}
             </p>
             {!topic && (
               <Link

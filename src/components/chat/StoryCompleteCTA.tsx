@@ -128,13 +128,18 @@ export default function StoryCompleteCTA({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 1.2 }}
-          onClick={() => {
+          onClick={async () => {
+            const shareData = {
+              title: "나만의 마음 동화가 완성되었어요",
+              text: "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
+              url: "https://mamastale-global.pages.dev",
+            };
             if (navigator.share) {
-              navigator.share({
-                title: "나만의 마음 동화가 완성되었어요",
-                text: "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
-                url: "https://mamastale-global.pages.dev",
-              }).catch(() => {});
+              navigator.share(shareData).catch(() => {});
+            } else {
+              try {
+                await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+              } catch { /* ignore */ }
             }
           }}
           className="w-full py-3 rounded-full text-[13px] font-medium text-brown-mid transition-all active:scale-[0.97]"

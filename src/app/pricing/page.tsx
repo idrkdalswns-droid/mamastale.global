@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: "어떤 결제 수단을 지원하나요?",
-    a: "신용카드 및 체크카드로 결제할 수 있습니다. 간편결제 지원은 준비 중입니다.",
+    a: "토스페이먼츠를 통해 신용카드 및 체크카드로 안전하게 결제할 수 있습니다.",
   },
 ];
 
@@ -351,9 +351,9 @@ function PricingContent() {
         <section className="text-center mb-10">
           <div className="flex items-center justify-center gap-6 mb-5">
             <div>
-              <p className="text-2xl font-bold text-brown font-serif">237+</p>
+              <p className="text-2xl font-bold text-brown font-serif">4.8</p>
               <p className="text-[11px] text-brown-light font-light">
-                엄마가 선택
+                평균 만족도
               </p>
             </div>
             <div className="w-px h-8 bg-brown-pale/20" />
@@ -370,7 +370,7 @@ function PricingContent() {
                 ))}
               </div>
               <p className="text-[11px] text-brown-light font-light">
-                평균 4.8 / 5.0
+                5.0 만점
               </p>
             </div>
           </div>
@@ -822,8 +822,8 @@ function PricingContent() {
               ₩{confirmModal.amount.toLocaleString()}
             </p>
             <p className="text-[11px] text-brown-pale font-light text-center mb-5 leading-relaxed">
-              지금까지 동화를 만든 어머니 중<br />
-              <span className="text-coral font-medium">98%</span>가 만족하셨어요
+              동화를 완성한 어머니들이<br />
+              <span className="text-coral font-medium">&ldquo;아이가 매일 읽어달라고 해요&rdquo;</span>라고 전해주셨어요
             </p>
             <button
               onClick={confirmPayment}

@@ -5,6 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+// GA4 gtag type declaration
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
 // Map Toss payment methods to user-friendly labels
 const PAYMENT_METHOD_LABELS: Record<string, { label: string }> = {
   카드: { label: "카드" },
@@ -81,6 +88,20 @@ function PaymentSuccessContent() {
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setStatus("success");
+          // GA4 purchase event for conversion tracking
+          try {
+            if (typeof window !== "undefined" && typeof window.gtag === "function") {
+              window.gtag("event", "purchase", {
+                currency: "KRW",
+                value: params.amount,
+                items: [{
+                  item_name: params.amount >= 14900 ? "4일 프로그램 번들" : "동화 1편 티켓",
+                  quantity: params.amount >= 14900 ? 4 : 1,
+                  price: params.amount,
+                }],
+              });
+            }
+          } catch { /* ignore analytics errors */ }
         } else if (data.code === "TICKET_INCREMENT_FAILED") {
           // Payment confirmed but ticket grant failed — offer retry (money already charged)
           setStatus("ticket_failed");

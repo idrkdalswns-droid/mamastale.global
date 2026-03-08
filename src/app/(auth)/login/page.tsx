@@ -19,8 +19,11 @@ function LoginForm() {
         }}
       />
 
-      <div className="text-center mt-6">
-        <Link href="/" className="text-sm text-brown-mid font-light no-underline">
+      <div className="text-center mt-6 space-y-3">
+        <Link href="/signup" className="block text-sm text-brown-mid font-light no-underline">
+          아직 계정이 없으신가요? <span className="text-coral font-medium">회원가입</span>
+        </Link>
+        <Link href="/" className="block text-sm text-brown-pale font-light no-underline">
           ← 홈으로 돌아가기
         </Link>
       </div>

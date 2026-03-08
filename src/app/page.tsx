@@ -440,7 +440,7 @@ export default function Home() {
               </>
             ) : (
               <p>
-                지금까지 <span className="text-coral font-medium">237+</span>명의 엄마가 동화를 만들었어요
+                많은 엄마들이 마음 동화를 만들고 있어요
               </p>
             )}
           </div>

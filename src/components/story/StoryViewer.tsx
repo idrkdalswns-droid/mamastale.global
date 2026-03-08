@@ -336,7 +336,9 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                     if (typeof navigator !== "undefined" && navigator.share) {
                       navigator.share({ title: storyTitle, url: siteUrl }).catch(() => {});
                     } else {
-                      alert("카카오톡 공유를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+                      try {
+                        await navigator.clipboard.writeText(`${storyTitle} — ${authorName || "엄마"}가 만든 세상에 하나뿐인 동화 ${siteUrl}`);
+                      } catch { /* ignore */ }
                     }
                   }
                 }}
