@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return sb.applyCookies(NextResponse.json(
-        { error: "Invalid story data" },
+        { error: "잘못된 동화 데이터입니다." },
         { status: 400 }
       ));
     }
@@ -275,7 +275,7 @@ ${sceneHtml}
   } catch (error) {
     console.error("PDF generation error:", error instanceof Error ? error.name : "Unknown");
     return sb.applyCookies(NextResponse.json(
-      { error: "PDF generation failed" },
+      { error: "PDF 생성에 실패했습니다." },
       { status: 500 }
     ));
   }

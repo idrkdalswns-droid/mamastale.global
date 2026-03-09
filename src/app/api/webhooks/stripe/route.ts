@@ -183,7 +183,8 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("subscriptions")
           .update({
-            status: ["active", "past_due", "canceled", "unpaid", "paused"].includes(sub.status) ? sub.status : "past_due",
+            // R8-1: Only use statuses matching DB CHECK constraint (active, past_due, canceled, trialing)
+            status: ["active", "past_due", "canceled", "trialing"].includes(sub.status) ? sub.status : "past_due",
             ...(periodStart && {
               current_period_start: new Date(periodStart * 1000).toISOString(),
             }),

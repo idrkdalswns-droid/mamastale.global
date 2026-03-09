@@ -58,7 +58,7 @@ export async function GET(
     .single();
 
   if (error || !story) {
-    return NextResponse.json({ error: "Story not found" }, { status: 404 });
+    return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
   }
 
   // Atomic view count increment — deduplicated per IP per story (5min window)

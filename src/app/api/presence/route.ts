@@ -41,26 +41,26 @@ export async function POST(request: NextRequest) {
   // LAUNCH-FIX: Body size limit (presence payloads are tiny, 4KB max)
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > 4_000) {
-    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
   const parsed = presenceSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 데이터입니다." }, { status: 400 });
   }
 
   const { anonymous_id, page } = parsed.data;
 
   const supabase = createServiceRoleClient();
   if (!supabase) {
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+    return NextResponse.json({ error: "서비스를 사용할 수 없습니다." }, { status: 503 });
   }
 
   // Upsert presence (ON CONFLICT anonymous_id DO UPDATE)

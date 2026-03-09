@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid feedback format" },
+        { error: "잘못된 피드백 형식입니다." },
         { status: 400 }
       );
     }
