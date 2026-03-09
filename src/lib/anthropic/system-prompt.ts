@@ -505,8 +505,10 @@ function generateCrisisReasoning(severity: CrisisSeverity, keywords: string[], c
  * Includes false-positive filtering (mental-wellness-prompts inspired)
  */
 export function screenForCrisis(userMessage: string): CrisisScreenResult {
-  const lowerMsg = userMessage.toLowerCase();
-  const normalizedMsg = userMessage.replace(/\s+/g, "");
+  // R6-F8: Apply NFC normalization + strip zero-width chars (matches profanity filter)
+  const cleanMsg = userMessage.normalize("NFC").replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "");
+  const lowerMsg = cleanMsg.toLowerCase();
+  const normalizedMsg = cleanMsg.replace(/\s+/g, "");
 
   // ─── FALSE POSITIVE CHECK (sub-1ms, prevents unnecessary alerts) ───
   if (FALSE_POSITIVE_PATTERNS.some(pattern => pattern.test(userMessage))) {

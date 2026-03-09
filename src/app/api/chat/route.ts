@@ -38,7 +38,8 @@ const chatRequestSchema = z.object({
       content: z.string().min(1).max(50000),  // Korean text can be much longer per token
     })
   ).max(120),  // Generous limit for long conversations
-  sessionId: z.string().optional(),
+  // R6-F5: Constrain sessionId to prevent log pollution and crisis tracking abuse
+  sessionId: z.string().max(100).regex(/^[a-zA-Z0-9_-]*$/).optional(),
   childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
@@ -175,7 +176,8 @@ export async function POST(request: NextRequest) {
   }
 
   const isAuthenticated = !!userId;
-  const rateKey = isAuthenticated ? `chat:auth:${userId}` : `chat:ip:${ip}`;
+  // R6-F3: Use shared "llm:" prefix so chat + stream share one rate limit pool
+  const rateKey = isAuthenticated ? `llm:auth:${userId}` : `llm:ip:${ip}`;
   const rateLimit = isAuthenticated ? AUTH_RATE_LIMIT : GUEST_RATE_LIMIT;
 
   // ─── Persistent Rate limiting (Supabase primary, in-memory fallback) ───

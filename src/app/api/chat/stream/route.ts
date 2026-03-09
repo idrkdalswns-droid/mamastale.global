@@ -48,7 +48,8 @@ const chatRequestSchema = z.object({
       content: z.string().min(1).max(50000),
     })
   ).max(120),
-  sessionId: z.string().optional(),
+  // R6-F5: Constrain sessionId to prevent log pollution
+  sessionId: z.string().max(100).regex(/^[a-zA-Z0-9_-]*$/).optional(),
   childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
@@ -106,7 +107,8 @@ export async function POST(request: NextRequest) {
   }
 
   const isAuthenticated = !!userId;
-  const rateKey = isAuthenticated ? `stream:auth:${userId}` : `stream:ip:${ip}`;
+  // R6-F3: Use shared "llm:" prefix so chat + stream share one rate limit pool
+  const rateKey = isAuthenticated ? `llm:auth:${userId}` : `llm:ip:${ip}`;
   const rateLimit = isAuthenticated ? AUTH_RATE_LIMIT : GUEST_RATE_LIMIT;
 
   // ─── Rate limiting ───
@@ -500,12 +502,16 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  // R6-F6: Add security headers to raw Response (middleware headers bypass)
   return new Response(readable, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Connection": "keep-alive",
       "X-Accel-Buffering": "no", // Disable nginx buffering
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
     },
   });
 }
