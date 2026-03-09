@@ -214,6 +214,7 @@ export default function Home() {
   const handleStartStory = () => {
     // Reset previous session flag before starting new flow
     clearTicketSession();
+    setSelectedCover(null);
     // Block clicks while ticket balance is still loading for logged-in users
     if (user && ticketsRemaining === null) return;
     // Logged-in users with tickets: show ticket confirmation popup (deduct before starting)
@@ -289,35 +290,34 @@ export default function Home() {
         <StoryEditor
           scenes={completedScenes}
           title="나의 마음 동화"
-          onDone={(edited, title) => {
+          onDone={async (edited, title) => {
             updateScenes(edited);
             setEditedTitle(title);
             // SIM-FIX(S18): Update saved story in DB with error feedback
+            // R3-C3: Await PATCH — only proceed to coverPick on success
             if (completedStoryId && completedStoryId.startsWith("story_") === false) {
-              (async () => {
+              try {
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
                 try {
-                  const headers: Record<string, string> = { "Content-Type": "application/json" };
-                  try {
-                    const supabase = createClient();
-                    if (supabase) {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-                    }
-                  } catch { /* ignore */ }
-                  const res = await fetch(`/api/stories/${completedStoryId}`, {
-                    method: "PATCH",
-                    headers,
-                    body: JSON.stringify({ title, scenes: edited }),
-                  });
-                  if (!res.ok) {
-                    setEditSaveError(true);
-                    setTimeout(() => setEditSaveError(false), 3000);
+                  const supabase = createClient();
+                  if (supabase) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
                   }
-                } catch {
+                } catch { /* ignore */ }
+                const res = await fetch(`/api/stories/${completedStoryId}`, {
+                  method: "PATCH",
+                  headers,
+                  body: JSON.stringify({ title, scenes: edited }),
+                });
+                if (!res.ok) {
                   setEditSaveError(true);
                   setTimeout(() => setEditSaveError(false), 3000);
                 }
-              })();
+              } catch {
+                setEditSaveError(true);
+                setTimeout(() => setEditSaveError(false), 3000);
+              }
             }
             setScreen("coverPick");
           }}
@@ -351,7 +351,10 @@ export default function Home() {
                   headers,
                   body: JSON.stringify({ coverImage: coverPath }),
                 });
-              } catch { /* silent — non-critical */ }
+              } catch {
+                // R3-C4: Warn user if cover save failed (selection still works in session)
+                console.warn("[CoverPicker] Failed to persist cover_image to DB");
+              }
             }
             setScreen("story");
           }}
@@ -378,7 +381,7 @@ export default function Home() {
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
-          onNewStory={() => { reset(); clearTicketSession(); setShow(false); setScreen("landing"); }}
+          onNewStory={() => { reset(); clearTicketSession(); setSelectedCover(null); setShow(false); setScreen("landing"); }}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
@@ -408,6 +411,7 @@ export default function Home() {
           onRestart={() => {
             reset(); // LOW-11 fix: reset chat store
             clearTicketSession();
+            setSelectedCover(null);
             setShow(false);
             setScreen("landing");
           }}

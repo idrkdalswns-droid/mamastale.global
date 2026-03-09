@@ -78,9 +78,15 @@ export default function LibraryStoryPage() {
         });
         if (res.ok) {
           setStory((prev) => prev ? { ...prev, title: editedTitle, scenes: editedScenes } : prev);
+        } else {
+          // R3-C14: Show error feedback on save failure
+          setError("저장에 실패했습니다. 다시 시도해주세요.");
+          setTimeout(() => setError(""), 3000);
         }
       } catch {
-        // Silently fail — user can try again
+        // R3-C14: Show error feedback on save failure
+        setError("저장에 실패했습니다. 다시 시도해주세요.");
+        setTimeout(() => setError(""), 3000);
       } finally {
         setSaving(false);
         setEditing(false);

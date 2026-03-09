@@ -79,6 +79,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
     return COVER_IMAGES[idx];
   });
   const [activeTone, setActiveTone] = useState<CoverTone | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const thumbnailRef = useRef<HTMLDivElement>(null);
 
   // Filter images by active tone
@@ -118,7 +119,9 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
       const first = COVER_IMAGES.find((c) => c.tone === activeTone);
       if (first) {
         setSelected(first);
-        setTimeout(() => scrollToSelected(first.path), 100);
+        // R3-B4: Clean up scroll timer on unmount / rapid tone changes
+        const timer = setTimeout(() => scrollToSelected(first.path), 100);
+        return () => clearTimeout(timer);
       }
     }
   }, [activeTone, selected.tone, scrollToSelected]);
@@ -219,6 +222,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
             <button
               key={tone}
               onClick={() => handleToneToggle(tone)}
+              aria-pressed={isActive}
               className="px-4 py-2 rounded-full text-[12px] font-medium transition-all active:scale-[0.95]"
               style={{
                 background: isActive ? style.bgActive : style.bg,
@@ -294,14 +298,19 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         transition={{ delay: 0.9, duration: 0.4 }}
       >
         <button
-          onClick={() => onSelect(selected.path)}
-          className="w-full py-4 rounded-full text-white text-[15px] font-medium transition-all active:scale-[0.97]"
+          onClick={() => {
+            if (isSubmitting) return;
+            setIsSubmitting(true);
+            onSelect(selected.path);
+          }}
+          disabled={isSubmitting}
+          className="w-full py-4 rounded-full text-white text-[15px] font-medium transition-all active:scale-[0.97] disabled:opacity-70"
           style={{
             background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
           }}
         >
-          이 표지로 결정
+          {isSubmitting ? "저장하는 중..." : "이 표지로 결정"}
         </button>
         <button
           onClick={onSkip}

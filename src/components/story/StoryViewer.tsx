@@ -522,13 +522,14 @@ export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onB
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const alias = aliasInput.trim() || "익명의 엄마";
+                  // R3-A11: Add .catch() to prevent unhandled promise rejection
                   onPublish?.(alias).then((ok) => {
                     if (ok !== false) {
                       setShowAliasModal(false);
                       setPublishToast("커뮤니티에 공유되었습니다!");
                       setTimeout(() => setPublishToast(null), 2500);
                     }
-                  });
+                  }).catch(() => { /* handled by onPublish caller */ });
                 }
               }}
             />
