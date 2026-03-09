@@ -36,6 +36,9 @@ function PaymentSuccessContent() {
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const confirmedRef = useRef(false);
+  // R5-CRIT2: Track status in ref to avoid stale closure in setTimeout
+  const statusRef = useRef(status);
+  statusRef.current = status;
   // Store payment params for retry (URL is cleaned before fetch)
   const paymentParamsRef = useRef<{ paymentKey: string; orderId: string; amount: number; mode: string } | null>(null);
 
@@ -81,8 +84,9 @@ function PaymentSuccessContent() {
     };
 
     // R7-FIX: 15s timeout fallback — prevents infinite spinner on slow/hung networks
+    // R5-CRIT2: Use statusRef.current to avoid stale closure
     const timeoutId = setTimeout(() => {
-      if (status === "confirming") {
+      if (statusRef.current === "confirming") {
         setStatus("error");
         setErrorMsg("결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
       }

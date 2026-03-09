@@ -50,11 +50,17 @@ export default function LibraryPage() {
       } catch { /* ignore */ }
 
       const res = await fetch("/api/stories", { headers, credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) {
+        // R5-HIGH6: Show specific message for auth failures
+        if (res.status === 401) throw new Error("AUTH");
+        throw new Error("Failed to fetch");
+      }
       const data = await res.json();
       setStories(data.stories || []);
-    } catch {
-      setError("동화 목록을 불러올 수 없습니다.");
+    } catch (err) {
+      setError((err as Error).message === "AUTH"
+        ? "로그인이 필요합니다. 로그인 후 다시 시도해주세요."
+        : "동화 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }

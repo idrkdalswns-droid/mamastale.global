@@ -59,10 +59,22 @@ export function usePresence(page: "home" | "chat" | "other"): PresenceCounts {
     // Repeat every 30 seconds
     intervalId = setInterval(sendHeartbeat, 30_000);
 
+    // R5-M13: Pause heartbeat when tab is backgrounded to save bandwidth
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        clearInterval(intervalId);
+      } else {
+        sendHeartbeat(); // Immediate heartbeat on return
+        intervalId = setInterval(sendHeartbeat, 30_000);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       mounted = false;
       clearTimeout(initialTimer);
       clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []); // Only on mount/unmount
 

@@ -110,6 +110,7 @@ export default function CommunityBrowsePage() {
               enterKeyHint="search"
               autoComplete="off"
               aria-label="동화 검색"
+              maxLength={100}
             />
             {search && (
               <button
