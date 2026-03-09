@@ -205,8 +205,9 @@ export default function AuthCallbackPage() {
     );
   }
 
+  // R7-FIX: aria-busy + role="status" for loading state (accessibility)
   return (
-    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8">
+    <div className="min-h-dvh bg-cream flex flex-col items-center justify-center px-8" aria-busy="true" role="status" aria-label="로그인 처리 중">
       <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse" style={{ background: "rgba(127,191,176,0.15)" }}>
         <span className="text-lg font-serif font-bold" style={{ color: "#7FBFB0" }}>M</span>
       </div>

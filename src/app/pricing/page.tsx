@@ -838,7 +838,7 @@ function PricingContent() {
           <button
             onClick={() => initiatePayment("bundle")}
             disabled={isProcessing || !sdkReady}
-            className="flex-[2] py-3 rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
+            className="flex-[2] py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
               boxShadow: "0 4px 16px rgba(109,76,145,0.3)",
@@ -849,7 +849,7 @@ function PricingContent() {
           <button
             onClick={() => initiatePayment("ticket")}
             disabled={isProcessing || !sdkReady}
-            className="flex-1 py-3 rounded-full text-[13px] font-medium text-coral transition-all active:scale-[0.97] disabled:opacity-60"
+            className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-medium text-coral transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "rgba(255,255,255,0.9)",
               border: "1.5px solid rgba(224,122,95,0.3)",
