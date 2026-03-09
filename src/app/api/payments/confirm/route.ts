@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { incrementTickets } from "@/lib/supabase/tickets";
 import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
@@ -355,6 +356,34 @@ export async function POST(request: NextRequest) {
       console.warn("[Toss] metadata pre-claim failed — relying on in-memory dedup");
     }
 
+    // ─── Atomic DB dedup via order_claims UNIQUE constraint ───
+    // Strongest dedup guard — survives across Edge isolates and redeploys.
+    // UNIQUE(user_id, order_id) guarantees at-most-once ticket increment.
+    const serviceClient = createServiceRoleClient();
+    if (serviceClient) {
+      try {
+        const { error: claimErr } = await serviceClient
+          .from("order_claims")
+          .insert({ user_id: user.id, order_id: orderId });
+
+        if (claimErr) {
+          // PostgreSQL unique_violation → already claimed by another isolate
+          if (claimErr.code === "23505") {
+            markOrderProcessed(orderId);
+            return sb.applyCookies(NextResponse.json({
+              success: true,
+              alreadyProcessed: true,
+            }));
+          }
+          // Other DB errors — log but proceed (metadata dedup still protects)
+          console.warn("[Toss] order_claims insert error:", claimErr.code);
+        }
+      } catch (claimEx) {
+        // Network/timeout — log but proceed with existing dedup guards
+        console.warn("[Toss] order_claims check failed:", claimEx instanceof Error ? claimEx.message : "Unknown");
+      }
+    }
+
     // ─── Atomic ticket increment ───
     let newTotal: number;
     try {
@@ -369,6 +398,18 @@ export async function POST(request: NextRequest) {
           .eq("id", user.id);
       } catch {
         console.error("[Toss] metadata rollback failed for order:", orderId);
+      }
+      // Rollback order_claims row so retry is possible
+      if (serviceClient) {
+        try {
+          await serviceClient
+            .from("order_claims")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("order_id", orderId);
+        } catch {
+          console.error("[Toss] order_claims rollback failed for order:", orderId);
+        }
       }
       // Do NOT mark in-memory as processed — allow retry
       return sb.applyCookies(NextResponse.json(
