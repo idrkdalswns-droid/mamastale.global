@@ -5,19 +5,24 @@ import { useState, useEffect } from "react";
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
+  // R5-5: Guard localStorage access (private browsing / restricted environments)
   useEffect(() => {
-    const consent = localStorage.getItem("mamastale-cookie-consent");
-    if (!consent) setVisible(true);
+    try {
+      const consent = localStorage.getItem("mamastale-cookie-consent");
+      if (!consent) setVisible(true);
+    } catch {
+      setVisible(true); // Show consent if storage unavailable
+    }
   }, []);
 
   const accept = () => {
-    localStorage.setItem("mamastale-cookie-consent", "accepted");
+    try { localStorage.setItem("mamastale-cookie-consent", "accepted"); } catch { /* blocked */ }
     window.dispatchEvent(new Event("cookie-consent-changed"));
     setVisible(false);
   };
 
   const decline = () => {
-    localStorage.setItem("mamastale-cookie-consent", "declined");
+    try { localStorage.setItem("mamastale-cookie-consent", "declined"); } catch { /* blocked */ }
     window.dispatchEvent(new Event("cookie-consent-changed"));
     setVisible(false);
   };
@@ -30,15 +35,15 @@ export function CookieConsent() {
       role="alertdialog"
       aria-label="쿠키 사용 동의"
     >
-      <div className="max-w-[430px] mx-auto bg-white/95 backdrop-blur-xl rounded-2xl p-4 border border-brown-pale/10 shadow-lg">
-        <p className="text-xs text-brown-light font-light leading-relaxed mb-3">
+      <div className="max-w-[430px] mx-auto bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl rounded-2xl p-4 border border-brown-pale/10 dark:border-white/10 shadow-lg">
+        <p className="text-xs text-brown-light dark:text-neutral-300 font-light leading-relaxed mb-3">
           마마스테일은 더 나은 경험을 위해 쿠키를 사용합니다.{" "}
           <a href="/privacy" className="text-coral underline">개인정보처리방침</a> 확인
         </p>
         <div className="flex gap-2">
           <button
             onClick={decline}
-            className="flex-1 py-2.5 rounded-full text-xs text-brown-light font-medium min-h-[44px]"
+            className="flex-1 py-2.5 rounded-full text-xs text-brown-light dark:text-neutral-300 font-medium min-h-[44px]"
             style={{ border: "1px solid rgba(196,149,106,0.2)" }}
           >
             거부

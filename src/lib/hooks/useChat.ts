@@ -504,6 +504,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // Save completed story
             if (event.isStoryComplete && event.scenes && event.scenes.length > 0 && !get().storySaved && !saveInFlight) {
               saveInFlight = true;
+              // R5-1: Timeout fallback — release lock after 30s (parity with non-streaming path)
+              saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
               set({ storySaved: true });
               try {
                 const authHeaders = await getAuthHeaders();
@@ -533,6 +535,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 set({ storySaved: false, storySaveError: "save_failed" });
                 get().persistToStorage();
               } finally {
+                if (saveInFlightTimer) { clearTimeout(saveInFlightTimer); saveInFlightTimer = null; }
                 saveInFlight = false;
               }
             }

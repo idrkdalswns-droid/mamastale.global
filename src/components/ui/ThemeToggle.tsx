@@ -8,12 +8,17 @@ export function ThemeToggle() {
   const [dark, setDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // R5-4: Guard localStorage / matchMedia access (SSR & restricted environments)
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = saved === "dark" || (!saved && prefersDark);
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+      const isDark = saved === "dark" || (!saved && prefersDark);
+      setDark(isDark);
+      document.documentElement.classList.toggle("dark", isDark);
+    } catch {
+      // localStorage blocked or matchMedia unavailable — stay with default (light)
+    }
     setMounted(true);
   }, []);
 
@@ -21,7 +26,7 @@ export function ThemeToggle() {
     setDark((prev) => {
       const next = !prev;
       document.documentElement.classList.toggle("dark", next);
-      localStorage.setItem(STORAGE_KEY, next ? "dark" : "light");
+      try { localStorage.setItem(STORAGE_KEY, next ? "dark" : "light"); } catch { /* quota / blocked */ }
       return next;
     });
   }, []);

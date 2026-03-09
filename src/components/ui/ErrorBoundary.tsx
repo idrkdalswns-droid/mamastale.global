@@ -12,16 +12,17 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   errorMessage: string;
+  retryKey: number;
 }
 
 // FI-6: ErrorBoundary to gracefully catch rendering errors in chat/story flow
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, errorMessage: "" };
+    this.state = { hasError: false, errorMessage: "", retryKey: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, errorMessage: error.message || "Unknown error" };
   }
 
@@ -62,7 +63,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </p>
           <div className="flex flex-col gap-2.5 w-full max-w-[240px]">
             <button
-              onClick={() => this.setState({ hasError: false, errorMessage: "" })}
+              onClick={() => this.setState((prev) => ({ hasError: false, errorMessage: "", retryKey: prev.retryKey + 1 }))}
               className="w-full py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #C96B52)",
@@ -83,6 +84,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       );
     }
 
-    return this.props.children;
+    // R5-3: Force children re-mount on retry via key change
+    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>;
   }
 }

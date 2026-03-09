@@ -61,9 +61,9 @@ export function usePresence(page: "home" | "chat" | "other"): PresenceCounts {
 
     // R5-M13: Pause heartbeat when tab is backgrounded to save bandwidth
     const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        clearInterval(intervalId);
-      } else {
+      // R5-2: Always clear before re-creating to prevent interval leak on rapid tab switching
+      clearInterval(intervalId);
+      if (document.visibilityState === "visible") {
         sendHeartbeat(); // Immediate heartbeat on return
         intervalId = setInterval(sendHeartbeat, 30_000);
       }
