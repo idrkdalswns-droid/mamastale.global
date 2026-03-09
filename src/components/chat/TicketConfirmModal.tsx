@@ -102,7 +102,7 @@ export default function TicketConfirmModal({
         transition={{ duration: 0.35, delay: 0.1 }}
         className="w-full max-w-[320px] rounded-3xl p-7 text-center"
         style={{
-          background: "linear-gradient(180deg, #FFFAF6, #FFFFFF)",
+          background: "linear-gradient(180deg, rgb(var(--cream)), rgb(var(--surface)))",
           boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
         }}
       >

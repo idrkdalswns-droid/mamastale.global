@@ -113,7 +113,9 @@ let msgCounter = 0;
 const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
 
 // P1-FIX(KR-3): Module-level lock to prevent concurrent save/retry operations
+// R3-FIX: Add timeout fallback to prevent permanent lock on network failure
 let saveInFlight = false;
+let saveInFlightTimer: ReturnType<typeof setTimeout> | null = null;
 
 const AGE_LABELS: Record<string, string> = {
   "0-2": "어린 아이를 돌보시느라",
@@ -298,6 +300,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // IN-7: Save completed story — set storySaved synchronously BEFORE async fetch to prevent race
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved && !saveInFlight) {
         saveInFlight = true; // P1-FIX(KR-3): Module-level lock in addition to state flag
+            // R3-FIX: Timeout fallback — release lock after 30s to prevent permanent deadlock
+            saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = "나의 마음 동화";
@@ -334,6 +338,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           console.warn("Failed to save story to database");
         } finally {
           saveInFlight = false; // P1-FIX(KR-3): Release module-level lock
+            if (saveInFlightTimer) { clearTimeout(saveInFlightTimer); saveInFlightTimer = null; }
         }
       }
     } catch (err) {

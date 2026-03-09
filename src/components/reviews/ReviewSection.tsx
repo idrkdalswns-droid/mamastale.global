@@ -149,7 +149,9 @@ export function ReviewSection() {
               onChange={(e) => setAlias(e.target.value)}
               placeholder="별명 (필수)"
               maxLength={20}
-              aria-label="별명"
+              required
+              aria-required="true"
+              aria-label="별명 (필수)"
               className="flex-1 px-3 py-2.5 rounded-lg outline-none min-h-[44px]"
               style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
             />
@@ -176,14 +178,17 @@ export function ReviewSection() {
             placeholder="mamastale 사용 후기를 남겨주세요..."
             maxLength={500}
             rows={4}
-            aria-label="후기 내용"
+            required
+            aria-required="true"
+            aria-label="후기 내용 (필수)"
+            aria-describedby={submitError ? "review-error" : undefined}
             className="w-full px-3 py-2.5 rounded-lg outline-none resize-none mb-2"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />
 
           <div className="flex justify-between items-center mb-3">
             <span className="text-[10px] text-brown-pale">{content.length}/500</span>
-            {submitError && <span className="text-[10px] text-red-500">{submitError}</span>}
+            {submitError && <span id="review-error" role="alert" className="text-[10px] text-red-500">{submitError}</span>}
           </div>
 
           <div className="flex gap-2">
@@ -197,6 +202,7 @@ export function ReviewSection() {
             <button
               onClick={handleSubmit}
               disabled={loading || !content.trim() || !alias.trim()}
+              aria-busy={loading}
               className="flex-1 py-2.5 rounded-full text-xs font-medium text-white disabled:opacity-50 min-h-[44px]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
             >

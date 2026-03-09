@@ -122,6 +122,9 @@
   .dark .bg-white\/70 { background-color: rgb(var(--surface) / 0.7) !important; }
   .dark .bg-white\/80 { background-color: rgb(var(--surface) / 0.8) !important; }
   .dark .bg-white\/90 { background-color: rgb(var(--surface) / 0.9) !important; }
+  .dark .bg-white\/95 { background-color: rgb(var(--surface) / 0.95) !important; }
+  .dark .bg-white\/30 { background-color: rgb(var(--surface) / 0.3) !important; }
+  .dark .bg-white\/40 { background-color: rgb(var(--surface) / 0.4) !important; }
   .dark .text-white { color: rgb(240 235 228) !important; }
 
   /* Dark mode: override scene-specific arbitrary bg colors */

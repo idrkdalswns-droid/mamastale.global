@@ -135,17 +135,18 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
       <div className="flex-1 overflow-y-auto px-5 py-6 max-w-3xl mx-auto w-full">
         {/* Story Title */}
         <div className="mb-8">
-          <label className="block text-[10px] text-brown-pale font-medium mb-1.5 tracking-wide">
+          <label htmlFor="story-title" className="block text-[10px] text-brown-pale font-medium mb-1.5 tracking-wide">
             동화 제목
           </label>
           <input
+            id="story-title"
             type="text"
             value={editedTitle}
             onChange={(e) => setEditedTitle(e.target.value)}
             maxLength={100}
+            required
             className="w-full px-4 py-3 rounded-xl text-base font-serif font-bold bg-white/70 border border-brown-pale/15 text-brown outline-none"
             style={{ fontSize: 18 }}
-            aria-label="동화 제목"
           />
         </div>
 

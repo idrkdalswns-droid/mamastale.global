@@ -76,8 +76,13 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const submitFree = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     await submitFeedback(true);
+    setIsSubmitting(false);
     setDone(true);
   };
 
@@ -196,13 +201,15 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
               {submitError && <p className="text-[11px] text-red-400 text-center mt-1">{submitError}</p>}
               <button
                 onClick={submitFree}
-                className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer mt-4 active:scale-[0.97]"
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
+                className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer mt-4 active:scale-[0.97] disabled:opacity-60"
                 style={{
                   background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
                 }}
               >
-                피드백 제출하기
+                {isSubmitting ? "제출 중..." : "피드백 제출하기"}
               </button>
             </div>
           )}

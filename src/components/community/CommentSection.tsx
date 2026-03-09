@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTime } from "@/lib/utils/format-time";
 
@@ -25,12 +25,14 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
   const [showForm, setShowForm] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
+  // R3-FIX: Ref-based mutex to prevent double-submit
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
     setCommentsLoading(true);
     fetch(`/api/community/${storyId}/comments`, { signal: controller.signal })
-      .then((res) => res.json())
+      .then((res) => { if (!res.ok) throw new Error("fetch failed"); return res.json(); })
       .then((data) => setComments(data.comments || []))
       .catch(() => { /* AbortError or network — non-critical */ })
       .finally(() => setCommentsLoading(false));
@@ -75,7 +77,8 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
   };
 
   const submitComment = async () => {
-    if (!newComment.trim() || loading) return;
+    if (!newComment.trim() || loading || submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     setSubmitError("");
     try {
@@ -121,6 +124,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
       setSubmitError("네트워크 오류가 발생했습니다.");
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
@@ -160,13 +164,15 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
             placeholder="따뜻한 댓글을 남겨주세요..."
             maxLength={500}
             rows={3}
+            aria-label="댓글 내용"
+            aria-describedby={submitError ? "comment-error" : undefined}
             className="w-full px-3 py-2 rounded-lg font-sans outline-none resize-none mb-1"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)", color: "#444", fontSize: 16 }}
           />
           <div className="flex justify-between items-center mb-2">
             <span className="text-[10px] text-brown-pale">{newComment.length}/500</span>
             {submitError && (
-              <span className="text-[10px] text-red-500">
+              <span id="comment-error" role="alert" className="text-[10px] text-red-500">
                 {submitError}
                 {submitError.includes("로그인") && (
                   <a
@@ -182,6 +188,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
           <button
             onClick={submitComment}
             disabled={loading || !newComment.trim()}
+            aria-busy={loading}
             className="w-full py-2 rounded-full text-xs font-medium text-white disabled:opacity-50 min-h-[44px]"
             style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
           >
