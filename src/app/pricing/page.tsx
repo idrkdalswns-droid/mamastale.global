@@ -159,7 +159,11 @@ function PricingContent() {
           productType === "ticket" && isFirstPurchase
             ? FIRST_PURCHASE_PRODUCT
             : PRODUCTS[productType];
-        const orderId = `order_${crypto.randomUUID()}`;
+        // R9-FIX(B1): Fallback for Kakao/Naver in-app browsers missing crypto.randomUUID()
+        const uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        const orderId = `order_${uuid}`;
 
         const toss = window.TossPayments(tossClientKey);
         const payment = toss.payment({ customerKey: user.id });
