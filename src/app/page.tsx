@@ -215,6 +215,10 @@ export default function Home() {
     // Reset previous session flag before starting new flow
     clearTicketSession();
     setSelectedCover(null);
+    // R7-F2: Reset local states for new story flow
+    setEditedTitle("");
+    setFeedbackDone(false);
+    setEditSaveError(false);
     // Block clicks while ticket balance is still loading for logged-in users
     if (user && ticketsRemaining === null) return;
     // Logged-in users with tickets: show ticket confirmation popup (deduct before starting)
@@ -234,6 +238,14 @@ export default function Home() {
   const closePaymentModal = useCallback(() => {
     setShowPaymentSuccess(false);
   }, []);
+
+  // R7-F5: Auto-dismiss editSaveError toast when story screen renders
+  useEffect(() => {
+    if (screen === "story" && editSaveError) {
+      const timer = setTimeout(() => setEditSaveError(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [screen, editSaveError]);
 
   // ─── Browser history integration (JP-Y12) ───
   // Push state on screen changes so back button navigates within the flow
@@ -311,12 +323,11 @@ export default function Home() {
                   body: JSON.stringify({ title, scenes: edited }),
                 });
                 if (!res.ok) {
+                  // R7-F5: Don't auto-clear here — toast renders in story screen
                   setEditSaveError(true);
-                  setTimeout(() => setEditSaveError(false), 3000);
                 }
               } catch {
                 setEditSaveError(true);
-                setTimeout(() => setEditSaveError(false), 3000);
               }
             }
             setScreen("coverPick");
@@ -381,7 +392,7 @@ export default function Home() {
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
-          onNewStory={() => { reset(); clearTicketSession(); setSelectedCover(null); setShow(false); setScreen("landing"); }}
+          onNewStory={() => { reset(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
@@ -412,6 +423,8 @@ export default function Home() {
             reset(); // LOW-11 fix: reset chat store
             clearTicketSession();
             setSelectedCover(null);
+            setEditedTitle("");
+            setFeedbackDone(false);
             setShow(false);
             setScreen("landing");
           }}
