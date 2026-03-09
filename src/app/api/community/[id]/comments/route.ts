@@ -89,14 +89,22 @@ export async function GET(
     return NextResponse.json({ comments: [] });
   }
 
+  // R10-5: Fetch limit+1 to detect hasMore without separate count query
+  const COMMENT_LIMIT = 50;
   const { data: comments } = await supabase
     .from("comments")
     .select("id, content, author_alias, created_at")
     .eq("story_id", storyId)
     .order("created_at", { ascending: true })
-    .limit(50);
+    .limit(COMMENT_LIMIT + 1);
 
-  return NextResponse.json({ comments: comments || [] });
+  const results = comments || [];
+  const hasMore = results.length > COMMENT_LIMIT;
+
+  return NextResponse.json({
+    comments: hasMore ? results.slice(0, COMMENT_LIMIT) : results,
+    hasMore,
+  });
 }
 
 // POST: Add a comment

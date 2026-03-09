@@ -79,7 +79,8 @@ export async function GET(
 
   const { data: story, error } = await sb.client
     .from("stories")
-    .select("id, title, scenes, metadata, status, is_public, author_alias, cover_image, created_at")
+    // R10-2: Exclude metadata from client response (least-privilege; metadata contains internal fields)
+    .select("id, title, scenes, status, is_public, author_alias, cover_image, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
