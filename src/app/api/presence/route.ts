@@ -77,7 +77,12 @@ export async function POST(request: NextRequest) {
 
   // ~10% chance: cleanup stale entries
   if (Math.random() < 0.1) {
-    try { await supabase.rpc("cleanup_stale_presence"); } catch { /* ignore */ }
+    try {
+      await supabase.rpc("cleanup_stale_presence");
+    } catch (cleanupErr) {
+      // R8-3: Log cleanup failure for observability (was silently swallowed)
+      console.warn("[Presence] Cleanup failed:", cleanupErr instanceof Error ? cleanupErr.message : "Unknown");
+    }
   }
 
   // Count active users (last 60 seconds)

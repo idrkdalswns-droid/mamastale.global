@@ -225,7 +225,9 @@ export async function POST(
     }
 
     return sb.applyCookies(NextResponse.json({ comment: data }));
-  } catch {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
+  } catch (unknownErr) {
+    // R8-5: Log unexpected errors for production debugging (was silently swallowed)
+    console.error("[Comments] Unexpected error:", unknownErr instanceof Error ? unknownErr.message : String(unknownErr));
+    return sb.applyCookies(NextResponse.json({ error: "댓글 처리 중 오류가 발생했습니다." }, { status: 500 }));
   }
 }

@@ -28,6 +28,7 @@ function checkFeedbackRateLimit(ip: string): boolean {
   return true;
 }
 
+// R8-1: Require at least one rating or free-text to prevent empty feedback spam
 const feedbackSchema = z.object({
   empathy: z.number().min(1).max(5).optional(),
   insight: z.number().min(1).max(5).optional(),
@@ -36,7 +37,10 @@ const feedbackSchema = z.object({
   overall: z.number().min(1).max(5).optional(),
   free: z.string().max(2000).optional(),
   sessionId: z.string().optional(),
-});
+}).refine(
+  (d) => d.empathy || d.insight || d.metaphor || d.story || d.overall || d.free?.trim(),
+  { message: "최소 하나의 평가 또는 의견이 필요합니다." }
+);
 
 export async function POST(request: NextRequest) {
   // Rate limiting
