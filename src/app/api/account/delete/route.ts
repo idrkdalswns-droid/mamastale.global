@@ -76,27 +76,56 @@ export async function DELETE(request: NextRequest) {
     // Non-transactional — track failures to ensure partial deletes are logged
     const maskedId = userId.slice(0, 8) + "…";
 
+    // Pre-compute this user's story IDs (needed for Phase 0 and counter adjustment)
+    let userStoryIds: string[] = [];
+    try {
+      const { data: userStoryRows } = await serviceClient
+        .from("stories").select("id").eq("user_id", userId).limit(500);
+      userStoryIds = (userStoryRows || []).map((s: { id: string }) => s.id);
+    } catch {
+      // Continue — will be empty array
+    }
+
+    // R2-FIX: Pre-count this user's comments and likes on OTHER users' stories
+    // to decrement counters after deletion (prevent counter drift)
+    const otherStoryCommentCounts = new Map<string, number>();
+    const otherStoryLikeCounts = new Map<string, number>();
+    try {
+      const { data: myComments } = await serviceClient
+        .from("comments").select("story_id").eq("user_id", userId).limit(5000);
+      for (const c of myComments || []) {
+        if (!userStoryIds.includes(c.story_id)) {
+          otherStoryCommentCounts.set(c.story_id, (otherStoryCommentCounts.get(c.story_id) || 0) + 1);
+        }
+      }
+      const { data: myLikes } = await serviceClient
+        .from("likes").select("story_id").eq("user_id", userId).limit(5000);
+      for (const l of myLikes || []) {
+        if (!userStoryIds.includes(l.story_id)) {
+          otherStoryLikeCounts.set(l.story_id, (otherStoryLikeCounts.get(l.story_id) || 0) + 1);
+        }
+      }
+    } catch (countErr) {
+      console.error(`[Account] Counter pre-count failed for user=${maskedId}:`, countErr instanceof Error ? countErr.message : "Unknown");
+    }
+
     // R4-FIX(A1): Phase 0 — Delete cross-user references to this user's content.
     // Other users' likes/comments/reports may reference this user's stories/comments.
     // Without cleanup, FK RESTRICT constraints block deletion → orphaned data (GDPR Art.17).
     try {
-      const { data: userStoryRows } = await serviceClient
-        .from("stories").select("id").eq("user_id", userId).limit(500);
-      const storyIds = (userStoryRows || []).map((s: { id: string }) => s.id);
-
-      if (storyIds.length > 0) {
+      if (userStoryIds.length > 0) {
         // Comments on this user's stories may have reports → delete reports first
         const { data: storyCommentRows } = await serviceClient
-          .from("comments").select("id").in("story_id", storyIds).limit(5000);
+          .from("comments").select("id").in("story_id", userStoryIds).limit(5000);
         const storyCommentIds = (storyCommentRows || []).map((c: { id: string }) => c.id);
         if (storyCommentIds.length > 0) {
           const { error: crErr } = await serviceClient.from("comment_reports").delete().in("comment_id", storyCommentIds);
           if (crErr) console.error(`[Account] Phase0 story-comment reports cleanup failed: ${crErr.code}`);
         }
         // Delete other users' comments and likes on this user's stories
-        const { error: cErr } = await serviceClient.from("comments").delete().in("story_id", storyIds);
+        const { error: cErr } = await serviceClient.from("comments").delete().in("story_id", userStoryIds);
         if (cErr) console.error(`[Account] Phase0 story comments cleanup failed: ${cErr.code}`);
-        const { error: lErr } = await serviceClient.from("likes").delete().in("story_id", storyIds);
+        const { error: lErr } = await serviceClient.from("likes").delete().in("story_id", userStoryIds);
         if (lErr) console.error(`[Account] Phase0 story likes cleanup failed: ${lErr.code}`);
       }
 
@@ -128,6 +157,25 @@ export async function DELETE(request: NextRequest) {
         console.error(`[Account] Failed to delete ${phase1Tables[i]} for user=${maskedId}`);
       }
     });
+
+    // R2-FIX: Decrement comment_count and like_count on other users' stories
+    // to prevent counter drift after this user's comments/likes are deleted
+    for (const [storyId, count] of otherStoryCommentCounts) {
+      try {
+        const { error: rpcErr } = await serviceClient.rpc("increment_story_counter", {
+          p_story_id: storyId, p_column: "comment_count", p_delta: -count,
+        });
+        if (rpcErr) console.error(`[Account] comment_count adjust failed for story ${storyId}: ${rpcErr.code}`);
+      } catch { /* fire-and-forget */ }
+    }
+    for (const [storyId, count] of otherStoryLikeCounts) {
+      try {
+        const { error: rpcErr } = await serviceClient.rpc("increment_story_counter", {
+          p_story_id: storyId, p_column: "like_count", p_delta: -count,
+        });
+        if (rpcErr) console.error(`[Account] like_count adjust failed for story ${storyId}: ${rpcErr.code}`);
+      } catch { /* fire-and-forget */ }
+    }
 
     // Phase 2: Delete dependent records (sequential, dependency order)
     // LAUNCH-FIX: Add error logging for each step to detect orphaned data

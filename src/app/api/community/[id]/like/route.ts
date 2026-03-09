@@ -198,12 +198,35 @@ export async function POST(
   }
 }
 
+// R2-FIX: Rate limit like status GET (prevent enumeration)
+const likeCheckRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkLikeCheckRate(ip: string): boolean {
+  const now = Date.now();
+  if (likeCheckRateMap.size > 300) {
+    for (const [k, v] of likeCheckRateMap) { if (now > v.resetAt) likeCheckRateMap.delete(k); }
+  }
+  const entry = likeCheckRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    likeCheckRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false;
+  entry.count++;
+  return true;
+}
+
 // GET: Check if current user liked this story
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: storyId } = await params;
+
+  // R2-FIX: Rate limit like check (30/min per IP)
+  const ip = getClientIP(request);
+  if (!checkLikeCheckRate(ip)) {
+    return NextResponse.json({ liked: false });
+  }
 
   if (!isValidUUID(storyId)) {
     return NextResponse.json({ liked: false });

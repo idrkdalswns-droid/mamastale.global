@@ -5,6 +5,23 @@ import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
+// R2-FIX: Rate limit community detail GET (prevent enumeration/scraping)
+const communityDetailRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkCommunityDetailRate(ip: string): boolean {
+  const now = Date.now();
+  if (communityDetailRateMap.size > 300) {
+    for (const [k, v] of communityDetailRateMap) { if (now > v.resetAt) communityDetailRateMap.delete(k); }
+  }
+  const entry = communityDetailRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    communityDetailRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false;
+  entry.count++;
+  return true;
+}
+
 // ─── View count deduplication (per-IP per-story, per-isolate) ───
 const VIEW_DEDUP_WINDOW = 300_000; // 5 minutes
 const viewDedupMap = new Map<string, number>();
@@ -41,6 +58,12 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  // R2-FIX: Rate limit detail GET (30/min per IP)
+  const ip = getClientIP(request);
+  if (!checkCommunityDetailRate(ip)) {
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
+  }
+
   if (!isValidUUID(id)) {
     return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
@@ -62,7 +85,6 @@ export async function GET(
   }
 
   // Atomic view count increment — deduplicated per IP per story (5min window)
-  const ip = getClientIP(request);
   if (shouldCountView(ip, id)) {
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {

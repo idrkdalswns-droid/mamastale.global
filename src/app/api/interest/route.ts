@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
-    console.error("[Interest] Insert error:", error.message);
+    console.error("[Interest] Insert error: code=", error.code);
     return NextResponse.json({ error: "기록에 실패했습니다." }, { status: 500 });
   }
 

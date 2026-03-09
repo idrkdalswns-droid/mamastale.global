@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
   // ─── Auth check (same as /api/chat) ───
   let userId: string | null = null;
   let isPremiumUser = false;
-  let hasActiveTickets = false;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -100,7 +99,6 @@ export async function POST(request: NextRequest) {
           const metadata = (profile?.metadata as Record<string, unknown>) || {};
           const processedOrders = (metadata.processed_orders as string[]) || [];
           isPremiumUser = processedOrders.length > 0;
-          hasActiveTickets = (profile?.free_stories_remaining ?? 0) > 0;
         } catch { /* default to standard */ }
       }
     } catch { /* treat as guest */ }
