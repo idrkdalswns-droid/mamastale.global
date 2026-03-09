@@ -157,9 +157,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (deductError || !updated) {
+        // R8-FIX(B2): CAS failure for new user = concurrent conflict, not genuinely out of tickets
         return sb.applyCookies(NextResponse.json(
-          { error: "no_tickets", message: "티켓이 부족합니다." },
-          { status: 403 }
+          { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
+          { status: 409 }
         ));
       }
 

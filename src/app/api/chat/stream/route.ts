@@ -340,10 +340,19 @@ export async function POST(request: NextRequest) {
         }
 
         // P1-FIX: Streaming timeout — abort if no data for 90 seconds
+        // R8-FIX(C1): Absolute timeout to prevent slow-drip resource exhaustion
         const STREAM_TIMEOUT_MS = 90_000;
+        const STREAM_ABSOLUTE_TIMEOUT_MS = 300_000; // 5 minutes absolute max
+        const streamStartTime = Date.now();
         let lastChunkTime = Date.now();
         const timeoutCheck = setInterval(() => {
-          if (Date.now() - lastChunkTime > STREAM_TIMEOUT_MS) {
+          const now = Date.now();
+          if (now - lastChunkTime > STREAM_TIMEOUT_MS) {
+            console.warn("[Stream] Idle timeout (90s no data)");
+            clearInterval(timeoutCheck);
+            stream.abort();
+          } else if (now - streamStartTime > STREAM_ABSOLUTE_TIMEOUT_MS) {
+            console.warn("[Stream] Absolute timeout (5min total)");
             clearInterval(timeoutCheck);
             stream.abort();
           }
