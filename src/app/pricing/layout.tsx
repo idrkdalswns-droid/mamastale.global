@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "요금 안내 - mamastale",
     description: "동화 1편 4,900원부터. 엄마의 이야기로 아이만의 동화를 만드세요.",
+    type: "website",
+    images: [{ url: "https://mamastale-global.pages.dev/images/hero.jpg", width: 1200, height: 630, alt: "mamastale 요금 안내" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "요금 안내 - mamastale",
+    description: "동화 1편 4,900원부터. 엄마의 이야기로 아이만의 동화를 만드세요.",
+    images: ["https://mamastale-global.pages.dev/images/hero.jpg"],
   },
 };
 
