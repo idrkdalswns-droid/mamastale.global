@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,6 +71,16 @@ export default function StoryCarousel({ stories }: StoryCarouselProps) {
     onSwipeRight: () => paginate(-1),
     threshold: 40,
   });
+
+  // R3-FIX: Keyboard navigation for accessibility (WCAG 2.1)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") paginate(-1);
+      else if (e.key === "ArrowRight") paginate(1);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [paginate]);
 
   const story = stories[currentIndex];
   if (!story) return null;
@@ -158,25 +168,30 @@ export default function StoryCarousel({ stories }: StoryCarouselProps) {
         </motion.p>
       )}
 
-      {/* Dot indicators */}
+      {/* R3-FIX: Dot indicators — 44px min touch target (WCAG 2.5.5) */}
       {stories.length > 1 && (
-        <div className="flex items-center gap-1.5 mt-1">
+        <div className="flex items-center gap-0.5 mt-1" role="tablist" aria-label="동화 목록">
           {stories.map((s, idx) => (
             <button
               key={s.id}
               onClick={() => goTo(idx)}
+              role="tab"
+              aria-selected={idx === currentIndex}
               aria-label={`${idx + 1}번째 동화: ${s.title}`}
-              className="transition-all duration-300"
-              style={{
-                width: idx === currentIndex ? 20 : 6,
-                height: 6,
-                borderRadius: 3,
-                background:
-                  idx === currentIndex
-                    ? "linear-gradient(135deg, #E07A5F, #C96B52)"
-                    : "rgba(196,149,106,0.2)",
-              }}
-            />
+              className="flex items-center justify-center min-w-[44px] min-h-[44px] transition-all duration-300"
+            >
+              <span
+                className="block rounded-full transition-all duration-300"
+                style={{
+                  width: idx === currentIndex ? 20 : 6,
+                  height: 6,
+                  background:
+                    idx === currentIndex
+                      ? "linear-gradient(135deg, #E07A5F, #C96B52)"
+                      : "rgba(196,149,106,0.2)",
+                }}
+              />
+            </button>
           ))}
         </div>
       )}

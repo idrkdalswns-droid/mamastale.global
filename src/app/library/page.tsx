@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, type ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import StoryCarousel from "@/components/library/StoryCarousel";
@@ -9,6 +9,44 @@ import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
 import type { Scene } from "@/lib/types/story";
+
+// R3-FIX: ErrorBoundary to catch rendering crashes gracefully
+class LibraryErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error("[Library] Render error:", error.name);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-dvh bg-cream flex items-center justify-center px-4">
+          <div className="text-center">
+            <p className="text-sm text-brown-light font-light mb-4">
+              서재를 불러오는 중 문제가 발생했습니다.
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
+              style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface StoryItem {
   id: string;
@@ -21,7 +59,7 @@ interface StoryItem {
   created_at: string;
 }
 
-export default function LibraryPage() {
+function LibraryContent() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -171,5 +209,13 @@ export default function LibraryPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <LibraryErrorBoundary>
+      <LibraryContent />
+    </LibraryErrorBoundary>
   );
 }

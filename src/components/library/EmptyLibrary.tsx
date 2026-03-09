@@ -40,6 +40,7 @@ export default memo(function EmptyLibrary() {
               viewBox="0 0 24 24"
               fill="none"
               className="text-coral/40"
+              aria-hidden="true"
             >
               <path
                 d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
