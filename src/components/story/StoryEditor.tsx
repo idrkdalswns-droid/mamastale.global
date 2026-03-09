@@ -136,8 +136,12 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
             return (
               <button
                 key={i}
-                onClick={() => textareaRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                className="min-w-[32px] h-8 rounded-full text-[11px] font-medium transition-all active:scale-90 flex items-center justify-center"
+                onClick={() => {
+                  textareaRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  // R7-5: Auto-focus textarea after scroll for keyboard users
+                  setTimeout(() => textareaRefs.current[i]?.focus(), 400);
+                }}
+                className="min-w-[32px] h-8 rounded-full text-[11px] font-medium transition-all active:scale-90 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-coral/50 focus-visible:outline-none"
                 style={{
                   background: modified ? "rgba(224,122,95,0.12)" : "rgba(0,0,0,0.03)",
                   color: modified ? "#E07A5F" : "#8B6F55",

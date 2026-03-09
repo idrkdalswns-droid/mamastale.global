@@ -83,10 +83,13 @@ function PaymentSuccessContent() {
       });
     };
 
+    // R7-4: Track mounted state for cleanup (prevent setState on unmounted)
+    let mounted = true;
+
     // R7-FIX: 15s timeout fallback — prevents infinite spinner on slow/hung networks
     // R5-CRIT2: Use statusRef.current to avoid stale closure
     const timeoutId = setTimeout(() => {
-      if (statusRef.current === "confirming") {
+      if (mounted && statusRef.current === "confirming") {
         setStatus("error");
         setErrorMsg("결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -95,6 +98,7 @@ function PaymentSuccessContent() {
     callConfirm(params)
       .then(async (res) => {
         clearTimeout(timeoutId);
+        if (!mounted) return;
         const data = await res.json();
         if (res.ok && data.success) {
           // ticketsAdded may be absent on alreadyProcessed responses -- derive from amount
@@ -128,9 +132,16 @@ function PaymentSuccessContent() {
       })
       .catch(() => {
         clearTimeout(timeoutId);
+        if (!mounted) return;
         setStatus("error");
         setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       });
+
+    // R7-4: Cleanup on unmount
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [searchParams, router]);
 
   // Retry handler for TICKET_INCREMENT_FAILED

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const PARENT_ROLE_OPTIONS = [
   { value: "엄마", label: "엄마" },
@@ -90,6 +90,9 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   const [idx, setIdx] = useState(hasSeenOnboarding ? slides.length - 1 : 0);
   const [anim, setAnim] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
+  // R7-2: Cleanup timeout on unmount to prevent setState on unmounted component
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current); }, []);
   // Restore previous selections for returning users
   const [parentRole, setParentRole] = useState(() => {
     try { return localStorage.getItem("mamastale_parent_role") || ""; } catch { return ""; }
@@ -115,7 +118,8 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
     if (transitioning) return; // Prevent multi-tap skipping/crash
     setTransitioning(true);
     setAnim(false);
-    setTimeout(() => {
+    // R7-2: Store timer ref for cleanup on unmount
+    transitionTimerRef.current = setTimeout(() => {
       if (next) {
         setIdx((i) => Math.min(i + 1, slides.length - 1));
       } else {

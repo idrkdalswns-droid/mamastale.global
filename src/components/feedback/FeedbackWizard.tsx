@@ -220,7 +220,8 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
         <button
           onClick={() => {
             // KR-J2: Submit any partial ratings before skipping
-            submitFeedback(false);
+            // R7-1: Catch unhandled rejection (fire-and-forget on skip)
+            submitFeedback(false).catch(() => {});
             setDone(true);
           }}
           className="bg-transparent border-none text-[13px] text-brown-pale cursor-pointer font-sans py-2.5 px-4 min-h-[44px] underline underline-offset-2 decoration-brown-pale/40"
