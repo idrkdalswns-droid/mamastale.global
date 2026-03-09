@@ -4,6 +4,39 @@ import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, VALID_
 
 export const runtime = "edge";
 
+// R4-FIX: Rate limit GET/PATCH per user (prevent rapid polling / DB write abuse)
+const storyDetailRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkStoryDetailRate(userId: string): boolean {
+  const now = Date.now();
+  if (storyDetailRateMap.size > 300) {
+    for (const [k, v] of storyDetailRateMap) { if (now > v.resetAt) storyDetailRateMap.delete(k); }
+  }
+  const entry = storyDetailRateMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    storyDetailRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false; // 30/min per user
+  entry.count++;
+  return true;
+}
+
+const storyPatchRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkStoryPatchRate(userId: string): boolean {
+  const now = Date.now();
+  if (storyPatchRateMap.size > 300) {
+    for (const [k, v] of storyPatchRateMap) { if (now > v.resetAt) storyPatchRateMap.delete(k); }
+  }
+  const entry = storyPatchRateMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    storyPatchRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false; // 10 PATCH/min per user
+  entry.count++;
+  return true;
+}
+
 /** Try cookie auth first, then fallback to Authorization bearer token */
 async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
   const { data, error } = await sb.client.auth.getUser();
@@ -39,6 +72,11 @@ export async function GET(
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
+  // R4-FIX: Rate limit individual story GET (30/min per user)
+  if (!checkStoryDetailRate(user.id)) {
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+  }
+
   const { data: story, error } = await sb.client
     .from("stories")
     .select("id, title, scenes, metadata, status, is_public, author_alias, cover_image, created_at")
@@ -72,6 +110,11 @@ export async function PATCH(
   const user = await resolveUser(sb, request);
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+  }
+
+  // R4-FIX: Rate limit PATCH (10/min per user to prevent DB write abuse)
+  if (!checkStoryPatchRate(user.id)) {
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
   }
 
   try {

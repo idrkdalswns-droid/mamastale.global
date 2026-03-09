@@ -387,8 +387,16 @@ export async function POST(request: NextRequest) {
                 ...streamParams,
               });
 
+              // R4-FIX: Fallback stream must also have absolute timeout (parity with primary)
+              const fbStartTime = Date.now();
               const fbTimeoutCheck = setInterval(() => {
-                if (Date.now() - lastChunkTime > STREAM_TIMEOUT_MS) {
+                const now = Date.now();
+                if (now - lastChunkTime > STREAM_TIMEOUT_MS) {
+                  console.warn("[Stream] Fallback idle timeout");
+                  clearInterval(fbTimeoutCheck);
+                  fallbackStream.abort();
+                } else if (now - fbStartTime > STREAM_ABSOLUTE_TIMEOUT_MS) {
+                  console.warn("[Stream] Fallback absolute timeout (5min)");
                   clearInterval(fbTimeoutCheck);
                   fallbackStream.abort();
                 }

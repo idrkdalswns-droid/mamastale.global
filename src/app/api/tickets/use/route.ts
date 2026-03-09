@@ -242,7 +242,8 @@ export async function POST(request: NextRequest) {
       isPremium,
     }));
   } catch (error) {
-    console.error("[Tickets/Use] Error:", error instanceof Error ? error.message : "Unknown");
+    // R4-FIX: Log error.name instead of error.message to avoid PII leakage
+    console.error("[Tickets/Use] Error:", error instanceof Error ? error.name : "Unknown");
     return sb.applyCookies(NextResponse.json(
       { error: "티켓 사용 중 오류가 발생했습니다." },
       { status: 500 }
