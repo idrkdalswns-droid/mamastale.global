@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import Room3D from "@/components/library/Room3D";
-import Shelf3D, { BOOKS_PER_SHELF } from "@/components/library/Shelf3D";
-import EmptyRoom from "@/components/library/EmptyRoom";
-import RoomDecorations from "@/components/library/RoomDecorations";
+import StoryCarousel from "@/components/library/StoryCarousel";
+import EmptyLibrary from "@/components/library/EmptyLibrary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +16,8 @@ interface StoryItem {
   scenes: Scene[];
   status: string;
   is_public?: boolean;
+  cover_image?: string;
+  topic?: string;
   created_at: string;
 }
 
@@ -66,52 +66,25 @@ export default function LibraryPage() {
     }
   };
 
-  // Split stories into shelf chunks
-  const shelves: StoryItem[][] = [];
-  for (let i = 0; i < stories.length; i += BOOKS_PER_SHELF) {
-    shelves.push(stories.slice(i, i + BOOKS_PER_SHELF));
-  }
-
   return (
     <div className="min-h-dvh bg-cream pb-20 relative overflow-hidden">
       <div className="relative z-[1] max-w-2xl mx-auto px-4 pt-6">
-        {/* ── Room Header — hanging banner style ── */}
+        {/* ── Header ── */}
         <motion.div
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.5, ease: "easeOut" }}
-          className="relative text-center mb-4"
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="text-center mb-4"
         >
-          {/* Hanging strings */}
-          <svg
-            className="absolute -top-3 left-1/2 -translate-x-1/2"
-            width="100"
-            height="16"
-            viewBox="0 0 100 16"
-            aria-hidden="true"
-          >
-            <line x1="25" y1="0" x2="30" y2="16" stroke="rgba(var(--brown-pale), 0.3)" strokeWidth="1" />
-            <line x1="75" y1="0" x2="70" y2="16" stroke="rgba(var(--brown-pale), 0.3)" strokeWidth="1" />
-          </svg>
-          {/* Banner plank */}
-          <div
-            className="inline-block px-8 py-3 rounded-lg relative"
-            style={{
-              background: "linear-gradient(180deg, rgba(var(--brown-pale), 0.15) 0%, rgba(var(--brown-mid), 0.12) 100%)",
-              border: "1px solid rgba(var(--brown-pale), 0.12)",
-              boxShadow: "0 2px 8px rgba(var(--brown), 0.06)",
-            }}
-          >
-            <h1 className="font-serif text-lg text-brown font-semibold">
-              내 서재
-            </h1>
-            <p className="text-[10px] text-brown-light font-light mt-0.5">
-              나만의 동화 컬렉션
-            </p>
-          </div>
+          <h1 className="font-serif text-lg text-brown font-semibold">
+            내 서재
+          </h1>
+          <p className="text-[11px] text-brown-light font-light mt-0.5">
+            스와이프해서 동화를 골라보세요
+          </p>
         </motion.div>
 
-        {/* ── Draft in progress (DraftDesk) ── */}
+        {/* ── Draft in progress ── */}
         {draftInfo && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -191,23 +164,10 @@ export default function LibraryPage() {
               다시 시도
             </button>
           </div>
+        ) : stories.length === 0 ? (
+          <EmptyLibrary />
         ) : (
-          <Room3D>
-            {stories.length === 0 ? (
-              <EmptyRoom />
-            ) : (
-              shelves.map((shelfStories, idx) => (
-                <Shelf3D
-                  key={idx}
-                  stories={shelfStories}
-                  shelfIndex={idx}
-                  colorOffset={idx * BOOKS_PER_SHELF}
-                  showEmptySlot={idx === shelves.length - 1}
-                />
-              ))
-            )}
-            <RoomDecorations />
-          </Room3D>
+          <StoryCarousel stories={stories} />
         )}
       </div>
     </div>

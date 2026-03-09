@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
 
   const { data: stories, error } = await sb.client
     .from("stories")
-    // R7-F1: Include cover_image for library list display
-    .select("id, title, scenes, status, is_public, cover_image, created_at")
+    // R7-F1: Include cover_image & topic for library carousel display
+    .select("id, title, scenes, status, is_public, cover_image, topic, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false })

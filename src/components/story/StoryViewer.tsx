@@ -36,9 +36,11 @@ interface StoryViewerProps {
   isPremium?: boolean;
   /** Callback for "new story" repurchase nudge */
   onNewStory?: () => void;
+  /** Callback to open cover image picker */
+  onChangeCover?: () => void;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory, onChangeCover }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -222,6 +224,15 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               >
                 A+
               </button>
+              {onChangeCover && (
+                <button
+                  onClick={onChangeCover}
+                  className="w-11 h-11 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+                  aria-label="표지 변경"
+                >
+                  표지
+                </button>
+              )}
               {onEdit && (
                 <button
                   onClick={onEdit}

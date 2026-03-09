@@ -21,6 +21,7 @@ interface CommunityStory {
   scenes: Scene[];
   author_alias: string | null;
   topic: string | null;
+  cover_image: string | null;
   view_count: number;
   like_count: number;
   created_at: string;
@@ -209,7 +210,7 @@ export default function CommunityBrowsePage() {
           </div>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {stories.map((story) => (
                 <StoryCard
                   key={story.id}
@@ -222,6 +223,7 @@ export default function CommunityBrowsePage() {
                   topic={story.topic || undefined}
                   viewCount={story.view_count}
                   likeCount={story.like_count}
+                  coverImage={story.cover_image || undefined}
                 />
               ))}
             </div>

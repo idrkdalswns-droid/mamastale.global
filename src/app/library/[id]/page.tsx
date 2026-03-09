@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { StoryEditor } from "@/components/story/StoryEditor";
+import { CoverPicker } from "@/components/story/CoverPicker";
+import { CoverPickerModal } from "@/components/story/CoverPickerModal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -29,6 +31,8 @@ export default function LibraryStoryPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [showCoverPickerAfterEdit, setShowCoverPickerAfterEdit] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
@@ -90,10 +94,35 @@ export default function LibraryStoryPage() {
       } finally {
         setSaving(false);
         setEditing(false);
+        setShowCoverPickerAfterEdit(true);
       }
     },
     [story]
   );
+
+  // Handle cover change from modal or post-edit picker
+  const handleCoverChange = useCallback((coverPath: string) => {
+    setStory((prev) => prev ? { ...prev, cover_image: coverPath } : prev);
+  }, []);
+
+  // PATCH cover image helper (for post-edit full-screen picker)
+  const patchCover = useCallback(async (storyId: string, coverPath: string) => {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      } catch { /* ignore */ }
+      await fetch(`/api/stories/${storyId}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ coverImage: coverPath }),
+      });
+    } catch {
+      console.warn("[CoverPicker] Failed to persist cover_image to DB");
+    }
+  }, []);
 
   // Publish to community
   const handlePublish = useCallback(
@@ -205,6 +234,24 @@ export default function LibraryStoryPage() {
     );
   }
 
+  // Post-edit cover selection (full-screen, same UX as post-creation flow)
+  if (showCoverPickerAfterEdit) {
+    return (
+      <ErrorBoundary fullScreen>
+        <CoverPicker
+          storyTitle={story.title || "나의 마음 동화"}
+          authorName={user?.user_metadata?.name || undefined}
+          onSelect={async (coverPath) => {
+            await patchCover(story.id, coverPath);
+            handleCoverChange(coverPath);
+            setShowCoverPickerAfterEdit(false);
+          }}
+          onSkip={() => setShowCoverPickerAfterEdit(false)}
+        />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary fullScreen>
     <StoryViewer
@@ -214,10 +261,21 @@ export default function LibraryStoryPage() {
       coverImage={story.cover_image || undefined}
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}
+      onChangeCover={() => setShowCoverPicker(true)}
       isPublished={!!story.is_public}
       isPublishing={publishing}
       onPublish={handlePublish}
       onUnpublish={handleUnpublish}
+    />
+
+    {/* Cover picker modal (from viewer "표지" button) */}
+    <CoverPickerModal
+      isOpen={showCoverPicker}
+      storyId={story.id}
+      storyTitle={story.title || "나의 마음 동화"}
+      authorName={user?.user_metadata?.name || undefined}
+      onCoverChange={handleCoverChange}
+      onClose={() => setShowCoverPicker(false)}
     />
     </ErrorBoundary>
   );
