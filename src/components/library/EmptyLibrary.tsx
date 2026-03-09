@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -7,7 +8,7 @@ import { motion } from "framer-motion";
  * Empty state for the library page when the user has no completed stories.
  * Visually matches the carousel aesthetic with a cover-card-shaped placeholder.
  */
-export default function EmptyLibrary() {
+export default memo(function EmptyLibrary() {
   return (
     <div className="flex flex-col items-center pt-4 pb-8">
       {/* Placeholder card */}
@@ -97,4 +98,4 @@ export default function EmptyLibrary() {
       </motion.div>
     </div>
   );
-}
+});

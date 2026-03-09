@@ -3,21 +3,24 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { OnboardingSlides } from "@/components/onboarding/OnboardingSlides";
-import { ChatPage } from "@/components/chat/ChatContainer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import { StoryViewer } from "@/components/story/StoryViewer";
-import { StoryEditor } from "@/components/story/StoryEditor";
-import { CoverPicker } from "@/components/story/CoverPicker";
-import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
-import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import TicketConfirmModal from "@/components/chat/TicketConfirmModal";
+
+// R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
+const OnboardingSlides = dynamic(() => import("@/components/onboarding/OnboardingSlides").then(m => ({ default: m.OnboardingSlides })), { ssr: false });
+const ChatPage = dynamic(() => import("@/components/chat/ChatContainer").then(m => ({ default: m.ChatPage })), { ssr: false });
+const StoryViewer = dynamic(() => import("@/components/story/StoryViewer").then(m => ({ default: m.StoryViewer })), { ssr: false });
+const StoryEditor = dynamic(() => import("@/components/story/StoryEditor").then(m => ({ default: m.StoryEditor })), { ssr: false });
+const CoverPicker = dynamic(() => import("@/components/story/CoverPicker").then(m => ({ default: m.CoverPicker })), { ssr: false });
+const FeedbackWizard = dynamic(() => import("@/components/feedback/FeedbackWizard").then(m => ({ default: m.FeedbackWizard })), { ssr: false });
+const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage").then(m => ({ default: m.CommunityPage })), { ssr: false });
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
 
@@ -248,6 +251,62 @@ export default function Home() {
     }
   }, [screen, editSaveError]);
 
+  // R1-PERF: Extracted handlers to avoid recreating on every render
+  const handleEditDone = useCallback(async (edited: import("@/lib/types/story").Scene[], title: string) => {
+    updateScenes(edited);
+    setEditedTitle(title);
+    if (completedStoryId && completedStoryId.startsWith("story_") === false) {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          if (supabase) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+        } catch { /* ignore */ }
+        const res = await fetch(`/api/stories/${completedStoryId}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ title, scenes: edited }),
+        });
+        if (!res.ok) setEditSaveError(true);
+      } catch {
+        setEditSaveError(true);
+      }
+    }
+    setScreen("coverPick");
+  }, [completedStoryId, updateScenes]);
+
+  const handleCoverSelect = useCallback(async (coverPath: string) => {
+    setSelectedCover(coverPath);
+    if (completedStoryId && !completedStoryId.startsWith("story_")) {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        try {
+          const supabase = createClient();
+          if (supabase) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+        } catch { /* ignore */ }
+        await fetch(`/api/stories/${completedStoryId}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ coverImage: coverPath }),
+        });
+      } catch {
+        console.warn("[CoverPicker] Failed to persist cover_image to DB");
+      }
+    }
+    setScreen("story");
+  }, [completedStoryId]);
+
+  const handleCoverSkip = useCallback(() => {
+    setSelectedCover(null);
+    setScreen("story");
+  }, []);
+
   // ─── Browser history integration (JP-Y12) ───
   // Push state on screen changes so back button navigates within the flow
   useEffect(() => {
@@ -303,36 +362,7 @@ export default function Home() {
         <StoryEditor
           scenes={completedScenes}
           title="나의 마음 동화"
-          onDone={async (edited, title) => {
-            updateScenes(edited);
-            setEditedTitle(title);
-            // SIM-FIX(S18): Update saved story in DB with error feedback
-            // R3-C3: Await PATCH — only proceed to coverPick on success
-            if (completedStoryId && completedStoryId.startsWith("story_") === false) {
-              try {
-                const headers: Record<string, string> = { "Content-Type": "application/json" };
-                try {
-                  const supabase = createClient();
-                  if (supabase) {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-                  }
-                } catch { /* ignore */ }
-                const res = await fetch(`/api/stories/${completedStoryId}`, {
-                  method: "PATCH",
-                  headers,
-                  body: JSON.stringify({ title, scenes: edited }),
-                });
-                if (!res.ok) {
-                  // R7-F5: Don't auto-clear here — toast renders in story screen
-                  setEditSaveError(true);
-                }
-              } catch {
-                setEditSaveError(true);
-              }
-            }
-            setScreen("coverPick");
-          }}
+          onDone={handleEditDone}
         />
       </ErrorBoundary>
     );
@@ -345,35 +375,8 @@ export default function Home() {
         <CoverPicker
           storyTitle={editedTitle || "나의 마음 동화"}
           authorName={user?.user_metadata?.name || undefined}
-          onSelect={async (coverPath) => {
-            setSelectedCover(coverPath);
-            // PATCH cover image to DB
-            if (completedStoryId && !completedStoryId.startsWith("story_")) {
-              try {
-                const headers: Record<string, string> = { "Content-Type": "application/json" };
-                try {
-                  const supabase = createClient();
-                  if (supabase) {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-                  }
-                } catch { /* ignore */ }
-                await fetch(`/api/stories/${completedStoryId}`, {
-                  method: "PATCH",
-                  headers,
-                  body: JSON.stringify({ coverImage: coverPath }),
-                });
-              } catch {
-                // R3-C4: Warn user if cover save failed (selection still works in session)
-                console.warn("[CoverPicker] Failed to persist cover_image to DB");
-              }
-            }
-            setScreen("story");
-          }}
-          onSkip={() => {
-            setSelectedCover(null);
-            setScreen("story");
-          }}
+          onSelect={handleCoverSelect}
+          onSkip={handleCoverSkip}
         />
       </ErrorBoundary>
     );
@@ -397,7 +400,7 @@ export default function Home() {
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300" role="alert" aria-live="assertive">
             <div className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg"
               style={{ background: "rgba(224,122,95,0.92)", backdropFilter: "blur(8px)" }}>
               수정 저장에 실패했어요. 서재에서 다시 수정해 주세요.
@@ -588,7 +591,7 @@ export default function Home() {
                     boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
                   }}
                 >
-                  <img
+                  <Image
                     src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
                     alt={`동화 장면 ${i + 1}`}
                     width={180}

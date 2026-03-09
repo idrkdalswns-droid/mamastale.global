@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, memo } from "react";
 import { PHASES } from "@/lib/constants/phases";
 
 interface ChatInputProps {
@@ -10,7 +10,7 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-export default function ChatInput({
+export default memo(function ChatInput({
   onSend,
   isLoading,
   phase,
@@ -143,4 +143,4 @@ export default function ChatInput({
       </div>
     </div>
   );
-}
+});

@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { GlobalNav } from "@/components/layout/GlobalNav";
 import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { MotionProvider } from "@/components/layout/MotionProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -113,6 +114,7 @@ export default async function RootLayout({
       </head>
       <body className="bg-cream antialiased">
         <NextIntlClientProvider messages={messages}>
+        <MotionProvider>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
           본문으로 건너뛰기
         </a>
@@ -135,6 +137,7 @@ export default async function RootLayout({
             },
           }}
         />
+        </MotionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

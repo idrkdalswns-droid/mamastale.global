@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, useSettingsHydration, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
 import type { FontSize } from "@/lib/hooks/useSettings";
@@ -13,7 +13,7 @@ interface PhaseHeaderProps {
   onSaveDraft?: () => void;
 }
 
-export default function PhaseHeader({
+export default memo(function PhaseHeader({
   currentPhase,
   visitedPhases,
   isTransitioning,
@@ -166,4 +166,4 @@ export default function PhaseHeader({
       </div>
     </div>
   );
-}
+});

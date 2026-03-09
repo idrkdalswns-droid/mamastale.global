@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipe } from "@/lib/hooks/useSwipe";
 import { resolveCover } from "@/lib/utils/default-cover";
@@ -102,11 +103,14 @@ export default function StoryCarousel({ stories }: StoryCarouselProps) {
                 boxShadow: "0 20px 60px rgba(90,62,43,0.15), 0 4px 16px rgba(90,62,43,0.08)",
               }}
             >
-              <img
+              <Image
                 src={cover}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover object-center"
+                alt={story.title || "동화 표지"}
+                fill
+                className="object-cover object-center"
+                sizes="300px"
                 draggable={false}
+                priority={currentIndex === 0}
               />
 
               {/* Gradient overlay */}

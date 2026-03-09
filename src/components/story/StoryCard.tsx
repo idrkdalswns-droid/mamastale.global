@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { resolveCover } from "@/lib/utils/default-cover";
 import type { Scene } from "@/lib/types/story";
 
@@ -54,12 +55,13 @@ export const StoryCard = memo(function StoryCard({
     >
       {/* Cover Image */}
       <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-        <img
+        <Image
           src={resolvedCover}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          fill
+          className="object-cover object-center"
+          sizes="(max-width: 430px) 100vw, 430px"
           loading="lazy"
-          decoding="async"
         />
 
         {/* Topic badge overlay */}

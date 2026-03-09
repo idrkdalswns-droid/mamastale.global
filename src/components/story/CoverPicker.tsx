@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Cover image catalogue ───
@@ -264,9 +265,11 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
                   boxShadow: isSelected ? "0 0 0 2px #E07A5F" : "none",
                 }}
               >
-                <img
+                <Image
                   src={img.path}
                   alt=""
+                  width={88}
+                  height={55}
                   className="w-full h-full object-cover object-center"
                   loading="lazy"
                   draggable={false}
