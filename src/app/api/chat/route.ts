@@ -212,7 +212,8 @@ export async function POST(request: NextRequest) {
 
     const parsed = chatRequestSchema.safeParse(body);
     if (!parsed.success) {
-      console.error("[Chat] Zod validation failed:", JSON.stringify(parsed.error.issues.map(i => ({ path: i.path, code: i.code, message: i.message }))));
+      // R6-FIX: Log only field paths and error codes — not messages which may contain user input
+      console.error("[Chat] Zod validation failed:", parsed.error.issues.map(i => `${i.path.join(".")}:${i.code}`).join(", "));
       return NextResponse.json(
         { error: "잘못된 요청 형식입니다." },
         { status: 400 }
@@ -546,9 +547,11 @@ export async function POST(request: NextRequest) {
         );
       }
       if (status === 401) {
+        // R6-FIX: Return 502 for upstream Anthropic auth failure — not 401 which
+        // confuses the client into thinking the *user's* session expired
         return NextResponse.json(
-          { error: "API 인증 오류가 발생했습니다." },
-          { status: 401 }
+          { error: "AI 서비스 연결에 실패했습니다. 잠시 후 다시 시도해 주세요." },
+          { status: 502 }
         );
       }
     }

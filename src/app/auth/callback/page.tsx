@@ -196,7 +196,7 @@ export default function AuthCallbackPage() {
         >
           다시 로그인하기
         </Link>
-        {debugInfo && (
+        {debugInfo && process.env.NODE_ENV === "development" && (
           <p className="text-[10px] text-brown-light/40 mt-6 break-all max-w-[300px] text-center leading-relaxed select-all">
             {debugInfo}
           </p>
