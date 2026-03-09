@@ -35,7 +35,7 @@ export function isStoryComplete(text: string, phase: number | null, clientPhase?
   const effectivePhase = phase ?? clientPhase ?? 0;
   if (effectivePhase !== 4) return false;
 
-  // Check for story completion markers (both English and Korean)
+  // Check for story completion markers (English, Korean scene, Korean chapter)
   return (
     text.includes("WISDOM 1") ||
     text.includes("WISDOM 2") ||
@@ -43,6 +43,9 @@ export function isStoryComplete(text: string, phase: number | null, clientPhase?
     text.includes("장면 9") ||
     text.includes("장면 10") ||
     text.includes("[장면 10]") ||
+    // Korean chapter format: "9장", "10장" (AI may use N장 instead of 장면 N)
+    /(?:^|\D)9\s*장[.:\s]/m.test(text) ||
+    /(?:^|\D)10\s*장[.:\s]/m.test(text) ||
     // Also check for the completion celebration text as a safety net
     text.includes("축하합니다")
   );

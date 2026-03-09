@@ -123,4 +123,23 @@ describe("isStoryComplete", () => {
   it("detects [WISDOM with bracket pattern", () => {
     expect(isStoryComplete("[WISDOM 1] 교훈이에요", 4)).toBe(true);
   });
+
+  // Korean chapter format (N장) — AI often uses "9장:", "10장." instead of "장면 N"
+  it("detects completion with **9장: 제목** format", () => {
+    expect(isStoryComplete("**9장: 새로운 친구**\n회색 곰은 이제 마을의 새로운 친구가 되었어요.", 4)).toBe(true);
+  });
+
+  it("detects completion with **10장: 제목** format", () => {
+    expect(isStoryComplete("**10장: 영원한 사랑의 약속**\n그날 밤, 솜이와 엄마는 별이 반짝이는 하늘을 바라보며 이야기했어요.", 4)).toBe(true);
+  });
+
+  it("detects completion with 10장. format (no bold)", () => {
+    expect(isStoryComplete("10장. 마무리\n이야기가 끝났어요.", 4)).toBe(true);
+  });
+
+  it("does not false-positive on '19장' (number containing 9)", () => {
+    // "19장" contains "9" followed by "장" but shouldn't match since 19 > 10
+    // Our regex uses \D before the digit to avoid matching "19장" as "9장"
+    expect(isStoryComplete("19장: 다른 이야기", 4)).toBe(false);
+  });
 });
