@@ -42,7 +42,7 @@ export async function POST(
   }
 
   if (!isValidUUID(storyId)) {
-    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
   // Use createApiSupabaseClient to preserve session cookies on auth refresh

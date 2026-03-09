@@ -143,7 +143,8 @@ export async function POST(request: NextRequest) {
     // Validate cover image path (whitelist)
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mamastale-global.pages.dev";
     const hasCover = coverImage && /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(coverImage);
-    const coverUrl = hasCover ? `${siteUrl}${coverImage}` : "";
+    // R4-C1: Escape coverUrl to prevent XSS via env misconfiguration
+    const coverUrl = hasCover ? escapeHtml(`${siteUrl}${coverImage}`) : "";
 
     // Generate printable HTML — cover + scene-by-scene story + ending page
     const sceneHtml = scenes.map((scene, idx) => {
@@ -268,7 +269,7 @@ ${sceneHtml}
         "Content-Type": "text/html; charset=utf-8",
         "X-Frame-Options": "DENY",
         "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'",
+        "Content-Security-Policy": `default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; img-src ${siteUrl}`,
       },
     }));
   } catch (error) {

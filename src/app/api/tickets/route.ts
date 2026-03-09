@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   }
   if (!user) {
     // CTO-FIX: applyCookies was missing on 401 response
-    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   const { data: profile, error } = await sb.client

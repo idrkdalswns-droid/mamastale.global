@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   const { data: stories, error } = await sb.client
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
   const user = await resolveUser(sb, request);
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   // P1-FIX(KR-1): Rate limit per user
@@ -229,6 +229,6 @@ export async function POST(request: NextRequest) {
 
     return sb.applyCookies(NextResponse.json({ id: insertResult.data.id }));
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "Invalid request" }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }
 }

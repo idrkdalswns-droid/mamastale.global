@@ -124,14 +124,15 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // P0-3 FIX: Determine ticket count from actual payment amount (not metadata)
-        // KRW is a zero-decimal currency in Stripe, so amount_total is in Won
+        // R4-C8: Prefer session metadata (set at checkout) for ticket count
+        // Falls back to amount mapping for legacy sessions or coupons/discounts
         const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {
           4900: 1,    // ₩4,900 = 1 ticket
           14900: 4,   // ₩14,900 = 4 tickets (bundle)
         };
+        const metaTickets = parseInt(session.metadata?.ticket_count || "0", 10);
         const paidAmount = session.amount_total;
-        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount];
+        const ticketCount = (metaTickets > 0 && metaTickets <= 10) ? metaTickets : STRIPE_AMOUNT_TO_TICKETS[paidAmount];
         if (!ticketCount) {
           console.error(`[Stripe] Unknown payment amount: ${paidAmount}, session: ${session.id}`);
           break; // Return 200 to stop Stripe retries, log for manual review

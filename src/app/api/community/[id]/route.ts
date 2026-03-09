@@ -42,7 +42,7 @@ export async function GET(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
   }
 
   const supabase = createAnonClient();

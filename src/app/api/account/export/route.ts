@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
     };
 
     const [profileRes, storiesRes, commentsRes, feedbackData, subsData, likesData, reviewsData] = await Promise.all([
-      sb.client.from("profiles").select("*").eq("id", userId).single(),
+      // R4-B4: Explicit column list (never use select("*") to avoid leaking internal/future columns)
+      sb.client.from("profiles").select("id, display_name, avatar_url, free_stories_remaining, created_at, updated_at").eq("id", userId).single(),
       sb.client.from("stories").select("id, title, scenes, metadata, status, cover_image, created_at").eq("user_id", userId).limit(100),
       sb.client.from("comments").select("id, content, author_alias, story_id, created_at").eq("user_id", userId).limit(500),
       safeQuery("feedback", "id, empathy_rating, insight_rating, overall_rating, free_text, created_at", "user_id"),
