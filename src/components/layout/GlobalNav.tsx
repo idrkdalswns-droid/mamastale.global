@@ -51,7 +51,7 @@ export function GlobalNav() {
                 href={item.href}
                 // R9-FIX: aria-current="page" for screen readers (WCAG 2.4.8)
                 aria-current={isActive ? "page" : undefined}
-                className={`text-[11px] no-underline transition-colors min-h-[44px] flex items-center ${
+                className={`text-[11px] no-underline transition-colors min-h-[44px] min-w-[44px] justify-center px-2 flex items-center ${
                   isActive
                     ? "text-coral font-medium"
                     : "text-brown-mid font-light"

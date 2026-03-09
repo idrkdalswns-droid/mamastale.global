@@ -44,8 +44,11 @@ function GalleryScroller({ initialIndex, children }: { initialIndex: number; chi
       <div className="absolute right-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, rgb(var(--cream)), transparent)" }} />
       <div
         ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
+        className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/30 rounded-lg"
         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        tabIndex={0}
+        role="region"
+        aria-label="동화 장면 갤러리"
       >
         {children}
       </div>

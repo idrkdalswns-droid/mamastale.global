@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -302,7 +303,7 @@ function PricingContent() {
                   boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
                 }}
               >
-                <img
+                <Image
                   src={`/images/sample-tent/scene-${String(i + 1).padStart(2, "0")}.jpg`}
                   alt={`동화 장면 ${i + 1}`}
                   width={220}

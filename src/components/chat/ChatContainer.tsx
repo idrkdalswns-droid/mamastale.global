@@ -407,7 +407,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
 
       {/* Save draft toast */}
       {showSaveToast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300" role="status" aria-live="polite">
           <div
             className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg"
             style={{ background: "rgba(90,158,143,0.92)", backdropFilter: "blur(8px)" }}
@@ -425,6 +425,10 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
           role="dialog"
           aria-modal="true"
           aria-label="홈으로 나가기"
+          tabIndex={-1}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowHomeConfirm(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowHomeConfirm(false); }}
+          ref={(el) => el?.focus()}
         >
           <div
             className="w-full max-w-xs rounded-2xl p-6 text-center"
