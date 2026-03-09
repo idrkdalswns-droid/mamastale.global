@@ -55,7 +55,7 @@ function isOrderProcessed(orderId: string): boolean {
   // Lazy cleanup
   if (processedOrders.size > 200) {
     for (const [key, timestamp] of processedOrders) {
-      if (now - timestamp > 600_000) processedOrders.delete(key);
+      if (now - timestamp > ORDER_DEDUP_TTL_MS) processedOrders.delete(key);
     }
   }
   return processedOrders.has(orderId);

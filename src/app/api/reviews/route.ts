@@ -29,6 +29,23 @@ function checkReviewRateLimit(ip: string): boolean {
   return true;
 }
 
+// R8-FIX: Rate limit review reads (30/min per IP — DDoS protection)
+const reviewGetRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkReviewGetRate(ip: string): boolean {
+  const now = Date.now();
+  if (reviewGetRateMap.size > 300) {
+    for (const [k, v] of reviewGetRateMap) { if (now > v.resetAt) reviewGetRateMap.delete(k); }
+  }
+  const entry = reviewGetRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    reviewGetRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false;
+  entry.count++;
+  return true;
+}
+
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -38,8 +55,13 @@ function createAnonClient() {
   });
 }
 
-// GET: List reviews
-export async function GET() {
+// GET: List reviews (R8-FIX: rate limited)
+export async function GET(request: NextRequest) {
+  const readIp = getClientIP(request);
+  if (!checkReviewGetRate(readIp)) {
+    return NextResponse.json({ reviews: [] });
+  }
+
   const supabase = createAnonClient();
   if (!supabase) {
     return NextResponse.json({ reviews: [] });
