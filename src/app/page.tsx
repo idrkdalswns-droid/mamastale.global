@@ -38,12 +38,17 @@ function GalleryScroller({ initialIndex, children }: { initialIndex: number; chi
     el.scrollTo({ left: scrollLeft, behavior: "instant" });
   }, [initialIndex]);
   return (
-    <div
-      ref={scrollRef}
-      className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
-      style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
-    >
-      {children}
+    <div className="relative">
+      {/* L-1: Scroll hint gradients */}
+      <div className="absolute left-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, rgb(var(--cream)), transparent)" }} />
+      <div className="absolute right-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, rgb(var(--cream)), transparent)" }} />
+      <div
+        ref={scrollRef}
+        className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

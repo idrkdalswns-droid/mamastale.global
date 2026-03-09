@@ -184,6 +184,12 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               draggable={false}
+              onError={() => {
+                // M-4: Auto-fallback to next image on load failure
+                const idx = filteredImages.findIndex((c) => c.path === selected.path);
+                const next = filteredImages[(idx + 1) % filteredImages.length];
+                if (next && next.path !== selected.path) setSelected(next);
+              }}
             />
           </AnimatePresence>
 
@@ -216,6 +222,19 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.4 }}
       >
+        {/* L-4: "전체" filter chip */}
+        <button
+          onClick={() => setActiveTone(null)}
+          aria-pressed={activeTone === null}
+          className="px-4 py-2 rounded-full text-[12px] font-medium transition-all active:scale-[0.95]"
+          style={{
+            background: activeTone === null ? "rgba(196,149,106,0.12)" : "transparent",
+            color: activeTone === null ? "#8B6F55" : "rgba(139,111,85,0.45)",
+            border: `1.5px solid ${activeTone === null ? "rgba(196,149,106,0.25)" : "rgba(196,149,106,0.12)"}`,
+          }}
+        >
+          전체
+        </button>
         {(Object.keys(TONE_LABELS) as CoverTone[]).map((tone) => {
           const isActive = activeTone === tone;
           const style = TONE_STYLES[tone];

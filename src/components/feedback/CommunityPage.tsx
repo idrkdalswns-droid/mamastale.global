@@ -6,6 +6,7 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { createClient } from "@/lib/supabase/client";
 import { getAnonymousId } from "@/lib/utils/anonymous-id";
+import { containsProfanity } from "@/lib/utils/validation";
 
 interface CommunityPageProps {
   onRestart: () => void;
@@ -18,7 +19,13 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
-  const [interestSent, setInterestSent] = useState<Record<string, boolean>>({});
+  // L-7: Persist interest votes to localStorage
+  const [interestSent, setInterestSent] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("mamastale_interest_votes");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
   const { completedScenes, completedStoryId, storySaved, retrySaveStory } = useChatStore();
 
   // SIM-FIX(S19): Get auth headers with Bearer token fallback
@@ -50,7 +57,10 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
         }),
       });
       if (res.ok) {
-        setInterestSent((prev) => ({ ...prev, [featureType]: true }));
+        const updated = { ...interestSent, [featureType]: true };
+        setInterestSent(updated);
+        // L-7: Persist to localStorage
+        try { localStorage.setItem("mamastale_interest_votes", JSON.stringify(updated)); } catch {}
       }
     } catch { /* silent */ }
   }, [interestSent, completedStoryId]);
@@ -89,6 +99,11 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
 
   const handleShare = async () => {
     if (!completedScenes.length) return;
+    // H-3: Profanity filter on alias
+    if (alias.trim() && containsProfanity(alias)) {
+      setShareError("부적절한 별명입니다. 다른 별명을 입력해 주세요.");
+      return;
+    }
     setIsSharing(true);
     setShareError("");
     try {
@@ -250,7 +265,17 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                   }}
                 />
                 {shareError && (
-                  <p className="text-xs text-red-500 font-light mb-2">{shareError}</p>
+                  <div className="mb-2">
+                    <p className="text-xs text-red-500 font-light">{shareError}</p>
+                    {!isSharing && !shared && (
+                      <button
+                        onClick={handleShare}
+                        className="text-xs text-coral underline underline-offset-2 mt-1"
+                      >
+                        다시 시도
+                      </button>
+                    )}
+                  </div>
                 )}
                 <button
                   onClick={handleShare}
@@ -293,7 +318,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
                 같은 마음을 가진 엄마들과 이야기를 나눠보세요.
               </p>
               <a
-                href="https://open.kakao.com/o/gSSkFmii"
+                href={process.env.NEXT_PUBLIC_KAKAO_COMMUNITY_URL || "https://open.kakao.com/o/gSSkFmii"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-medium no-underline transition-transform active:scale-[0.97]"

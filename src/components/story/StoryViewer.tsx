@@ -38,13 +38,16 @@ interface StoryViewerProps {
   onNewStory?: () => void;
   /** Callback to open cover image picker */
   onChangeCover?: () => void;
+  /** Story ID — used for localStorage key isolation (prevents title collision) */
+  storyId?: string;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory, onChangeCover }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory, onChangeCover, storyId }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
-  const pageStorageKey = title ? `mamastale_last_page_${title.slice(0, 40)}` : "";
+  // M-7: Use storyId for localStorage key isolation (prevents title collision)
+  const pageStorageKey = storyId ? `mamastale_last_page_${storyId}` : title ? `mamastale_last_page_${title.slice(0, 40)}` : "";
   const [currentPage, setCurrentPage] = useState(() => {
     if (!pageStorageKey) return 0;
     try {
@@ -77,7 +80,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   }, []);
 
   // Mother message (last page only)
-  const motherMsgKey = title ? `mamastale_mother_msg_${title.slice(0, 40)}` : "mamastale_mother_message";
+  const motherMsgKey = storyId ? `mamastale_mother_msg_${storyId}` : title ? `mamastale_mother_msg_${title.slice(0, 40)}` : "mamastale_mother_message";
   const [motherMessage, setMotherMessage] = useState(() => {
     try { return localStorage.getItem(motherMsgKey) || ""; } catch { return ""; }
   });
@@ -217,6 +220,10 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               >
                 A-
               </button>
+              {/* L-5: Font size indicator */}
+              <span className="text-[9px] text-brown-pale/60 font-light w-5 text-center tabular-nums" aria-hidden="true">
+                {fontSize}
+              </span>
               <button
                 onClick={() => adjustFont(2)}
                 className="w-11 h-11 rounded-full text-[12px] font-medium text-brown-mid active:scale-90 transition-transform flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
@@ -256,7 +263,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 <div
                   className="h-[6px] w-full rounded-full transition-all duration-300"
                   style={{
-                    background: i <= currentPage ? "#E07A5F" : "rgba(0,0,0,0.06)",
+                    background: i < currentPage ? "rgba(224,122,95,0.53)" : i === currentPage ? "#E07A5F" : "rgba(0,0,0,0.06)",
                   }}
                 />
               </button>
@@ -530,9 +537,9 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             <input
               type="text"
               value={aliasInput}
-              onChange={(e) => setAliasInput(e.target.value.slice(0, 50))}
+              onChange={(e) => setAliasInput(e.target.value.slice(0, 20))}
               placeholder="익명의 엄마"
-              maxLength={50}
+              maxLength={20}
               className="w-full px-4 py-3 rounded-xl bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
               style={{ fontSize: 16 }}
               aria-label="별명 입력"
@@ -552,7 +559,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               }}
             />
             <p className="text-[10px] text-brown-pale font-light mb-4">
-              {aliasInput.length}/50
+              {aliasInput.length}/20
             </p>
             <button
               onClick={async () => {

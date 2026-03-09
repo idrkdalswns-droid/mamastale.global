@@ -129,6 +129,26 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
             완료
           </button>
         </div>
+        {/* M-10: Scene quick navigation */}
+        <div className="flex gap-1 justify-center px-4 pb-2">
+          {editedScenes.map((s, i) => {
+            const modified = s.text !== originalScenes[i]?.text;
+            return (
+              <button
+                key={i}
+                onClick={() => textareaRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="min-w-[32px] h-8 rounded-full text-[11px] font-medium transition-all active:scale-90 flex items-center justify-center"
+                style={{
+                  background: modified ? "rgba(224,122,95,0.12)" : "rgba(0,0,0,0.03)",
+                  color: modified ? "#E07A5F" : "#8B6F55",
+                }}
+                aria-label={`${i + 1}페이지로 이동${modified ? " (수정됨)" : ""}`}
+              >
+                {i + 1}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Scrollable Content */}
@@ -175,7 +195,9 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
               <div className="flex justify-between items-center mt-1.5">
                 {isModified ? (
                   <button
-                    onClick={() => resetScene(index)}
+                    onClick={() => {
+                      if (confirm("이 장면의 수정 내용을 되돌릴까요?")) resetScene(index);
+                    }}
                     className="text-[11px] text-brown-pale underline underline-offset-2 min-h-[44px] inline-flex items-center"
                   >
                     ↩ 원래대로

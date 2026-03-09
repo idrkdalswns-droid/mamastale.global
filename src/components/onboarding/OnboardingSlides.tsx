@@ -233,7 +233,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   <button
                     key={o.value}
                     type="button"
-                    onClick={() => setParentAge(parentAge === o.value ? "" : o.value)}
+                    onClick={() => setParentAge(o.value)}
                     className="flex-1 py-2.5 rounded-xl text-[13px] font-medium transition-all active:scale-[0.96] min-h-[44px]"
                     style={{
                       background: parentAge === o.value
@@ -265,7 +265,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   <button
                     key={o.value}
                     type="button"
-                    onClick={() => setChildAge(childAge === o.value ? "" : o.value)}
+                    onClick={() => setChildAge(o.value)}
                     className="flex-1 py-2.5 rounded-xl text-[12px] font-medium transition-all active:scale-[0.96] min-h-[44px]"
                     style={{
                       background: childAge === o.value

@@ -22,9 +22,11 @@ export default function TicketConfirmModal({
 }: TicketConfirmModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slowWarning, setSlowWarning] = useState(false);
   // P0-FIX(US-3): Ref-based mutex to prevent double-click race condition.
   // React state updates are async; useRef provides synchronous guard.
   const submittingRef = useRef(false);
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -36,7 +38,10 @@ export default function TicketConfirmModal({
     if (submittingRef.current) return; // Already in-flight — ignore duplicate clicks
     submittingRef.current = true;
     setIsLoading(true);
+    setSlowWarning(false);
     setError(null);
+    // M-2: Show slow-network warning after 10 seconds
+    slowTimerRef.current = setTimeout(() => setSlowWarning(true), 10_000);
 
     try {
       // ROOT-CAUSE FIX: Add Bearer token alongside cookies for mobile/embed compatibility.
@@ -76,8 +81,10 @@ export default function TicketConfirmModal({
       }
 
       // Ticket deducted successfully → proceed
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
       onConfirm();
     } catch {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
       setError("네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.");
       submittingRef.current = false;
       setIsLoading(false);
@@ -123,9 +130,16 @@ export default function TicketConfirmModal({
           {remainingTickets <= 1 && " (마지막 티켓이에요!)"}
         </p>
 
+        {/* M-2: Slow network warning */}
+        {slowWarning && isLoading && (
+          <p className="text-[11px] text-brown-light font-light mb-2 animate-in fade-in">
+            요청이 오래 걸리고 있습니다. 네트워크를 확인해 주세요.
+          </p>
+        )}
+
         {/* Error message */}
         {error && (
-          <p className="text-[11px] text-red-500 font-medium mb-3">
+          <p className="text-[13px] text-red-500 font-medium mb-3">
             {error}
           </p>
         )}
