@@ -182,6 +182,18 @@ export async function POST(request: NextRequest) {
       console.info("[Stripe] Subscription updated:", sub.id, sub.status);
 
       if (supabase) {
+        // R4-4: Idempotency — only apply if event is newer than last update
+        const eventTime = new Date(event.created * 1000).toISOString();
+        const { data: existing } = await supabase
+          .from("subscriptions")
+          .select("updated_at")
+          .eq("stripe_subscription_id", sub.id)
+          .maybeSingle();
+        if (existing && existing.updated_at >= eventTime) {
+          console.info(`[Stripe] Stale subscription update skipped: ${sub.id}`);
+          break;
+        }
+
         const periodStart = sub.items?.data?.[0]?.current_period_start;
         const periodEnd = sub.items?.data?.[0]?.current_period_end;
 
@@ -196,7 +208,7 @@ export async function POST(request: NextRequest) {
             ...(periodEnd && {
               current_period_end: new Date(periodEnd * 1000).toISOString(),
             }),
-            updated_at: new Date().toISOString(),
+            updated_at: eventTime,
           })
           .eq("stripe_subscription_id", sub.id);
       }
@@ -207,11 +219,23 @@ export async function POST(request: NextRequest) {
       console.info("[Stripe] Subscription canceled:", sub.id);
 
       if (supabase) {
+        // R4-4: Idempotency — only apply if event is newer
+        const eventTime = new Date(event.created * 1000).toISOString();
+        const { data: existing } = await supabase
+          .from("subscriptions")
+          .select("updated_at")
+          .eq("stripe_subscription_id", sub.id)
+          .maybeSingle();
+        if (existing && existing.updated_at >= eventTime) {
+          console.info(`[Stripe] Stale subscription delete skipped: ${sub.id}`);
+          break;
+        }
+
         await supabase
           .from("subscriptions")
           .update({
             status: "canceled",
-            updated_at: new Date().toISOString(),
+            updated_at: eventTime,
           })
           .eq("stripe_subscription_id", sub.id);
       }

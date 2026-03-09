@@ -186,6 +186,15 @@ export async function DELETE(request: NextRequest) {
     const { error: profileErr } = await serviceClient.from("profiles").delete().eq("id", userId);
     if (profileErr) console.error(`[Account] Profile delete failed for user=${maskedId}: ${profileErr.code}`);
 
+    // R4-3: Gate — do NOT delete auth user if critical data remains (irreversible)
+    if (storiesErr || profileErr) {
+      console.error(`[Account] Aborting auth deletion — data cleanup incomplete for user=${maskedId}`);
+      return sb.applyCookies(NextResponse.json(
+        { error: "계정 데이터 정리 중 오류가 발생했습니다. 다시 시도해 주세요." },
+        { status: 500 }
+      ));
+    }
+
     // Delete auth user
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
     if (deleteError) {

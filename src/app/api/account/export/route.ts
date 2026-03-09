@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       } catch { return []; }
     };
 
-    const [profileRes, storiesRes, commentsRes, feedbackData, subsData, likesData, reviewsData] = await Promise.all([
+    const [profileRes, storiesRes, commentsRes, feedbackData, subsData, likesData, reviewsData, sessionsData] = await Promise.all([
       // R4-B4: Explicit column list (never use select("*") to avoid leaking internal/future columns)
       sb.client.from("profiles").select("id, display_name, avatar_url, free_stories_remaining, created_at, updated_at").eq("id", userId).single(),
       sb.client.from("stories").select("id, title, scenes, metadata, status, cover_image, created_at").eq("user_id", userId).limit(100),
@@ -66,7 +66,23 @@ export async function GET(request: NextRequest) {
       safeQuery("subscriptions", "id, plan, status, created_at", "user_id"),
       safeQuery("likes", "id, story_id, created_at", "user_id"),
       safeQuery("user_reviews", "id, author_alias, stars, content, created_at", "user_id"),
+      // R4-5: Include sessions for GDPR Art. 20 completeness
+      safeQuery("sessions", "id, current_phase, status, created_at, updated_at", "user_id"),
     ]);
+
+    // R4-5: Fetch messages for user's sessions (messages reference session_id, not user_id)
+    let messagesData: unknown[] = [];
+    const sessionIds = (sessionsData as unknown as Array<{ id: string }>).map(s => s.id);
+    if (sessionIds.length > 0) {
+      try {
+        const { data } = await sb.client
+          .from("messages")
+          .select("id, session_id, role, content, phase, created_at")
+          .in("session_id", sessionIds)
+          .limit(5000);
+        messagesData = data || [];
+      } catch { /* graceful fallback */ }
+    }
 
     const exportData = {
       exportDate: new Date().toISOString(),
@@ -83,6 +99,8 @@ export async function GET(request: NextRequest) {
       subscriptions: subsData,
       likes: likesData,
       reviews: reviewsData,
+      sessions: sessionsData,
+      messages: messagesData,
     };
 
     const dateStr = new Date().toISOString().split("T")[0];
