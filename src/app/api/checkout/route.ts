@@ -136,15 +136,32 @@ export async function POST(request: NextRequest) {
     // IL-04: Stable idempotency key per user+product+minute (prevents duplicate sessions)
     const idempotencyKey = `checkout_${userId}_${priceType}_${Math.floor(Date.now() / 60000)}`;
 
-    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${secretKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: params.toString(),
-    });
+    // R6-6: 30s timeout to prevent indefinite hang if Stripe is unresponsive
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let response: Response;
+    try {
+      response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${secretKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: params.toString(),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      const isAbort = fetchErr instanceof DOMException && fetchErr.name === "AbortError";
+      console.error("[Checkout] Stripe fetch failed:", isAbort ? "TIMEOUT" : "NETWORK");
+      return sb.applyCookies(NextResponse.json(
+        { error: isAbort ? "결제 서버 응답 시간이 초과되었습니다." : "결제 서버에 연결할 수 없습니다." },
+        { status: 504 }
+      ));
+    } finally {
+      clearTimeout(timeout);
+    }
 
     // R2-FIX: Wrap Stripe response parsing in try-catch (may return non-JSON on 502)
     let session;

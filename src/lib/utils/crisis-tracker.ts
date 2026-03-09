@@ -30,7 +30,7 @@ export async function recordCrisisEvent(params: CrisisEventParams): Promise<void
     const supabase = createServiceRoleClient();
     if (!supabase) return;
 
-    await supabase.rpc("record_crisis_event", {
+    const { error } = await supabase.rpc("record_crisis_event", {
       p_session_id: params.sessionId || `anonymous_${Date.now()}`,
       p_user_id: params.userId || null,
       p_severity: params.severity,
@@ -38,8 +38,13 @@ export async function recordCrisisEvent(params: CrisisEventParams): Promise<void
       p_keywords: params.keywords ?? [],
       p_reasoning: params.reasoning ?? null,
     });
-  } catch {
-    // Fire-and-forget: never block the response on tracking failure
+    // R6-8: Log RPC failure — crisis events must have audit trail visibility
+    if (error) {
+      console.error(`[CrisisTracker] FAILED to record ${params.severity} event for session=${params.sessionId}:`, error.code, error.message);
+    }
+  } catch (err) {
+    // R6-8: Fire-and-forget but always log failure for observability
+    console.error("[CrisisTracker] record_crisis_event threw:", err instanceof Error ? err.message : "Unknown");
   }
 }
 

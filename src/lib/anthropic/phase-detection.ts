@@ -4,7 +4,10 @@
  */
 export function detectPhase(text: string): number | null {
   const match = text.match(/\[(?:PHASE|Phase|phase)[:\s]*(\d)\]/i);
-  return match ? parseInt(match[1]) : null;
+  if (!match) return null;
+  // R6-3: Clamp to valid phases 1-4 (reject 0, 5-9 hallucinations)
+  const n = parseInt(match[1]);
+  return n >= 1 && n <= 4 ? n : null;
 }
 
 /**
