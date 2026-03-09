@@ -6,6 +6,23 @@ import { isValidUUID, sanitizeText, containsProfanity, getClientIP } from "@/lib
 
 export const runtime = "edge";
 
+// R6-FIX: Rate limit comments GET (prevent scraping)
+const commentGetRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkCommentGetRate(ip: string): boolean {
+  const now = Date.now();
+  if (commentGetRateMap.size > 300) {
+    for (const [k, v] of commentGetRateMap) { if (now > v.resetAt) commentGetRateMap.delete(k); }
+  }
+  const entry = commentGetRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    commentGetRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 30) return false; // 30/min per IP
+  entry.count++;
+  return true;
+}
+
 // P1-FIX: Rate limiting for comment POST (prevent spam)
 const COMMENT_RATE_WINDOW = 60_000; // 1 minute
 const COMMENT_RATE_LIMIT = 5; // max 5 comments per minute per IP
@@ -40,9 +57,15 @@ function createAnonClient() {
 
 // GET: List comments for a story (only if story is public)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // R6-FIX: Rate limit comment reads (30/min per IP)
+  const readIp = getClientIP(request);
+  if (!checkCommentGetRate(readIp)) {
+    return NextResponse.json({ comments: [] });
+  }
+
   const { id: storyId } = await params;
 
   if (!isValidUUID(storyId)) {
