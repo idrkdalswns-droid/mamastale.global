@@ -184,7 +184,8 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     }
   }, [buildStoryText, storyTitle, handleCopy]);
 
-  const bgClass = pageBgClass[currentPage] || "bg-[#FBF5EC]";
+  // R3-3: Cycle through 5 bg colors for pages beyond index 4
+  const bgClass = pageBgClass[currentPage % 5];
 
   return (
     <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>

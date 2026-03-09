@@ -17,6 +17,8 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
   const [error, setError] = useState(false);
 
   const handleDownload = async () => {
+    // R3-4: Guard against empty scenes
+    if (!scenes || scenes.length === 0) return;
     setLoading(true);
     setError(false);
 

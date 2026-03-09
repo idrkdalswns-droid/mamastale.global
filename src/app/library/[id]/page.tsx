@@ -28,6 +28,8 @@ export default function LibraryStoryPage() {
   const [story, setStory] = useState<StoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // R3-1+R3-2: Separate transient save error from fatal load error
+  const [saveError, setSaveError] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -82,19 +84,19 @@ export default function LibraryStoryPage() {
         });
         if (res.ok) {
           setStory((prev) => prev ? { ...prev, title: editedTitle, scenes: editedScenes } : prev);
+          setSaving(false);
+          setEditing(false);
+          setShowCoverPickerAfterEdit(true);
         } else {
-          // R3-C14: Show error feedback on save failure
-          setError("저장에 실패했습니다. 다시 시도해주세요.");
-          setTimeout(() => setError(""), 3000);
+          // R3-1: Keep editor open on save failure so user can retry
+          setSaving(false);
+          setSaveError("저장에 실패했습니다. 다시 시도해주세요.");
+          setTimeout(() => setSaveError(""), 3000);
         }
       } catch {
-        // R3-C14: Show error feedback on save failure
-        setError("저장에 실패했습니다. 다시 시도해주세요.");
-        setTimeout(() => setError(""), 3000);
-      } finally {
         setSaving(false);
-        setEditing(false);
-        setShowCoverPickerAfterEdit(true);
+        setSaveError("네트워크 오류입니다. 다시 시도해주세요.");
+        setTimeout(() => setSaveError(""), 3000);
       }
     },
     [story]
@@ -230,6 +232,14 @@ export default function LibraryStoryPage() {
           title={story.title}
           onDone={handleEditDone}
         />
+        {/* R3-2: Save error toast (doesn't block editing) */}
+        {saveError && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300" role="alert">
+            <div className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg" style={{ background: "rgba(224,122,95,0.92)" }}>
+              {saveError}
+            </div>
+          </div>
+        )}
       </ErrorBoundary>
     );
   }
