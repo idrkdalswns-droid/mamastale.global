@@ -5,17 +5,14 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["@react-pdf/renderer"],
-  },
   images: {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
-  // Required for Cloudflare Pages / standalone deployments
-  output: "standalone",
+  // R7-FIX(C13): Hide framework info from response headers
+  poweredByHeader: false,
 };
 
 // Chain plugins: next-intl → serwist → nextConfig

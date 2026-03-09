@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
   // ─── Event ID idempotency check ───
   if (event.id && isEventProcessed(event.id)) {
-    console.log(`[Stripe] Duplicate event skipped: ${event.id}`);
+    console.info(`[Stripe] Duplicate event skipped: ${event.id}`);
     return NextResponse.json({ received: true });
   }
 
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      console.log("[Stripe] Checkout completed:", session.id);
+      console.info("[Stripe] Checkout completed:", session.id);
 
       if (supabase && session.metadata?.user_id) {
         const userId = session.metadata.user_id;
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         if (subInsertErr) {
           // Check if it's a unique violation (already processed)
           if (subInsertErr.code === "23505") {
-            console.log(`[Stripe] Session ${session.id} already processed (unique constraint), skipping`);
+            console.info(`[Stripe] Session ${session.id} already processed (unique constraint), skipping`);
             break;
           }
           console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
     case "customer.subscription.updated": {
       const sub = event.data.object;
-      console.log("[Stripe] Subscription updated:", sub.id, sub.status);
+      console.info("[Stripe] Subscription updated:", sub.id, sub.status);
 
       if (supabase) {
         const periodStart = sub.items?.data?.[0]?.current_period_start;
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
     }
     case "customer.subscription.deleted": {
       const sub = event.data.object;
-      console.log("[Stripe] Subscription canceled:", sub.id);
+      console.info("[Stripe] Subscription canceled:", sub.id);
 
       if (supabase) {
         await supabase

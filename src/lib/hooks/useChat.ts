@@ -249,14 +249,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Handle phase transition (forward-only: never go backward)
       const currentPhaseNow = get().currentPhase;
-      if (data.phase && data.phase > currentPhaseNow) {
+      // R7-FIX(A3): Guard phase before accessing to prevent undefined in visitedPhases
+      const nextPhase = data.phase;
+      if (nextPhase && nextPhase > currentPhaseNow) {
         set({ isTransitioning: true });
         await new Promise((r) => setTimeout(r, 600));
         set((s) => ({
-          currentPhase: data.phase as 1 | 2 | 3 | 4,
-          visitedPhases: s.visitedPhases.includes(data.phase!)
+          currentPhase: nextPhase as 1 | 2 | 3 | 4,
+          visitedPhases: s.visitedPhases.includes(nextPhase)
             ? s.visitedPhases
-            : [...s.visitedPhases, data.phase!],
+            : [...s.visitedPhases, nextPhase],
           turnCountInCurrentPhase: 0, // Reset turn count for new phase
         }));
         await new Promise((r) => setTimeout(r, 500));
@@ -462,14 +464,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (event.type === "done") {
             // Handle phase transition
             const currentPhaseNow = get().currentPhase;
-            if (event.phase && event.phase > currentPhaseNow) {
+            // R7-FIX(A4): Guard phase before accessing to prevent undefined in visitedPhases
+            const streamNextPhase = event.phase;
+            if (streamNextPhase && streamNextPhase > currentPhaseNow) {
               set({ isTransitioning: true });
               await new Promise((r) => setTimeout(r, 600));
               set((s) => ({
-                currentPhase: event.phase as 1 | 2 | 3 | 4,
-                visitedPhases: s.visitedPhases.includes(event.phase!)
+                currentPhase: streamNextPhase as 1 | 2 | 3 | 4,
+                visitedPhases: s.visitedPhases.includes(streamNextPhase)
                   ? s.visitedPhases
-                  : [...s.visitedPhases, event.phase!],
+                  : [...s.visitedPhases, streamNextPhase],
                 turnCountInCurrentPhase: 0,
               }));
               await new Promise((r) => setTimeout(r, 500));

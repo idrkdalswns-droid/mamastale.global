@@ -145,7 +145,7 @@ export async function DELETE(request: NextRequest) {
       return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
     }
 
-    console.log(`[Account] Successfully deleted user=${maskedId}`);
+    console.info(`[Account] Successfully deleted user=${maskedId}`);
     return sb.applyCookies(NextResponse.json({ success: true, message: "계정이 삭제되었습니다." }));
   } catch (e) {
     console.error("[Account] Delete error:", e instanceof Error ? e.name : "Unknown");

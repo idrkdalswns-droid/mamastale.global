@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
 
     // Log feedback summary (no PII)
-    console.log("[Feedback received]", {
+    console.info("[Feedback received]", {
       hasEmpathy: !!data.empathy,
       hasInsight: !!data.insight,
       hasOverall: !!data.overall,
