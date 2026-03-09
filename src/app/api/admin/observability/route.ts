@@ -187,7 +187,8 @@ export async function GET(request: NextRequest) {
       recentEvents: events || [],
     });
   } catch (err) {
-    console.error("[Admin] Observability aggregation failed:", err instanceof Error ? err.message : "Unknown");
+    // R10-FIX: Use err.name (not err.message) to prevent internal detail leakage in logs
+    console.error("[Admin] Observability aggregation failed:", err instanceof Error ? err.name : "Unknown");
     return NextResponse.json({ error: "집계 중 오류 발생" }, { status: 500 });
   }
 }
