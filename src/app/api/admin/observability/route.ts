@@ -186,7 +186,8 @@ export async function GET(request: NextRequest) {
       byDay,
       recentEvents: events || [],
     });
-  } catch {
+  } catch (err) {
+    console.error("[Admin] Observability aggregation failed:", err instanceof Error ? err.message : "Unknown");
     return NextResponse.json({ error: "집계 중 오류 발생" }, { status: 500 });
   }
 }

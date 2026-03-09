@@ -11,6 +11,23 @@ const MAX_BODY_SIZE = 512_000; // 512KB max request body
 
 const storySaveRateMap = new Map<string, { count: number; resetAt: number }>();
 
+// R4-FIX: Rate limit GET /api/stories (prevent enumeration)
+const storyListRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkStoryListRate(userId: string): boolean {
+  const now = Date.now();
+  if (storyListRateMap.size > 200) {
+    for (const [k, v] of storyListRateMap) { if (now > v.resetAt) storyListRateMap.delete(k); }
+  }
+  const entry = storyListRateMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    storyListRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 15) return false;
+  entry.count++;
+  return true;
+}
+
 function checkStorySaveRate(userId: string): boolean {
   const now = Date.now();
   // Lazy cleanup
@@ -59,6 +76,10 @@ export async function GET(request: NextRequest) {
   const user = await resolveUser(sb, request);
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+  }
+
+  if (!checkStoryListRate(user.id)) {
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
   }
 
   const { data: stories, error } = await sb.client

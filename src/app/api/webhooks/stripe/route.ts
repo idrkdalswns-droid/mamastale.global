@@ -36,6 +36,11 @@ async function verifyStripeSignature(
     if (!timestamp || !signature) return false;
 
     // ─── Timestamp tolerance check ───
+    // R4-FIX: Validate timestamp is numeric before parseInt (NaN bypass defense)
+    if (!/^\d+$/.test(timestamp)) {
+      console.error("[Stripe] Non-numeric timestamp in signature header");
+      return false;
+    }
     const eventTime = parseInt(timestamp, 10);
     const currentTime = Math.floor(Date.now() / 1000);
     if (Math.abs(currentTime - eventTime) > TIMESTAMP_TOLERANCE_SEC) {

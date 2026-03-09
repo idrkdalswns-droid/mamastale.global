@@ -253,11 +253,9 @@ export async function POST(request: NextRequest) {
       console.error("[Toss] Payment confirmation failed:", confirmData?.code, confirmData?.message);
       // CTO-FIX: Use generic error message instead of forwarding Toss internal error details
       // Only forward the error code (safe), not the message (may contain internal info)
+      // R4-FIX: Never forward provider error codes to client (information disclosure)
       return sb.applyCookies(NextResponse.json(
-        {
-          error: "결제 확인에 실패했습니다.",
-          code: confirmData?.code || "UNKNOWN_ERROR",
-        },
+        { error: "결제 확인에 실패했습니다." },
         { status: 400 }
       ));
     }
@@ -266,10 +264,13 @@ export async function POST(request: NextRequest) {
     const confirmedAmount = confirmData.totalAmount;
 
     // LAUNCH-FIX: Verify Toss-confirmed amount matches client request (detect tampering/mismatch)
+    // R4-FIX: Block transaction if client-declared amount doesn't match Toss-confirmed amount
     if (confirmedAmount !== numericAmount) {
-      console.error(`[SECURITY] Amount mismatch: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
-      // Still grant tickets based on Toss-confirmed amount (payment already charged)
-      // but log for security review
+      console.error(`[SECURITY] Amount tampering attempt: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제 금액 검증에 실패했습니다. 다시 시도해 주세요." },
+        { status: 400 }
+      ));
     }
 
     const ticketCount = VALID_PRICES[confirmedAmount];
