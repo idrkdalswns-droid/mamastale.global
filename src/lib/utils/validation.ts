@@ -74,10 +74,12 @@ export const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", 
 // ─── Client IP extraction (Cloudflare → forwarded → fallback) ───
 export function getClientIP(request: Request): string {
   const headers = request.headers;
-  return (
+  const raw = (
     headers.get("cf-connecting-ip") ||
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-real-ip") ||
     "unknown"
   );
+  // R2-5: Cap length to prevent memory abuse from spoofed headers (IPv6 max ~45 chars)
+  return raw.slice(0, 45);
 }

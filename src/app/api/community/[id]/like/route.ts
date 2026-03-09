@@ -53,6 +53,23 @@ function checkGuestLikeLimit(ip: string): boolean {
   return true;
 }
 
+// R2-1: Authenticated like rate limiting (per-userId, per-isolate)
+const authLikeRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkAuthLikeRate(userId: string): boolean {
+  const now = Date.now();
+  if (authLikeRateMap.size > 300) {
+    for (const [k, v] of authLikeRateMap) { if (now > v.resetAt) authLikeRateMap.delete(k); }
+  }
+  const entry = authLikeRateMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    authLikeRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 15) return false; // 15 toggles/min per user
+  entry.count++;
+  return true;
+}
+
 // CTO-FIX: IP+story deduplication to prevent guest like inflation
 // Same IP can only like the same story once per 24h window (per-isolate)
 const GUEST_DEDUP_TTL = 86_400_000; // 24 hours
@@ -101,6 +118,14 @@ export async function POST(
     }
   }
 
+  // R2-1: Rate limit authenticated like toggles
+  if (user && !checkAuthLikeRate(user.id)) {
+    return sb.applyCookies(NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429 }
+    ));
+  }
+
   // Guest like — rate-limited + dedup, increment counter only
   if (!user) {
     const ip = getClientIP(request);
@@ -130,11 +155,20 @@ export async function POST(
 
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
-      await serviceClient.rpc("increment_story_counter", {
+      const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {
         p_story_id: storyId,
         p_column: "like_count",
         p_delta: 1,
       });
+      // R2-2: Roll back dedup on RPC failure so user can retry
+      if (rpcError) {
+        console.error("[Like] Guest increment failed:", rpcError.code);
+        guestDedupMap.delete(`${ip}:${storyId}`);
+        return sb.applyCookies(NextResponse.json(
+          { error: "좋아요 처리에 실패했습니다." },
+          { status: 500 }
+        ));
+      }
     }
     return sb.applyCookies(NextResponse.json({ liked: true, guest: true }));
   }

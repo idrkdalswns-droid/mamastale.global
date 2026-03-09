@@ -138,6 +138,14 @@ export async function POST(
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }));
   }
 
+  // R2-3: Rate limit by userId (prevents IP rotation bypass)
+  if (!checkCommentRate(`user:${user.id}`)) {
+    return sb.applyCookies(NextResponse.json(
+      { error: "댓글은 1분에 5개까지 등록 가능합니다." },
+      { status: 429 }
+    ));
+  }
+
   // Verify story is public before allowing comments
   const anonClient = createAnonClient();
   if (anonClient) {

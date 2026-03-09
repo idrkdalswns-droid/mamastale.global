@@ -214,9 +214,10 @@ export async function POST(request: NextRequest) {
 
     // Community columns (is_public, author_alias) require 002_community migration
     // Only include if explicitly requested — graceful fallback if columns missing
-    const hasCommunityFields = isPublic !== undefined || authorAlias;
+    // R2-4: Strict boolean check to prevent truthy coercion (parity with PATCH handler)
+    const hasCommunityFields = typeof isPublic === "boolean" || typeof authorAlias === "string";
     if (hasCommunityFields) {
-      storyInsert.is_public = isPublic || false;
+      storyInsert.is_public = typeof isPublic === "boolean" ? isPublic : false;
       storyInsert.author_alias = authorAlias || null;
       // R2-FIX(B1): Save topic if valid (community topic filter support)
       if (typeof body.topic === "string" && VALID_TOPICS.includes(body.topic)) {
