@@ -57,7 +57,7 @@ export const StoryCard = memo(function StoryCard({
       <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
         <Image
           src={resolvedCover}
-          alt=""
+          alt={`${title || "동화"} 표지`}
           fill
           className="object-cover object-center"
           sizes="(max-width: 430px) 100vw, 430px"

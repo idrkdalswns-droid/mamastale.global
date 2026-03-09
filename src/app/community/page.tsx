@@ -117,7 +117,7 @@ export default function CommunityBrowsePage() {
               <button
                 type="button"
                 onClick={() => { setSearchInput(""); setSearch(""); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brown-pale"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-xs text-brown-pale min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="검색어 지우기"
               >
                 ✕

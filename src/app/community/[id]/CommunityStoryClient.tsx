@@ -1,11 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { LikeButton } from "@/components/community/LikeButton";
 import { CommentSection } from "@/components/community/CommentSection";
 import type { Scene } from "@/lib/types/story";
+
+// R5-FIX: ErrorBoundary to catch rendering crashes gracefully
+class CommunityErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error("[Community] Render error:", error.name);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-dvh bg-cream flex items-center justify-center px-4">
+          <div className="text-center">
+            <p className="text-sm text-brown-light font-light mb-4">
+              페이지를 표시하는 중 문제가 발생했습니다.
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
+              style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface CommunityStoryData {
   id: string;
@@ -39,7 +77,7 @@ const AUTHOR_TESTIMONIALS: Record<string, string> = {
     "크리에이티브 디렉터로 일하다 출산 후 붓을 놓은 지 8년이에요. 이 대화를 통해 잊고 있던 색채 감각이 돌아오는 느낌이었어요. 딸과 함께 동화를 읽으며 \"엄마가 다시 그림을 그리고 싶어졌어\"라고 말할 수 있었던 게, 이 서비스가 준 가장 큰 선물이에요.",
 };
 
-export default function CommunityStoryClient() {
+function CommunityStoryContent() {
   const params = useParams();
   const router = useRouter();
   const [story, setStory] = useState<CommunityStoryData | null>(null);
@@ -203,5 +241,13 @@ export default function CommunityStoryClient() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CommunityStoryClient() {
+  return (
+    <CommunityErrorBoundary>
+      <CommunityStoryContent />
+    </CommunityErrorBoundary>
   );
 }

@@ -108,7 +108,7 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
       disabled={loading || (liked && isGuest)}
       aria-pressed={liked}
       aria-label={`공감 ${count}개${liked ? ", 이미 공감함" : ""}`}
-      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-[0.95]"
+      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-[0.95] min-h-[44px]"
       style={{
         background: liked ? "rgba(224,122,95,0.1)" : "rgba(255,255,255,0.6)",
         border: liked ? "1.5px solid rgba(224,122,95,0.3)" : "1.5px solid rgba(196,149,106,0.15)",
