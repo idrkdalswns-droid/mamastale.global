@@ -71,7 +71,8 @@ export async function middleware(request: NextRequest) {
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.tosspayments.com https://api.stripe.com https://www.google-analytics.com https://kapi.kakao.com",
       "frame-src https://js.stripe.com https://*.tosspayments.com https://accounts.kakao.com https://www.youtube.com",
       "frame-ancestors 'none'",
-      // CTO-FIX: Add missing CSP directives for defense-in-depth
+      "worker-src 'self'",
+      "manifest-src 'self'",
       "base-uri 'self'",
       "form-action 'self' https://accounts.kakao.com https://accounts.google.com https://*.tosspayments.com",
       "object-src 'none'",
