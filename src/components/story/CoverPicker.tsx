@@ -286,7 +286,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
               >
                 <Image
                   src={img.path}
-                  alt=""
+                  alt={`${TONE_LABELS[img.tone]} 표지`}
                   width={88}
                   height={55}
                   className="w-full h-full object-cover object-center"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formatTime } from "@/lib/utils/format-time";
 
 interface UserReview {
@@ -50,6 +50,8 @@ export function ReviewSection() {
   const [fetchingReviews, setFetchingReviews] = useState(true);
   const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // R9-4: Synchronous guard against double-submit (state update is async)
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,7 +64,8 @@ export function ReviewSection() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !alias.trim() || loading) return;
+    if (!content.trim() || !alias.trim() || loading || submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     setSubmitError("");
 
@@ -97,6 +100,7 @@ export function ReviewSection() {
       setSubmitError("네트워크 오류가 발생했습니다.");
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
