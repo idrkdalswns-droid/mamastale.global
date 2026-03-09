@@ -12,6 +12,7 @@ interface CommunityStoryData {
   title: string;
   scenes: Scene[];
   author_alias: string | null;
+  cover_image?: string;
   view_count: number;
   like_count: number;
   comment_count: number;
@@ -109,6 +110,7 @@ export default function CommunityStoryClient() {
           scenes={story.scenes}
           title={story.title || "마음 동화"}
           authorName={story.author_alias || "익명의 엄마"}
+          coverImage={story.cover_image || undefined}
           onBack={() => router.push("/community")}
           embedded
         />

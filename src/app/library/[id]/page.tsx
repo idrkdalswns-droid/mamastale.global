@@ -16,6 +16,7 @@ interface StoryData {
   created_at: string;
   is_public?: boolean;
   author_alias?: string;
+  cover_image?: string;
 }
 
 export default function LibraryStoryPage() {
@@ -204,6 +205,7 @@ export default function LibraryStoryPage() {
       scenes={story.scenes}
       title={story.title || "나의 마음 동화"}
       authorName={user?.user_metadata?.name || undefined}
+      coverImage={story.cover_image || undefined}
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}
       isPublished={!!story.is_public}

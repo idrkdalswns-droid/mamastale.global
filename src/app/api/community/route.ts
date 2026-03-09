@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, topic, view_count, like_count, created_at", { count: "exact" })
+    .select("id, title, scenes, author_alias, topic, cover_image, view_count, like_count, created_at", { count: "exact" })
     .eq("is_public", true)
     .eq("status", "completed");
 

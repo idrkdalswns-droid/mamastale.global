@@ -49,7 +49,7 @@ export async function generateMetadata({
 
     const { data: story } = await supabase
       .from("stories")
-      .select("title, scenes, author_alias")
+      .select("title, scenes, author_alias, cover_image")
       .eq("id", id)
       .eq("is_public", true)
       .single();
@@ -64,6 +64,10 @@ export async function generateMetadata({
     const description = firstScene.length > 100
       ? firstScene.slice(0, 100) + "..."
       : firstScene || "엄마의 마음이 담긴 세상에 하나뿐인 마음 동화입니다.";
+    // R2-D4: Use cover_image for OG when available
+    const storyOgImage = (story as { cover_image?: string }).cover_image
+      ? `${siteUrl}${(story as { cover_image?: string }).cover_image}`
+      : ogImage;
 
     return {
       title: `${title} — ${author} | mamastale`,
@@ -73,13 +77,13 @@ export async function generateMetadata({
         description,
         type: "article",
         siteName: "mamastale",
-        images: [{ url: ogImage, width: 1200, height: 630, alt: `${title} - mamastale` }],
+        images: [{ url: storyOgImage, width: 1200, height: 630, alt: `${title} - mamastale` }],
       },
       twitter: {
         card: "summary_large_image",
         title: `${title} — ${author} | mamastale`,
         description,
-        images: [ogImage],
+        images: [storyOgImage],
       },
     };
   } catch {

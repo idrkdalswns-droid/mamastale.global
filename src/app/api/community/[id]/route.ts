@@ -52,7 +52,7 @@ export async function GET(
 
   const { data: story, error } = await supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, view_count, like_count, comment_count, created_at")
+    .select("id, title, scenes, author_alias, cover_image, view_count, like_count, comment_count, created_at")
     .eq("id", id)
     .eq("is_public", true)
     .single();

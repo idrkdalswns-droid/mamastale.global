@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const [profileRes, storiesRes, commentsRes, feedbackData, subsData, likesData, reviewsData] = await Promise.all([
       sb.client.from("profiles").select("*").eq("id", userId).single(),
-      sb.client.from("stories").select("id, title, scenes, metadata, status, created_at").eq("user_id", userId).limit(100),
+      sb.client.from("stories").select("id, title, scenes, metadata, status, cover_image, created_at").eq("user_id", userId).limit(100),
       sb.client.from("comments").select("id, content, author_alias, story_id, created_at").eq("user_id", userId).limit(500),
       safeQuery("feedback", "id, empathy_rating, insight_rating, overall_rating, free_text, created_at", "user_id"),
       safeQuery("subscriptions", "id, plan, status, created_at", "user_id"),
