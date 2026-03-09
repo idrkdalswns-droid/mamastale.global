@@ -22,6 +22,8 @@ interface StoryViewerProps {
   scenes: Scene[];
   title?: string;
   authorName?: string;
+  /** Selected cover image path (e.g. /images/covers/cover_pink01.png) */
+  coverImage?: string;
   onBack?: () => void;
   onBackLabel?: string;
   onEdit?: () => void;
@@ -36,7 +38,7 @@ interface StoryViewerProps {
   onNewStory?: () => void;
 }
 
-export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
+export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -332,6 +334,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                     title: storyTitle,
                     description: `${authorName || "엄마"}가 만든 세상에 하나뿐인 동화`,
                     url: siteUrl,
+                    imageUrl: coverImage ? `${siteUrl}${coverImage}` : undefined,
                   });
                   if (!ok) {
                     // Kakao SDK 미설정 시 기본 공유로 fallback
@@ -377,7 +380,7 @@ export function StoryViewer({ scenes, title, authorName, onBack, onBackLabel, on
                 {copied ? "✓ 복사됨" : "복사"}
               </button>
             </div>
-            <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} />
+            <PDFDownloadButton scenes={scenes} title={storyTitle} authorName={authorName} coverImage={coverImage} />
             {/* Community publish button */}
             {onPublish && (
               isPublished ? (

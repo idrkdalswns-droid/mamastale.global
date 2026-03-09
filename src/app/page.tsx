@@ -9,6 +9,7 @@ import { ChatPage } from "@/components/chat/ChatContainer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { StoryEditor } from "@/components/story/StoryEditor";
+import { CoverPicker } from "@/components/story/CoverPicker";
 import { FeedbackWizard } from "@/components/feedback/FeedbackWizard";
 import { CommunityPage } from "@/components/feedback/CommunityPage";
 import { useChatStore } from "@/lib/hooks/useChat";
@@ -18,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import TicketConfirmModal from "@/components/chat/TicketConfirmModal";
 
-type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "story" | "feedback" | "community";
+type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
 
 /** Horizontal scroll container that auto-scrolls to a specific child index on mount */
 function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export default function Home() {
   });
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const [editSaveError, setEditSaveError] = useState(false);
+  const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const { total: liveTotal, creating: liveCreating, isLoaded: presenceLoaded } = usePresence("home");
@@ -317,6 +319,44 @@ export default function Home() {
                 }
               })();
             }
+            setScreen("coverPick");
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // Cover image picker — immersive gallery between edit and story
+  if (screen === "coverPick") {
+    return (
+      <ErrorBoundary fullScreen>
+        <CoverPicker
+          storyTitle={editedTitle || "나의 마음 동화"}
+          authorName={user?.user_metadata?.name || undefined}
+          onSelect={async (coverPath) => {
+            setSelectedCover(coverPath);
+            // PATCH cover image to DB
+            if (completedStoryId && !completedStoryId.startsWith("story_")) {
+              try {
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                try {
+                  const supabase = createClient();
+                  if (supabase) {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+                  }
+                } catch { /* ignore */ }
+                await fetch(`/api/stories/${completedStoryId}`, {
+                  method: "PATCH",
+                  headers,
+                  body: JSON.stringify({ coverImage: coverPath }),
+                });
+              } catch { /* silent — non-critical */ }
+            }
+            setScreen("story");
+          }}
+          onSkip={() => {
+            setSelectedCover(null);
             setScreen("story");
           }}
         />
@@ -334,6 +374,7 @@ export default function Home() {
           scenes={completedScenes}
           title={editedTitle || "나의 마음 동화"}
           authorName={user?.user_metadata?.name || undefined}
+          coverImage={selectedCover || undefined}
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}

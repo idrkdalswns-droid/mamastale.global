@@ -18,6 +18,8 @@ export interface Story {
   };
   status: "draft" | "completed";
   pdfUrl?: string;
+  /** Selected cover image path (e.g. /images/covers/cover_pink01.png) */
+  coverImage?: string;
   createdAt: string;
   updatedAt: string;
 }

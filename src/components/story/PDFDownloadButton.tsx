@@ -8,9 +8,11 @@ interface PDFDownloadButtonProps {
   scenes: Scene[];
   title: string;
   authorName?: string;
+  /** Selected cover image path (e.g. /images/covers/cover_pink01.png) */
+  coverImage?: string;
 }
 
-export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButtonProps) {
+export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDFDownloadButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -48,7 +50,7 @@ export function PDFDownloadButton({ scenes, title, authorName }: PDFDownloadButt
       const res = await fetch("/api/story/generate-pdf", {
         method: "POST",
         headers,
-        body: JSON.stringify({ scenes, title, authorName }),
+        body: JSON.stringify({ scenes, title, authorName, coverImage }),
       });
 
       if (!res.ok) throw new Error("PDF generation failed");

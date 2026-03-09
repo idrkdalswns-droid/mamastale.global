@@ -115,6 +115,12 @@ export async function PATCH(
         updates.topic = null;
       }
     }
+    // Cover image selection — whitelist to /images/covers/ only
+    if (typeof body.coverImage === "string") {
+      if (/^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(body.coverImage)) {
+        updates.cover_image = body.coverImage;
+      }
+    }
     if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
       const validScenes = body.scenes.every(
         (s: unknown) =>

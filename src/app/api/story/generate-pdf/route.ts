@@ -84,6 +84,7 @@ const pdfRequestSchema = z.object({
   ).max(20),
   title: z.string().max(200).optional(),
   authorName: z.string().max(100).optional(),
+  coverImage: z.string().max(200).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -134,10 +135,15 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const { scenes, title, authorName } = parsed.data;
+    const { scenes, title, authorName, coverImage } = parsed.data;
     const storyTitle = escapeHtml(title || "나의 마음 동화");
     const author = escapeHtml(authorName || "어머니");
     const createdAt = new Date().toLocaleDateString("ko-KR");
+
+    // Validate cover image path (whitelist)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mamastale-global.pages.dev";
+    const hasCover = coverImage && /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(coverImage);
+    const coverUrl = hasCover ? `${siteUrl}${coverImage}` : "";
 
     // Generate printable HTML — cover + scene-by-scene story + ending page
     const sceneHtml = scenes.map((scene, idx) => {
@@ -170,22 +176,36 @@ export async function POST(request: NextRequest) {
       background: linear-gradient(160deg, #FBF5EC 0%, #F8EDE0 40%, #F2DFCE 100%);
       position: relative; overflow: hidden;
     }
-    .cover::before {
+    .cover.has-image {
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+    }
+    .cover.has-image::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.20) 40%, rgba(0,0,0,0.08) 100%);
+    }
+    .cover:not(.has-image)::before {
       content: ''; position: absolute; top: -60px; right: -60px;
       width: 200px; height: 200px; border-radius: 50%;
       background: radial-gradient(circle, rgba(224,122,95,0.10) 0%, transparent 70%);
     }
-    .cover::after {
+    .cover:not(.has-image)::after {
       content: ''; position: absolute; bottom: -40px; left: -40px;
       width: 160px; height: 160px; border-radius: 50%;
       background: radial-gradient(circle, rgba(196,149,106,0.08) 0%, transparent 70%);
     }
-    .cover-brand { font-size: 0.85rem; letter-spacing: 3px; color: #C4956A; font-weight: 300; margin-bottom: 40px; text-transform: uppercase; }
-    .cover-line { width: 48px; height: 1.5px; background: #E07A5F; margin: 0 auto 32px; border-radius: 1px; }
-    .cover h1 { font-size: 2.2rem; color: #3C1E1E; font-weight: 700; margin-bottom: 16px; line-height: 1.4; letter-spacing: -0.02em; }
-    .cover .author { font-size: 1rem; color: #8B6F55; font-weight: 300; }
-    .cover .date { font-size: 0.8rem; color: #C4956A; margin-top: 8px; font-weight: 300; }
-    .cover-footer { position: absolute; bottom: 40px; font-size: 0.7rem; color: #C4956A; font-weight: 300; letter-spacing: 1px; }
+    .cover-brand { font-size: 0.85rem; letter-spacing: 3px; color: #C4956A; font-weight: 300; margin-bottom: 40px; text-transform: uppercase; position: relative; z-index: 1; }
+    .cover-line { width: 48px; height: 1.5px; background: #E07A5F; margin: 0 auto 32px; border-radius: 1px; position: relative; z-index: 1; }
+    .cover h1 { font-size: 2.2rem; color: #3C1E1E; font-weight: 700; margin-bottom: 16px; line-height: 1.4; letter-spacing: -0.02em; position: relative; z-index: 1; }
+    .cover .author { font-size: 1rem; color: #8B6F55; font-weight: 300; position: relative; z-index: 1; }
+    .cover .date { font-size: 0.8rem; color: #C4956A; margin-top: 8px; font-weight: 300; position: relative; z-index: 1; }
+    .cover-footer { position: absolute; bottom: 40px; font-size: 0.7rem; color: #C4956A; font-weight: 300; letter-spacing: 1px; z-index: 1; }
+    /* Image cover overrides — white text on dark overlay */
+    .cover.has-image .cover-brand { color: rgba(255,255,255,0.7); }
+    .cover.has-image .cover-line { background: rgba(255,255,255,0.5); }
+    .cover.has-image h1 { color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .cover.has-image .author { color: rgba(255,255,255,0.85); }
+    .cover.has-image .date { color: rgba(255,255,255,0.6); }
+    .cover.has-image .cover-footer { color: rgba(255,255,255,0.4); }
 
     /* ── Story content ── */
     .story-body { padding: 48px 40px; page-break-before: always; }
@@ -219,7 +239,7 @@ export async function POST(request: NextRequest) {
   </style>
 </head>
 <body>
-  <div class="cover">
+  <div class="cover${hasCover ? " has-image" : ""}"${hasCover ? ` style="background-image: url('${coverUrl}')"` : ""}>
     <div class="cover-brand">mamastale</div>
     <div class="cover-line"></div>
     <h1>${storyTitle}</h1>
