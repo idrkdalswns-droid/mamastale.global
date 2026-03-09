@@ -232,16 +232,11 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-    } else if (!hasActiveTickets && !isPremiumUser && userMsgCount > GUEST_TURN_LIMIT) {
-      // CTO-FIX: Authenticated users without tickets AND no purchase history have a turn limit.
-      // Users who have purchased (isPremiumUser) or have remaining tickets are not limited —
-      // they already used a ticket to enter the session (ticket deducted at session start,
-      // so remaining balance may be 0 even for legitimate paid sessions).
-      return NextResponse.json(
-        { error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." },
-        { status: 403 }
-      );
     }
+    // NOTE: Authenticated users are NOT turn-limited here.
+    // Tickets are deducted at session start (/api/tickets/use), so an authenticated user
+    // in an active session has already paid. Checking hasActiveTickets here would incorrectly
+    // block users whose balance hit 0 after the ticket was consumed for this session.
 
     // ─── MULTI-TIER CRISIS PRE-SCREENING (v2.0) ───
     const latestUserMsg = messages.filter((m) => m.role === "user").pop();
