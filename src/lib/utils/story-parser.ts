@@ -91,9 +91,11 @@ const SCENE_TITLES: Record<number, string> = {
 
 /**
  * Parse 10-scene fairy tale from Phase 4 AI responses.
- * Supports BOTH formats:
+ * Supports multiple formats:
  *   1. English section tags: [INTRO 1], [CONFLICT 2], [WISDOM 1], etc.
  *   2. Korean scene tags:    [장면 1], 장면 1:, **장면 1**, etc.
+ *   2b. Korean chapter tags:  **1장.**, 1장:, 2장 , etc.
+ *   3. Numbered list:         1., 2., etc.
  */
 export function parseStoryScenes(allPhase4Text: string): Scene[] {
   const scenes: Scene[] = [];
@@ -139,21 +141,26 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
     }
   }
 
-  // ─── Strategy 2: Korean scene tags (fallback) ───
+  // ─── Strategy 2: Korean scene/chapter tags (fallback) ───
   if (scenes.length < 3) {
     scenes.length = 0; // Reset and try Korean patterns
-    // Matches: [장면 1], 장면 1:, **장면 1**, 장면1., etc.
-    const koreanPattern = /(?:\[장면\s*(\d+)\]|\*?\*?장면\s*(\d+)\*?\*?[:\.\s])/g;
+    // Matches: [장면 1], 장면 1:, **장면 1**, 장면1., **1장.**, 1장:, 1장 , etc.
+    const koreanPattern = /(?:\[장면\s*(\d+)\]|\*?\*?장면\s*(\d+)\*?\*?[:\.\s]|\*?\*?\s*(\d{1,2})\s*장[.:\s])/g;
     const koreanMatches = [...allPhase4Text.matchAll(koreanPattern)];
 
     for (let i = 0; i < koreanMatches.length; i++) {
       const match = koreanMatches[i];
-      const sceneNum = parseInt(match[1] || match[2]);
+      const sceneNum = parseInt(match[1] || match[2] || match[3]);
       if (sceneNum < 1 || sceneNum > 10 || scenes.some((s) => s.sceneNumber === sceneNum)) continue;
 
       const startIdx = match.index! + match[0].length;
       const endIdx = i < koreanMatches.length - 1 ? koreanMatches[i + 1].index! : allPhase4Text.length;
       let block = allPhase4Text.slice(startIdx, endIdx).trim();
+
+      // For "N장" format: strip the chapter title line (e.g., "평화로운 토끼 마을**")
+      if (match[3]) {
+        block = block.replace(/^[^\n]*\n/, "").trim();
+      }
 
       let imagePrompt: string | undefined;
       const imgMatch = block.match(/\[Image Prompt:\s*(.*?)\]/i);

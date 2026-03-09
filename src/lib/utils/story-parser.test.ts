@@ -397,3 +397,111 @@ describe("cleanSceneText", () => {
     expect(cleanSceneText("it&#x27;s")).toBe("it's");
   });
 });
+
+// ────────────────────────────────────────────────────────
+// Strategy 2b: Korean chapter tags (N장 format)
+// ────────────────────────────────────────────────────────
+
+describe("parseStoryScenes — Strategy 2b: Korean chapter tags (N장)", () => {
+  it("parses **N장. title** format (AI's natural Korean chapter format)", () => {
+    const text = `
+**1장. 평화로운 토끼 마을**
+
+옛날 옛적, 하늘빛 언덕 너머 작은 토끼 마을에 솜이라는 하얀 아기 토끼가 살고 있었어요.
+솜이는 세상에서 가장 부드러운 마음을 가진 토끼였어요.
+
+**2장. 회색 안개 괴물의 등장**
+
+그런데 어느 날, 마을 위로 이상한 회색 안개가 몰려왔어요.
+안개 속에는 '외로움 괴물'이 숨어있어서, 모든 것을 회색빛으로 만들어버렸답니다.
+
+**3장. 사라진 친구들**
+
+안개가 짙어질수록 예쁜 꽃들의 색깔이 사라지고, 친구들의 얼굴도 흐릿하게 보이기 시작했어요.
+솜이는 무서웠어요.
+
+**4장. 혼자가 된 솜이**
+
+솜이는 친구 토순이를 불렀지만, 대답이 아득하게 멀리서 들려왔어요.
+눈물이 솜이의 볼을 따라 흘렀어요.
+
+**5장. 작은 반딧불이**
+
+그때 작고 따뜻한 빛 하나가 솜이의 코 앞에 나타났어요.
+반딧불이가 속삭였어요. "진심으로 불러봐."
+
+**6장. 진심의 노래**
+
+솜이는 떨리는 목소리로 친구들의 이름을 하나씩 불렀어요.
+"토순아, 다람아, 꼬미야... 나 여기 있어."
+
+**7장. 안개가 걷히다**
+
+놀라운 일이 일어났어요. 솜이의 진심 어린 목소리가 닿는 곳마다 안개가 살살 녹아내렸어요.
+
+**8장. 다시 만난 친구들**
+
+안개가 걷히자 친구들이 하나둘 모여왔어요.
+모두가 서로를 꼭 안아주었어요.
+
+**9장. 외로움 괴물의 비밀**
+
+외로움 괴물은 사실 외로운 작은 구름이었어요.
+솜이는 구름에게도 진심으로 다가갔어요. "너도 우리 친구가 될래?"
+
+**10장. 반짝이는 마을**
+
+마을은 전보다 더 환하게 빛났어요.
+진심은 가장 따뜻한 마법이라는 걸, 솜이는 알게 되었답니다.
+`;
+    const scenes = parseStoryScenes(text);
+    expect(scenes.length).toBe(10);
+    expect(scenes[0].sceneNumber).toBe(1);
+    expect(scenes[0].text).toContain("솜이");
+    expect(scenes[9].sceneNumber).toBe(10);
+    expect(scenes[9].text).toContain("진심");
+  });
+
+  it("parses N장: format without bold markers", () => {
+    const text = `
+1장: 시작
+옛날 옛적 작은 토끼가 살았어요.
+
+2장: 위기
+어느 날 안개가 왔어요.
+
+3장: 용기
+토끼는 용기를 냈어요.
+
+4장: 해결
+안개가 걷혔어요.
+`;
+    const scenes = parseStoryScenes(text);
+    expect(scenes.length).toBe(4);
+    expect(scenes[0].sceneNumber).toBe(1);
+    expect(scenes[0].text).toContain("토끼");
+  });
+
+  it("strips chapter title line from scene content", () => {
+    const text = `
+**1장. 평화로운 토끼 마을**
+
+옛날 옛적 토끼가 살았어요.
+행복한 날들이었답니다.
+
+**2장. 안개의 등장**
+
+그런데 안개가 왔어요.
+무서웠어요.
+
+**3장. 용기**
+
+토끼는 용기를 냈어요.
+`;
+    const scenes = parseStoryScenes(text);
+    expect(scenes.length).toBe(3);
+    // Title line ("평화로운 토끼 마을**") should be stripped
+    expect(scenes[0].text).not.toContain("평화로운 토끼 마을");
+    expect(scenes[0].text).toContain("옛날 옛적");
+  });
+});
