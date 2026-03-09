@@ -43,19 +43,24 @@ export function GlobalNav() {
 
         {/* Right: Nav links + auth */}
         <div className="flex items-center gap-3">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-[11px] no-underline transition-colors min-h-[44px] flex items-center ${
-                pathname === item.href || pathname.startsWith(item.href + "/")
-                  ? "text-coral font-medium"
-                  : "text-brown-mid font-light"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                // R9-FIX: aria-current="page" for screen readers (WCAG 2.4.8)
+                aria-current={isActive ? "page" : undefined}
+                className={`text-[11px] no-underline transition-colors min-h-[44px] flex items-center ${
+                  isActive
+                    ? "text-coral font-medium"
+                    : "text-brown-mid font-light"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
 
           {!loading &&
             (user ? (
