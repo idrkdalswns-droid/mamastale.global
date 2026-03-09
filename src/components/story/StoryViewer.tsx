@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDFDownloadButton } from "@/components/story/PDFDownloadButton";
 import { useSwipe } from "@/lib/hooks/useSwipe";
@@ -38,7 +38,7 @@ interface StoryViewerProps {
   onNewStory?: () => void;
 }
 
-export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -133,8 +133,9 @@ export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onB
       .map((s) => `\n${cleanSceneText(s.text)}\n`)
       .join("");
 
-    const motherMsg = motherMessage.trim()
-      ? `\n\n아이에게 전하는 한마디\n${motherMessage.trim()}\n`
+    const safeMother = motherMessage.trim().slice(0, 200);
+    const motherMsg = safeMother
+      ? `\n\n아이에게 전하는 한마디\n${safeMother}\n`
       : "";
 
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
@@ -146,18 +147,24 @@ export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onB
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(buildStoryText());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      const ta = document.createElement("textarea");
-      ta.value = buildStoryText();
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Clipboard API not available (e.g. non-HTTPS) — try legacy fallback
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = buildStoryText();
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        // Both methods failed — silently ignore
+        return;
+      }
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [buildStoryText]);
 
   const handleShare = useCallback(async () => {
@@ -539,11 +546,16 @@ export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onB
             <button
               onClick={async () => {
                 const alias = aliasInput.trim() || "익명의 엄마";
-                const ok = await onPublish?.(alias);
-                if (ok !== false) {
-                  setShowAliasModal(false);
-                  setPublishToast("커뮤니티에 공유되었습니다!");
-                  setTimeout(() => setPublishToast(null), 2500);
+                try {
+                  const ok = await onPublish?.(alias);
+                  if (ok !== false) {
+                    setShowAliasModal(false);
+                    setPublishToast("커뮤니티에 공유되었습니다!");
+                    setTimeout(() => setPublishToast(null), 2500);
+                  }
+                } catch {
+                  setPublishToast("공유에 실패했습니다. 다시 시도해 주세요.");
+                  setTimeout(() => setPublishToast(null), 3000);
                 }
               }}
               disabled={isPublishing}
@@ -575,4 +587,4 @@ export function StoryViewer({ scenes, title, authorName, coverImage, onBack, onB
       )}
     </div>
   );
-}
+});

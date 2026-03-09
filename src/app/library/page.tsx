@@ -32,7 +32,7 @@ export default function LibraryPage() {
     fetchStories();
     const info = getDraftInfo();
     if (info) setDraftInfo(info);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchStories and getDraftInfo are stable (never change), safe to omit
   }, []);
 
   const fetchStories = async () => {
@@ -159,9 +159,14 @@ export default function LibraryPage() {
                 이어서 대화하기
               </Link>
               <button
-                onClick={() => { clearStorage(); setDraftInfo(null); }}
+                onClick={() => {
+                  if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
+                    clearStorage(); setDraftInfo(null);
+                  }
+                }}
                 className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
                 style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                aria-label="저장된 대화 삭제"
               >
                 삭제
               </button>

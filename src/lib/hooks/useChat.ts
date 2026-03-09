@@ -32,11 +32,11 @@ function isValidSnapshot(snapshot: unknown): snapshot is Record<string, unknown>
   const s = snapshot as Record<string, unknown>;
   if (typeof s.savedAt !== "number") return false;
   if (!Array.isArray(s.messages)) return false;
-  return (s.messages as unknown[]).every(
-    (m: unknown) =>
+  return s.messages.every(
+    (m) =>
       typeof m === "object" && m !== null &&
-      typeof (m as Record<string, unknown>).role === "string" &&
-      typeof (m as Record<string, unknown>).content === "string"
+      "role" in m && typeof (m as Record<string, unknown>).role === "string" &&
+      "content" in m && typeof (m as Record<string, unknown>).content === "string"
   );
 }
 

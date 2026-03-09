@@ -32,6 +32,7 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
   const [done, setDone] = useState(false);
   const [show, setShow] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const rate = (key: string, val: number) => {
     if (transitioning) return; // Prevent double-tap skipping questions
@@ -60,13 +61,18 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
     if (Object.keys(ratings).length === 0 && !freeText.trim()) return;
 
     try {
-      await fetch("/api/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(feedbackData),
       });
+      if (!res.ok) {
+        console.warn("[Feedback] 제출 실패:", res.status);
+      }
+      setSubmitError("");
     } catch {
-      // Silently fail - feedback is non-critical
+      setSubmitError("피드백 전송에 실패했어요. 계속 진행합니다.");
+      // Non-critical — still mark as done
     }
   };
 
@@ -174,8 +180,10 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
             <div className="w-full">
               <textarea
                 value={freeText}
-                onChange={(e) => setFreeText(e.target.value)}
+                onChange={(e) => setFreeText(e.target.value.slice(0, 1000))}
                 placeholder="편하게 이야기해 주세요..."
+                maxLength={1000}
+                aria-label="자유 의견 입력"
                 className="w-full min-h-[120px] resize-none rounded-[18px] p-4 text-base font-sans font-light leading-relaxed outline-none text-brown"
                 style={{
                   border: "1.5px solid rgba(196,149,106,0.2)",
@@ -184,6 +192,8 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
                 onFocus={(e) => (e.target.style.borderColor = "rgba(224,122,95,0.33)")}
                 onBlur={(e) => (e.target.style.borderColor = "rgba(196,149,106,0.2)")}
               />
+              <p className="text-[10px] text-brown-pale font-light text-right mt-1">{freeText.length}/1000</p>
+              {submitError && <p className="text-[11px] text-red-400 text-center mt-1">{submitError}</p>}
               <button
                 onClick={submitFree}
                 className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer mt-4 active:scale-[0.97]"

@@ -168,6 +168,7 @@ export default function Home() {
         }
       } catch {
         setTicketsRemaining(0);
+        console.warn("[Tickets] 티켓 정보 로드 실패 — 기본값 0으로 설정");
       }
     })();
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
@@ -627,6 +628,7 @@ export default function Home() {
           <button
             onClick={handleStartStory}
             disabled={authLoading || (!!user && ticketsRemaining === null)}
+            aria-busy={authLoading || (!!user && ticketsRemaining === null)}
             className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
@@ -635,8 +637,8 @@ export default function Home() {
           >
             {/* R3-FIX(A3): Show spinner during authLoading too */}
             {authLoading || (user && ticketsRemaining === null) ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
               </span>
             ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
@@ -713,9 +715,14 @@ export default function Home() {
                   이어서 대화하기
                 </button>
                 <button
-                  onClick={() => { clearStorage(); setDraftInfo(null); }}
+                  onClick={() => {
+                    if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
+                      clearStorage(); setDraftInfo(null);
+                    }
+                  }}
                   className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
                   style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                  aria-label="저장된 대화 삭제"
                 >
                   삭제
                 </button>
@@ -783,7 +790,7 @@ export default function Home() {
                   className="flex-shrink-0 w-[75%] rounded-2xl px-4 py-3 snap-start"
                   style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
                 >
-                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }} aria-label={`${review.stars}점 만점에 ${review.stars}점`}>
+                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }} role="img" aria-label={`5점 만점에 ${review.stars}점`}>
                     {"★".repeat(review.stars)}
                   </div>
                   <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">

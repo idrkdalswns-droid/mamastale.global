@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
@@ -16,7 +16,6 @@ import {
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
-// R4-FIX(A2): Removed unused getPostCrisisState import
 import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
 import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/utils/response-cache";
@@ -79,14 +78,10 @@ async function callAnthropicWithRetry(
     } catch (err: unknown) {
       // Treat abort (timeout) as retryable
       const isAbort = err instanceof Error && err.name === "AbortError";
-      const isRetryable = isAbort || (
-        err instanceof Error &&
-        ("status" in err &&
-          (
-            (err as { status: number }).status === 429 ||
-            (err as { status: number }).status === 529 ||
-            (err as { status: number }).status >= 500
-          )));
+      const errStatus = err instanceof Error && "status" in err
+        ? (err as Error & { status: number }).status
+        : 0;
+      const isRetryable = isAbort || (errStatus === 429 || errStatus === 529 || errStatus >= 500);
       if (!isRetryable || attempt === maxRetries) throw err;
       const delay = Math.min(1000 * 2 ** attempt + Math.random() * 500, 8000);
       console.warn(`Anthropic API retry ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms`);

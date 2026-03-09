@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, FONT_SIZE_MAP } from "@/lib/hooks/useSettings";
 import type { Message } from "@/lib/types/chat";
@@ -10,7 +11,7 @@ interface MessageBubbleProps {
 }
 
 // JP-09: CSS animation instead of framer-motion for simple fade+slide
-export default function MessageBubble({
+const MessageBubble = memo(function MessageBubble({
   message,
   currentPhase,
 }: MessageBubbleProps) {
@@ -67,4 +68,6 @@ export default function MessageBubble({
       </div>
     </div>
   );
-}
+});
+
+export default MessageBubble;

@@ -20,16 +20,19 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
   const [newComment, setNewComment] = useState("");
   const [alias, setAlias] = useState("");
   const [loading, setLoading] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [reportedIds, setReportedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const controller = new AbortController();
+    setCommentsLoading(true);
     fetch(`/api/community/${storyId}/comments`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => setComments(data.comments || []))
-      .catch(() => {});
+      .catch(() => { /* AbortError or network — non-critical */ })
+      .finally(() => setCommentsLoading(false));
     return () => controller.abort();
   }, [storyId]);
 
@@ -199,7 +202,12 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
       )}
 
       {/* Comments list */}
-      {comments.length === 0 ? (
+      {commentsLoading ? (
+        <div className="text-center py-4" aria-live="polite" aria-busy="true">
+          <div className="w-4 h-4 mx-auto mb-2 border-2 border-brown-pale/30 border-t-brown-pale rounded-full animate-spin" aria-hidden="true" />
+          <p className="text-xs text-brown-pale font-light">댓글 불러오는 중...</p>
+        </div>
+      ) : comments.length === 0 ? (
         <p className="text-xs text-brown-pale font-light text-center py-4">
           아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!
         </p>
