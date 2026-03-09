@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
 
@@ -24,7 +25,7 @@ function checkDeleteRate(ip: string): boolean {
 // GDPR Art. 17: Right to Erasure
 // JP-06: Require confirmation body to prevent CSRF-style abuse
 export async function DELETE(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("cf-connecting-ip") || "unknown";
+  const ip = getClientIP(request);
   if (!checkDeleteRate(ip)) {
     return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
@@ -117,7 +118,7 @@ export async function DELETE(request: NextRequest) {
     const phase1Tables = ["comment_reports", "likes", "feedback", "comments", "user_reviews"] as const;
     const phase1Results = await Promise.allSettled(
       phase1Tables.map(async (table) => {
-        const col = table === "comment_reports" ? "reporter_id" : "user_id";
+        const col = "user_id";
         const { error: err } = await serviceClient.from(table).delete().eq(col, userId);
         if (err) throw new Error(`${table}: ${err.code}`);
       })

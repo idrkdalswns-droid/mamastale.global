@@ -14,6 +14,7 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { getClientIP } from "@/lib/utils/validation";
 
 // Admin user IDs (hardcoded for now — move to env/DB later)
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
@@ -36,7 +37,7 @@ function checkAdminRate(ip: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("cf-connecting-ip") || "unknown";
+  const ip = getClientIP(request);
   if (!checkAdminRate(ip)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }

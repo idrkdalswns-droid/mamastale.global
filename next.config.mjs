@@ -9,6 +9,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ["@react-pdf/renderer"],
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
     ],

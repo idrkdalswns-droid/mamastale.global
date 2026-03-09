@@ -9,28 +9,45 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // R2: Handle CORS preflight (OPTIONS) for mobile/WebView Bearer token requests
+  if (request.method === "OPTIONS" && pathname.startsWith("/api/")) {
+    const allowedOrigin = new URL(request.url).origin;
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": allowedOrigin,
+        "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
   // CSRF: validate Origin for state-changing API requests
   if (pathname.startsWith("/api/") && !pathname.startsWith("/api/webhooks/") &&
       ["POST", "DELETE", "PATCH", "PUT"].includes(request.method)) {
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const allowedOrigin = new URL(request.url).origin;
+    // R2: Skip CSRF check for Bearer token requests (CSRF-proof by definition)
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      const origin = request.headers.get("origin");
+      const referer = request.headers.get("referer");
+      const allowedOrigin = new URL(request.url).origin;
 
-    if (origin) {
-      if (origin !== allowedOrigin) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    } else if (referer) {
-      try {
-        if (new URL(referer).origin !== allowedOrigin) {
+      if (origin) {
+        if (origin !== allowedOrigin) {
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
-      } catch {
+      } else if (referer) {
+        try {
+          if (new URL(referer).origin !== allowedOrigin) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+          }
+        } catch {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      } else {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
-    } else {
-      // Neither Origin nor Referer present — block to prevent CSRF
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 

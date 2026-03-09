@@ -100,7 +100,7 @@ export async function POST(
       .from("comment_reports")
       .insert({
         comment_id: commentId,
-        reporter_id: user.id,
+        user_id: user.id,
         story_id: storyId,
       });
 

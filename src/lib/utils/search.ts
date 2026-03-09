@@ -15,8 +15,8 @@ export function sanitizeSearchQuery(input: string, maxLength = 100): string {
   if (!input || input.length > maxLength) return "";
   return input
     .replace(/[%_\\]/g, (c) => `\\${c}`)
-    // CTO-FIX: Strip PostgREST filter meta-characters to prevent injection
-    .replace(/[.,()]/g, "")
+    // R2: Strip PostgREST filter meta-characters to prevent injection (including : and =)
+    .replace(/[.,():=]/g, "")
     .trim();
 }
 
