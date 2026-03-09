@@ -4,19 +4,10 @@ export default function NotFound() {
   return (
     <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
       <div className="text-center">
-        <h1
-          className="text-xl font-semibold mb-2"
-          style={{
-            color: "rgb(var(--brown))",
-            fontFamily: "'Nanum Myeongjo', serif",
-          }}
-        >
+        <h1 className="font-serif text-xl font-semibold text-brown mb-2">
           페이지를 찾을 수 없어요
         </h1>
-        <p
-          className="text-sm font-light mb-8 leading-relaxed"
-          style={{ color: "rgb(var(--brown-light))" }}
-        >
+        <p className="text-sm font-light text-brown-light mb-8 leading-relaxed">
           찾으시는 이야기가 다른 곳에 있을지도 몰라요.
           <br />
           홈으로 돌아가서 새로운 이야기를 시작해 보세요.

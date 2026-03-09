@@ -48,7 +48,7 @@ export function GlobalNav() {
               key={item.href}
               href={item.href}
               className={`text-[11px] no-underline transition-colors min-h-[44px] flex items-center ${
-                pathname === item.href
+                pathname === item.href || pathname.startsWith(item.href + "/")
                   ? "text-coral font-medium"
                   : "text-brown-mid font-light"
               }`}
