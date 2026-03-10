@@ -9,6 +9,7 @@ import { GlobalNav } from "@/components/layout/GlobalNav";
 import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { MotionProvider } from "@/components/layout/MotionProvider";
+import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -127,6 +128,7 @@ export default async function RootLayout({
         <ConsentGatedScripts />
         <CookieConsent />
         <ErrorReporter />
+        <PWAInstallBanner />
         <Toaster
           position="top-center"
           toastOptions={{

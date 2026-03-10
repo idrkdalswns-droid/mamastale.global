@@ -2,9 +2,25 @@ import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig, RuntimeCaching } from "serwist";
 import { Serwist, CacheFirst, StaleWhileRevalidate, NetworkFirst, ExpirationPlugin } from "serwist";
 
+// Sprint 4-A: Service Worker client/window types for push notification handlers
+interface SWWindowClient {
+  url: string;
+  focus(): Promise<SWWindowClient>;
+  navigate(url: string): Promise<SWWindowClient>;
+}
+interface SWClients {
+  matchAll(opts?: { type?: string; includeUncontrolled?: boolean }): Promise<SWWindowClient[]>;
+  openWindow(url: string): Promise<SWWindowClient | null>;
+}
+interface SWRegistration {
+  showNotification(title: string, options?: NotificationOptions): Promise<void>;
+}
+
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+    readonly registration: SWRegistration;
+    readonly clients: SWClients;
   }
 }
 
@@ -121,3 +137,71 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// ── Sprint 4-A: Web Push Notification Handlers ──
+// Type declarations for Service Worker push/notification events
+// (WebWorker lib conflicts with DOM lib in tsconfig, so declare locally)
+interface SWExtendableEvent extends Event {
+  waitUntil(promise: Promise<unknown>): void;
+}
+interface PushData {
+  json(): unknown;
+  text(): string;
+}
+interface PushEventSW extends SWExtendableEvent {
+  readonly data: PushData | null;
+}
+interface NotificationEventSW extends SWExtendableEvent {
+  readonly notification: Notification & { data?: Record<string, unknown> };
+  readonly action: string;
+}
+
+/**
+ * Push event — display notification when push message received
+ */
+self.addEventListener("push", (event) => {
+  const pushEvent = event as unknown as PushEventSW;
+  if (!pushEvent.data) return;
+
+  let payload: { title?: string; body?: string; icon?: string; url?: string; tag?: string };
+  try {
+    payload = pushEvent.data.json() as typeof payload;
+  } catch {
+    payload = { title: "mamastale", body: pushEvent.data.text() };
+  }
+
+  const title = payload.title || "mamastale";
+  const options: NotificationOptions = {
+    body: payload.body || "새로운 소식이 있어요",
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/icon-192x192.png",
+    tag: payload.tag || "mamastale-default",
+    data: { url: payload.url || "/" },
+  };
+
+  pushEvent.waitUntil(self.registration.showNotification(title, options));
+});
+
+/**
+ * Notification click — open/focus the relevant page
+ */
+self.addEventListener("notificationclick", (event) => {
+  const notifEvent = event as unknown as NotificationEventSW;
+  notifEvent.notification.close();
+
+  const targetUrl = (notifEvent.notification.data?.url as string) || "/";
+
+  notifEvent.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if (client.url.includes("mamastale") && "focus" in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(targetUrl);
+      })
+  );
+});

@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { PushPermissionBanner } from "@/components/ui/PushPermissionBanner";
+import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
 
 /** Topic suggestions for next story nudge */
 const TOPIC_SUGGESTIONS = [
@@ -10,6 +13,8 @@ const TOPIC_SUGGESTIONS = [
 interface StoryCompleteCTAProps {
   onViewStory: () => void;
   onNewStory?: () => void;
+  /** Auth token getter for push subscription */
+  getHeaders?: (opts?: { json?: boolean }) => Promise<Record<string, string>>;
 }
 
 // Soft floating particles for celebration feel
@@ -26,7 +31,13 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 export default function StoryCompleteCTA({
   onViewStory,
   onNewStory,
+  getHeaders,
 }: StoryCompleteCTAProps) {
+  // Sprint 4-B: Increment story count for PWA install prompt trigger
+  useEffect(() => {
+    incrementStoryCount();
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -197,6 +208,9 @@ export default function StoryCompleteCTA({
           </motion.div>
         )}
       </motion.div>
+
+      {/* Sprint 4-A: Push notification permission banner (shows after 3s delay) */}
+      <PushPermissionBanner delay={3000} getHeaders={getHeaders} />
     </motion.div>
   );
 }

@@ -15,6 +15,7 @@ import StoryCompleteCTA from "./StoryCompleteCTA";
 import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import TurnFivePopup from "./TurnFivePopup";
 import { usePresence } from "@/lib/hooks/usePresence";
+import { useAuthToken } from "@/lib/hooks/useAuthToken";
 
 const FREE_TURN_LIMIT = 3;
 
@@ -48,6 +49,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     saveDraft,
     retrySaveStory,
   } = useChatStore();
+  const { getHeaders } = useAuthToken();
 
   // Track this user as "creating a story" for live presence counting
   usePresence("chat");
@@ -296,6 +298,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             }
           }}
           onNewStory={onGoHome}
+          getHeaders={getHeaders}
         />
       )}
 
