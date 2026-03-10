@@ -2,25 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { sanitizeSearchQuery, parsePagination } from "@/lib/utils/search";
 import { getClientIP } from "@/lib/utils/validation";
+import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
-
-// R4-FIX: Rate limit community listing (prevent scraping/enumeration)
-const communityRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkCommunityRate(ip: string): boolean {
-  const now = Date.now();
-  if (communityRateMap.size > 300) {
-    for (const [k, v] of communityRateMap) { if (now > v.resetAt) communityRateMap.delete(k); }
-  }
-  const entry = communityRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    communityRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count++;
-  return true;
-}
 
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
@@ -34,8 +18,10 @@ function createAnonClient() {
 
 // GET: List public stories
 export async function GET(request: NextRequest) {
+  // T-2: Persistent rate limit (30/min per IP, survives across Edge isolates)
   const ip = getClientIP(request);
-  if (!checkCommunityRate(ip)) {
+  const allowed = await checkRateLimitPersistent(`community:${ip}`, 30, 60);
+  if (!allowed) {
     return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
 

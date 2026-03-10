@@ -900,8 +900,10 @@ function PricingContent() {
               동화를 완성한 분들이<br />
               <span className="text-coral font-medium">&ldquo;아이가 매일 읽어달라고 해요&rdquo;</span>라고 전해주셨어요
             </p>
-            <p className="text-[10px] text-brown-pale/70 font-light text-center mb-5">
-              구매 확정 후 환불이 불가합니다
+            <p className="text-[10px] text-center mb-5 font-medium"
+              style={{ color: "rgba(224,122,95,0.8)" }}
+            >
+              ※ 구매 확정 후 환불이 불가합니다
             </p>
             <button
               onClick={confirmPayment}

@@ -32,6 +32,10 @@ function PaymentSuccessContent() {
   const [errorMsg, setErrorMsg] = useState("");
   const [ticketsAdded, setTicketsAdded] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  // T-3: Receipt info for display
+  const [receiptOrderId, setReceiptOrderId] = useState<string>("");
+  const [receiptAmount, setReceiptAmount] = useState<number>(0);
+  const [receiptDate] = useState(() => new Date().toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }));
   const [hasSavedChat, setHasSavedChat] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -61,6 +65,9 @@ function PaymentSuccessContent() {
     // Store params for potential retry BEFORE cleaning URL
     const params = { paymentKey, orderId, amount: Number(amount), mode };
     paymentParamsRef.current = params;
+    // T-3: Save receipt info before URL cleaning
+    setReceiptOrderId(orderId);
+    setReceiptAmount(Number(amount));
 
     // Mark as confirmed and clean URL BEFORE the fetch to prevent race
     confirmedRef.current = true;
@@ -274,9 +281,9 @@ function PaymentSuccessContent() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
+    <div className="min-h-dvh bg-cream flex items-center justify-center px-6 py-10">
       <div
-        className="w-full max-w-sm rounded-3xl p-8 text-center"
+        className="w-full max-w-sm rounded-3xl p-7 text-center"
         style={{
           background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
@@ -285,15 +292,47 @@ function PaymentSuccessContent() {
         <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
           결제가 완료되었어요
         </h2>
-        <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
+        <p className="text-sm text-brown-light font-light leading-relaxed mb-4 break-keep">
           티켓 <span className="text-coral font-semibold">{ticketsAdded}장</span> 구매가 완료되었어요.
         </p>
-        {paymentMethod && PAYMENT_METHOD_LABELS[paymentMethod] && (
-          <p className="text-[11px] text-brown-pale font-light mb-1">
-            {PAYMENT_METHOD_LABELS[paymentMethod].label}로 결제됨
-          </p>
-        )}
-        <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+
+        {/* T-3: Receipt card */}
+        <div
+          className="rounded-xl p-4 mb-5 text-left"
+          style={{ background: "rgba(196,149,106,0.06)", border: "1px solid rgba(196,149,106,0.1)" }}
+        >
+          <p className="text-[10px] text-brown-pale font-medium mb-2 text-center tracking-wider">영수증</p>
+          <div className="space-y-1.5 text-[12px]">
+            {receiptOrderId && (
+              <div className="flex justify-between">
+                <span className="text-brown-pale font-light">주문번호</span>
+                <span className="text-brown font-medium text-[11px]">{receiptOrderId.replace("order_", "").slice(0, 12)}...</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-brown-pale font-light">결제일시</span>
+              <span className="text-brown font-medium">{receiptDate}</span>
+            </div>
+            {receiptAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-brown-pale font-light">결제금액</span>
+                <span className="text-brown font-semibold">₩{receiptAmount.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-brown-pale font-light">티켓 수량</span>
+              <span className="text-coral font-semibold">{ticketsAdded}장</span>
+            </div>
+            {paymentMethod && PAYMENT_METHOD_LABELS[paymentMethod] && (
+              <div className="flex justify-between">
+                <span className="text-brown-pale font-light">결제수단</span>
+                <span className="text-brown font-medium">{PAYMENT_METHOD_LABELS[paymentMethod].label}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <p className="text-sm text-brown-light font-light leading-relaxed mb-5 break-keep">
           {hasSavedChat ? (
             <>이전 대화를 이어서<br /><span className="text-coral font-medium">동화를 완성</span>해 볼까요?</>
           ) : (

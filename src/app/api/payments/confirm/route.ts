@@ -284,81 +284,8 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // ─── DB-level idempotency + first-purchase race guard ───
-    // HIGH #2 FIX: Claim orderId in metadata BEFORE incrementing tickets
-    // so concurrent requests on different Edge isolates see it and abort.
-    let metadata: Record<string, unknown> = {};
-    let processedOrderIds: string[] = [];
-    try {
-      const { data: profile, error: metaErr } = await sb.client
-        .from("profiles")
-        .select("metadata")
-        .eq("id", user.id)
-        .single();
-      if (!metaErr && profile) {
-        metadata = (profile.metadata as Record<string, unknown>) || {};
-        processedOrderIds = (metadata.processed_orders as string[]) || [];
-      }
-    } catch {
-      // metadata column doesn't exist — skip dedup check, rely on in-memory dedup
-    }
-
-    // DB-level dedup: check if orderId already processed across all isolates
-    if (processedOrderIds.includes(orderId)) {
-      markOrderProcessed(orderId); // Sync in-memory state
-      return sb.applyCookies(NextResponse.json({
-        success: true, alreadyProcessed: true,
-      }));
-    }
-
-    // HIGH #1 FIX: Post-confirmation first-purchase race guard
-    // If another concurrent request already claimed the first-purchase discount,
-    // log a security warning (payment confirmed by Toss — still grant tickets but flag for review)
-    if (confirmedAmount === 3920 && metadata.first_purchase_claimed) {
-      console.warn(
-        `[SECURITY] First-purchase discount race detected: user=${user.id.slice(0, 8)}..., ` +
-        `order=${orderId}, prior_claim=${metadata.first_purchase_claimed}`
-      );
-    }
-
-    // CR1-FIX: Pre-claim orderId in metadata BEFORE incrementing tickets.
-    // Uses select() to verify the write succeeded and re-reads to detect concurrent claims.
-    const preClaimOrders = [...processedOrderIds.slice(-19), orderId];
-    const preClaimMeta = {
-      ...metadata,
-      processed_orders: preClaimOrders,
-      ...(confirmedAmount === 3920 ? { first_purchase_claimed: orderId } : {}),
-    };
-    try {
-      const { data: claimResult } = await sb.client
-        .from("profiles")
-        .update({ metadata: preClaimMeta })
-        .eq("id", user.id)
-        .select("metadata")
-        .single();
-
-      // CR1-FIX: After write, verify orderId count matches expectation.
-      // If another isolate also wrote concurrently, the total count may differ
-      // from what we expected, indicating a race condition.
-      if (claimResult?.metadata) {
-        const savedOrders = ((claimResult.metadata as Record<string, unknown>).processed_orders as string[]) || [];
-        const orderOccurrences = savedOrders.filter((id: string) => id === orderId).length;
-        if (orderOccurrences > 1) {
-          // Duplicate orderId detected — another isolate also claimed this order
-          console.warn(`[SECURITY] Double-claim detected for order ${orderId}, user ${user.id.slice(0, 8)}...`);
-          markOrderProcessed(orderId);
-          return sb.applyCookies(NextResponse.json({
-            success: true, alreadyProcessed: true,
-          }));
-        }
-      }
-    } catch {
-      console.warn("[Toss] metadata pre-claim failed — relying on in-memory dedup");
-    }
-
-    // ─── Atomic DB dedup via order_claims UNIQUE constraint ───
-    // Strongest dedup guard — survives across Edge isolates and redeploys.
-    // UNIQUE(user_id, order_id) guarantees at-most-once ticket increment.
+    // ─── T-1: order_claims PRIMARY dedup (strongest, cross-isolate) ───
+    // Promoted to FIRST check. UNIQUE(user_id, order_id) guarantees at-most-once.
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
       try {
@@ -367,8 +294,8 @@ export async function POST(request: NextRequest) {
           .insert({ user_id: user.id, order_id: orderId });
 
         if (claimErr) {
-          // PostgreSQL unique_violation → already claimed by another isolate
           if (claimErr.code === "23505") {
+            // PostgreSQL unique_violation → already claimed by another isolate
             markOrderProcessed(orderId);
             return sb.applyCookies(NextResponse.json({
               success: true,
@@ -382,6 +309,55 @@ export async function POST(request: NextRequest) {
         // Network/timeout — log but proceed with existing dedup guards
         console.warn("[Toss] order_claims check failed:", claimEx instanceof Error ? claimEx.message : "Unknown");
       }
+    }
+
+    // ─── DB metadata dedup (secondary, per-profile) ───
+    let metadata: Record<string, unknown> = {};
+    let processedOrderIds: string[] = [];
+    try {
+      const { data: profile, error: metaErr } = await sb.client
+        .from("profiles")
+        .select("metadata")
+        .eq("id", user.id)
+        .single();
+      if (!metaErr && profile) {
+        metadata = (profile.metadata as Record<string, unknown>) || {};
+        processedOrderIds = (metadata.processed_orders as string[]) || [];
+      }
+    } catch {
+      // metadata column doesn't exist — skip dedup check
+    }
+
+    // DB-level dedup: check if orderId already in metadata
+    if (processedOrderIds.includes(orderId)) {
+      markOrderProcessed(orderId);
+      return sb.applyCookies(NextResponse.json({
+        success: true, alreadyProcessed: true,
+      }));
+    }
+
+    // First-purchase race guard
+    if (confirmedAmount === 3920 && metadata.first_purchase_claimed) {
+      console.warn(
+        `[SECURITY] First-purchase discount race detected: user=${user.id.slice(0, 8)}..., ` +
+        `order=${orderId}, prior_claim=${metadata.first_purchase_claimed}`
+      );
+    }
+
+    // Pre-claim orderId in metadata (belt-and-suspenders with order_claims)
+    const preClaimOrders = [...processedOrderIds.slice(-19), orderId];
+    const preClaimMeta = {
+      ...metadata,
+      processed_orders: preClaimOrders,
+      ...(confirmedAmount === 3920 ? { first_purchase_claimed: orderId } : {}),
+    };
+    try {
+      await sb.client
+        .from("profiles")
+        .update({ metadata: preClaimMeta })
+        .eq("id", user.id);
+    } catch {
+      console.warn("[Toss] metadata pre-claim failed — order_claims already protects");
     }
 
     // ─── Atomic ticket increment ───
