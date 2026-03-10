@@ -8,7 +8,7 @@ import { CoverPicker } from "@/components/story/CoverPicker";
 import { CoverPickerModal } from "@/components/story/CoverPickerModal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
+import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import type { Scene } from "@/lib/types/story";
 
 interface StoryData {
@@ -25,6 +25,7 @@ export default function LibraryStoryPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { getHeaders } = useAuthToken();
   const [story, setStory] = useState<StoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,18 +40,9 @@ export default function LibraryStoryPage() {
   useEffect(() => {
     if (!params.id) return;
 
-    // Include auth token in headers (belt-and-suspenders for cookie issues)
     (async () => {
       try {
-        const headers: Record<string, string> = {};
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-        } catch { /* ignore */ }
-
+        const headers = await getHeaders();
         const res = await fetch(`/api/stories/${params.id}`, { headers });
         if (!res.ok) throw new Error("Not found");
         const data = await res.json();
@@ -61,7 +53,7 @@ export default function LibraryStoryPage() {
         setLoading(false);
       }
     })();
-  }, [params.id]);
+  }, [params.id, getHeaders]);
 
   // FR-007: Save edited story via PATCH API
   const handleEditDone = useCallback(
@@ -69,14 +61,7 @@ export default function LibraryStoryPage() {
       if (!story) return;
       setSaving(true);
       try {
-        // Include auth token for cookie fallback
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        } catch { /* ignore */ }
-
+        const headers = await getHeaders({ json: true });
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",
           headers,
@@ -99,7 +84,7 @@ export default function LibraryStoryPage() {
         setTimeout(() => setSaveError(""), 3000);
       }
     },
-    [story]
+    [story, getHeaders]
   );
 
   // Handle cover change from modal or post-edit picker
@@ -110,12 +95,7 @@ export default function LibraryStoryPage() {
   // PATCH cover image helper (for post-edit full-screen picker)
   const patchCover = useCallback(async (storyId: string, coverPath: string) => {
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-      } catch { /* ignore */ }
+      const headers = await getHeaders({ json: true });
       await fetch(`/api/stories/${storyId}`, {
         method: "PATCH",
         headers,
@@ -124,7 +104,7 @@ export default function LibraryStoryPage() {
     } catch {
       console.warn("[CoverPicker] Failed to persist cover_image to DB");
     }
-  }, []);
+  }, [getHeaders]);
 
   // Publish to community
   const handlePublish = useCallback(
@@ -132,13 +112,7 @@ export default function LibraryStoryPage() {
       if (!story) return;
       setPublishing(true);
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        } catch { /* ignore */ }
-
+        const headers = await getHeaders({ json: true });
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",
           headers,
@@ -155,7 +129,7 @@ export default function LibraryStoryPage() {
         setPublishing(false);
       }
     },
-    [story]
+    [story, getHeaders]
   );
 
   // Unpublish from community
@@ -164,13 +138,7 @@ export default function LibraryStoryPage() {
       if (!story) return;
       setPublishing(true);
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        } catch { /* ignore */ }
-
+        const headers = await getHeaders({ json: true });
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",
           headers,
@@ -185,7 +153,7 @@ export default function LibraryStoryPage() {
         setPublishing(false);
       }
     },
-    [story]
+    [story, getHeaders]
   );
 
   if (loading || saving) {

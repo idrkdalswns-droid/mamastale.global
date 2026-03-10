@@ -9,6 +9,27 @@ import type { Scene } from "@/lib/types/story";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import { shareToKakao } from "@/lib/share/kakao";
 
+/**
+ * B-2: Detect AI-generated closing/celebration text patterns.
+ * These verbose blocks ("축하합니다!", "당신은 방금~", etc.) are compressed
+ * into a single card instead of full paragraphs.
+ */
+const CLOSING_PATTERNS = [
+  /^축하합니다/,
+  /^당신은 방금/,
+  /^이 동화는 단순한/,
+  /^이건 당신의 여정/,
+  /^당신의 강함의/,
+  /^당신의 사랑의/,
+  /^동화가 완성되었어요/,
+  /^오늘 나눈 이야기는/,
+];
+
+function isClosingText(text: string): boolean {
+  const trimmed = text.trim();
+  return CLOSING_PATTERNS.some((p) => p.test(trimmed));
+}
+
 /** Page background colors — paired scenes share the same tone */
 const pageBgClass: Record<number, string> = {
   0: "bg-[#EEF6F3]",
@@ -291,17 +312,46 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             </h1>
           )}
 
-          {/* Two scenes as two paragraphs */}
+          {/* Two scenes as two paragraphs — B-2: closing text compressed */}
           <div className="space-y-8">
-            {pageScenes.map((scene) => (
-              <p
-                key={scene.sceneNumber}
-                className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
-                style={{ fontSize }}
-              >
-                {cleanSceneText(scene.text)}
-              </p>
-            ))}
+            {(() => {
+              const closingScenes: Scene[] = [];
+              const normalScenes: Scene[] = [];
+              for (const scene of pageScenes) {
+                const cleaned = cleanSceneText(scene.text);
+                if (isClosingText(cleaned)) {
+                  closingScenes.push(scene);
+                } else {
+                  normalScenes.push(scene);
+                }
+              }
+              return (
+                <>
+                  {normalScenes.map((scene) => (
+                    <p
+                      key={scene.sceneNumber}
+                      className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
+                      style={{ fontSize }}
+                    >
+                      {cleanSceneText(scene.text)}
+                    </p>
+                  ))}
+                  {closingScenes.length > 0 && (
+                    <div
+                      className="rounded-2xl p-5 text-center space-y-1"
+                      style={{ background: "rgba(127,191,176,0.06)", border: "1px solid rgba(127,191,176,0.12)" }}
+                    >
+                      <p className="text-sm text-brown font-serif font-medium break-keep">
+                        축하합니다! 동화가 완성되었어요 ✨
+                      </p>
+                      <p className="text-xs text-brown-light font-light break-keep leading-5">
+                        당신의 이야기가 아이를 위한 세상에 하나뿐인 동화가 되었습니다.
+                      </p>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Last page extras */}
@@ -476,12 +526,24 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 </button>
               </div>
             )}
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
-            >
-              이전 페이지
-            </button>
+            {/* B-6: Clear labels for last page navigation */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                className="flex-1 py-3 rounded-full text-sm font-light text-brown-pale transition-all"
+              >
+                이전 페이지
+              </button>
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="flex-1 py-3 rounded-full text-sm font-light text-brown-mid transition-all"
+                  style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+                >
+                  서재로 돌아가기
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex gap-3">
