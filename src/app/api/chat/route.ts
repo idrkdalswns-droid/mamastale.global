@@ -50,7 +50,7 @@ const chatRequestSchema = z.object({
 // ─── Rate Limiting (in-memory fallback only — primary is now Supabase) ───
 const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
-const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client)
+const GUEST_TURN_LIMIT = 3;   // Server-side guest message limit (must match client FREE_TURN_LIMIT)
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call

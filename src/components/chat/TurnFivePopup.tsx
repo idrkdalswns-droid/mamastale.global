@@ -1,28 +1,97 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { createClient } from "@/lib/supabase/client";
 
 interface TurnFivePopupProps {
   /** Whether the user is logged in */
   isLoggedIn: boolean;
+  /** Current ticket balance (null = not loaded yet) */
+  ticketsRemaining?: number | null;
   /** Save chat state before redirecting */
   onPersistChat: () => void;
   /** Navigate back to home (escape hatch) */
   onGoHome?: () => void;
+  /** Called after inline ticket deduction succeeds (lifts free trial limit) */
+  onTicketUsed?: () => void;
 }
 
-export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: TurnFivePopupProps) {
+/**
+ * C-1 + SV-3: Turn-gate popup shown after 3 free turns.
+ * - Guest: login prompt (OAuth buttons)
+ * - Logged-in with tickets: inline ticket deduction
+ * - Logged-in without tickets: redirect to /pricing
+ */
+export default function TurnFivePopup({
+  isLoggedIn,
+  ticketsRemaining,
+  onPersistChat,
+  onGoHome,
+  onTicketUsed,
+}: TurnFivePopupProps) {
   // Prevent background scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // ── Inline ticket deduction state ──
+  const [isUsingTicket, setIsUsingTicket] = useState(false);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
+
   const handleBuyTicket = () => {
     onPersistChat();
     window.location.href = "/pricing";
   };
+
+  /** Deduct ticket inline and call onTicketUsed to lift turn limit */
+  const handleUseTicket = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsUsingTicket(true);
+    setTicketError(null);
+
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch { /* Session read failed — proceed with cookies */ }
+
+      const res = await fetch("/api/tickets/use", {
+        method: "POST",
+        headers,
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        // Ticket deducted → lift free trial limit (popup will auto-dismiss)
+        onTicketUsed?.();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "no_tickets") {
+          setTicketError("티켓이 부족합니다. 충전 후 다시 시도해 주세요.");
+        } else if (res.status === 401) {
+          setTicketError("로그인이 만료되었습니다. 페이지를 새로고침해 주세요.");
+        } else {
+          setTicketError(data.error || "오류가 발생했습니다. 다시 시도해 주세요.");
+        }
+        submittingRef.current = false;
+      }
+    } catch {
+      setTicketError("네트워크 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.");
+      submittingRef.current = false;
+    } finally {
+      setIsUsingTicket(false);
+    }
+  };
+
+  const hasTickets = ticketsRemaining !== null && ticketsRemaining !== undefined && ticketsRemaining > 0;
 
   return (
     <div
@@ -56,13 +125,13 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
             <div
               className="h-full rounded-full transition-all duration-1000"
               style={{
-                width: "40%",
+                width: "25%",
                 background: "linear-gradient(90deg, #E07A5F, #C96B52)",
               }}
             />
           </div>
           <p className="text-xs text-coral font-medium">
-            동화의 약 40%가 완성되었어요
+            동화의 약 25%가 완성되었어요
           </p>
         </div>
 
@@ -83,40 +152,92 @@ export default function TurnFivePopup({ isLoggedIn, onPersistChat, onGoHome }: T
         </div>
 
         {isLoggedIn ? (
-          /* ── Logged-in: Buy ticket ── */
-          <>
-            {/* Pricing CTA — links to pricing page for accurate price display */}
-            <div className="text-center mb-4">
-              <p className="text-sm text-brown font-medium">
-                티켓 1장이면 동화가 완성돼요
-              </p>
-              <p className="text-xs text-brown-pale font-light mt-1">
-                ₩4,900부터
-              </p>
-            </div>
+          hasTickets ? (
+            /* ── Logged-in WITH tickets: inline ticket deduction ── */
+            <>
+              <div className="text-center mb-4">
+                <p className="text-sm text-brown font-medium">
+                  티켓 1장을 사용하여 동화를 완성할까요?
+                </p>
+                <p className="text-xs text-brown-pale font-light mt-1">
+                  보유 티켓: <span className="font-semibold text-coral">{ticketsRemaining}장</span>
+                  {ticketsRemaining === 1 && " (마지막 티켓이에요!)"}
+                </p>
+              </div>
 
-            <button
-              onClick={handleBuyTicket}
-              className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-all active:scale-[0.97] mb-3"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              티켓 구매하고 이어서 만들기
-            </button>
+              {ticketError && (
+                <p className="text-[13px] text-red-500 font-medium mb-3 text-center">
+                  {ticketError}
+                </p>
+              )}
 
-            <p className="text-[10px] text-brown-pale font-light text-center">
-              결제 후 대화가 그대로 이어집니다 · 완성된 동화는 서재에 영구 보관
-            </p>
-            {onGoHome && (
-              <button onClick={onGoHome} className="block w-full mt-3 text-[11px] text-brown-pale font-light text-center py-2 min-h-[44px]">
-                홈으로 돌아가기
+              <button
+                onClick={handleUseTicket}
+                disabled={isUsingTicket}
+                className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-60 mb-3"
+                style={{
+                  background: isUsingTicket
+                    ? "rgba(224,122,95,0.6)"
+                    : "linear-gradient(135deg, #E07A5F, #C96B52)",
+                  boxShadow: isUsingTicket
+                    ? "none"
+                    : "0 6px 20px rgba(224,122,95,0.3)",
+                }}
+              >
+                {isUsingTicket ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    처리 중...
+                  </span>
+                ) : (
+                  "티켓 1장 사용하고 이어서 만들기"
+                )}
               </button>
-            )}
-          </>
+
+              <p className="text-[10px] text-brown-pale font-light text-center">
+                완성된 동화는 서재에 영구 보관됩니다
+              </p>
+              {onGoHome && (
+                <button onClick={onGoHome} className="block w-full mt-3 text-[11px] text-brown-pale font-light text-center py-2 min-h-[44px]">
+                  홈으로 돌아가기
+                </button>
+              )}
+            </>
+          ) : (
+            /* ── Logged-in WITHOUT tickets: redirect to pricing ── */
+            <>
+              <div className="text-center mb-4">
+                <p className="text-sm text-brown font-medium">
+                  티켓 1장이면 동화가 완성돼요
+                </p>
+                <p className="text-xs text-brown-pale font-light mt-1">
+                  ₩4,900부터
+                </p>
+              </div>
+
+              <button
+                onClick={handleBuyTicket}
+                className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-all active:scale-[0.97] mb-3"
+                style={{
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                  boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                }}
+              >
+                티켓 구매하고 이어서 만들기
+              </button>
+
+              <p className="text-[10px] text-brown-pale font-light text-center">
+                결제 후 대화가 그대로 이어집니다 · 완성된 동화는 서재에 영구 보관
+              </p>
+              {onGoHome && (
+                <button onClick={onGoHome} className="block w-full mt-3 text-[11px] text-brown-pale font-light text-center py-2 min-h-[44px]">
+                  홈으로 돌아가기
+                </button>
+              )}
+            </>
+          )
         ) : (
-          /* ── Guest: Sign up first ── */
+          /* ── Guest: sign up first ── */
           <>
             <div className="space-y-2 mb-4">
               {[

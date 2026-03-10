@@ -11,7 +11,7 @@ import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import TicketConfirmModal from "@/components/chat/TicketConfirmModal";
+// TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
 const OnboardingSlides = dynamic(() => import("@/components/onboarding/OnboardingSlides").then(m => ({ default: m.OnboardingSlides })), { ssr: false });
@@ -64,8 +64,6 @@ export default function Home() {
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
-  const [showTicketConfirm, setShowTicketConfirm] = useState(false);
-  const [showNoTicketsModal, setShowNoTicketsModal] = useState(false);
   const [ticketUsedForSession, setTicketUsedForSession] = useState(() => {
     try { return sessionStorage.getItem("mamastale_ticket_session") === "1"; } catch { return false; }
   });
@@ -184,37 +182,16 @@ export default function Home() {
     })();
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
 
-  // Handle deferred /?action=start after auth + tickets are loaded
+  // Handle deferred /?action=start after auth loaded
+  // C-1+SV-3: Everyone starts with 3 free turns — no upfront ticket check
   useEffect(() => {
     if (!startPending || authLoading) return;
-    // Guest users: allow (they have 5 free turns)
-    if (!user) {
-      setStartPending(false);
-      setScreen("onboarding");
-      return;
-    }
-    // Logged-in: wait for ticket balance
-    if (ticketsRemaining === null) return; // still loading
     setStartPending(false);
-    if (ticketsRemaining > 0) {
-      // Has tickets: show confirmation popup (deduct before starting)
-      setShowTicketConfirm(true);
-    } else {
-      // No tickets: show purchase prompt
-      setShowNoTicketsModal(true);
-    }
-  }, [startPending, authLoading, user, ticketsRemaining]);
+    setScreen("onboarding");
+  }, [startPending, authLoading]);
 
-  // After payment, user returns with tickets → lift the free trial turn limit
-  // ticketUsedForSession is now persisted in sessionStorage (survives page reload)
-  // This effect handles the "buy ticket after free trial" flow (auto-restore + new tickets)
-  useEffect(() => {
-    if (screen !== "chat" || !user || ticketsRemaining === null) return;
-    if (ticketsRemaining > 0 && !ticketUsedForSession) {
-      setTicketUsedForSession(true);
-      try { sessionStorage.setItem("mamastale_ticket_session", "1"); } catch {}
-    }
-  }, [screen, user, ticketsRemaining, ticketUsedForSession]);
+  // C-1+SV-3: Auto-ticket effect REMOVED — ticket deduction now happens inline
+  // during chat via TurnFivePopup's onTicketUsed callback
 
   // Clear ticket session flag (called when explicitly going home or starting fresh)
   const clearTicketSession = useCallback(() => {
@@ -222,28 +199,14 @@ export default function Home() {
     try { sessionStorage.removeItem("mamastale_ticket_session"); } catch {}
   }, []);
 
-  // Handle "새 동화 만들기" click with ticket confirmation
+  // C-1+SV-3: Everyone starts with 3 free turns, no upfront ticket deduction
   const handleStartStory = () => {
-    // Reset previous session flag before starting new flow
     clearTicketSession();
     setSelectedCover(null);
-    // R7-F2: Reset local states for new story flow
     setEditedTitle("");
     setFeedbackDone(false);
     setEditSaveError(false);
-    // Block clicks while ticket balance is still loading for logged-in users
-    if (user && ticketsRemaining === null) return;
-    // Logged-in users with tickets: show ticket confirmation popup (deduct before starting)
-    if (user && ticketsRemaining !== null && ticketsRemaining > 0) {
-      setShowTicketConfirm(true);
-      return;
-    }
-    // Logged-in users with 0 tickets: show purchase prompt
-    if (user && ticketsRemaining !== null && ticketsRemaining <= 0) {
-      setShowNoTicketsModal(true);
-      return;
-    }
-    // Guests: start free trial (5 turns free)
+    // Everyone goes straight to onboarding — ticket gate at turn 3 during chat
     setScreen("onboarding");
   };
 
@@ -358,6 +321,12 @@ export default function Home() {
           onComplete={() => setScreen("edit")}
           onGoHome={() => { clearTicketSession(); setShow(false); setScreen("landing"); }}
           freeTrialMode={!ticketUsedForSession}
+          ticketsRemaining={ticketsRemaining}
+          onTicketUsed={() => {
+            setTicketUsedForSession(true);
+            try { sessionStorage.setItem("mamastale_ticket_session", "1"); } catch {}
+            setTicketsRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
+          }}
         />
       </ErrorBoundary>
     );
@@ -638,16 +607,15 @@ export default function Home() {
           {/* CTA button */}
           <button
             onClick={handleStartStory}
-            disabled={authLoading || (!!user && ticketsRemaining === null)}
-            aria-busy={authLoading || (!!user && ticketsRemaining === null)}
+            disabled={authLoading}
+            aria-busy={authLoading}
             className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
             }}
           >
-            {/* R3-FIX(A3): Show spinner during authLoading too */}
-            {authLoading || (user && ticketsRemaining === null) ? (
+            {authLoading ? (
               <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
@@ -824,68 +792,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Ticket confirmation modal — shown before starting a new story */}
-      {showTicketConfirm && ticketsRemaining !== null && (
-        <TicketConfirmModal
-          remainingTickets={ticketsRemaining}
-          onConfirm={() => {
-            setShowTicketConfirm(false);
-            setTicketUsedForSession(true);
-            try { sessionStorage.setItem("mamastale_ticket_session", "1"); } catch {}
-            // Update local ticket count (already deducted on server)
-            setTicketsRemaining((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
-            setScreen("onboarding");
-          }}
-          onCancel={() => setShowTicketConfirm(false)}
-        />
-      )}
-
-      {/* No tickets modal — prompt to purchase */}
-      {showNoTicketsModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="티켓 구매 안내"
-          tabIndex={-1}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowNoTicketsModal(false); }}
-          onKeyDown={(e) => { if (e.key === "Escape") setShowNoTicketsModal(false); }}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200"
-            style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}
-          >
-            <h3 className="font-serif text-lg text-brown font-semibold text-center mb-2">
-              보유 티켓이 없습니다
-            </h3>
-            <p className="text-sm text-brown-light font-light text-center mb-1.5 leading-relaxed break-keep">
-              동화를 만들려면 티켓이 필요해요.
-            </p>
-            <p className="text-[11px] text-brown-pale font-light text-center mb-5 leading-relaxed break-keep">
-              티켓 구매 후 세상에 하나뿐인 동화를 만들어 보세요.
-            </p>
-
-            <Link
-              href="/pricing"
-              className="block w-full py-3.5 rounded-full text-sm font-bold text-white text-center no-underline transition-all active:scale-[0.97] mb-2"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
-              }}
-              onClick={() => setShowNoTicketsModal(false)}
-            >
-              티켓 구매하러 가기
-            </Link>
-            <button
-              onClick={() => setShowNoTicketsModal(false)}
-              className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"
-            >
-              다음에 할게요
-            </button>
-          </div>
-        </div>
-      )}
+      {/* C-1+SV-3: TicketConfirmModal & NoTicketsModal removed —
+           ticket gate now happens at turn 3 inside chat (TurnFivePopup) */}
 
       {/* SG-1: Payment Success Modal — accessible dialog */}
       {showPaymentSuccess && (

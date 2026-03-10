@@ -16,16 +16,20 @@ import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import TurnFivePopup from "./TurnFivePopup";
 import { usePresence } from "@/lib/hooks/usePresence";
 
-const FREE_TURN_LIMIT = 5;
+const FREE_TURN_LIMIT = 3;
 
 interface ChatPageProps {
   onComplete: () => void;
   onGoHome: () => void;
-  /** When true, 5-turn free trial limit applies (no ticket consumed at start) */
+  /** When true, 3-turn free trial limit applies (no ticket consumed yet) */
   freeTrialMode?: boolean;
+  /** Current ticket balance (for inline ticket deduction in TurnFivePopup) */
+  ticketsRemaining?: number | null;
+  /** Called when ticket is deducted inline during chat (lifts free trial limit) */
+  onTicketUsed?: () => void;
 }
 
-export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPageProps) {
+export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsRemaining, onTicketUsed }: ChatPageProps) {
   const {
     messages,
     currentPhase,
@@ -251,12 +255,14 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false }: ChatPa
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
       {!storyDone && !freeLimitReached && <PhaseRuleHint phase={currentPhase} />}
 
-      {/* Turn-5 conversion popup — shown after 1.5s delay when free trial limit reached */}
+      {/* Turn-3 conversion popup — shown after 1.5s delay when free trial limit reached */}
       {turnFiveReady && freeLimitReached && !storyDone && (
         <TurnFivePopup
           isLoggedIn={!!user}
+          ticketsRemaining={ticketsRemaining}
           onPersistChat={persistToStorage}
           onGoHome={onGoHome}
+          onTicketUsed={onTicketUsed}
         />
       )}
 
