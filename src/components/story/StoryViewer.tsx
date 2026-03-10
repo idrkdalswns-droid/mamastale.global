@@ -51,8 +51,10 @@ interface StoryViewerProps {
   embedded?: boolean;
   isPublished?: boolean;
   isPublishing?: boolean;
-  onPublish?: (authorAlias: string) => Promise<boolean | undefined>;
+  onPublish?: (authorAlias: string, topic?: string) => Promise<boolean | undefined>;
   onUnpublish?: () => void;
+  /** Sprint 2-C: AI-suggested topic tags (pre-selected in publish modal) */
+  suggestedTags?: string[];
   /** Whether this story was generated with the premium (Opus) AI model */
   isPremium?: boolean;
   /** Callback for "new story" repurchase nudge */
@@ -63,7 +65,7 @@ interface StoryViewerProps {
   storyId?: string;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, isPremium, onNewStory, onChangeCover, storyId }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -79,7 +81,16 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   const [copied, setCopied] = useState(false);
   const [showAliasModal, setShowAliasModal] = useState(false);
   const [aliasInput, setAliasInput] = useState("");
+  // Sprint 2-B: Topic selection for community publish
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [publishToast, setPublishToast] = useState<string | null>(null);
+
+  // Sprint 2-B: Pre-select first AI-suggested tag when modal opens
+  useEffect(() => {
+    if (showAliasModal && suggestedTags && suggestedTags.length > 0 && !selectedTopic) {
+      setSelectedTopic(suggestedTags[0]);
+    }
+  }, [showAliasModal, suggestedTags, selectedTopic]);
 
   // Persist last read page
   useEffect(() => {
@@ -593,7 +604,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             <h3 className="font-serif text-base font-bold text-brown mb-2">
               커뮤니티에 공유하기
             </h3>
-            <p className="text-xs text-brown-light font-light mb-4 leading-relaxed break-keep">
+            <p className="text-xs text-brown-light font-light mb-3 leading-relaxed break-keep">
               다른 분들과 동화를 나눠보세요.<br />
               공유할 별명을 입력해주세요.
             </p>
@@ -607,28 +618,44 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               style={{ fontSize: 16 }}
               aria-label="별명 입력"
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const alias = aliasInput.trim() || "익명의 엄마";
-                  // R3-A11: Add .catch() to prevent unhandled promise rejection
-                  onPublish?.(alias).then((ok) => {
-                    if (ok !== false) {
-                      setShowAliasModal(false);
-                      setPublishToast("커뮤니티에 공유되었습니다!");
-                      setTimeout(() => setPublishToast(null), 2500);
-                    }
-                  }).catch(() => { /* handled by onPublish caller */ });
-                }
-              }}
             />
-            <p className="text-[10px] text-brown-pale font-light mb-4">
+            <p className="text-[10px] text-brown-pale font-light mb-3">
               {aliasInput.length}/20
             </p>
+
+            {/* Sprint 2-B: Topic keyword selector */}
+            <div className="mb-4">
+              <p className="text-[11px] text-brown-light font-medium mb-2 text-left">
+                이 동화의 키워드
+                {suggestedTags && suggestedTags.length > 0 && (
+                  <span className="text-[10px] text-brown-pale font-light ml-1">AI 추천</span>
+                )}
+              </p>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {["자존감", "성장", "감정표현", "분노조절", "우울극복", "용기", "친구관계", "가족사랑"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSelectedTopic(selectedTopic === t ? "" : t)}
+                    className={`px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all ${
+                      selectedTopic === t
+                        ? "bg-[#8B6AAF] text-white"
+                        : suggestedTags?.includes(t)
+                          ? "bg-[#8B6AAF]/10 text-[#8B6AAF] border border-[#8B6AAF]/30"
+                          : "bg-white/60 text-brown-light border border-brown-pale/15"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={async () => {
                 const alias = aliasInput.trim() || "익명의 엄마";
                 try {
-                  const ok = await onPublish?.(alias);
+                  const ok = await onPublish?.(alias, selectedTopic || undefined);
                   if (ok !== false) {
                     setShowAliasModal(false);
                     setPublishToast("커뮤니티에 공유되었습니다!");

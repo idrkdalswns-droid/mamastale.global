@@ -1,18 +1,22 @@
 import type { MetadataRoute } from "next";
+import { createServerClient } from "@supabase/ssr";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Sprint 2-E: Dynamic sitemap with community stories
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://mamastale-global.pages.dev";
+  const now = new Date();
 
-  return [
+  // ── Static pages ──
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: base,
-      lastModified: new Date("2026-03-08"),
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${base}/community`,
-      lastModified: new Date("2026-03-08"),
+      lastModified: now,
       changeFrequency: "daily",
       priority: 0.8,
     },
@@ -59,4 +63,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
   ];
+
+  // ── Dynamic community story pages ──
+  let storyPages: MetadataRoute.Sitemap = [];
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (url && key) {
+      const supabase = createServerClient(url, key, {
+        cookies: { getAll() { return []; }, setAll() {} },
+      });
+      const { data: stories } = await supabase
+        .from("stories")
+        .select("id, created_at")
+        .eq("is_public", true)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (stories) {
+        storyPages = stories.map((story) => ({
+          url: `${base}/community/${story.id}`,
+          lastModified: new Date(story.created_at),
+          changeFrequency: "monthly" as const,
+          priority: 0.6,
+        }));
+      }
+    }
+  } catch {
+    // Silently fail — static pages will still be in sitemap
+  }
+
+  return [...staticPages, ...storyPages];
 }

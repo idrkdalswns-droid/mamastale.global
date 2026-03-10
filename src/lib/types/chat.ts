@@ -32,6 +32,8 @@ export interface ChatApiResponse {
   isPremium?: boolean;
   /** Whether this is a crisis intervention response (bypassed LLM) */
   isCrisisIntervention?: boolean;
+  /** Sprint 2-C: AI-suggested topic tags from Phase 4 */
+  suggestedTags?: string[];
 }
 
 /**
@@ -46,6 +48,8 @@ export interface StorySeedState {
   chosenMetaphor?: string;
   /** Counter-force/magical tool from Phase 3 (e.g., "빛나는 횃불") */
   counterForce?: string;
+  /** Sprint 2-C: AI-suggested topic tags from Phase 4 (e.g., ["자존감", "성장"]) */
+  suggestedTags?: string[];
 }
 
 /**
@@ -65,6 +69,8 @@ export interface ChatStreamEvent {
   scenes?: import("@/lib/types/story").Scene[];
   /** Premium model indicator (for 'done' events) */
   isPremium?: boolean;
+  /** Sprint 2-C: AI-suggested topic tags (for 'done' events) */
+  suggestedTags?: string[];
   /** Token usage info (for 'done' events) */
   usage?: { inputTokens: number; outputTokens: number };
   /** Error message (for 'error' events) */

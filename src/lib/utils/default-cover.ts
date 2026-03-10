@@ -24,12 +24,16 @@ const COVER_COUNTS: Record<CoverTone, ToneInfo> = {
   blue: { count: 15, startIndex: 0, ext: "jpeg" },
 };
 
+// Sprint 2-A: Child-centric keyword → cover tone mapping
 const TOPIC_TO_TONE: Record<string, CoverTone> = {
-  산후우울: "blue",
-  양육번아웃: "pink",
-  시댁갈등: "green",
-  경력단절: "blue",
   자존감: "pink",
+  성장: "green",
+  감정표현: "blue",
+  분노조절: "pink",
+  우울극복: "blue",
+  용기: "green",
+  친구관계: "pink",
+  가족사랑: "green",
 };
 
 /** Simple deterministic hash — always returns a positive integer */

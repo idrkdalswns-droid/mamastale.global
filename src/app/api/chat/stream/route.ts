@@ -26,6 +26,8 @@ import {
   detectPhase,
   stripPhaseTag,
   isStoryComplete,
+  extractTags,
+  stripTagsTag,
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
@@ -437,7 +439,10 @@ export async function POST(request: NextRequest) {
         // Post-stream processing
         const detectedPhase = detectPhase(fullText);
         const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
-        const cleanText = stripPhaseTag(fullText);
+        const textNoPhase = stripPhaseTag(fullText);
+        // Sprint 2-C: Extract AI-suggested tags before stripping
+        const suggestedTags = extractTags(textNoPhase);
+        const cleanText = stripTagsTag(textNoPhase);
         const storyComplete = isStoryComplete(cleanText, phase, safePhase);
 
         // Output safety validation
@@ -468,6 +473,7 @@ export async function POST(request: NextRequest) {
             isStoryComplete: storyComplete,
             ...(storyComplete && scenes.length > 0 ? { scenes, storyId: `story_${Date.now()}` } : {}),
             ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
+            ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
             usage: {
               inputTokens: finalMessage.usage.input_tokens,
               outputTokens: finalMessage.usage.output_tokens,

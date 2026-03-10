@@ -68,8 +68,8 @@ export function containsProfanity(text: string): boolean {
 }
 
 // ─── Community topic allowlist (shared across story routes) ───
-// R4-FIX(B1): Extracted from stories/route.ts and stories/[id]/route.ts to prevent divergence
-export const VALID_TOPICS = ["산후우울", "양육번아웃", "시댁갈등", "경력단절", "자존감"] as const;
+// Sprint 2-A: Child-centric keyword overhaul (was: 산후우울, 양육번아웃, 시댁갈등, 경력단절, 자존감)
+export const VALID_TOPICS = ["자존감", "성장", "감정표현", "분노조절", "우울극복", "용기", "친구관계", "가족사랑"] as const;
 
 // ─── Client IP extraction (Cloudflare → forwarded → fallback) ───
 export function getClientIP(request: Request): string {

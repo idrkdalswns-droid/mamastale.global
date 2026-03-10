@@ -18,6 +18,7 @@ interface StoryData {
   created_at: string;
   is_public?: boolean;
   author_alias?: string;
+  topic?: string;
   cover_image?: string;
 }
 
@@ -106,17 +107,19 @@ export default function LibraryStoryPage() {
     }
   }, [getHeaders]);
 
-  // Publish to community
+  // Publish to community (Sprint 2-B: accepts optional topic keyword)
   const handlePublish = useCallback(
-    async (authorAlias: string) => {
+    async (authorAlias: string, topic?: string) => {
       if (!story) return;
       setPublishing(true);
       try {
         const headers = await getHeaders({ json: true });
+        const body: Record<string, unknown> = { isPublic: true, authorAlias };
+        if (topic) body.topic = topic;
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ isPublic: true, authorAlias }),
+          body: JSON.stringify(body),
         });
         if (res.ok) {
           setStory((prev) => prev ? { ...prev, is_public: true, author_alias: authorAlias } : prev);
@@ -244,6 +247,7 @@ export default function LibraryStoryPage() {
       isPublishing={publishing}
       onPublish={handlePublish}
       onUnpublish={handleUnpublish}
+      suggestedTags={story.topic ? [story.topic] : undefined}
     />
 
     {/* Cover picker modal (from viewer "표지" button) */}

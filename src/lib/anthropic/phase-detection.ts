@@ -28,6 +28,29 @@ export function stripPhaseTag(text: string): string {
 }
 
 /**
+ * Sprint 2-C: Extract AI-suggested tags from [TAGS: 자존감, 성장, 감정표현] pattern.
+ * Returns validated tags (only those in VALID_TOPICS), max 3.
+ */
+const VALID_TAGS = ["자존감", "성장", "감정표현", "분노조절", "우울극복", "용기", "친구관계", "가족사랑"];
+
+export function extractTags(text: string): string[] {
+  const match = text.match(/\[TAGS?:\s*([^\]]+)\]/i);
+  if (!match) return [];
+  return match[1]
+    .split(/[,，、\s]+/)
+    .map((t) => t.trim())
+    .filter((t) => VALID_TAGS.includes(t))
+    .slice(0, 3);
+}
+
+/**
+ * Sprint 2-C: Strip [TAGS: ...] from response text so it doesn't appear in story.
+ */
+export function stripTagsTag(text: string): string {
+  return text.replace(/\[TAGS?:\s*[^\]]*\]\s*/gi, "").trim();
+}
+
+/**
  * Check if story is complete (Phase 4 with WISDOM scenes).
  * @param text - The cleaned AI response text
  * @param phase - Detected phase from AI response (may be null if tag missing)

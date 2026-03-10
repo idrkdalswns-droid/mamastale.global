@@ -60,10 +60,10 @@ export async function GET(request: NextRequest) {
     query = query.eq("topic", topic);
   }
 
-  // Search: match title or author_alias (sanitized, max 100 chars)
+  // Sprint 2-F: Enhanced search — match title, author_alias, or topic
   const safeSearch = sanitizeSearchQuery(search);
   if (safeSearch) {
-    query = query.or(`title.ilike.%${safeSearch}%,author_alias.ilike.%${safeSearch}%`);
+    query = query.or(`title.ilike.%${safeSearch}%,author_alias.ilike.%${safeSearch}%,topic.ilike.%${safeSearch}%`);
   }
 
   if (sort === "popular") {

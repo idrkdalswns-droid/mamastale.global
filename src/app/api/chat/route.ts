@@ -13,6 +13,8 @@ import {
   detectPhase,
   stripPhaseTag,
   isStoryComplete,
+  extractTags,
+  stripTagsTag,
 } from "@/lib/anthropic/phase-detection";
 import { parseStoryScenes } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
@@ -446,7 +448,10 @@ export async function POST(request: NextRequest) {
     const detectedPhase = detectPhase(rawText);
     // Server-side forward-only enforcement: never go backward
     const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
-    const cleanText = stripPhaseTag(rawText);
+    const textNoPhase = stripPhaseTag(rawText);
+    // Sprint 2-C: Extract AI-suggested tags before stripping
+    const suggestedTags = extractTags(textNoPhase);
+    const cleanText = stripTagsTag(textNoPhase);
     const storyComplete = isStoryComplete(cleanText, phase, safePhase);
 
     // ─── OUTPUT SAFETY VALIDATION (psysafe-ai inspired) ───
@@ -509,6 +514,7 @@ export async function POST(request: NextRequest) {
       storyId,
       ...(storyComplete && scenes.length > 0 ? { scenes } : {}),
       ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
+      ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
     });
   } catch (error: unknown) {
     // Log error message only (no PII, no full stack)

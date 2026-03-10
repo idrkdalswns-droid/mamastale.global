@@ -283,6 +283,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // P1-FIX(KR-4): Use ?? instead of || to prevent sticky premium state.
         // Only override when API explicitly returns isPremium; otherwise keep current.
         isPremiumStory: data.isPremium !== undefined ? data.isPremium : s.isPremiumStory,
+        // Sprint 2-C: Capture AI-suggested tags from story completion
+        storySeed: data.suggestedTags && data.suggestedTags.length > 0
+          ? { ...s.storySeed, suggestedTags: data.suggestedTags }
+          : s.storySeed,
       }));
 
       // ─── Auto-save draft after EVERY successful exchange ───
@@ -491,6 +495,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ? event.scenes
                 : s.completedScenes,
               isPremiumStory: event.isPremium !== undefined ? event.isPremium : s.isPremiumStory,
+              // Sprint 2-C: Capture AI-suggested tags from streaming completion
+              storySeed: event.suggestedTags && event.suggestedTags.length > 0
+                ? { ...s.storySeed, suggestedTags: event.suggestedTags }
+                : s.storySeed,
             }));
 
             // Auto-save draft

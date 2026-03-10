@@ -69,14 +69,18 @@ export async function generateMetadata({
       ? `${siteUrl}${(story as { cover_image?: string }).cover_image}`
       : ogImage;
 
+    // Sprint 2-D: Enhanced OG meta with canonical URL
+    const canonicalUrl = `${siteUrl}/community/${id}`;
     return {
       title: `${title} — ${author} | mamastale`,
       description,
+      alternates: { canonical: canonicalUrl },
       openGraph: {
         title: `${title} — ${author}`,
         description,
         type: "article",
         siteName: "mamastale",
+        url: canonicalUrl,
         images: [{ url: storyOgImage, width: 1200, height: 630, alt: `${title} - mamastale` }],
       },
       twitter: {

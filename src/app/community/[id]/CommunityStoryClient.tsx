@@ -2,9 +2,11 @@
 
 import { useState, useEffect, Component, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { StoryViewer } from "@/components/story/StoryViewer";
 import { LikeButton } from "@/components/community/LikeButton";
 import { CommentSection } from "@/components/community/CommentSection";
+import { useAuth } from "@/lib/hooks/useAuth";
 import type { Scene } from "@/lib/types/story";
 
 // R5-FIX: ErrorBoundary to catch rendering crashes gracefully
@@ -77,9 +79,13 @@ const AUTHOR_TESTIMONIALS: Record<string, string> = {
     "크리에이티브 디렉터로 일하다 출산 후 붓을 놓은 지 8년이에요. 이 대화를 통해 잊고 있던 색채 감각이 돌아오는 느낌이었어요. 딸과 함께 동화를 읽으며 \"엄마가 다시 그림을 그리고 싶어졌어\"라고 말할 수 있었던 게, 이 서비스가 준 가장 큰 선물이에요.",
 };
 
+// Sprint 2-G: Preview scene count for non-members
+const PREVIEW_SCENE_COUNT = 2;
+
 function CommunityStoryContent() {
   const params = useParams();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [story, setStory] = useState<CommunityStoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,6 +138,13 @@ function CommunityStoryContent() {
 
   const testimonial = story.author_alias ? AUTHOR_TESTIMONIALS[story.author_alias] : null;
 
+  // Sprint 2-G: Non-member preview — show only first 2 scenes, blur the rest
+  const isGuest = !authLoading && !user;
+  const previewScenes = isGuest && story.scenes.length > PREVIEW_SCENE_COUNT
+    ? story.scenes.slice(0, PREVIEW_SCENE_COUNT)
+    : story.scenes;
+  const hasHiddenScenes = isGuest && story.scenes.length > PREVIEW_SCENE_COUNT;
+
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Story info bar */}
@@ -143,15 +156,56 @@ function CommunityStoryContent() {
       </div>
 
       {/* Story */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <StoryViewer
-          scenes={story.scenes}
+          scenes={previewScenes}
           title={story.title || "마음 동화"}
           authorName={story.author_alias || "익명의 엄마"}
           coverImage={story.cover_image || undefined}
           onBack={() => router.push("/community")}
           embedded
         />
+
+        {/* Sprint 2-G: Blur overlay + login CTA for non-members */}
+        {hasHiddenScenes && (
+          <div className="relative">
+            <div
+              className="h-40 -mt-20 pointer-events-none"
+              style={{
+                background: "linear-gradient(to bottom, transparent, rgb(var(--cream)) 70%)",
+              }}
+            />
+            <div className="bg-cream px-6 pb-8 -mt-4 text-center">
+              <div
+                className="rounded-2xl p-6 max-w-sm mx-auto"
+                style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
+              >
+                <p className="font-serif text-base font-semibold text-brown mb-2">
+                  이야기가 더 있어요
+                </p>
+                <p className="text-xs text-brown-light font-light leading-relaxed mb-4 break-keep">
+                  로그인하면 전체 {story.scenes.length}장면을 모두 읽을 수 있어요
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center w-full py-3 rounded-full text-white text-sm font-medium no-underline transition-all active:scale-[0.97] mb-2"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                    boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  로그인하고 전체 읽기
+                </Link>
+                <Link
+                  href="/signup"
+                  className="block text-[11px] text-brown-pale font-light text-center no-underline py-2"
+                >
+                  아직 회원이 아니신가요? 회원가입
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Author testimonial */}

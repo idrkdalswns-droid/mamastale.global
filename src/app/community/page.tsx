@@ -6,13 +6,17 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { StoryCard } from "@/components/story/StoryCard";
 import type { Scene } from "@/lib/types/story";
 
+// Sprint 2-A: Child-centric keyword overhaul
 const TOPICS = [
   { key: "", label: "전체" },
-  { key: "산후우울", label: "산후우울" },
-  { key: "양육번아웃", label: "양육번아웃" },
-  { key: "시댁갈등", label: "시댁갈등" },
-  { key: "경력단절", label: "경력단절" },
   { key: "자존감", label: "자존감" },
+  { key: "성장", label: "성장" },
+  { key: "감정표현", label: "감정표현" },
+  { key: "분노조절", label: "분노조절" },
+  { key: "우울극복", label: "우울극복" },
+  { key: "용기", label: "용기" },
+  { key: "친구관계", label: "친구관계" },
+  { key: "가족사랑", label: "가족사랑" },
 ];
 
 interface CommunityStory {
