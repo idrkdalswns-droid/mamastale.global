@@ -33,6 +33,33 @@ function getStorageKey(storyId: string) {
   return `mamastale_diy_${storyId}`;
 }
 
+const DIY_STORAGE_PREFIX = "mamastale_diy_";
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30일
+const MAX_ITEMS = 3;
+
+/** #16: 오래된 DIY localStorage 데이터 정리 */
+function cleanupOldDIYData() {
+  try {
+    const now = Date.now();
+    const items: { key: string; updatedAt: number }[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(DIY_STORAGE_PREFIX)) continue;
+      try {
+        const data = JSON.parse(localStorage.getItem(key)!);
+        const age = now - new Date(data.updatedAt).getTime();
+        if (age > MAX_AGE_MS) { localStorage.removeItem(key); continue; }
+        items.push({ key, updatedAt: new Date(data.updatedAt).getTime() });
+      } catch { localStorage.removeItem(key!); }
+    }
+    // 최대 3개까지만 유지 (오래된 순 삭제)
+    items.sort((a, b) => b.updatedAt - a.updatedAt);
+    items.slice(MAX_ITEMS).forEach((item) => localStorage.removeItem(item.key));
+  } catch {
+    // localStorage unavailable
+  }
+}
+
 export const useDIYStore = create<DIYState>((set, get) => ({
   storyId: null,
   step: "sort",
@@ -42,6 +69,8 @@ export const useDIYStore = create<DIYState>((set, get) => ({
   savedStoryId: null,
 
   initStory: (storyId, imageCount) => {
+    // #16: 오래된 데이터 정리
+    cleanupOldDIYData();
     // Try to restore saved data
     const saved = get().load(storyId);
     if (saved) {
