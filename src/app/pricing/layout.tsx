@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "요금 안내 - mamastale",
-  description: "동화 1편 4,900원. 엄마의 이야기가 세상에 하나뿐인 아이의 동화가 됩니다. 번들 구매 시 더 합리적인 가격으로 만나보세요.",
+  title: "요금 안내 | mamastale",
+  description: "mamastale 동화 만들기 요금 안내. 동화 한 편 ₩4,900, 4일 프로그램 ₩14,900.",
   alternates: { canonical: "https://mamastale-global.pages.dev/pricing" },
   openGraph: {
     title: "요금 안내 - mamastale",
@@ -27,10 +27,10 @@ const structuredData = {
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "티켓은 어떻게 사용하나요?",
+          "name": "어떻게 사용하나요?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "티켓 1장으로 4단계 마음 대화를 진행하고, 10장면 동화 1편을 완성할 수 있어요. 동화 완성 시 티켓이 차감됩니다.",
+            "text": "1회 구매로 4단계 마음 대화를 진행하고, 10장면 동화 1편을 완성할 수 있어요. 동화 완성 시 1회가 차감됩니다.",
           },
         },
         {
@@ -46,7 +46,7 @@ const structuredData = {
           "name": "환불은 가능한가요?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "모든 티켓 구매는 최종 확정이며, 환불이 불가합니다. 신중하게 결정해 주세요.",
+            "text": "모든 구매는 최종 확정이며, 환불이 불가합니다. 신중하게 결정해 주세요.",
           },
         },
         {
@@ -61,13 +61,13 @@ const structuredData = {
     },
     {
       "@type": "Product",
-      "name": "mamastale 동화 제작 티켓",
+      "name": "mamastale 동화 만들기",
       "description": "엄마의 이야기가 AI 대화를 통해 10장면 동화가 됩니다.",
       "brand": { "@type": "Brand", "name": "mamastale" },
       "offers": [
         {
           "@type": "Offer",
-          "name": "단건 티켓 1장",
+          "name": "동화 한 편 만들기",
           "price": "4900",
           "priceCurrency": "KRW",
           "availability": "https://schema.org/InStock",

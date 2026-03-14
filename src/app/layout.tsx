@@ -91,9 +91,16 @@ export default async function RootLayout({
                 "@type": "Offer",
                 "price": "4900",
                 "priceCurrency": "KRW",
-                "description": "동화 스토리 하나 완성 티켓",
+                "description": "동화 한 편 만들기 (10장면)",
                 "availability": "https://schema.org/InStock",
                 "url": "https://mamastale-global.pages.dev/pricing"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "reviewCount": "17",
+                "bestRating": "5",
+                "worstRating": "1"
               }
             }),
           }}
