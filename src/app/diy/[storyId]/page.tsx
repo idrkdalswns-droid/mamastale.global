@@ -134,6 +134,8 @@ export default function DIYEditorPage() {
       imageOrder={imageOrder}
       texts={texts}
       accent={story.accent}
+      thumbnail={story.thumbnail}
+      diyStoryId={story.id}
       onReset={() => {
         reset();
         initStory(story.id, story.images.length);

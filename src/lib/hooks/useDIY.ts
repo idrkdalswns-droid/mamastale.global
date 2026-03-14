@@ -15,6 +15,7 @@ interface DIYState {
   imageOrder: number[];
   texts: Record<number, string>;
   currentPage: number;
+  savedStoryId: string | null; // DB에 저장된 story ID
 
   // Actions
   initStory: (storyId: string, imageCount: number) => void;
@@ -25,6 +26,7 @@ interface DIYState {
   save: () => void;
   load: (storyId: string) => DIYSaveData | null;
   reset: () => void;
+  setSavedStoryId: (id: string | null) => void;
 }
 
 function getStorageKey(storyId: string) {
@@ -37,6 +39,7 @@ export const useDIYStore = create<DIYState>((set, get) => ({
   imageOrder: [],
   texts: {},
   currentPage: 0,
+  savedStoryId: null,
 
   initStory: (storyId, imageCount) => {
     // Try to restore saved data
@@ -113,6 +116,9 @@ export const useDIYStore = create<DIYState>((set, get) => ({
       imageOrder: [],
       texts: {},
       currentPage: 0,
+      savedStoryId: null,
     });
   },
+
+  setSavedStoryId: (id) => set({ savedStoryId: id }),
 }));

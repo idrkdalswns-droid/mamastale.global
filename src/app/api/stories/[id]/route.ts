@@ -129,9 +129,13 @@ export async function PATCH(
         updates.topic = null;
       }
     }
-    // Cover image selection — whitelist to /images/covers/ only
+    // Cover image selection — whitelist to /images/covers/ and /images/diy/
     if (typeof body.coverImage === "string") {
-      if (/^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(body.coverImage)) {
+      const isValidCover =
+        /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(body.coverImage) ||
+        /^\/images\/covers\/[A-Za-z0-9_]+\.(png|jpeg)$/.test(body.coverImage) ||
+        /^\/images\/diy\/[a-z0-9-]+\/[A-Za-z0-9_]+\.(jpeg|png)$/.test(body.coverImage);
+      if (isValidCover) {
         updates.cover_image = body.coverImage;
       }
     }
