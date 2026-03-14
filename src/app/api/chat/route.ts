@@ -428,10 +428,11 @@ export async function POST(request: NextRequest) {
     }
 
     const apiStartTime = Date.now();
+    // Sprint 8-A: Prompt Caching — cache the system prompt to reduce costs ~20-30%
     const { response, modelUsed, wasFallback } = await callAnthropicWithFallback(anthropic, {
       model: modelSelection.model,
       max_tokens: modelSelection.maxTokens,
-      system: systemPrompt,
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

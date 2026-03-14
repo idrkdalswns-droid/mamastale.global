@@ -908,7 +908,7 @@ function PricingContent() {
             <p className="text-[10px] text-center mb-5 font-medium"
               style={{ color: "rgba(224,122,95,0.8)" }}
             >
-              ※ 구매 확정 후 환불이 불가합니다
+              ※ 구매 확정 후 환불이 불가합니다 (<Link href="/terms" className="underline">이용약관 제9조</Link>)
             </p>
             <button
               onClick={confirmPayment}

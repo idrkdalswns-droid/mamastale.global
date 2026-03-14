@@ -17,7 +17,11 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const hint = elapsed >= 25 ? "거의 다 됐어요..." : elapsed >= 12 ? "조금만 기다려 주세요..." : null;
+  // Sprint 8: Enhanced timeout UX — progressive messages
+  const hint = elapsed >= 40 ? "조금 더 걸리고 있어요. 잠시만요..."
+    : elapsed >= 25 ? "거의 다 됐어요..."
+    : elapsed >= 12 ? "동화를 정성껏 만들고 있어요..."
+    : elapsed >= 6 ? "잠시만 기다려 주세요..." : null;
 
   return (
     <motion.div

@@ -304,8 +304,9 @@ export async function POST(request: NextRequest) {
         let wasFallback = false;
         let stream: ReturnType<typeof anthropic.messages.stream>;
 
+        // Sprint 8-A: Prompt Caching for streaming too
         const streamParams = {
-          system: systemPrompt,
+          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
           messages: messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
