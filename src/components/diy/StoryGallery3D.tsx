@@ -19,6 +19,7 @@ export function StoryGallery3D() {
           onMouseEnter={() => setHoveredId(story.id)}
           onMouseLeave={() => setHoveredId(null)}
           onTouchStart={() => setHoveredId(story.id)}
+          onTouchEnd={() => setHoveredId(null)}
         >
           <motion.div
             initial={{ opacity: 0, y: 20, rotateX: 8 }}
@@ -31,7 +32,7 @@ export function StoryGallery3D() {
               damping: 20,
             }}
             whileTap={{ scale: 0.96 }}
-            className="relative rounded-2xl overflow-hidden"
+            className="relative rounded-2xl overflow-hidden dark:brightness-[0.85]"
             style={{
               perspective: "800px",
               transformStyle: "preserve-3d",
@@ -45,11 +46,11 @@ export function StoryGallery3D() {
             <div className="relative aspect-[3/4] overflow-hidden">
               <Image
                 src={story.thumbnail}
-                alt={story.title}
+                alt={`${story.title} 표지`}
                 fill
                 className="object-cover"
                 sizes="(max-width: 430px) 50vw, 200px"
-                loading={i < 4 ? "eager" : "lazy"}
+                loading={i < 2 ? "eager" : "lazy"}
               />
               {/* Gradient overlay */}
               <div

@@ -10,9 +10,10 @@ interface ImageSorterProps {
   onOrderChange: (order: number[]) => void;
   onComplete: () => void;
   accent: string;
+  storyTitle?: string;
 }
 
-export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, accent }: ImageSorterProps) {
+export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, accent, storyTitle }: ImageSorterProps) {
   const [dragActive, setDragActive] = useState(false);
 
   const handleReorder = useCallback(
@@ -85,7 +86,7 @@ export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, acc
                   <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0">
                     <Image
                       src={images[idx]}
-                      alt={`장면 ${position + 1}`}
+                      alt={`${storyTitle ?? ''} 장면 ${position + 1}`}
                       fill
                       className="object-cover"
                       sizes="80px"
@@ -95,11 +96,15 @@ export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, acc
 
                   {/* Drag handle hint */}
                   <div className="flex-1 flex justify-end pr-1">
-                    <div className="flex flex-col gap-[3px] opacity-30">
+                    <motion.div
+                      className="flex flex-col gap-[3px] opacity-50"
+                      animate={position === 0 ? { x: [0, 4, 0] } : undefined}
+                      transition={position === 0 ? { repeat: 2, duration: 0.4, delay: 1 } : undefined}
+                    >
                       <div className="w-4 h-[2px] bg-brown rounded-full" />
                       <div className="w-4 h-[2px] bg-brown rounded-full" />
                       <div className="w-4 h-[2px] bg-brown rounded-full" />
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
               </Reorder.Item>

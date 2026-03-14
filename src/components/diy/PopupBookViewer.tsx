@@ -69,6 +69,20 @@ export function PopupBookViewer({
     }
   }, [isEditing]);
 
+  // #7: Keyboard navigation (← →)
+  useEffect(() => {
+    if (isEditing) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" && currentPage > 0) {
+        goToPage(currentPage - 1, -1);
+      } else if (e.key === "ArrowRight" && currentPage < totalPages - 1) {
+        goToPage(currentPage + 1, 1);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isEditing, currentPage, totalPages, goToPage]);
+
   const variants = {
     enter: (d: number) => ({
       x: d > 0 ? "100%" : "-100%",
@@ -94,6 +108,7 @@ export function PopupBookViewer({
         <button
           onClick={() => goToPage(currentPage - 1, -1)}
           disabled={currentPage === 0}
+          aria-label="이전 장면"
           className="text-[12px] text-brown-light disabled:opacity-20 min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           ← 이전
@@ -104,6 +119,7 @@ export function PopupBookViewer({
         <button
           onClick={() => goToPage(currentPage + 1, 1)}
           disabled={currentPage === totalPages - 1}
+          aria-label="다음 장면"
           className="text-[12px] text-brown-light disabled:opacity-20 min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           다음 →
@@ -133,6 +149,7 @@ export function PopupBookViewer({
               opacity: { duration: 0.2 },
             }}
             drag={isEditing ? false : "x"}
+            dragDirectionLock
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.15}
             onDragEnd={handleDragEnd}
@@ -145,7 +162,7 @@ export function PopupBookViewer({
             {/* Background image */}
             <Image
               src={images[currentImageIndex]}
-              alt={`장면 ${currentPage + 1}`}
+              alt={`${storyTitle ?? ''} 장면 ${currentPage + 1}`}
               fill
               className="object-cover select-none"
               sizes="(max-width: 430px) 100vw, 400px"
@@ -237,22 +254,28 @@ export function PopupBookViewer({
 
         {/* Page dots */}
         <div className="absolute bottom-[-28px] left-0 right-0 flex justify-center gap-1.5">
-          {imageOrder.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goToPage(i, i > currentPage ? 1 : -1)}
-              className="p-0.5"
-            >
-              <div
-                className="rounded-full transition-all duration-200"
-                style={{
-                  width: i === currentPage ? 16 : 5,
-                  height: 5,
-                  background: i === currentPage ? accent : `${accent}40`,
-                }}
-              />
-            </button>
-          ))}
+          {imageOrder.map((_, i) => {
+            const distance = Math.abs(i - currentPage);
+            const scale = distance === 0 ? 1 : distance <= 2 ? 0.7 : 0.4;
+            return (
+              <button
+                key={i}
+                onClick={() => goToPage(i, i > currentPage ? 1 : -1)}
+                className="p-0.5"
+                aria-label={`${i + 1}번째 장면으로 이동`}
+              >
+                <div
+                  className="rounded-full transition-all duration-200"
+                  style={{
+                    width: i === currentPage ? 16 : Math.max(3, 5 * scale),
+                    height: Math.max(3, 5 * scale),
+                    background: i === currentPage ? accent : `${accent}40`,
+                    opacity: distance <= 2 || i === 0 || i === totalPages - 1 ? 1 : 0.3,
+                  }}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
 
