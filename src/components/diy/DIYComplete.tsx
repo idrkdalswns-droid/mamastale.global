@@ -197,7 +197,9 @@ export function DIYComplete({
           우리 가족만의 동화가 완성됐어요!
         </h2>
         <p className="text-[13px] text-brown-light font-light leading-relaxed break-keep">
-          {writtenPages}장의 이야기를 직접 만들었어요
+          {writtenPages > 0
+            ? `${writtenPages}장의 이야기를 직접 만들었어요`
+            : "이야기를 작성하면 더 특별한 동화가 돼요"}
         </p>
       </motion.div>
 
@@ -366,10 +368,13 @@ export function DIYComplete({
           다시 편집하기
         </button>
 
-        {/* Reset */}
+        {/* #15: Reset — 확인 모달 + 경고 색상 */}
         <button
-          onClick={onReset}
-          className="text-[11px] text-brown-pale font-light py-2"
+          onClick={() => {
+            if (!window.confirm("모든 진행 상황이 초기화돼요. 처음부터 다시 만들까요?")) return;
+            onReset();
+          }}
+          className="text-[11px] text-red-400 font-light py-2"
         >
           처음부터 다시 만들기
         </button>
