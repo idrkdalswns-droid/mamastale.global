@@ -756,6 +756,9 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 | `/cleanup` | `.claude/commands/cleanup.md` | 데드코드·미사용 import·중복 로직 정리 |
 | `/db-optimize` | `.claude/commands/db-optimize.md` | Supabase 쿼리·인덱스·RLS 최적화 |
 | `/qa` | `.claude/commands/qa.md` | 체계적 QA (diff-aware·full·quick·regression 4모드) |
+| `/plan-ceo` | `.claude/commands/plan-ceo.md` | 파운더 모드 10-star 플랜 리뷰 (gstack 기반) |
+| `/plan-eng` | `.claude/commands/plan-eng.md` | 엔지니어링 매니저 모드 4-Pass 아키텍처 리뷰 (gstack 기반) |
+| `/retro` | `.claude/commands/retro.md` | 주간 엔지니어링 회고 — 커밋 분석·트렌드·습관 (gstack 기반) |
 | `checklist.md` | `.claude/commands/checklist.md` | 코드 리뷰 체크리스트 (독립 참조 파일) |
 
 ---

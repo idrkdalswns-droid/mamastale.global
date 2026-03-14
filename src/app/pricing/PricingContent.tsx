@@ -88,6 +88,61 @@ const FAQS = [
   },
 ];
 
+// ─── Social Proof Counter (update periodically) ───
+const STORY_COUNT = 127;
+
+// ─── Gallery Scene Texts (hoisted to avoid re-allocation per render) ───
+const GALLERY_SCENES = [
+  "안녕? 오늘은 자전거를 아주아주 좋아하는 '민준 삼촌'이 동유럽 열 개 나라를 여행하는 엄청난 모험을 떠난 이야기야!",
+  "삼촌의 배낭 속에는 침대 대신 작은 '노란색 텐트'가 들어있었어. 두 달 동안 낮에는 쌩쌩 페달을 밟고, 밤에는 하늘을 이불 삼아 쿨쿨 잠드는 멋진 캠핑이었단다.",
+  "그러던 어느 캄캄한 밤, 달님도 숨고 바람 소리조차 들리지 않는 숲속에 삼촌 혼자 덩그러니 남겨졌어. 그때, 텐트 안으로 '외로움'이라는 커다란 회색 그림자 괴물이 스멀스멀 찾아왔지.",
+  "괴물은 삼촌의 마음을 꽁꽁 얼어붙게 만들었어. \"너무 춥고 무서워...\" 삼촌은 무릎을 꼭 끌어안고 덜덜 떨었지.",
+  "'이대로 질 수는 없어!' 삼촌은 용기를 내어 가방 깊은 곳에서 하얀 빈 공책 한 권과 뾰족한 몽당연필을 찾아냈어.",
+  "삼촌은 엎드려 하얀 종이 위에 마음을 담아 글쓰기를 시작했어. \"나는 지금 혼자 있어서 너무 외로워.\" 꽁꽁 숨겨둔 진짜 마음을 종이에게 솔직하게 들려주었단다.",
+  "그런데 놀라운 일이 벌어졌어! 글자들이 반짝반짝 빛나는 '글자 요정'으로 변하더니, 춤을 추며 삼촌의 얼어붙은 마음을 따뜻하게 안아주었어.",
+  "글을 쓸수록 캄캄했던 텐트 안은 아름다운 마법의 세계로 변해갔어. 눈부신 빛에 깜짝 놀란 외로움 괴물은 \"으악!\" 소리를 치며 저 멀리 도망쳐 버렸단다.",
+  "한국으로 돌아온 삼촌은, 매일 우리를 돌보느라 지친 엄마들의 등 뒤에도 그 외로움 괴물이 매달려 있는 걸 보았어. 속상한 마음을 털어놓지 못하는 엄마들이 너무 많았지.",
+  "\"이 반짝이는 글쓰기 마법을 엄마들에게도 선물해야겠다!\" 그렇게 삼촌의 따뜻한 마음이 모여, 엄마가 적은 글이 아이에게 들려줄 동화로 변하는 마법 서재 '마마스테일'이 태어났단다.",
+];
+
+// ─── Feature Lists (hoisted to avoid re-allocation per render) ───
+const BUNDLE_FEATURES = [
+  "매일 15~20분, 마음속 이야기를 꺼내는 시간",
+  "서로 다른 감정으로 서로 다른 동화 4편 완성",
+  "완성된 동화는 영구 보관 + PDF 다운로드",
+  "30일간 여유롭게 사용 가능",
+];
+const TICKET_FEATURES = [
+  "4단계 마음 대화 + 10장면 동화 완성",
+  "PDF 다운로드 + 영구 보관",
+  "30일간 여유롭게 사용 가능",
+];
+const TARGET_AUDIENCE = [
+  "구독 부담 없이 필요할 때만 쓰고 싶은 분",
+  "오늘의 마음을 한 권의 동화로 완성하고 싶은 분",
+  "소중한 사람에게 동화를 선물하고 싶은 분",
+  "아이에게 매일 밤 읽어줄 동화가 필요한 분",
+];
+
+// ─── Gallery Styles (hoisted to avoid re-allocation in .map() loop) ───
+const GALLERY_CARD_STYLE = {
+  width: "220px",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
+} as const;
+const GALLERY_OVERLAY_STYLE = {
+  background: "linear-gradient(to top, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 50%, rgba(255,255,255,0) 100%)",
+} as const;
+
+// ─── Helpers ───
+function resolveProduct(type: PriceType, isFirstPurchase: boolean): PricingProduct {
+  return type === "ticket" && isFirstPurchase ? FIRST_PURCHASE_PRODUCT : PRODUCTS[type];
+}
+
+function redirectToLogin() {
+  try { sessionStorage.setItem("mamastale_post_login_redirect", "/pricing"); } catch {}
+  window.location.href = "/login?redirect=/pricing";
+}
+
 function PricingContent() {
   const [sdkReady, setSdkReady] = useState(false);
   const [sdkError, setSdkError] = useState(false);
@@ -97,11 +152,13 @@ function PricingContent() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   // #8: 비로그인 사용자에게도 첫 구매 할인 기본 표시 (로그인 후 API로 실제 확인)
   const [isFirstPurchase, setIsFirstPurchase] = useState(true);
-  const [confirmModal, setConfirmModal] = useState<{
-    type: PriceType;
-    amount: number;
-    name: string;
-  } | null>(null);
+  // Simplify: store only the type; derive amount/name via resolveProduct()
+  const [confirmModal, setConfirmModal] = useState<PriceType | null>(null);
+
+  // #26: Gallery dot indicator
+  const [activeSceneIndex, setActiveSceneIndex] = useState(0);
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const sceneRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // #11 WCAG AA: Focus trap ref for modal
   const modalRef = useRef<HTMLDivElement>(null);
@@ -113,6 +170,7 @@ function PricingContent() {
   // Auto-detect first purchase eligibility
   useEffect(() => {
     if (!user) return;
+    const controller = new AbortController();
     (async () => {
       try {
         const headers: Record<string, string> = {};
@@ -125,20 +183,48 @@ function PricingContent() {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
         }
-        const res = await fetch("/api/tickets", { headers, credentials: "include" });
+        const res = await fetch("/api/tickets", {
+          headers,
+          credentials: "include",
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data = await res.json();
           setIsFirstPurchase(!!data.isFirstPurchase);
         }
       } catch {
-        /* ignore */
+        /* ignore (includes AbortError) */
       }
     })();
-  }, [user]);
+    return () => controller.abort();
+    // Use user.id (stable string) instead of user object to prevent re-fetches
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Check if SDK already loaded
   useEffect(() => {
     if (window.TossPayments) setSdkReady(true);
+  }, []);
+
+  // #26: Gallery IntersectionObserver for dot indicator
+  useEffect(() => {
+    const container = galleryRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = sceneRefs.current.indexOf(entry.target as HTMLDivElement);
+            if (idx !== -1) setActiveSceneIndex(idx);
+          }
+        }
+      },
+      { root: container, threshold: 0.5 }
+    );
+
+    sceneRefs.current.forEach((el) => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
   }, []);
 
   // #11 WCAG AA: Modal focus trap
@@ -191,12 +277,8 @@ function PricingContent() {
     async (productType: PriceType) => {
       if (isProcessing) return;
 
-      if (!user && !authLoading) {
-        try { sessionStorage.setItem("mamastale_post_login_redirect", "/pricing"); } catch {}
-        window.location.href = "/login?redirect=/pricing";
-        return;
-      }
-
+      // handlePayment is only called from confirmPayment, which requires auth.
+      // Login redirect is handled in initiatePayment (the entry point).
       if (!window.TossPayments || !tossClientKey || !user) {
         setError(
           "결제 시스템을 불러오는 중입니다. 잠시 후 다시 시도해 주세요."
@@ -208,12 +290,7 @@ function PricingContent() {
       setError("");
 
       try {
-        // ROUND1-FIX: Only apply launch discount for first-time ticket buyers.
-        // Previously always used FIRST_PURCHASE_PRODUCT, causing revenue loss for repeat buyers.
-        const product =
-          productType === "ticket" && isFirstPurchase
-            ? FIRST_PURCHASE_PRODUCT
-            : PRODUCTS[productType];
+        const product = resolveProduct(productType, isFirstPurchase);
         // R9-FIX(B1): Fallback for Kakao/Naver in-app browsers missing crypto.randomUUID()
         const uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
@@ -254,34 +331,26 @@ function PricingContent() {
         setIsProcessing(false);
       }
     },
-    // R3-FIX(A1): Added isFirstPurchase to prevent stale closure on first-purchase discount
-    [isProcessing, user, authLoading, tossClientKey, isFirstPurchase]
+    [isProcessing, user, tossClientKey, isFirstPurchase]
   );
 
   // Payment with confirmation step
   const initiatePayment = (productType: PriceType) => {
     if (!user && !authLoading) {
-      try { sessionStorage.setItem("mamastale_post_login_redirect", "/pricing"); } catch {}
-      window.location.href = "/login?redirect=/pricing";
+      redirectToLogin();
       return;
     }
-    // ROUND1-FIX: Match handlePayment logic — only apply discount for first purchase
-    const product =
-      productType === "ticket" && isFirstPurchase
-        ? FIRST_PURCHASE_PRODUCT
-        : PRODUCTS[productType];
-    setConfirmModal({
-      type: productType,
-      amount: product.amount,
-      name: product.name,
-    });
+    setConfirmModal(productType);
   };
 
   const confirmPayment = () => {
     if (!confirmModal) return;
-    handlePayment(confirmModal.type);
+    handlePayment(confirmModal);
     setConfirmModal(null);
   };
+
+  // Derived modal product (avoids stale amount if isFirstPurchase changes between open/confirm)
+  const modalProduct = confirmModal ? resolveProduct(confirmModal, isFirstPurchase) : null;
 
   return (
     <div className="min-h-dvh bg-cream relative overflow-hidden">
@@ -325,7 +394,7 @@ function PricingContent() {
 
         {/* #17: Soft social proof counter */}
         <p className="text-[12px] text-brown-pale font-light text-center mb-8">
-          지금까지 <span className="text-coral font-medium">127명</span>의 엄마가 동화를 만들었어요
+          지금까지 <span className="text-coral font-medium">{STORY_COUNT}명</span>의 엄마가 동화를 만들었어요
         </p>
 
         {/* ════════════════════════════════════════
@@ -343,30 +412,18 @@ function PricingContent() {
             ← 옆으로 넘겨보세요 →
           </p>
           <div
+            ref={galleryRef}
             className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
             role="region"
             aria-label="동화 장면 갤러리 - 옆으로 스크롤"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
-            {[
-              "안녕? 오늘은 자전거를 아주아주 좋아하는 '민준 삼촌'이 동유럽 열 개 나라를 여행하는 엄청난 모험을 떠난 이야기야!",
-              "삼촌의 배낭 속에는 침대 대신 작은 '노란색 텐트'가 들어있었어. 두 달 동안 낮에는 쌩쌩 페달을 밟고, 밤에는 하늘을 이불 삼아 쿨쿨 잠드는 멋진 캠핑이었단다.",
-              "그러던 어느 캄캄한 밤, 달님도 숨고 바람 소리조차 들리지 않는 숲속에 삼촌 혼자 덩그러니 남겨졌어. 그때, 텐트 안으로 '외로움'이라는 커다란 회색 그림자 괴물이 스멀스멀 찾아왔지.",
-              "괴물은 삼촌의 마음을 꽁꽁 얼어붙게 만들었어. \"너무 춥고 무서워...\" 삼촌은 무릎을 꼭 끌어안고 덜덜 떨었지.",
-              "'이대로 질 수는 없어!' 삼촌은 용기를 내어 가방 깊은 곳에서 하얀 빈 공책 한 권과 뾰족한 몽당연필을 찾아냈어.",
-              "삼촌은 엎드려 하얀 종이 위에 마음을 담아 글쓰기를 시작했어. \"나는 지금 혼자 있어서 너무 외로워.\" 꽁꽁 숨겨둔 진짜 마음을 종이에게 솔직하게 들려주었단다.",
-              "그런데 놀라운 일이 벌어졌어! 글자들이 반짝반짝 빛나는 '글자 요정'으로 변하더니, 춤을 추며 삼촌의 얼어붙은 마음을 따뜻하게 안아주었어.",
-              "글을 쓸수록 캄캄했던 텐트 안은 아름다운 마법의 세계로 변해갔어. 눈부신 빛에 깜짝 놀란 외로움 괴물은 \"으악!\" 소리를 치며 저 멀리 도망쳐 버렸단다.",
-              "한국으로 돌아온 삼촌은, 매일 우리를 돌보느라 지친 엄마들의 등 뒤에도 그 외로움 괴물이 매달려 있는 걸 보았어. 속상한 마음을 털어놓지 못하는 엄마들이 너무 많았지.",
-              "\"이 반짝이는 글쓰기 마법을 엄마들에게도 선물해야겠다!\" 그렇게 삼촌의 따뜻한 마음이 모여, 엄마가 적은 글이 아이에게 들려줄 동화로 변하는 마법 서재 '마마스테일'이 태어났단다.",
-            ].map((text, i) => (
+            {GALLERY_SCENES.map((text, i) => (
               <div
                 key={i}
+                ref={(el) => { sceneRefs.current[i] = el; }}
                 className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
-                style={{
-                  width: "220px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
-                }}
+                style={GALLERY_CARD_STYLE}
               >
                 {/* #11: eager loading for first 2 images to reduce layout shift */}
                 <Image
@@ -380,14 +437,11 @@ function PricingContent() {
                 {/* Storybook text overlay */}
                 <div
                   className="absolute inset-x-0 bottom-0 px-4 pt-16 pb-4 flex flex-col justify-end"
-                  style={{
-                    background: "linear-gradient(to top, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)",
-                  }}
+                  style={GALLERY_OVERLAY_STYLE}
                 >
                   {/* #11: 11.5px → 12px for better readability */}
                   <p
-                    className="font-serif text-[12px] leading-[1.9] break-keep"
-                    style={{ color: "#5A3E2B" }}
+                    className="font-serif text-[12px] leading-[1.9] break-keep text-brown"
                   >
                     {text}
                   </p>
@@ -399,6 +453,33 @@ function PricingContent() {
               </div>
             ))}
           </div>
+          {/* #26: Dot indicators */}
+          <div className="flex items-center justify-center gap-0.5 mt-3" role="tablist" aria-label="장면 탐색">
+            {GALLERY_SCENES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  sceneRefs.current[idx]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                }}
+                role="tab"
+                aria-selected={idx === activeSceneIndex}
+                aria-label={`${idx + 1}번째 장면`}
+                className="flex items-center justify-center min-w-[28px] min-h-[28px] transition-all duration-300"
+              >
+                <span
+                  className="block rounded-full transition-all duration-300"
+                  style={{
+                    width: idx === activeSceneIndex ? 16 : 5,
+                    height: 5,
+                    background: idx === activeSceneIndex
+                      ? "linear-gradient(135deg, #E07A5F, #C96B52)"
+                      : "rgba(196,149,106,0.2)",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+
           {/* #34: Soft CTA after gallery — capture emotional peak */}
           <p className="text-center mt-4">
             <Link
@@ -428,6 +509,7 @@ function PricingContent() {
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                loading="lazy"
               />
             ) : (
               <button
@@ -467,7 +549,7 @@ function PricingContent() {
                 <span
                   key={j}
                   className="text-sm"
-                  style={{ color: "#E07A5F" }}
+                  style={{ color: "rgb(var(--coral))" }}
                 >
                   ★
                 </span>
@@ -493,7 +575,7 @@ function PricingContent() {
                       key={j}
                       className="text-[11px]"
                       style={{
-                        color: j < r.rating ? "#E07A5F" : "#D5C4B0",
+                        color: j < r.rating ? "rgb(var(--coral))" : "rgb(var(--brown-pale))",
                       }}
                       aria-hidden="true"
                     >
@@ -600,8 +682,7 @@ function PricingContent() {
           className="rounded-3xl p-6 mb-5 relative"
           style={{
             background: "rgba(255,255,255,0.7)",
-            boxShadow:
-              "8px 8px 20px rgba(0,0,0,0.06), -4px -4px 12px rgba(255,255,255,0.8), inset 0 0 0 1px rgba(255,255,255,0.5)",
+            boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
             border: "2px solid rgba(109,76,145,0.2)",
           }}
         >
@@ -620,7 +701,15 @@ function PricingContent() {
             </h3>
             <p className="text-xs text-brown-light font-light mt-1.5 leading-relaxed break-keep">
               4일 연속 대화하면, 마음이 한결 가벼워집니다
-              <br />— 펜네베이커 교수 40년 연구 입증
+              <br />— 펜네베이커 교수 40년 연구 입증{" "}
+              <a
+                href="https://en.wikipedia.org/wiki/Expressive_writing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple/60 no-underline hover:underline"
+              >
+                연구 알아보기 →
+              </a>
             </p>
             <div className="flex items-baseline justify-center gap-1 mt-3">
               <span className="font-serif text-3xl font-bold text-brown">
@@ -631,7 +720,7 @@ function PricingContent() {
             <div className="flex items-center justify-center gap-2 mt-1.5">
               <span
                 className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
-                style={{ background: "#6D4C91" }}
+                style={{ background: "rgb(var(--purple))" }}
               >
                 1권당 ₩1,175 절약
               </span>
@@ -642,12 +731,7 @@ function PricingContent() {
           </div>
 
           <ul className="space-y-2.5 mb-5">
-            {[
-              "매일 15~20분, 마음속 이야기를 꺼내는 시간",
-              "서로 다른 감정으로 서로 다른 동화 4편 완성",
-              "완성된 동화는 영구 보관 + PDF 다운로드",
-              "30일간 여유롭게 사용 가능",
-            ].map((f, i) => (
+            {BUNDLE_FEATURES.map((f, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-sm text-brown-light font-light"
@@ -730,11 +814,7 @@ function PricingContent() {
           </div>
 
           <ul className="space-y-2 mb-4">
-            {[
-              "4단계 마음 대화 + 10장면 동화 완성",
-              "PDF 다운로드 + 영구 보관",
-              "30일간 여유롭게 사용 가능",
-            ].map((f, i) => (
+            {TICKET_FEATURES.map((f, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-xs text-brown-light font-light"
@@ -785,16 +865,13 @@ function PricingContent() {
           }}
         >
           {/* #28: 방어적 "왜 1회 구매?" → 긍정 프레이밍 */}
+          {/* #30: 라이프스타일 이미지 슬롯 — 실사 에셋 확보 후 교체 */}
+          {/* <Image src="/images/lifestyle-mom-child.jpg" alt="엄마와 아이가 동화책을 읽는 모습" width={400} height={200} className="w-full rounded-xl mb-4 object-cover" /> */}
           <h3 className="font-serif text-sm font-semibold text-brown mb-3 text-center">
             이런 분에게 딱이에요
           </h3>
           <div className="space-y-3">
-            {[
-              "구독 부담 없이 필요할 때만 쓰고 싶은 분",
-              "오늘의 마음을 한 권의 동화로 완성하고 싶은 분",
-              "소중한 사람에게 동화를 선물하고 싶은 분",
-              "아이에게 매일 밤 읽어줄 동화가 필요한 분",
-            ].map((text, i) => (
+            {TARGET_AUDIENCE.map((text, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="text-[11px] text-brown-pale flex-shrink-0" aria-hidden="true">
                   ●
@@ -823,6 +900,45 @@ function PricingContent() {
           <p className="text-[11px] text-brown-light font-light">
             구매 후 추천 코드를 공유하면 서로 동화 1편을 선물받아요
           </p>
+        </div>
+
+        {/* ════════════════════════════════════════
+            EMAIL CAPTURE (#24)
+            ════════════════════════════════════════ */}
+        <div
+          className="rounded-2xl p-4 mb-4 text-center"
+          style={{ background: "rgba(232,168,124,0.06)", border: "1px solid rgba(232,168,124,0.12)" }}
+        >
+          <p className="text-[12px] text-brown font-medium mb-2">동화 서비스 소식 받기</p>
+          <p className="text-[11px] text-brown-light font-light mb-3">새로운 기능과 할인 소식을 이메일로 알려드려요</p>
+          {/* TODO: POST /api/newsletter endpoint 연동 */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const email = new FormData(form).get("email") as string;
+              if (email) {
+                form.reset();
+                alert("감사합니다! 소식을 보내드릴게요 ✉️");
+              }
+            }}
+            className="flex gap-2 max-w-xs mx-auto"
+          >
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="이메일 주소"
+              className="flex-1 px-3 py-2 rounded-full text-[12px] text-brown bg-white border border-brown-pale/20 outline-none focus:border-coral/40 transition-colors"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-full text-[12px] text-white font-medium transition-all active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, rgb(var(--coral)), #C96B52)" }}
+            >
+              구독
+            </button>
+          </form>
         </div>
 
         {/* ════════════════════════════════════════
@@ -898,6 +1014,33 @@ function PricingContent() {
         </div>
 
         {/* ════════════════════════════════════════
+            SHARE SECTION (#29)
+            ════════════════════════════════════════ */}
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span className="text-[11px] text-brown-pale font-light">공유하기</span>
+          <button
+            type="button"
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: "마마스테일 — 엄마의 마음이 동화가 됩니다",
+                  url: window.location.href,
+                }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                  alert("링크가 복사되었습니다!");
+                }).catch(() => {});
+              }
+            }}
+            className="px-3 py-1.5 rounded-full text-[11px] text-brown-light font-medium transition-all active:scale-[0.97]"
+            style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(196,149,106,0.15)" }}
+            aria-label="페이지 공유하기"
+          >
+            {typeof navigator !== "undefined" && "share" in navigator ? "📤 공유" : "🔗 링크 복사"}
+          </button>
+        </div>
+
+        {/* ════════════════════════════════════════
             BUSINESS INFO (전자상거래법 필수 표시)
             ════════════════════════════════════════ */}
         <div
@@ -944,6 +1087,9 @@ function PricingContent() {
           background: "linear-gradient(180deg, transparent 0%, rgb(var(--cream)) 25%)",
         }}
       >
+        <p className="text-[10px] text-brown-pale font-light text-center mb-1 max-w-lg mx-auto">
+          동화 1편 15분 완성 · 영구 보관 · PDF 다운로드
+        </p>
         <div className="max-w-lg mx-auto flex gap-2">
           <button
             onClick={() => initiatePayment("bundle")}
@@ -1002,10 +1148,10 @@ function PricingContent() {
               결제 확인
             </h3>
             <p className="text-sm text-brown-light text-center mb-1">
-              {confirmModal.name}
+              {modalProduct?.name}
             </p>
             <p className="text-2xl font-bold text-brown text-center font-serif mb-4">
-              ₩{confirmModal.amount.toLocaleString()}
+              ₩{modalProduct?.amount.toLocaleString()}
             </p>
             <p className="text-[11px] text-brown-pale font-light text-center mb-3 leading-relaxed">
               동화를 완성한 분들이<br />
@@ -1021,7 +1167,7 @@ function PricingContent() {
               className="w-full py-3.5 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97] mb-2"
               style={{
                 background:
-                  confirmModal.type === "bundle"
+                  confirmModal === "bundle"
                     ? "linear-gradient(135deg, #6D4C91, #8B6FB0)"
                     : "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
