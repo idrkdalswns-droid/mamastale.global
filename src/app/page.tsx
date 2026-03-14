@@ -468,10 +468,10 @@ export default function Home() {
                   내 서재
                 </Link>
                 <Link
-                  href="/community"
+                  href="/about"
                   className="text-xs text-brown-mid font-medium no-underline hover:text-coral transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center px-2"
                 >
-                  커뮤니티
+                  소개
                 </Link>
                 <button
                   onClick={signOut}
@@ -633,35 +633,23 @@ export default function Home() {
             ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
 
-          {/* Ticket balance display for logged-in users */}
-          {user && ticketsRemaining !== null && (
-            <div className="flex items-center justify-center gap-2 mb-3 px-4 py-2 rounded-2xl bg-white/50 border border-brown-pale/10">
-              <span className="text-xs text-brown font-medium">
-                {ticketsRemaining > 0
-                  ? <>남은 티켓: <span className="text-coral font-bold">{ticketsRemaining}장</span></>
-                  : <span className="text-brown-light">새 동화를 만들려면 티켓이 필요해요</span>
-                }
-              </span>
-              {ticketsRemaining <= 0 && (
-                <Link
-                  href="/pricing"
-                  className="text-[10px] text-coral font-medium no-underline ml-2 px-2 py-1 rounded-full bg-coral/10 min-h-[44px] inline-flex items-center"
-                >
-                  구매하기
-                </Link>
-              )}
-            </div>
-          )}
+          {/* DIY 동화 만들기 CTA */}
+          <Link
+            href="/diy"
+            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            style={{
+              background: "linear-gradient(135deg, rgba(127,191,176,0.15), rgba(127,191,176,0.08))",
+              color: "#5A9E94",
+              border: "1.5px solid rgba(127,191,176,0.25)",
+            }}
+          >
+            무료 DIY 동화 만들기 →
+          </Link>
 
           {/* 서비스 소개 */}
           <Link
             href="/about"
-            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
-            style={{
-              background: "linear-gradient(135deg, rgba(109,76,145,0.13), rgba(224,122,95,0.10))",
-              color: "#6D4C91",
-              border: "1.5px solid rgba(109,76,145,0.22)",
-            }}
+            className="text-[12px] text-brown-pale font-light no-underline underline-offset-2 hover:text-brown-light transition-colors text-center block mb-3"
           >
             서비스 소개 →
           </Link>
@@ -719,91 +707,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Navigation links */}
-          <div className="flex gap-2 w-full mb-5">
-            <Link
-              href="/community"
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-              style={{
-                background: "rgba(139,106,175,0.06)",
-                color: "#8B6AAF",
-                border: "1px solid rgba(139,106,175,0.12)",
-              }}
-            >
-              커뮤니티 둘러보기
-            </Link>
-            <Link
-              href="/reviews"
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-              style={{
-                background: "rgba(224,122,95,0.06)",
-                color: "#E07A5F",
-                border: "1px solid rgba(224,122,95,0.10)",
-              }}
-            >
-              후기 보기
-            </Link>
-            <Link
-              href="/pricing"
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
-              style={{
-                background: "rgba(224,122,95,0.10)",
-                color: "#E07A5F",
-                border: "1.5px solid rgba(224,122,95,0.20)",
-              }}
-            >
-              요금 안내
-            </Link>
-          </div>
         </div>
 
-        {/* Bottom section: testimonials */}
+        {/* Bottom section */}
         <div>
-          {/* Social proof — testimonials as horizontal scroll */}
-          <div className="mt-6">
-            <p className="text-[11px] text-brown-pale font-medium text-center mb-3">
-              <span style={{ color: "#E07A5F" }}>★</span> 4.8 / 5.0 · 이용자 후기 <span className="text-brown-pale/50">→ 밀어서 더 보기</span>
-            </p>
-            <div
-              className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {[
-                {
-                  text: "15분 만에 울고 웃으며 동화까지 완성했어요. 남편이 \u2018이게 네 이야기야?\u2019라며 놀라더라고요.",
-                  author: "현정맘 (35세, 아들 4세)",
-                  stars: 5,
-                },
-                {
-                  text: "사업하느라 늘 미안했는데, 완성된 동화에 제 이야기가 아이 눈높이 모험담으로 바뀌어 있더라고요.",
-                  author: "윤서맘 (41세, 딸 7세)",
-                  stars: 5,
-                },
-                {
-                  text: "아동심리 전문가지만 정작 제 감정은 돌보지 못했어요. AI라서 오히려 솔직해질 수 있었습니다.",
-                  author: "서아맘 (38세, 아들 5세)",
-                  stars: 5,
-                },
-              ].map((review, i) => (
-                <div
-                  key={i}
-                  className="flex-shrink-0 w-[75%] rounded-2xl px-4 py-3 snap-start"
-                  style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}
-                >
-                  <div className="text-[10px] mb-1" style={{ color: "#E07A5F" }} role="img" aria-label={`5점 만점에 ${review.stars}점`}>
-                    {"★".repeat(review.stars)}
-                  </div>
-                  <p className="text-[12px] text-brown-light font-normal leading-6 break-keep italic">
-                    &ldquo;{review.text}&rdquo;
-                  </p>
-                  <p className="text-[10px] text-brown-pale font-light mt-1.5">
-                    — {review.author}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Medical disclaimer */}
           <div className="mt-6">
             <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center">
