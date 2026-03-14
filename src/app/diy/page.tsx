@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import { motion } from "framer-motion";
 import { StoryGallery3D } from "@/components/diy/StoryGallery3D";
 import Link from "next/link";
