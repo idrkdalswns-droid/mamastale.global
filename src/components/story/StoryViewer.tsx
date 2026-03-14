@@ -65,9 +65,11 @@ interface StoryViewerProps {
   onChangeCover?: () => void;
   /** Story ID — used for localStorage key isolation (prevents title collision) */
   storyId?: string;
+  /** Sprint 7-D: Remaining tickets for upsell CTA */
+  ticketsRemaining?: number | null;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -520,26 +522,51 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 {onBackLabel || "다음 단계"}
               </button>
             )}
-            {/* Repurchase nudge — next story CTA */}
+            {/* Sprint 7-D: Enhanced upsell — ticket info + new story CTA */}
             {onNewStory && (
               <div
                 className="mt-1 pt-3"
                 style={{ borderTop: "1px solid rgba(196,149,106,0.1)" }}
               >
-                <p className="text-[11px] text-brown-pale font-normal text-center mb-2 break-keep">
-                  이번엔 어떤 이야기를 들려주실 건가요?
-                </p>
-                <button
-                  onClick={onNewStory}
-                  className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97]"
-                  style={{
-                    background: "transparent",
-                    color: "#8B6F55",
-                    border: "1.5px dashed rgba(196,149,106,0.3)",
-                  }}
-                >
-                  + 새로운 동화 만들기
-                </button>
+                {ticketsRemaining !== null && ticketsRemaining !== undefined && (
+                  <p className="text-[11px] text-brown-pale font-normal text-center mb-1.5">
+                    남은 티켓: <span className={ticketsRemaining > 0 ? "text-brown-mid font-medium" : "text-coral font-medium"}>{ticketsRemaining}장</span>
+                  </p>
+                )}
+                {ticketsRemaining === 0 ? (
+                  <>
+                    <p className="text-[11px] text-brown-pale font-normal text-center mb-2 break-keep">
+                      다음 동화를 위해 티켓을 구매해보세요
+                    </p>
+                    <a
+                      href="/pricing"
+                      className="block w-full py-3 rounded-full text-[13px] font-medium text-white text-center transition-all active:scale-[0.97] no-underline"
+                      style={{
+                        background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                        boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
+                      }}
+                    >
+                      티켓 구매하기
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-brown-pale font-normal text-center mb-2 break-keep">
+                      이번엔 어떤 이야기를 들려주실 건가요?
+                    </p>
+                    <button
+                      onClick={onNewStory}
+                      className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97]"
+                      style={{
+                        background: "transparent",
+                        color: "#8B6F55",
+                        border: "1.5px dashed rgba(196,149,106,0.3)",
+                      }}
+                    >
+                      + 새로운 동화 만들기
+                    </button>
+                  </>
+                )}
               </div>
             )}
             {/* B-6: Clear labels for last page navigation */}

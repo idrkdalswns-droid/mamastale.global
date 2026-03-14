@@ -69,11 +69,14 @@ export async function GET(request: NextRequest) {
 
   const total = count || 0;
 
-  return NextResponse.json({
+  // Sprint 7: CDN cache for public community feed
+  const res = NextResponse.json({
     stories: stories || [],
     total,
     totalCount: total, // frontend compatibility alias
     page,
     hasMore: total > offset + limit,
   });
+  res.headers.set("Cache-Control", "public, s-maxage=1800, stale-while-revalidate=3600");
+  return res;
 }

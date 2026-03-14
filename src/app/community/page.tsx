@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { StoryCard } from "@/components/story/StoryCard";
+import { trackCommunityView } from "@/lib/utils/analytics";
 import type { Scene } from "@/lib/types/story";
 
 // Sprint 2-A: Child-centric keyword overhaul
@@ -64,15 +65,33 @@ export default function CommunityBrowsePage() {
   };
 
   useEffect(() => {
+    trackCommunityView("community_page");
+  }, []);
+
+  useEffect(() => {
     fetchStories(sort, topic, 1, false, search);
     setPage(1);
   }, [sort, topic, search]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     fetchStories(sort, topic, nextPage, true, search);
-  };
+  }, [loading, hasMore, page, sort, topic, search]);
+
+  // Sprint 7-A: IntersectionObserver for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,14 +251,11 @@ export default function CommunityBrowsePage() {
               ))}
             </div>
 
+            {/* Sprint 7-A: Infinite scroll sentinel */}
             {hasMore && (
-              <button
-                onClick={loadMore}
-                disabled={loading}
-                className="w-full mt-4 py-3 rounded-full text-sm font-light text-brown-mid border border-brown-pale/20 active:scale-[0.98] transition-all min-h-[44px]"
-              >
-                {loading ? "불러오는 중..." : "더 보기"}
-              </button>
+              <div ref={sentinelRef} className="w-full mt-4 py-3 text-center">
+                {loading && <span className="text-sm text-brown-light font-light animate-pulse">불러오는 중...</span>}
+              </div>
             )}
           </>
         )}

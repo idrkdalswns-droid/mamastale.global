@@ -383,6 +383,7 @@ export default function Home() {
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
           onNewStory={() => { reset(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
+          ticketsRemaining={ticketsRemaining}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
@@ -720,6 +721,17 @@ export default function Home() {
 
           {/* Navigation links */}
           <div className="flex gap-2 w-full mb-5">
+            <Link
+              href="/community"
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
+              style={{
+                background: "rgba(139,106,175,0.06)",
+                color: "#8B6AAF",
+                border: "1px solid rgba(139,106,175,0.12)",
+              }}
+            >
+              커뮤니티 둘러보기
+            </Link>
             <Link
               href="/reviews"
               className="flex-1 py-2.5 rounded-xl text-[11px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center"
