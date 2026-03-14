@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-const NAV_ITEMS = [
+const NAV_ITEMS_PUBLIC = [
+  { href: "/about", label: "소개" },
+  { href: "/diy", label: "DIY 동화" },
+  { href: "/pricing", label: "구매" },
+];
+
+const NAV_ITEMS_AUTH = [
   { href: "/about", label: "소개" },
   { href: "/diy", label: "DIY 동화" },
   { href: "/library", label: "서재" },
@@ -44,7 +50,7 @@ export function GlobalNav() {
 
         {/* Right: Nav links + auth */}
         <div className="flex items-center gap-3">
-          {NAV_ITEMS.map((item) => {
+          {(user ? NAV_ITEMS_AUTH : NAV_ITEMS_PUBLIC).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <Link

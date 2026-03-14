@@ -10,12 +10,19 @@ export function Footer() {
         </p>
 
         {/* Business info (전자상거래법 필수 표시사항) */}
-        <div className="text-[10px] text-brown-pale font-light leading-relaxed space-y-0.5">
+        <div className="text-[11px] text-brown-pale font-light leading-relaxed space-y-0.5">
           <p>상호명: 엄마엄마동화 | 대표: 강민준</p>
           <p>사업자등록번호: 409-28-94015</p>
           <p>주소: 서울특별시 강서구 초록마을로19길 18, B01호</p>
           <p>
-            문의:{" "}
+            대표번호:{" "}
+            <a
+              href="tel:010-2311-5166"
+              className="underline underline-offset-2"
+            >
+              010-2311-5166
+            </a>
+            {" "}| 문의:{" "}
             <a
               href="mailto:kang.minjune@icloud.com"
               className="underline underline-offset-2"
@@ -26,7 +33,7 @@ export function Footer() {
         </div>
 
         {/* Links */}
-        <div className="flex items-center justify-center gap-1 text-[10px] text-brown-pale font-light">
+        <div className="flex items-center justify-center gap-1 text-[11px] text-brown-pale font-light">
           <Link href="/terms" className="underline underline-offset-2 decoration-brown-pale/40 min-h-[44px] inline-flex items-center px-2">
             이용약관
           </Link>
@@ -40,7 +47,7 @@ export function Footer() {
           </Link>
         </div>
 
-        <p className="text-[9px] text-brown-pale/60 font-light">
+        <p className="text-[10px] text-brown-pale/60 font-light">
           &copy; {new Date().getFullYear()} mamastale. All rights reserved.
         </p>
       </div>

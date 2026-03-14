@@ -1,6 +1,12 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
+
+export const metadata: Metadata = {
+  title: "이용 후기 | mamastale",
+  description: "mamastale을 이용한 엄마들의 진솔한 후기. 평균 4.8점.",
+};
 
 const reviews = [
   {

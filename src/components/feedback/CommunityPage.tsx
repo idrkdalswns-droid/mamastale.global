@@ -434,7 +434,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
             {ticketsRemaining !== null && ticketsRemaining > 0 ? (
               <>
                 <p className="text-xs text-brown-light font-light leading-relaxed mb-3 break-keep">
-                  남은 티켓 <span className="text-coral font-semibold">{ticketsRemaining}장</span>으로<br />
+                  남은 횟수 <span className="text-coral font-semibold">{ticketsRemaining}회</span>로<br />
                   다른 상처, 다른 은유, 새로운 마음 동화를 만들어 보세요
                 </p>
                 <button

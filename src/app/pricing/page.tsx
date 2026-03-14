@@ -35,19 +35,19 @@ type PricingProduct = { name: string; amount: number; tickets: number };
 
 const PRODUCTS: Record<PriceType, PricingProduct> = {
   ticket: {
-    name: "동화 스토리 하나 완성 티켓",
+    name: "동화 한 편 만들기",
     amount: 4900,
     tickets: 1,
   },
   bundle: {
-    name: "동화 네 스토리 완성 티켓",
+    name: "4일 연속 대화 프로그램 (4편)",
     amount: 14900,
     tickets: 4,
   },
 };
 
 const FIRST_PURCHASE_PRODUCT: PricingProduct = {
-  name: "동화 스토리 하나 완성 티켓 (론칭 할인)",
+  name: "동화 한 편 만들기 (첫 구매 할인)",
   amount: 3920,
   tickets: 1,
 };
@@ -69,8 +69,8 @@ const FEATURED_REVIEWS = [
 // ─── FAQ Data ───
 const FAQS = [
   {
-    q: "티켓은 어떻게 사용하나요?",
-    a: "티켓 1장으로 4단계 마음 대화를 진행하고, 10장면 동화 1편을 완성할 수 있어요. 동화 완성 시 티켓이 차감됩니다.",
+    q: "어떻게 사용하나요?",
+    a: "1회 구매로 4단계 마음 대화를 진행하고, 10장면 동화 1편을 완성할 수 있어요. 동화 완성 시 1회가 차감됩니다.",
   },
   {
     q: "만든 동화는 영구 보관되나요?",
@@ -78,7 +78,7 @@ const FAQS = [
   },
   {
     q: "환불은 가능한가요?",
-    a: "모든 티켓 구매는 최종 확정이며, 환불이 불가합니다. 신중하게 결정해 주세요.",
+    a: "모든 구매는 최종 확정이며, 환불이 불가합니다. 신중하게 결정해 주세요.",
   },
   {
     q: "어떤 결제 수단을 지원하나요?",
@@ -693,13 +693,13 @@ function PricingContent() {
           }}
         >
           <h3 className="font-serif text-sm font-semibold text-brown mb-3 text-center">
-            왜 티켓 모델인가요?
+            왜 1회 구매 방식인가요?
           </h3>
           <div className="space-y-3">
             {[
               "구독 부담 없이 필요할 때만 결제",
               "한 권 한 권이 완전한 마음 여정",
-              "소중한 사람에게 티켓 선물 가능",
+              "소중한 사람에게 동화 만들기 선물 가능",
               "구매 후 30일 이내 여유롭게 사용",
             ].map((text, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -732,7 +732,7 @@ function PricingContent() {
           </p>
           <div className="space-y-2.5">
             {[
-              { title: "선물하기", desc: "소중한 사람에게 동화 티켓을 선물할 수 있어요" },
+              { title: "선물하기", desc: "소중한 사람에게 동화 만들기를 선물할 수 있어요" },
               { title: "종이책 인쇄", desc: "완성된 동화를 실물 그림책으로 만들어 드려요" },
               { title: "다국어 동화", desc: "한국어 외 영어, 일본어 등 이중언어 동화를 지원해요" },
               { title: "조부모 버전", desc: "할머니, 할아버지도 손주를 위한 동화를 만들 수 있어요" },

@@ -68,7 +68,7 @@ export function ReferralCard({ getHeaders }: ReferralCardProps) {
       try {
         await navigator.share({
           title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
-          text: `친구의 추천으로 가입하면 동화 티켓 1장을 무료로 받을 수 있어요!`,
+          text: `친구의 추천으로 가입하면 동화 만들기 1회를 무료로 받을 수 있어요!`,
           url: data.shareUrl,
         });
       } catch { /* user cancelled */ }
@@ -94,11 +94,11 @@ export function ReferralCard({ getHeaders }: ReferralCardProps) {
     <div className="rounded-2xl p-5 bg-paper border border-brown-pale/10">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">🎁</span>
-        <h3 className="text-sm font-semibold text-brown">친구 초대하고 티켓 받기</h3>
+        <h3 className="text-sm font-semibold text-brown">친구 초대하고 무료 1회 받기</h3>
       </div>
 
       <p className="text-xs text-brown-light mb-4 leading-5 break-keep">
-        아래 링크로 친구를 초대하면, 친구도 나도 동화 티켓 1장을 무료로 받아요!
+        아래 링크로 친구를 초대하면, 친구도 나도 동화 만들기 1회를 무료로 받아요!
       </p>
 
       {/* Referral code display */}
@@ -138,7 +138,7 @@ export function ReferralCard({ getHeaders }: ReferralCardProps) {
       {data.referralCount > 0 && (
         <div className="mt-3 pt-3 border-t border-brown-pale/10 flex justify-between">
           <span className="text-xs text-brown-pale">초대한 친구</span>
-          <span className="text-xs font-medium text-brown">{data.referralCount}명 (티켓 +{data.ticketsEarned}장)</span>
+          <span className="text-xs font-medium text-brown">{data.referralCount}명 (+{data.ticketsEarned}회)</span>
         </div>
       )}
     </div>

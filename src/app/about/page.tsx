@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PHASES } from "@/lib/constants/phases";
+
+export const metadata: Metadata = {
+  title: "서비스 소개 | mamastale",
+  description: "mamastale은 엄마의 이야기를 AI 대화로 10장면 동화로 만드는 치유적 서비스입니다.",
+};
 
 /* ──────────────────────────────────────────────────────────
    4-Phase AI Engine — detailed content for the about page

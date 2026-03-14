@@ -530,13 +530,13 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               >
                 {ticketsRemaining !== null && ticketsRemaining !== undefined && (
                   <p className="text-[11px] text-brown-pale font-normal text-center mb-1.5">
-                    남은 티켓: <span className={ticketsRemaining > 0 ? "text-brown-mid font-medium" : "text-coral font-medium"}>{ticketsRemaining}장</span>
+                    남은 횟수: <span className={ticketsRemaining > 0 ? "text-brown-mid font-medium" : "text-coral font-medium"}>{ticketsRemaining}회</span>
                   </p>
                 )}
                 {ticketsRemaining === 0 ? (
                   <>
                     <p className="text-[11px] text-brown-pale font-normal text-center mb-2 break-keep">
-                      다음 동화를 위해 티켓을 구매해보세요
+                      다음 동화를 만들려면 추가 구매가 필요해요
                     </p>
                     <a
                       href="/pricing"
@@ -546,7 +546,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                         boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
                       }}
                     >
-                      티켓 구매하기
+                      추가 구매하기
                     </a>
                   </>
                 ) : (

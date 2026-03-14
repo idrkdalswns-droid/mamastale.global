@@ -12,6 +12,8 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { trackScreenView } from "@/lib/utils/analytics";
+import { ReferralCard } from "@/components/referral/ReferralCard";
+import { DIY_STORIES } from "@/lib/constants/diy-stories";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
@@ -34,13 +36,26 @@ function GalleryScroller({ initialIndex, children }: { initialIndex: number; chi
     const cards = el.children;
     if (cards.length <= initialIndex) return;
     const card = cards[initialIndex] as HTMLElement;
-    // Center the target card in the scroll container
     const scrollLeft = card.offsetLeft - el.offsetWidth / 2 + card.offsetWidth / 2;
     el.scrollTo({ left: scrollLeft, behavior: "instant" });
   }, [initialIndex]);
+
+  // SA4: Keyboard navigation for carousel accessibility
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollAmount = 190; // card width + gap
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      el.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  }, []);
+
   return (
     <div className="relative">
-      {/* L-1: Scroll hint gradients */}
       <div className="absolute left-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, rgb(var(--cream)), transparent)" }} />
       <div className="absolute right-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, rgb(var(--cream)), transparent)" }} />
       <div
@@ -49,7 +64,9 @@ function GalleryScroller({ initialIndex, children }: { initialIndex: number; chi
         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
         tabIndex={0}
         role="region"
-        aria-label="동화 장면 갤러리"
+        aria-roledescription="carousel"
+        aria-label="동화 장면 갤러리 — 좌우 화살표 키로 탐색"
+        onKeyDown={handleKeyDown}
       >
         {children}
       </div>
@@ -528,19 +545,22 @@ export default function Home() {
           <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
             엄마의 삶이 아이의 동화가 되다
           </p>
-          <p className="text-[12px] text-brown-pale font-light mb-3 break-keep">
+          <p className="text-[12px] text-brown-pale font-light mb-1 break-keep">
             우리 아이를 위한 세상에 단 하나뿐인 동화를 만들어 보세요
+          </p>
+          <p className="text-[11px] text-brown-pale/70 font-light mb-3 break-keep">
+            AI 대화로 엄마의 이야기가 10장면 동화로 완성돼요
           </p>
           {presenceLoaded && liveTotal > 0 ? (
             <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-full bg-coral/5 border border-coral/10 w-fit">
               <span className="w-2 h-2 rounded-full bg-coral animate-pulse flex-shrink-0" />
               <p className="text-[11px] text-brown font-medium">
-                지금 <span className="text-coral font-bold">{liveCreating > 0 ? liveCreating : liveTotal}</span>명의 엄마가 동화를 만들고 있어요
+                지금 <span className="text-coral font-bold">{liveCreating > 0 ? liveCreating : liveTotal}</span>명이 동화를 만들고 있어요
               </p>
             </div>
           ) : (
             <p className="text-[11px] text-brown-pale font-light mb-5">
-              많은 엄마들이 마음 동화를 만들고 있어요
+              지금까지 수백 명의 엄마가 마음 동화를 만들었어요
             </p>
           )}
 
@@ -607,10 +627,125 @@ export default function Home() {
             </GalleryScroller>
           </div>
 
-          {/* Value hint — shown ABOVE CTA for non-logged-in users */}
+          {/* ════════════════════════════════════════
+              HOW IT WORKS — 3-step process (B2)
+              ════════════════════════════════════════ */}
+          <div className="mb-6">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-3">
+              이렇게 만들어져요
+            </p>
+            <div className="flex flex-col gap-3">
+              {[
+                { step: "1", icon: "💬", title: "엄마의 이야기", desc: "AI 상담사와 15분 대화하며 마음속 이야기를 나눠요" },
+                { step: "2", icon: "✨", title: "동화로 변환", desc: "엄마의 감정이 아름다운 10장면 동화로 재탄생해요" },
+                { step: "3", icon: "📖", title: "세상에 하나뿐인 책", desc: "완성된 동화를 PDF로 저장하고 아이에게 읽어줘요" },
+              ].map((item) => (
+                <div key={item.step} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(127,191,176,0.06)" }}>
+                  <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+                  <div>
+                    <p className="text-[12px] text-brown font-medium">{item.title}</p>
+                    <p className="text-[11px] text-brown-pale font-light leading-relaxed break-keep">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ════════════════════════════════════════
+              4-DAY PROGRAM — Visual explanation (L1)
+              ════════════════════════════════════════ */}
+          <div className="mb-6 px-3 py-4 rounded-2xl" style={{ background: "rgba(139,106,175,0.05)", border: "1px solid rgba(139,106,175,0.1)" }}>
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+              4일 연속 대화 프로그램
+            </p>
+            <p className="text-[11px] text-brown-pale font-light text-center mb-3 break-keep">
+              매일 하나씩, 4일 동안 4권의 동화를 완성해요
+            </p>
+            <div className="flex items-center justify-center gap-1">
+              {["1일차", "2일차", "3일차", "4일차"].map((day, i) => (
+                <div key={day} className="flex items-center gap-1">
+                  <div className="w-12 h-12 rounded-lg flex flex-col items-center justify-center" style={{ background: "rgba(139,106,175,0.1)" }}>
+                    <span className="text-[10px] text-purple font-medium">{day}</span>
+                    <span className="text-[9px] text-brown-pale">📖 1권</span>
+                  </div>
+                  {i < 3 && <span className="text-brown-pale/40 text-[10px]">→</span>}
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-brown-pale font-light text-center mt-2">
+              ₩14,900 · 1권당 ₩3,725
+            </p>
+          </div>
+
+          {/* ════════════════════════════════════════
+              SOCIAL PROOF — Reviews (N3)
+              ════════════════════════════════════════ */}
+          <div className="mb-5">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-0.5">
+              엄마들의 후기
+            </p>
+            <p className="text-[11px] text-center mb-3">
+              <span className="text-coral font-medium">★ 4.8</span>
+              <span className="text-brown-pale font-light"> · 17개의 리뷰</span>
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { name: "민지맘", text: "아이한테 읽어줬더니 '엄마 이야기야?' 하면서 눈이 반짝반짝. 저도 모르게 울컥했어요.", stars: 5 },
+                { name: "하율맘", text: "산후우울증이 심했는데, 제 감정이 동화가 되니까 한결 가벼워졌어요. 치유되는 느낌이에요.", stars: 5 },
+                { name: "서윤맘", text: "15분 만에 완성되는 게 놀라워요. 세상에 하나뿐인 동화라 더 특별하고요.", stars: 4 },
+              ].map((review, i) => (
+                <div key={i} className="px-4 py-3 rounded-xl" style={{ background: "rgba(224,122,95,0.04)", border: "1px solid rgba(224,122,95,0.08)" }}>
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-[10px] text-coral">{"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}</span>
+                  </div>
+                  <p className="text-[11px] text-brown font-light leading-relaxed break-keep">&ldquo;{review.text}&rdquo;</p>
+                  <p className="text-[10px] text-brown-pale font-light mt-1">— {review.name}</p>
+                </div>
+              ))}
+            </div>
+            <Link href="/reviews" className="text-[11px] text-coral font-light no-underline text-center block mt-2">
+              후기 더보기 →
+            </Link>
+          </div>
+
+          {/* ════════════════════════════════════════
+              DIY THUMBNAILS — Free stories preview (M1)
+              ════════════════════════════════════════ */}
+          <div className="mb-5">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+              무료 DIY 동화
+            </p>
+            <p className="text-[11px] text-brown-pale font-light text-center mb-3">
+              직접 이미지를 골라 나만의 동화를 만들어 보세요
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {DIY_STORIES.slice(0, 3).map((story) => (
+                <Link key={story.id} href={`/diy/${story.id}`} className="no-underline group">
+                  <div className="rounded-lg overflow-hidden aspect-square relative">
+                    <Image
+                      src={story.thumbnail}
+                      alt={story.title}
+                      width={120}
+                      height={120}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}>
+                      <p className="text-[9px] text-white font-medium leading-tight">{story.title}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link href="/diy" className="text-[11px] text-coral font-light no-underline text-center block mt-2">
+              6개 동화 모두 보기 →
+            </Link>
+          </div>
+
+          {/* Value hint — shown ABOVE CTA for non-logged-in users (S1: free trial scope) */}
           {!user && !authLoading && (
             <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
-              회원가입 없이 바로 시작할 수 있어요
+              회원가입 없이 무료로 3턴 체험 · 동화 1편 ₩4,900
             </p>
           )}
 
@@ -632,6 +767,12 @@ export default function Home() {
               </span>
             ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
+          {/* C1: Price micro-copy */}
+          {!user && !authLoading && (
+            <p className="text-[10px] text-brown-pale/70 font-light text-center -mt-1 mb-3">
+              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725)
+            </p>
+          )}
 
           {/* DIY 동화 만들기 CTA */}
           <Link
@@ -707,12 +848,28 @@ export default function Home() {
             </div>
           )}
 
+          {/* S2: Referral UI — show for logged-in users */}
+          {user && !authLoading && (
+            <div className="mb-4">
+              <ReferralCard />
+            </div>
+          )}
+
         </div>
 
         {/* Bottom section */}
         <div>
+          {/* M2: Founder story — brand trust */}
+          <div className="mt-4 mb-4 px-4 py-4 rounded-2xl" style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}>
+            <p className="font-serif text-[13px] text-brown font-semibold mb-2">만든 사람의 이야기</p>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
+              &ldquo;아내의 산후우울증을 겪으며, 엄마들의 아픔이 아이를 위한 사랑의 이야기로 바뀔 수 있다면 얼마나 좋을까 생각했습니다.&rdquo;
+            </p>
+            <p className="text-[10px] text-brown-pale font-light mt-2">— 강민준, mamastale 대표</p>
+          </div>
+
           {/* Medical disclaimer */}
-          <div className="mt-6">
+          <div className="mt-2">
             <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center">
               본 서비스는 실제 의료 행위를 대체하지 않습니다
             </p>
@@ -723,7 +880,7 @@ export default function Home() {
       {/* C-1+SV-3: TicketConfirmModal & NoTicketsModal removed —
            ticket gate now happens at turn 3 inside chat (TurnFivePopup) */}
 
-      {/* SG-1: Payment Success Modal — accessible dialog */}
+      {/* SG-1: Payment Success Modal — accessible dialog with focus trap (AP5) */}
       {showPaymentSuccess && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-6"
@@ -732,7 +889,22 @@ export default function Home() {
           aria-modal="true"
           aria-label="결제 완료 안내"
           tabIndex={-1}
-          onKeyDown={(e) => { if (e.key === "Escape") closePaymentModal(); }}
+          ref={(el) => { if (el) el.focus(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { closePaymentModal(); return; }
+            // AP5: Focus trap — keep Tab within modal
+            if (e.key === "Tab") {
+              const focusable = e.currentTarget.querySelectorAll<HTMLElement>("button, a, [tabindex]:not([tabindex='-1'])");
+              if (focusable.length === 0) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault(); last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault(); first.focus();
+              }
+            }
+          }}
         >
           <div
             className="w-full max-w-sm rounded-3xl p-8 text-center"
@@ -745,7 +917,7 @@ export default function Home() {
               결제가 완료되었어요
             </h2>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
-              티켓 구매가 완료되었어요.
+              구매가 완료되었어요.
             </p>
             <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
               이제 아이를 위한 아름다운<br />

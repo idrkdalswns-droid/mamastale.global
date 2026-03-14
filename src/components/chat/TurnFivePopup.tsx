@@ -157,11 +157,11 @@ export default function TurnFivePopup({
             <>
               <div className="text-center mb-4">
                 <p className="text-sm text-brown font-medium">
-                  티켓 1장을 사용하여 동화를 완성할까요?
+                  만들기 1회를 사용하여 동화를 완성할까요?
                 </p>
                 <p className="text-xs text-brown-pale font-light mt-1">
-                  보유 티켓: <span className="font-semibold text-coral">{ticketsRemaining}장</span>
-                  {ticketsRemaining === 1 && " (마지막 티켓이에요!)"}
+                  남은 횟수: <span className="font-semibold text-coral">{ticketsRemaining}회</span>
+                  {ticketsRemaining === 1 && " (마지막 1회예요!)"}
                 </p>
               </div>
 
@@ -190,7 +190,7 @@ export default function TurnFivePopup({
                     처리 중...
                   </span>
                 ) : (
-                  "티켓 1장 사용하고 이어서 만들기"
+                  "1회 사용하고 이어서 만들기"
                 )}
               </button>
 
@@ -208,7 +208,7 @@ export default function TurnFivePopup({
             <>
               <div className="text-center mb-4">
                 <p className="text-sm text-brown font-medium">
-                  티켓 1장이면 동화가 완성돼요
+                  만들기 1회면 동화가 완성돼요
                 </p>
                 <p className="text-xs text-brown-pale font-light mt-1">
                   ₩4,900부터
@@ -223,7 +223,7 @@ export default function TurnFivePopup({
                   boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
                 }}
               >
-                티켓 구매하고 이어서 만들기
+                구매하고 이어서 만들기
               </button>
 
               <p className="text-[10px] text-brown-pale font-light text-center">
@@ -243,7 +243,7 @@ export default function TurnFivePopup({
               {[
                 { icon: "·", text: "대화 이어서 진행" },
                 { icon: "·", text: "동화 영구 보관" },
-                { icon: "·", text: "첫 티켓 20% 할인" },
+                { icon: "·", text: "첫 구매 20% 할인" },
               ].map((b, i) => (
                 <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl" style={{ background: "rgba(224,122,95,0.05)" }}>
                   <span className="text-sm">{b.icon}</span>
