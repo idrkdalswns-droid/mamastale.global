@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { trackBeginCheckout } from "@/lib/utils/analytics";
 import { hapticMedium } from "@/lib/utils/haptic";
+import SectionTabBar from "@/components/layout/SectionTabBar";
 
 // ─── Toss Payments SDK v2 Type Declarations ───
 declare global {
@@ -392,293 +393,29 @@ function PricingContent() {
           </p>
         </section>
 
+        {/* Section tab bar — sticky below GlobalNav */}
+        <SectionTabBar
+          sections={[
+            { id: "pricing", label: "요금" },
+            { id: "reviews", label: "후기" },
+            { id: "gallery", label: "동화" },
+            { id: "trial", label: "체험" },
+            { id: "faq", label: "FAQ" },
+          ]}
+          stickyTop="top-12"
+          scrollOffset={82}
+        />
+
         {/* #17: Soft social proof counter */}
-        <p className="text-[12px] text-brown-pale font-light text-center mb-8">
+        <p className="text-[12px] text-brown-pale font-light text-center mb-8 mt-6">
           지금까지 <span className="text-coral font-medium">{STORY_COUNT}명</span>의 엄마가 동화를 만들었어요
         </p>
-
-        {/* ════════════════════════════════════════
-            10-SCENE STORYBOOK GALLERY
-            ════════════════════════════════════════ */}
-        <section className="mb-10" aria-label="동화 갤러리">
-          <h2 className="font-serif text-lg text-brown font-semibold text-center mb-1">
-            노란 텐트 속 무지개 마법
-          </h2>
-          <p className="text-[11px] text-brown-light font-light text-center mb-5">
-            마마스테일 강민준 대표의 실제 사연을 바탕으로 마마스테일 서비스의 탄생 배경을 알 수 있는 동화입니다
-          </p>
-          {/* #11: 9px → 11px for WCAG AA minimum text */}
-          <p className="text-[11px] text-brown-pale/60 font-light text-center mb-3">
-            ← 옆으로 넘겨보세요 →
-          </p>
-          <div
-            ref={galleryRef}
-            className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
-            role="region"
-            aria-label="동화 장면 갤러리 - 옆으로 스크롤"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            {GALLERY_SCENES.map((text, i) => (
-              <div
-                key={i}
-                ref={(el) => { sceneRefs.current[i] = el; }}
-                className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
-                style={GALLERY_CARD_STYLE}
-              >
-                {/* #11: eager loading for first 2 images to reduce layout shift */}
-                <Image
-                  src={`/images/sample-tent/scene-${String(i + 1).padStart(2, "0")}.jpg`}
-                  alt={`동화 장면 ${i + 1}: ${text.slice(0, 30)}...`}
-                  width={220}
-                  height={392}
-                  className="w-full aspect-[9/16] object-cover object-top"
-                  loading={i < 2 ? "eager" : "lazy"}
-                />
-                {/* Storybook text overlay */}
-                <div
-                  className="absolute inset-x-0 bottom-0 px-4 pt-16 pb-4 flex flex-col justify-end"
-                  style={GALLERY_OVERLAY_STYLE}
-                >
-                  {/* #11: 11.5px → 12px for better readability */}
-                  <p
-                    className="font-serif text-[12px] leading-[1.9] break-keep text-brown"
-                  >
-                    {text}
-                  </p>
-                  {/* #11: 9px → 11px */}
-                  <p className="text-[11px] text-brown-pale font-light mt-2 text-right">
-                    {i + 1} / 10
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* #26: Dot indicators */}
-          <div className="flex items-center justify-center gap-0.5 mt-3" role="tablist" aria-label="장면 탐색">
-            {GALLERY_SCENES.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  sceneRefs.current[idx]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                }}
-                role="tab"
-                aria-selected={idx === activeSceneIndex}
-                aria-label={`${idx + 1}번째 장면`}
-                className="flex items-center justify-center min-w-[28px] min-h-[28px] transition-all duration-300"
-              >
-                <span
-                  className="block rounded-full transition-all duration-300"
-                  style={{
-                    width: idx === activeSceneIndex ? 16 : 5,
-                    height: 5,
-                    background: idx === activeSceneIndex
-                      ? "linear-gradient(135deg, #E07A5F, #C96B52)"
-                      : "rgba(196,149,106,0.2)",
-                  }}
-                />
-              </button>
-            ))}
-          </div>
-
-          {/* #34: Soft CTA after gallery — capture emotional peak */}
-          <p className="text-center mt-4">
-            <Link
-              href="/?action=start"
-              className="text-[12px] text-coral font-medium no-underline"
-            >
-              나만의 동화 만들기 →
-            </Link>
-          </p>
-        </section>
-
-        {/* ════════════════════════════════════════
-            VIDEO PREVIEW
-            ════════════════════════════════════════ */}
-        <section className="mb-10" aria-label="동화 영상 미리보기">
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              aspectRatio: "16/9",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
-            }}
-          >
-            {videoLoaded ? (
-              <iframe
-                src="https://www.youtube.com/embed/S7Fs_Kvpr40?rel=0&autoplay=1"
-                title="mamastale 완성 동화 미리보기"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setVideoLoaded(true)}
-                className="w-full h-full relative flex flex-col items-center justify-center cursor-pointer group"
-                aria-label="동화 영상 재생하기"
-              >
-                {/* #9: YouTube thumbnail as poster image */}
-                <Image
-                  src="https://img.youtube.com/vi/S7Fs_Kvpr40/hqdefault.jpg"
-                  alt=""
-                  fill
-                  className="object-cover rounded-2xl"
-                  sizes="(max-width: 512px) 100vw, 512px"
-                />
-                <span className="relative z-10 w-14 h-14 rounded-full bg-coral/90 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform" style={{ boxShadow: "0 4px 16px rgba(224,122,95,0.4)" }}>
-                  <span className="ml-1 border-l-[14px] border-y-[9px] border-l-white border-y-transparent" aria-hidden="true" />
-                </span>
-                <span className="relative z-10 text-[12px] text-white font-medium drop-shadow-md">영상으로 미리보기</span>
-              </button>
-            )}
-          </div>
-          <p className="text-[11px] text-brown-pale font-light text-center mt-2">
-            완성된 동화 스토리에 일러스트와 음성을 더한 영상 예시입니다
-          </p>
-          {/* #35: 줌 클래스 언급 제거 — 브랜드 혼란 방지 */}
-        </section>
-
-        {/* ════════════════════════════════════════
-            SOCIAL PROOF
-            ════════════════════════════════════════ */}
-        <section className="text-center mb-10" aria-label="사용자 후기">
-          <div className="flex items-center justify-center gap-1 mb-5">
-            <div className="flex items-center gap-0.5" aria-hidden="true">
-              {Array.from({ length: 5 }, (_, j) => (
-                <span
-                  key={j}
-                  className="text-sm"
-                  style={{ color: "rgb(var(--coral))" }}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-            <span className="text-sm font-bold text-brown font-serif ml-1">5.0</span>
-            <span className="sr-only">평균 만족도 5.0점 (5점 만점)</span>
-          </div>
-
-          <div className="space-y-3">
-            {FEATURED_REVIEWS.map((r, i) => (
-              <div
-                key={i}
-                className="rounded-xl p-4 text-left"
-                style={{
-                  background: "rgba(255,255,255,0.6)",
-                  border: "1px solid rgba(196,149,106,0.1)",
-                }}
-              >
-                <div className="flex items-center gap-1 mb-1.5" aria-label={`${r.rating}점 만점`}>
-                  {Array.from({ length: 5 }, (_, j) => (
-                    <span
-                      key={j}
-                      className="text-[11px]"
-                      style={{
-                        color: j < r.rating ? "rgb(var(--coral))" : "rgb(var(--brown-pale))",
-                      }}
-                      aria-hidden="true"
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm text-brown font-light leading-relaxed break-keep">
-                  &ldquo;{r.text}&rdquo;
-                </p>
-                <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-[11px] text-brown-pale font-light">
-                    — {r.name}
-                  </p>
-                  {/* #11: 9px → 11px */}
-                  <span className="text-[11px] text-brown-pale/60 font-light">{r.date} · 인증된 구매자</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <Link
-            href="/reviews"
-            className="inline-block text-xs text-coral font-medium no-underline mt-3"
-          >
-            후기 더 보기 →
-          </Link>
-        </section>
-
-        {/* ════════════════════════════════════════
-            PAYMENT BADGE
-            ════════════════════════════════════════ */}
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          <span
-            className="px-3 py-1 rounded-full text-[11px] text-brown-mid font-medium"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(0,0,0,0.06)",
-            }}
-          >
-            토스페이먼츠 안전 결제
-          </span>
-        </div>
-
-        {/* SDK load error */}
-        {sdkError && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200" role="alert">
-            <p className="text-xs text-amber-700 text-center leading-relaxed">
-              결제 창을 불러올 수 없습니다.
-              <br />
-              <strong>해결 방법:</strong> 브라우저 설정에서 콘텐츠 차단기(광고
-              차단)를 잠시 해제하거나,
-              <br />
-              Wi-Fi/데이터 연결을 확인한 뒤 페이지를 새로고침해 주세요.
-            </p>
-          </div>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200" role="alert" aria-live="assertive">
-            <p className="text-xs text-red-600 text-center">{error}</p>
-          </div>
-        )}
-
-        {!sdkReady && !sdkError && (
-          <p className="text-xs text-brown-pale text-center mb-2 animate-pulse" aria-live="polite">
-            결제 시스템을 불러오는 중...
-          </p>
-        )}
-
-        {/* ════════════════════════════════════════
-            FREE TRIAL CTA (#2)
-            ════════════════════════════════════════ */}
-        <div
-          className="rounded-2xl p-4 mb-6 text-center"
-          style={{
-            background: "linear-gradient(135deg, rgba(127,191,176,0.08), rgba(127,191,176,0.03))",
-            border: "1.5px solid rgba(127,191,176,0.2)",
-          }}
-        >
-          <p className="text-sm text-brown font-medium mb-1">
-            아직 고민되시나요?
-          </p>
-          <p className="text-[12px] text-brown-light font-light mb-3 break-keep">
-            로그인 없이 AI 대화를 무료로 체험해 보세요
-          </p>
-          <Link
-            href="/?action=start"
-            className="inline-block px-6 py-2.5 rounded-full text-[13px] font-medium text-white no-underline transition-all active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(135deg, #7FBFB0, #6BAA9C)",
-              boxShadow: "0 4px 16px rgba(127,191,176,0.3)",
-            }}
-          >
-            무료로 체험하기
-          </Link>
-        </div>
 
         {/* ════════════════════════════════════════
             BUNDLE (₩14,900) — PRIMARY · Claymorphism
             ════════════════════════════════════════ */}
         <div
+          id="pricing"
           className="rounded-3xl p-6 mb-5 relative"
           style={{
             background: "rgba(255,255,255,0.7)",
@@ -855,6 +592,285 @@ function PricingContent() {
         </div>
 
         {/* ════════════════════════════════════════
+            PAYMENT BADGE
+            ════════════════════════════════════════ */}
+        <div className="flex items-center justify-center gap-1.5 mb-6">
+          <span
+            className="px-3 py-1 rounded-full text-[11px] text-brown-mid font-medium"
+            style={{
+              background: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(0,0,0,0.06)",
+            }}
+          >
+            토스페이먼츠 안전 결제
+          </span>
+        </div>
+
+        {/* SDK load error */}
+        {sdkError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200" role="alert">
+            <p className="text-xs text-amber-700 text-center leading-relaxed">
+              결제 창을 불러올 수 없습니다.
+              <br />
+              <strong>해결 방법:</strong> 브라우저 설정에서 콘텐츠 차단기(광고
+              차단)를 잠시 해제하거나,
+              <br />
+              Wi-Fi/데이터 연결을 확인한 뒤 페이지를 새로고침해 주세요.
+            </p>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200" role="alert" aria-live="assertive">
+            <p className="text-xs text-red-600 text-center">{error}</p>
+          </div>
+        )}
+
+        {!sdkReady && !sdkError && (
+          <p className="text-xs text-brown-pale text-center mb-2 animate-pulse" aria-live="polite">
+            결제 시스템을 불러오는 중...
+          </p>
+        )}
+
+        {/* ════════════════════════════════════════
+            SOCIAL PROOF
+            ════════════════════════════════════════ */}
+        <section id="reviews" className="text-center mb-10" aria-label="사용자 후기">
+          <div className="flex items-center justify-center gap-1 mb-5">
+            <div className="flex items-center gap-0.5" aria-hidden="true">
+              {Array.from({ length: 5 }, (_, j) => (
+                <span
+                  key={j}
+                  className="text-sm"
+                  style={{ color: "rgb(var(--coral))" }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <span className="text-sm font-bold text-brown font-serif ml-1">5.0</span>
+            <span className="sr-only">평균 만족도 5.0점 (5점 만점)</span>
+          </div>
+
+          <div className="space-y-3">
+            {FEATURED_REVIEWS.map((r, i) => (
+              <div
+                key={i}
+                className="rounded-xl p-4 text-left"
+                style={{
+                  background: "rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(196,149,106,0.1)",
+                }}
+              >
+                <div className="flex items-center gap-1 mb-1.5" aria-label={`${r.rating}점 만점`}>
+                  {Array.from({ length: 5 }, (_, j) => (
+                    <span
+                      key={j}
+                      className="text-[11px]"
+                      style={{
+                        color: j < r.rating ? "rgb(var(--coral))" : "rgb(var(--brown-pale))",
+                      }}
+                      aria-hidden="true"
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className="text-sm text-brown font-light leading-relaxed break-keep">
+                  &ldquo;{r.text}&rdquo;
+                </p>
+                <div className="flex items-center justify-between mt-1.5">
+                  <p className="text-[11px] text-brown-pale font-light">
+                    — {r.name}
+                  </p>
+                  {/* #11: 9px → 11px */}
+                  <span className="text-[11px] text-brown-pale/60 font-light">{r.date} · 인증된 구매자</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            href="/reviews"
+            className="inline-block text-xs text-coral font-medium no-underline mt-3"
+          >
+            후기 더 보기 →
+          </Link>
+        </section>
+
+        {/* ════════════════════════════════════════
+            FREE TRIAL CTA (#2)
+            ════════════════════════════════════════ */}
+        <div
+          id="trial"
+          className="rounded-2xl p-4 mb-6 text-center"
+          style={{
+            background: "linear-gradient(135deg, rgba(127,191,176,0.08), rgba(127,191,176,0.03))",
+            border: "1.5px solid rgba(127,191,176,0.2)",
+          }}
+        >
+          <p className="text-sm text-brown font-medium mb-1">
+            아직 고민되시나요?
+          </p>
+          <p className="text-[12px] text-brown-light font-light mb-3 break-keep">
+            로그인 없이 AI 대화를 무료로 체험해 보세요
+          </p>
+          <Link
+            href="/?action=start"
+            className="inline-block px-6 py-2.5 rounded-full text-[13px] font-medium text-white no-underline transition-all active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #7FBFB0, #6BAA9C)",
+              boxShadow: "0 4px 16px rgba(127,191,176,0.3)",
+            }}
+          >
+            무료로 체험하기
+          </Link>
+        </div>
+
+        {/* ════════════════════════════════════════
+            10-SCENE STORYBOOK GALLERY
+            ════════════════════════════════════════ */}
+        <section id="gallery" className="mb-10" aria-label="동화 갤러리">
+          <h2 className="font-serif text-lg text-brown font-semibold text-center mb-1">
+            노란 텐트 속 무지개 마법
+          </h2>
+          <p className="text-[11px] text-brown-light font-light text-center mb-5">
+            마마스테일 강민준 대표의 실제 사연을 바탕으로 마마스테일 서비스의 탄생 배경을 알 수 있는 동화입니다
+          </p>
+          {/* #11: 9px → 11px for WCAG AA minimum text */}
+          <p className="text-[11px] text-brown-pale/60 font-light text-center mb-3">
+            ← 옆으로 넘겨보세요 →
+          </p>
+          <div
+            ref={galleryRef}
+            className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide"
+            role="region"
+            aria-label="동화 장면 갤러리 - 옆으로 스크롤"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {GALLERY_SCENES.map((text, i) => (
+              <div
+                key={i}
+                ref={(el) => { sceneRefs.current[i] = el; }}
+                className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
+                style={GALLERY_CARD_STYLE}
+              >
+                {/* #11: eager loading for first 2 images to reduce layout shift */}
+                <Image
+                  src={`/images/sample-tent/scene-${String(i + 1).padStart(2, "0")}.jpg`}
+                  alt={`동화 장면 ${i + 1}: ${text.slice(0, 30)}...`}
+                  width={220}
+                  height={392}
+                  className="w-full aspect-[9/16] object-cover object-top"
+                  loading={i < 2 ? "eager" : "lazy"}
+                />
+                {/* Storybook text overlay */}
+                <div
+                  className="absolute inset-x-0 bottom-0 px-4 pt-16 pb-4 flex flex-col justify-end"
+                  style={GALLERY_OVERLAY_STYLE}
+                >
+                  {/* #11: 11.5px → 12px for better readability */}
+                  <p
+                    className="font-serif text-[12px] leading-[1.9] break-keep text-brown"
+                  >
+                    {text}
+                  </p>
+                  {/* #11: 9px → 11px */}
+                  <p className="text-[11px] text-brown-pale font-light mt-2 text-right">
+                    {i + 1} / 10
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* #26: Dot indicators */}
+          <div className="flex items-center justify-center gap-0.5 mt-3" role="tablist" aria-label="장면 탐색">
+            {GALLERY_SCENES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  sceneRefs.current[idx]?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                }}
+                role="tab"
+                aria-selected={idx === activeSceneIndex}
+                aria-label={`${idx + 1}번째 장면`}
+                className="flex items-center justify-center min-w-[28px] min-h-[28px] transition-all duration-300"
+              >
+                <span
+                  className="block rounded-full transition-all duration-300"
+                  style={{
+                    width: idx === activeSceneIndex ? 16 : 5,
+                    height: 5,
+                    background: idx === activeSceneIndex
+                      ? "linear-gradient(135deg, #E07A5F, #C96B52)"
+                      : "rgba(196,149,106,0.2)",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+
+          {/* #34: Soft CTA after gallery — capture emotional peak */}
+          <p className="text-center mt-4">
+            <Link
+              href="/?action=start"
+              className="text-[12px] text-coral font-medium no-underline"
+            >
+              나만의 동화 만들기 →
+            </Link>
+          </p>
+        </section>
+
+        {/* ════════════════════════════════════════
+            VIDEO PREVIEW
+            ════════════════════════════════════════ */}
+        <section className="mb-10" aria-label="동화 영상 미리보기">
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              aspectRatio: "16/9",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+            }}
+          >
+            {videoLoaded ? (
+              <iframe
+                src="https://www.youtube.com/embed/S7Fs_Kvpr40?rel=0&autoplay=1"
+                title="mamastale 완성 동화 미리보기"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setVideoLoaded(true)}
+                className="w-full h-full relative flex flex-col items-center justify-center cursor-pointer group"
+                aria-label="동화 영상 재생하기"
+              >
+                {/* #9: YouTube thumbnail as poster image */}
+                <Image
+                  src="https://img.youtube.com/vi/S7Fs_Kvpr40/hqdefault.jpg"
+                  alt=""
+                  fill
+                  className="object-cover rounded-2xl"
+                  sizes="(max-width: 512px) 100vw, 512px"
+                />
+                <span className="relative z-10 w-14 h-14 rounded-full bg-coral/90 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform" style={{ boxShadow: "0 4px 16px rgba(224,122,95,0.4)" }}>
+                  <span className="ml-1 border-l-[14px] border-y-[9px] border-l-white border-y-transparent" aria-hidden="true" />
+                </span>
+                <span className="relative z-10 text-[12px] text-white font-medium drop-shadow-md">영상으로 미리보기</span>
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-brown-pale font-light text-center mt-2">
+            완성된 동화 스토리에 일러스트와 음성을 더한 영상 예시입니다
+          </p>
+          {/* #35: 줌 클래스 언급 제거 — 브랜드 혼란 방지 */}
+        </section>
+
+        {/* ════════════════════════════════════════
             WHY TICKET MODEL
             ════════════════════════════════════════ */}
         <div
@@ -903,48 +919,10 @@ function PricingContent() {
         </div>
 
         {/* ════════════════════════════════════════
-            EMAIL CAPTURE (#24)
-            ════════════════════════════════════════ */}
-        <div
-          className="rounded-2xl p-4 mb-4 text-center"
-          style={{ background: "rgba(232,168,124,0.06)", border: "1px solid rgba(232,168,124,0.12)" }}
-        >
-          <p className="text-[12px] text-brown font-medium mb-2">동화 서비스 소식 받기</p>
-          <p className="text-[11px] text-brown-light font-light mb-3">새로운 기능과 할인 소식을 이메일로 알려드려요</p>
-          {/* TODO: POST /api/newsletter endpoint 연동 */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const email = new FormData(form).get("email") as string;
-              if (email) {
-                form.reset();
-                alert("감사합니다! 소식을 보내드릴게요 ✉️");
-              }
-            }}
-            className="flex gap-2 max-w-xs mx-auto"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="이메일 주소"
-              className="flex-1 px-3 py-2 rounded-full text-[12px] text-brown bg-white border border-brown-pale/20 outline-none focus:border-coral/40 transition-colors"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-full text-[12px] text-white font-medium transition-all active:scale-[0.97]"
-              style={{ background: "linear-gradient(135deg, rgb(var(--coral)), #C96B52)" }}
-            >
-              구독
-            </button>
-          </form>
-        </div>
-
-        {/* ════════════════════════════════════════
             FAQ — with aria-expanded / aria-controls
             ════════════════════════════════════════ */}
         <div
+          id="faq"
           className="rounded-2xl p-5 mb-4"
           style={{
             background: "rgba(255,255,255,0.4)",
@@ -1011,33 +989,6 @@ function PricingContent() {
             심리적 위기 시 1393 (자살예방상담전화) 또는 1577-0199
             (정신건강위기상담전화)
           </p>
-        </div>
-
-        {/* ════════════════════════════════════════
-            SHARE SECTION (#29)
-            ════════════════════════════════════════ */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <span className="text-[11px] text-brown-pale font-light">공유하기</span>
-          <button
-            type="button"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: "마마스테일 — 엄마의 마음이 동화가 됩니다",
-                  url: window.location.href,
-                }).catch(() => {});
-              } else {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                  alert("링크가 복사되었습니다!");
-                }).catch(() => {});
-              }
-            }}
-            className="px-3 py-1.5 rounded-full text-[11px] text-brown-light font-medium transition-all active:scale-[0.97]"
-            style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(196,149,106,0.15)" }}
-            aria-label="페이지 공유하기"
-          >
-            {typeof navigator !== "undefined" && "share" in navigator ? "📤 공유" : "🔗 링크 복사"}
-          </button>
         </div>
 
         {/* ════════════════════════════════════════

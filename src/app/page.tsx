@@ -7,8 +7,8 @@ import dynamic from "next/dynamic";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
-import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuth } from "@/lib/hooks/useAuth";
+import SectionTabBar from "@/components/layout/SectionTabBar";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { trackScreenView } from "@/lib/utils/analytics";
@@ -90,7 +90,6 @@ export default function Home() {
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
-  const { total: liveTotal, creating: liveCreating, isLoaded: presenceLoaded } = usePresence("home");
 
   // GA: Track screen view on every screen change
   useEffect(() => { trackScreenView(screen); }, [screen]);
@@ -527,6 +526,19 @@ export default function Home() {
         )}
       </div>
 
+      {/* Section tab bar — sticky quick-jump navigation */}
+      <SectionTabBar
+        sections={[
+          { id: "gallery", label: "동화" },
+          { id: "how", label: "방법" },
+          { id: "reviews", label: "후기" },
+          { id: "start", label: "시작" },
+          { id: "diy", label: "DIY" },
+        ]}
+        stickyTop="top-0"
+        scrollOffset={34}
+      />
+
       {/* Main content — centered, max-width for desktop */}
       <div
         className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-8 relative z-[1] transition-all duration-1000"
@@ -538,15 +550,6 @@ export default function Home() {
       >
         {/* Top section: title + description */}
         <div>
-          {/* Welcome message for logged-in users */}
-          {user && !authLoading && (
-            <div className="mb-4 px-4 py-2.5 rounded-2xl" style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}>
-              <p className="text-sm text-brown font-light">
-                <span className="font-medium">{user.user_metadata?.name || user.email?.split("@")[0] || "회원"}</span>님, 환영합니다
-              </p>
-            </div>
-          )}
-
           <h1 className="font-serif text-[36px] font-bold text-brown tracking-tight leading-[1.15] mb-2">
             mamastale
           </h1>
@@ -557,26 +560,39 @@ export default function Home() {
           <p className="text-[12px] text-brown-pale font-light mb-1 break-keep">
             우리 아이를 위한 세상에 단 하나뿐인 동화를 만들어 보세요
           </p>
-          <p className="text-[11px] text-brown-pale/70 font-light mb-3 break-keep">
+          <p className="text-[11px] text-brown-pale/70 font-light mb-4 break-keep">
             AI 대화로 엄마의 이야기가 10장면 동화로 완성돼요
           </p>
-          {presenceLoaded && liveTotal > 0 ? (
-            <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-full bg-coral/5 border border-coral/10 w-fit">
-              <span className="w-2 h-2 rounded-full bg-coral animate-pulse flex-shrink-0" />
-              <p className="text-[11px] text-brown font-medium">
-                지금 <span className="text-coral font-bold">{liveCreating > 0 ? liveCreating : liveTotal}</span>명이 동화를 만들고 있어요
-              </p>
-            </div>
-          ) : (
-            <p className="text-[11px] text-brown-pale font-light mb-5">
-              지금까지 수백 명의 엄마가 마음 동화를 만들었어요
+
+          {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
+          <button
+            onClick={handleStartStory}
+            disabled={authLoading}
+            aria-busy={authLoading}
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+            }}
+          >
+            {authLoading ? (
+              <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                불러오는 중...
+              </span>
+            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+          </button>
+          {!user && !authLoading && (
+            <p className="text-[10px] text-brown-pale/70 font-light text-center mb-5">
+              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725)
             </p>
           )}
+          {user && <div className="mb-5" />}
 
           {/* ════════════════════════════════════════
               STORYBOOK GALLERY — Product showcase
               ════════════════════════════════════════ */}
-          <div className="mb-5">
+          <div id="gallery" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               이런 동화가 완성돼요
             </p>
@@ -639,7 +655,7 @@ export default function Home() {
           {/* ════════════════════════════════════════
               HOW IT WORKS — 3-step process (B2)
               ════════════════════════════════════════ */}
-          <div className="mb-6">
+          <div id="how" className="mb-6">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-3">
               이렇게 만들어져요
             </p>
@@ -661,35 +677,9 @@ export default function Home() {
           </div>
 
           {/* ════════════════════════════════════════
-              4-DAY PROGRAM — Visual explanation (L1)
-              ════════════════════════════════════════ */}
-          <div className="mb-6 px-3 py-4 rounded-2xl" style={{ background: "rgba(139,106,175,0.05)", border: "1px solid rgba(139,106,175,0.1)" }}>
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
-              4일 연속 대화 프로그램
-            </p>
-            <p className="text-[11px] text-brown-pale font-light text-center mb-3 break-keep">
-              매일 하나씩, 4일 동안 4권의 동화를 완성해요
-            </p>
-            <div className="flex items-center justify-center gap-1">
-              {["1일차", "2일차", "3일차", "4일차"].map((day, i) => (
-                <div key={day} className="flex items-center gap-1">
-                  <div className="w-12 h-12 rounded-lg flex flex-col items-center justify-center" style={{ background: "rgba(139,106,175,0.1)" }}>
-                    <span className="text-[10px] text-purple font-medium">{day}</span>
-                    <span className="text-[9px] text-brown-pale">📖 1권</span>
-                  </div>
-                  {i < 3 && <span className="text-brown-pale/40 text-[10px]">→</span>}
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-brown-pale font-light text-center mt-2">
-              ₩14,900 · 1권당 ₩3,725
-            </p>
-          </div>
-
-          {/* ════════════════════════════════════════
               SOCIAL PROOF — Reviews (N3)
               ════════════════════════════════════════ */}
-          <div className="mb-5">
+          <div id="reviews" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-0.5">
               엄마들의 후기
             </p>
@@ -717,10 +707,25 @@ export default function Home() {
             </Link>
           </div>
 
+          {/* ⭐ CTA 2차 — Reviews 직후 (사회적 증거로 설득된 사용자 캡처) */}
+          <div id="start" className="mb-5">
+            <button
+              onClick={handleStartStory}
+              disabled={authLoading}
+              className="w-full py-3.5 rounded-full text-white text-[14px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
+              }}
+            >
+              {user ? "새 동화 만들기" : "지금 시작하기"}
+            </button>
+          </div>
+
           {/* ════════════════════════════════════════
               DIY THUMBNAILS — Free stories preview (M1)
               ════════════════════════════════════════ */}
-          <div className="mb-5">
+          <div id="diy" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               무료 DIY 동화
             </p>
@@ -750,38 +755,6 @@ export default function Home() {
               6개 동화 모두 보기 →
             </Link>
           </div>
-
-          {/* Value hint — shown ABOVE CTA for non-logged-in users (S1: free trial scope) */}
-          {!user && !authLoading && (
-            <p className="text-[11px] text-brown-pale font-normal text-center mb-2 leading-relaxed">
-              회원가입 없이 무료로 3턴 체험 · 동화 1편 ₩4,900
-            </p>
-          )}
-
-          {/* CTA button */}
-          <button
-            onClick={handleStartStory}
-            disabled={authLoading}
-            aria-busy={authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-3"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {authLoading ? (
-              <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
-                불러오는 중...
-              </span>
-            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
-          </button>
-          {/* C1: Price micro-copy */}
-          {!user && !authLoading && (
-            <p className="text-[10px] text-brown-pale/70 font-light text-center -mt-1 mb-3">
-              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725)
-            </p>
-          )}
 
           {/* DIY 동화 만들기 CTA */}
           <Link
