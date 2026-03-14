@@ -744,12 +744,19 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 
 | 커맨드 | 파일 | 용도 |
 |--------|------|------|
-| `/deploy` | `.claude/commands/deploy.md` | 빌드→테스트→커밋→푸시 |
+| `/deploy` | `.claude/commands/deploy.md` | 8단계 자동 배포 (빌드→테스트→리뷰→버전→CHANGELOG→커밋→푸시) |
 | `/crisis-test` | `.claude/commands/crisis-test.md` | 위기감지 회귀 테스트 |
 | `/i18n-add` | `.claude/commands/i18n-add.md` | 6개 언어 번역 키 추가 |
 | `/catchup` | `.claude/commands/catchup.md` | `/clear` 후 컨텍스트 복원 |
-| `/review` | `.claude/commands/review.md` | AI 보안 코드 리뷰 |
+| `/review` | `.claude/commands/review.md` | 편집광 2-Pass 코드 리뷰 (CRITICAL→IMPORTANT→INFO) |
 | `/simplify` | `.claude/commands/simplify.md` | 코드 간소화 |
+| `/a11y-audit` | `.claude/commands/a11y-audit.md` | WCAG 2.1 AA 접근성 감사 |
+| `/perf-audit` | `.claude/commands/perf-audit.md` | 번들 크기·이미지·렌더링 성능 분석 |
+| `/security-check` | `.claude/commands/security-check.md` | 전체 시스템 보안 점검 (API·결제·XSS) |
+| `/cleanup` | `.claude/commands/cleanup.md` | 데드코드·미사용 import·중복 로직 정리 |
+| `/db-optimize` | `.claude/commands/db-optimize.md` | Supabase 쿼리·인덱스·RLS 최적화 |
+| `/qa` | `.claude/commands/qa.md` | 체계적 QA (diff-aware·full·quick·regression 4모드) |
+| `checklist.md` | `.claude/commands/checklist.md` | 코드 리뷰 체크리스트 (독립 참조 파일) |
 
 ---
 

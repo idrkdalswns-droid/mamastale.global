@@ -38,6 +38,15 @@
           "command": "cd /Users/minjunekang/Desktop/엄마엄마동화/mamastale && export PATH=/usr/bin:/bin:/usr/local/bin:$PATH && npm run build 2>&1 | tail -5 && npm test 2>&1 | tail -10"
         }
       }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hook": {
+          "type": "command",
+          "command": "echo '📋 리마인더: /a11y-audit, /perf-audit, /security-check, /cleanup, /db-optimize 사용 가능'"
+        }
+      }
     ]
   },
   "permissions": {
