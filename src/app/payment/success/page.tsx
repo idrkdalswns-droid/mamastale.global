@@ -40,6 +40,7 @@ function PaymentSuccessContent() {
   const [hasSavedChat, setHasSavedChat] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [autoRedirectCount, setAutoRedirectCount] = useState(5);
   const confirmedRef = useRef(false);
   // R5-CRIT2: Track status in ref to avoid stale closure in setTimeout
   const statusRef = useRef(status);
@@ -201,6 +202,25 @@ function PaymentSuccessContent() {
     try { setHasSavedChat(!!localStorage.getItem("mamastale_chat_state")); } catch { /* private browsing */ }
   }, []);
 
+  // Auto-redirect countdown after success (5s → 0s → redirect)
+  useEffect(() => {
+    if (status !== "success") return;
+    // Set flag so page.tsx auto-starts onboarding
+    try { sessionStorage.setItem("mamastale_post_payment", "start"); } catch { /* ignore */ }
+
+    const interval = setInterval(() => {
+      setAutoRedirectCount((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status, hasSavedChat, router]);
+
   if (status === "confirming") {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center px-8">
@@ -350,6 +370,11 @@ function PaymentSuccessContent() {
         >
           {hasSavedChat ? "대화 이어서 동화 만들기" : "지금 바로 동화 만들기"}
         </button>
+        {autoRedirectCount > 0 && (
+          <p className="text-[11px] text-brown-pale font-light mb-2">
+            {autoRedirectCount}초 후 자동으로 이동합니다
+          </p>
+        )}
         <button
           onClick={() => router.push("/")}
           className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"

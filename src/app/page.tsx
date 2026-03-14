@@ -95,7 +95,7 @@ export default function Home() {
   // GA: Track screen view on every screen change
   useEffect(() => { trackScreenView(screen); }, [screen]);
 
-  // Detect URL params: payment success, action=start
+  // Detect URL params: payment success, action=start, post-payment auto-start
   const [actionStart, setActionStart] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -106,6 +106,15 @@ export default function Home() {
       window.history.replaceState({}, "", "/");
       setActionStart(true);
     }
+    // Post-payment auto-start: sessionStorage flag set by payment/success page
+    try {
+      const postPayment = sessionStorage.getItem("mamastale_post_payment");
+      if (postPayment === "start") {
+        sessionStorage.removeItem("mamastale_post_payment");
+        setShowPaymentSuccess(true);
+        setActionStart(true);
+      }
+    } catch { /* sessionStorage not available */ }
     // Save referral code for claiming after login
     const refCode = params.get("ref");
     if (refCode) {

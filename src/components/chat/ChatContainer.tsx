@@ -43,6 +43,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     storySaved,
     storySaveError,
     isPremiumStory,
+    turnCountInCurrentPhase,
     sendMessage,
     initSession,
     persistToStorage,
@@ -58,6 +59,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showPremiumUpgrade, setShowPremiumUpgrade] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -79,6 +82,36 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   useEffect(() => {
     initSession(`session_${Date.now()}`);
   }, [initSession]);
+
+  // Network status detection
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    setIsOffline(!navigator.onLine);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
+  // Auto-save timestamp label (updates every 30s)
+  useEffect(() => {
+    const updateLabel = () => {
+      const { getDraftInfo } = useChatStore.getState();
+      const info = getDraftInfo();
+      if (info?.savedAt) {
+        const diff = Math.round((Date.now() - info.savedAt) / 1000);
+        if (diff < 60) setLastSavedLabel("방금 저장됨");
+        else if (diff < 3600) setLastSavedLabel(`${Math.floor(diff / 60)}분 전 저장됨`);
+        else setLastSavedLabel(null);
+      }
+    };
+    updateLabel();
+    const interval = setInterval(updateLabel, 30000);
+    return () => clearInterval(interval);
+  }, [messages.length]);
 
   // ── DEFENSE LAYER 1: Auto-save chat on page unload ──
   // Catches ALL navigation scenarios: OAuth redirect, back button, URL change, tab close
@@ -198,6 +231,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         currentPhase={currentPhase}
         visitedPhases={visitedPhases}
         isTransitioning={isTransitioning}
+        turnCountInPhase={turnCountInCurrentPhase}
         onGoHome={() => {
           const userMsgCount = messages.filter(m => m.role === "user").length;
           if (userMsgCount > 0 && !storyDone) {
@@ -209,9 +243,24 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         onSaveDraft={() => {
           saveDraft();
           setShowSaveToast(true);
+          setLastSavedLabel("방금 저장됨");
           setTimeout(() => setShowSaveToast(false), 2000);
         }}
       />
+
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="text-center py-1.5 text-[11px] font-medium" style={{ background: "rgba(224,122,95,0.12)", color: "#C96B52" }}>
+          📡 인터넷 연결을 확인해 주세요
+        </div>
+      )}
+
+      {/* Auto-save status */}
+      {lastSavedLabel && !isOffline && (
+        <div className="text-center py-0.5 text-[9px] text-brown-pale font-light">
+          💾 {lastSavedLabel}
+        </div>
+      )}
 
       {/* Phase transition overlay */}
       <PhaseTransition isVisible={isTransitioning} phase={currentPhase} />

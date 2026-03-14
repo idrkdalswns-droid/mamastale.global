@@ -11,6 +11,8 @@ interface PhaseHeaderProps {
   isTransitioning: boolean;
   onGoHome?: () => void;
   onSaveDraft?: () => void;
+  /** Current turn count in this phase (0-indexed) */
+  turnCountInPhase?: number;
 }
 
 export default memo(function PhaseHeader({
@@ -19,8 +21,18 @@ export default memo(function PhaseHeader({
   isTransitioning,
   onGoHome,
   onSaveDraft,
+  turnCountInPhase = 0,
 }: PhaseHeaderProps) {
   const p = PHASES[currentPhase];
+
+  // Overall progress: 4 phases × ~10 turns = 40 total turns
+  const totalProgress = Math.min(100, Math.round(((currentPhase - 1) * 10 + turnCountInPhase) / 40 * 100));
+  // Estimated remaining minutes
+  const remainingMin = (() => {
+    const turnsLeft = 40 - ((currentPhase - 1) * 10 + turnCountInPhase);
+    // ~30sec per turn = ~0.5min
+    return Math.max(1, Math.round(turnsLeft * 0.5));
+  })();
   useSettingsHydration(); // LAUNCH-FIX: Hydrate from localStorage after mount
   const { fontSize, setFontSize } = useSettingsStore();
   const [showSettings, setShowSettings] = useState(false);
@@ -51,8 +63,19 @@ export default memo(function PhaseHeader({
       }}
     >
       <div className="px-4 pt-2.5 pb-2 relative">
-        {/* Progress bars */}
-        <div className="flex gap-1 mb-2 justify-center">
+        {/* Overall progress bar */}
+        <div className="h-[2px] rounded-full mb-1.5 overflow-hidden" style={{ background: "rgba(0,0,0,0.04)" }}>
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${totalProgress}%`,
+              background: `linear-gradient(90deg, ${p.accent}, ${p.accent}CC)`,
+            }}
+          />
+        </div>
+
+        {/* Phase segment bars */}
+        <div className="flex gap-1 mb-1.5 justify-center items-center">
           {Object.values(PHASES).map((ph) => (
             <div
               key={ph.id}
@@ -68,6 +91,9 @@ export default memo(function PhaseHeader({
               }}
             />
           ))}
+          <span className="text-[9px] font-medium ml-1.5" style={{ color: p.accent }}>
+            {totalProgress}%
+          </span>
         </div>
 
         {/* Phase info */}
@@ -94,7 +120,7 @@ export default memo(function PhaseHeader({
             >
               <span>{p.theory}</span>
               <span className="inline-block w-0.5 h-0.5 rounded-full bg-current opacity-40" />
-              <span>{p.id <= 2 ? "~10분" : "~5분"}</span>
+              <span>약 {remainingMin}분 남음</span>
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PushPermissionBanner } from "@/components/ui/PushPermissionBanner";
 import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
+import { hapticSuccess } from "@/lib/utils/haptic";
 
 /** Topic suggestions for next story nudge */
 const TOPIC_SUGGESTIONS = [
@@ -28,14 +29,33 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
   size: 14 + Math.random() * 12,
 }));
 
+// CSS Confetti pieces (40 colored pieces falling with rotation)
+const CONFETTI_COLORS = ["#E07A5F", "#7FBFB0", "#8B6AAF", "#C4956A", "#FEE500", "#B8D8D0", "#C8B8D8"];
+const confettiPieces = Array.from({ length: 40 }, (_, i) => ({
+  id: i,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  left: `${Math.random() * 100}%`,
+  delay: Math.random() * 0.8,
+  duration: 1.5 + Math.random() * 1.5,
+  size: 6 + Math.random() * 6,
+  rotation: Math.random() * 360,
+  drift: (Math.random() - 0.5) * 100,
+}));
+
 export default function StoryCompleteCTA({
   onViewStory,
   onNewStory,
   getHeaders,
 }: StoryCompleteCTAProps) {
+  const [showConfetti, setShowConfetti] = useState(true);
+
   // Sprint 4-B: Increment story count for PWA install prompt trigger
   useEffect(() => {
     incrementStoryCount();
+    hapticSuccess();
+    // Hide confetti after animation completes
+    const timer = setTimeout(() => setShowConfetti(false), 3500);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -51,6 +71,34 @@ export default function StoryCompleteCTA({
       onKeyDown={(e) => { if (e.key === "Escape") onViewStory(); }}
       style={{ background: "rgb(var(--cream) / 0.88)", backdropFilter: "blur(14px)" }}
     >
+      {/* Confetti burst */}
+      {showConfetti && confettiPieces.map((c) => (
+        <motion.div
+          key={`confetti-${c.id}`}
+          initial={{ opacity: 1, y: -20, x: 0, rotate: 0, scale: 1 }}
+          animate={{
+            opacity: [1, 1, 0],
+            y: [-20, 400 + Math.random() * 200],
+            x: [0, c.drift],
+            rotate: [0, c.rotation + 360],
+            scale: [1, 0.6],
+          }}
+          transition={{
+            duration: c.duration,
+            delay: c.delay,
+            ease: "easeIn",
+          }}
+          className="absolute top-0 pointer-events-none rounded-sm"
+          style={{
+            left: c.left,
+            width: c.size,
+            height: c.size * 0.6,
+            background: c.color,
+          }}
+          aria-hidden="true"
+        />
+      ))}
+
       {/* Celebration particles */}
       {particles.map((p) => (
         <motion.div
@@ -92,22 +140,22 @@ export default function StoryCompleteCTA({
           }}
         >
           <motion.span
-            initial={{ scale: 0.6, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, type: "spring", stiffness: 200 }}
-            className="text-[64px]"
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: [0, 1.3, 1], rotate: [-30, 10, 0] }}
+            transition={{ duration: 0.8, delay: 0.4, type: "spring", stiffness: 180, damping: 12 }}
+            className="text-[56px]"
           >
-            ·
+            📖
           </motion.span>
         </motion.div>
 
         <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          initial={{ opacity: 0, y: 12, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.5, type: "spring", stiffness: 120 }}
           className="font-serif text-2xl font-bold text-brown mb-2 leading-tight"
         >
-          나의 동화가<br />완성되었어요
+          축하합니다!<br />나의 동화가 완성되었어요
         </motion.h2>
 
         <motion.p

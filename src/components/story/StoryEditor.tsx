@@ -10,6 +10,14 @@ interface StoryEditorProps {
   onDone: (editedScenes: Scene[], editedTitle: string) => void;
 }
 
+interface UndoEntry {
+  scenes: Scene[];
+  title: string;
+  label: string; // e.g. "3페이지 수정"
+}
+
+const MAX_UNDO = 20;
+
 export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   const [editedScenes, setEditedScenes] = useState<Scene[]>(() =>
     scenes.map((s) => ({ ...s, text: cleanSceneText(s.text) }))
@@ -19,6 +27,39 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
     scenes.map((s) => ({ ...s, text: cleanSceneText(s.text) }))
   );
   const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
+
+  // Push current state to undo stack before mutation
+  const pushUndo = useCallback((label: string) => {
+    setUndoStack((prev) => {
+      const entry: UndoEntry = { scenes: editedScenes.map((s) => ({ ...s })), title: editedTitle, label };
+      const next = [...prev, entry];
+      return next.length > MAX_UNDO ? next.slice(-MAX_UNDO) : next;
+    });
+  }, [editedScenes, editedTitle]);
+
+  // Pop and restore from undo stack
+  const popUndo = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const entry = prev[prev.length - 1];
+      setEditedScenes(entry.scenes);
+      setEditedTitle(entry.title);
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  // Keyboard shortcut: Ctrl+Z / Cmd+Z
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        popUndo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [popUndo]);
 
   // FR-004: Check if any content has been modified
   const hasAnyChanges =
@@ -62,25 +103,36 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
     });
   }, [editedScenes]);
 
+  // Debounced undo push for text edits (push once per focus session, not per keystroke)
+  const lastPushedRef = useRef<{ index: number; time: number } | null>(null);
+
   const updateScene = useCallback(
     (index: number, value: string) => {
+      // Push undo only on first edit of this scene in this burst (3s debounce)
+      const now = Date.now();
+      const last = lastPushedRef.current;
+      if (!last || last.index !== index || now - last.time > 3000) {
+        pushUndo(`${index + 1}페이지 수정`);
+        lastPushedRef.current = { index, time: now };
+      }
       setEditedScenes((prev) =>
         prev.map((s, i) => (i === index ? { ...s, text: value } : s))
       );
     },
-    []
+    [pushUndo]
   );
 
   const resetScene = useCallback(
     (index: number) => {
       const original = originalScenes[index];
       if (original) {
+        pushUndo(`${index + 1}페이지 되돌리기`);
         setEditedScenes((prev) =>
           prev.map((s, i) => (i === index ? { ...original } : s))
         );
       }
     },
-    [originalScenes]
+    [originalScenes, pushUndo]
   );
 
   const handleDone = useCallback(() => {
@@ -118,8 +170,21 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
       {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="text-xs text-brown-light font-medium">
-            동화 편집
+          <div className="flex items-center gap-2">
+            <div className="text-xs text-brown-light font-medium">
+              동화 편집
+            </div>
+            {undoStack.length > 0 && (
+              <button
+                onClick={popUndo}
+                className="text-[11px] font-medium px-2.5 py-1 rounded-full min-h-[36px] flex items-center gap-1 transition-all active:scale-[0.95]"
+                style={{ background: "rgba(90,62,43,0.06)", color: "#8B6F55" }}
+                aria-label="되돌리기"
+                title={`되돌리기: ${undoStack[undoStack.length - 1].label}`}
+              >
+                ↩ 되돌리기
+              </button>
+            )}
           </div>
           <button
             onClick={handleDone}

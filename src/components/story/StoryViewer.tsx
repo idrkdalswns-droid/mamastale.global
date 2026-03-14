@@ -83,7 +83,21 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     } catch { return 0; }
   });
   const [copied, setCopied] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [showAliasModal, setShowAliasModal] = useState(false);
+
+  // Fetch referral code for share links
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/referral", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.code) setReferralCode(data.code);
+        }
+      } catch { /* guest user — no referral code */ }
+    })();
+  }, []);
   const [aliasInput, setAliasInput] = useState("");
   // Sprint 2-B: Topic selection for community publish
   const [selectedTopic, setSelectedTopic] = useState<string>("");
@@ -210,18 +224,24 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     setTimeout(() => setCopied(false), 2000);
   }, [buildStoryText, storyId]);
 
+  // Build share URL with referral code
+  const getShareUrl = useCallback(() => {
+    const base = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
+    return referralCode ? `${base}/?ref=${referralCode}` : base;
+  }, [referralCode]);
+
   const handleShare = useCallback(async () => {
     const text = buildStoryText();
-    const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
+    const shareUrl = getShareUrl();
     if (navigator.share) {
       try {
-        await navigator.share({ title: storyTitle, text, url: siteUrl });
+        await navigator.share({ title: storyTitle, text, url: shareUrl });
         if (storyId) trackStoryShare(storyId, "native");
       } catch { /* user cancelled */ }
     } else {
       handleCopy();
     }
-  }, [buildStoryText, storyTitle, handleCopy, storyId]);
+  }, [buildStoryText, storyTitle, handleCopy, storyId, getShareUrl]);
 
   // R3-3: Cycle through 5 bg colors for pages beyond index 4
   const bgClass = pageBgClass[currentPage % 5];
@@ -423,11 +443,12 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             <div className="flex gap-2">
               <button
                 onClick={async () => {
+                  const shareUrl = getShareUrl();
                   const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
                   const ok = await shareToKakao({
                     title: storyTitle,
                     description: `${authorName || "엄마"}가 만든 세상에 하나뿐인 동화`,
-                    url: siteUrl,
+                    url: shareUrl,
                     imageUrl: coverImage ? `${siteUrl}${coverImage}` : undefined,
                   });
                   if (!ok) {

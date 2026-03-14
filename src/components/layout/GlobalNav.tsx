@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
+const KAKAO_CHANNEL_URL = "https://open.kakao.com/o/gSSkFmii";
+
 const NAV_ITEMS_PUBLIC = [
   { href: "/about", label: "소개" },
   { href: "/diy", label: "DIY 동화" },
@@ -68,6 +70,20 @@ export function GlobalNav() {
               </Link>
             );
           })}
+
+          {/* 고객센터 */}
+          <a
+            href={KAKAO_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="카카오톡 고객센터"
+            className="text-brown-mid min-h-[44px] flex items-center px-1"
+            title="카카오톡 문의"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 5.83 2 10.5c0 2.95 1.95 5.54 4.88 7.01l-1.01 3.74c-.08.3.26.54.52.37l4.43-2.95c.38.04.78.08 1.18.08 5.52 0 10-3.83 10-8.25S17.52 2 12 2z" />
+            </svg>
+          </a>
 
           {!loading &&
             (user ? (
