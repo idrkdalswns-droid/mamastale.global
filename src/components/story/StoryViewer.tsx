@@ -8,6 +8,8 @@ import { useSwipe } from "@/lib/hooks/useSwipe";
 import type { Scene } from "@/lib/types/story";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import { shareToKakao } from "@/lib/share/kakao";
+import { trackStoryShare, trackPdfDownload } from "@/lib/utils/analytics";
+import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
 
 /**
  * B-2: Detect AI-generated closing/celebration text patterns.
@@ -158,8 +160,8 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   }, [scenes, currentPage]);
 
   // Swipe gestures
-  const goNext = useCallback(() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1)), [totalPages]);
-  const goPrev = useCallback(() => setCurrentPage((p) => Math.max(0, p - 1)), []);
+  const goNext = useCallback(() => { setCurrentPage((p) => Math.min(totalPages - 1, p + 1)); hapticLight(); }, [totalPages]);
+  const goPrev = useCallback(() => { setCurrentPage((p) => Math.max(0, p - 1)); hapticLight(); }, []);
   const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
 
   // Build full story text for copy/share
@@ -201,8 +203,10 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
       }
     }
     setCopied(true);
+    hapticLight();
+    if (storyId) trackStoryShare(storyId, "copy");
     setTimeout(() => setCopied(false), 2000);
-  }, [buildStoryText]);
+  }, [buildStoryText, storyId]);
 
   const handleShare = useCallback(async () => {
     const text = buildStoryText();
@@ -210,11 +214,12 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     if (navigator.share) {
       try {
         await navigator.share({ title: storyTitle, text, url: siteUrl });
+        if (storyId) trackStoryShare(storyId, "native");
       } catch { /* user cancelled */ }
     } else {
       handleCopy();
     }
-  }, [buildStoryText, storyTitle, handleCopy]);
+  }, [buildStoryText, storyTitle, handleCopy, storyId]);
 
   // R3-3: Cycle through 5 bg colors for pages beyond index 4
   const bgClass = pageBgClass[currentPage % 5];

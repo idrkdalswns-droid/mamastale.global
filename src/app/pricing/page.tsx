@@ -7,6 +7,8 @@ import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { trackBeginCheckout } from "@/lib/utils/analytics";
+import { hapticMedium } from "@/lib/utils/haptic";
 
 // ─── Toss Payments SDK v2 Type Declarations ───
 declare global {
@@ -165,6 +167,9 @@ function PricingContent() {
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
         const orderId = `order_${uuid}`;
+
+        hapticMedium();
+        trackBeginCheckout(product.name, product.amount);
 
         const toss = window.TossPayments(tossClientKey);
         const payment = toss.payment({ customerKey: user.id });

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
+import { trackOnboardingStep, trackOnboardingComplete } from "@/lib/utils/analytics";
 
 const PARENT_ROLE_OPTIONS = [
   { value: "엄마", label: "엄마" },
@@ -111,6 +113,8 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
       if (childAge) localStorage.setItem("mamastale_child_age", childAge);
       localStorage.setItem("mamastale_onboarding_done", "1");
     } catch {}
+    hapticSuccess();
+    trackOnboardingComplete(parentRole, childAge);
     onDone();
   };
 
@@ -121,13 +125,16 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
     // R7-2: Store timer ref for cleanup on unmount
     transitionTimerRef.current = setTimeout(() => {
       if (next) {
-        setIdx((i) => Math.min(i + 1, slides.length - 1));
+        const nextIdx = Math.min(idx + 1, slides.length - 1);
+        setIdx(nextIdx);
+        trackOnboardingStep(nextIdx);
       } else {
         saveAndDone();
       }
       setAnim(true);
       setTransitioning(false);
     }, 250);
+    hapticLight();
   };
 
   const s = slides[idx];

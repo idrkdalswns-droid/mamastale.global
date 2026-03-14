@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { trackCommunityLike } from "@/lib/utils/analytics";
+import { hapticLight } from "@/lib/utils/haptic";
 
 interface LikeButtonProps {
   storyId: string;
@@ -90,10 +92,13 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
         setLiked(true);
         setIsGuest(true);
         setCount((c) => c + 1);
+        hapticLight();
+        trackCommunityLike(storyId);
       } else {
         // Authenticated toggle
         setLiked(data.liked);
         setCount((c) => (data.liked ? c + 1 : Math.max(0, c - 1)));
+        if (data.liked) { hapticLight(); trackCommunityLike(storyId); }
       }
     } catch {
       // ignore

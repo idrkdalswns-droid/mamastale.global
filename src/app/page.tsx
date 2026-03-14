@@ -11,6 +11,7 @@ import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { trackScreenView } from "@/lib/utils/analytics";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
@@ -73,6 +74,9 @@ export default function Home() {
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
   const { total: liveTotal, creating: liveCreating, isLoaded: presenceLoaded } = usePresence("home");
+
+  // GA: Track screen view on every screen change
+  useEffect(() => { trackScreenView(screen); }, [screen]);
 
   // Detect URL params: payment success, action=start
   const [actionStart, setActionStart] = useState(false);
