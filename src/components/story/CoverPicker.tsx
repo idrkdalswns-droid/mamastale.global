@@ -5,62 +5,64 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Cover image catalogue ───
+import { CATEGORY_COVERS, type CoverCategory } from "@/lib/utils/default-cover";
 
-type CoverTone = "pink" | "green" | "blue";
+type CoverFilter = "all" | "pink" | "green" | "blue" | CoverCategory;
 
 interface CoverImage {
   path: string;
-  tone: CoverTone;
+  filter: CoverFilter;
 }
 
-const TONE_LABELS: Record<CoverTone, string> = {
+const FILTER_LABELS: Record<CoverFilter, string> = {
+  all: "전체",
+  animal: "동물 가족",
+  child: "아이 모험",
+  nature: "자연",
+  fantasy: "판타지",
+  warm: "감성",
   pink: "따뜻한 위로",
   green: "고요한 성장",
   blue: "꿈꾸는 밤",
+  style: "아트 스타일",
 };
 
-const TONE_STYLES: Record<CoverTone, { bg: string; bgActive: string; text: string; textActive: string; border: string }> = {
-  pink: {
-    bg: "transparent",
-    bgActive: "rgba(224,122,95,0.12)",
-    text: "rgba(201,107,82,0.55)",
-    textActive: "#C96B52",
-    border: "rgba(224,122,95,0.18)",
-  },
-  green: {
-    bg: "transparent",
-    bgActive: "rgba(168,191,168,0.14)",
-    text: "rgba(107,143,107,0.55)",
-    textActive: "#6B8F6B",
-    border: "rgba(168,191,168,0.2)",
-  },
-  blue: {
-    bg: "transparent",
-    bgActive: "rgba(122,155,181,0.12)",
-    text: "rgba(90,122,148,0.55)",
-    textActive: "#5A7A94",
-    border: "rgba(122,155,181,0.2)",
-  },
+const FILTER_STYLES: Record<string, { bgActive: string; textActive: string; border: string }> = {
+  animal: { bgActive: "rgba(196,149,106,0.12)", textActive: "#8B6F55", border: "rgba(196,149,106,0.2)" },
+  child: { bgActive: "rgba(122,155,181,0.12)", textActive: "#5A7A94", border: "rgba(122,155,181,0.2)" },
+  nature: { bgActive: "rgba(168,191,168,0.14)", textActive: "#6B8F6B", border: "rgba(168,191,168,0.2)" },
+  fantasy: { bgActive: "rgba(139,106,175,0.12)", textActive: "#6D4AAF", border: "rgba(139,106,175,0.2)" },
+  warm: { bgActive: "rgba(224,122,95,0.12)", textActive: "#C96B52", border: "rgba(224,122,95,0.18)" },
+  pink: { bgActive: "rgba(224,122,95,0.12)", textActive: "#C96B52", border: "rgba(224,122,95,0.18)" },
+  green: { bgActive: "rgba(168,191,168,0.14)", textActive: "#6B8F6B", border: "rgba(168,191,168,0.2)" },
+  blue: { bgActive: "rgba(122,155,181,0.12)", textActive: "#5A7A94", border: "rgba(122,155,181,0.2)" },
+  style: { bgActive: "rgba(196,149,106,0.12)", textActive: "#8B6F55", border: "rgba(196,149,106,0.2)" },
 };
 
-// 45 cover images — pink 16, green 14, blue 15
+// Build cover images from all sources
 const COVER_IMAGES: CoverImage[] = [
-  // Pink (01–16) .png
+  // New category covers first (more visually interesting)
+  ...Object.entries(CATEGORY_COVERS).flatMap(([cat, paths]) =>
+    paths.map(path => ({ path, filter: cat as CoverFilter }))
+  ),
+  // Classic Pink (01–16) .png
   ...Array.from({ length: 16 }, (_, i) => ({
     path: `/images/covers/cover_pink${String(i + 1).padStart(2, "0")}.png`,
-    tone: "pink" as CoverTone,
+    filter: "pink" as CoverFilter,
   })),
-  // Green (01–14) .jpeg
+  // Classic Green (01–14) .jpeg
   ...Array.from({ length: 14 }, (_, i) => ({
     path: `/images/covers/cover_green${String(i + 1).padStart(2, "0")}.jpeg`,
-    tone: "green" as CoverTone,
+    filter: "green" as CoverFilter,
   })),
-  // Blue (00–14) .jpeg
+  // Classic Blue (00–14) .jpeg
   ...Array.from({ length: 15 }, (_, i) => ({
     path: `/images/covers/cover_blue${String(i).padStart(2, "0")}.jpeg`,
-    tone: "blue" as CoverTone,
+    filter: "blue" as CoverFilter,
   })),
 ];
+
+const FILTER_ORDER: CoverFilter[] = ["animal", "child", "nature", "fantasy", "warm", "pink", "green", "blue", "style"];
 
 // ─── Props ───
 
@@ -79,14 +81,14 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
     const idx = Math.floor(Math.random() * COVER_IMAGES.length);
     return COVER_IMAGES[idx];
   });
-  const [activeTone, setActiveTone] = useState<CoverTone | null>(null);
+  const [activeFilter, setActiveFilter] = useState<CoverFilter | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const thumbnailRef = useRef<HTMLDivElement>(null);
 
-  // Filter images by active tone
+  // Filter images by active filter
   const filteredImages = useMemo(
-    () => (activeTone ? COVER_IMAGES.filter((c) => c.tone === activeTone) : COVER_IMAGES),
-    [activeTone],
+    () => (activeFilter ? COVER_IMAGES.filter((c) => c.filter === activeFilter) : COVER_IMAGES),
+    [activeFilter],
   );
 
   // Scroll selected thumbnail into view
@@ -107,25 +109,24 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
     [scrollToSelected],
   );
 
-  const handleToneToggle = useCallback(
-    (tone: CoverTone) => {
-      setActiveTone((prev) => (prev === tone ? null : tone));
+  const handleFilterToggle = useCallback(
+    (filter: CoverFilter) => {
+      setActiveFilter((prev) => (prev === filter ? null : filter));
     },
     [],
   );
 
-  // On tone change, if selected not in filtered, auto-select first of new filter
+  // On filter change, if selected not in filtered, auto-select first of new filter
   useEffect(() => {
-    if (activeTone && selected.tone !== activeTone) {
-      const first = COVER_IMAGES.find((c) => c.tone === activeTone);
+    if (activeFilter && selected.filter !== activeFilter) {
+      const first = COVER_IMAGES.find((c) => c.filter === activeFilter);
       if (first) {
         setSelected(first);
-        // R3-B4: Clean up scroll timer on unmount / rapid tone changes
         const timer = setTimeout(() => scrollToSelected(first.path), 100);
         return () => clearTimeout(timer);
       }
     }
-  }, [activeTone, selected.tone, scrollToSelected]);
+  }, [activeFilter, selected.filter, scrollToSelected]);
 
   const author = authorName || "어머니";
 
@@ -215,45 +216,47 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         </div>
       </motion.div>
 
-      {/* ── Zone B2: Emotional Filter Chips ── */}
+      {/* ── Zone B2: Category Filter Chips ── */}
       <motion.div
-        className="flex justify-center gap-2 px-6 pb-4"
+        className="px-4 pb-4 overflow-x-auto"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.4 }}
+        style={{ scrollbarWidth: "none" }}
       >
-        {/* L-4: "전체" filter chip */}
-        <button
-          onClick={() => setActiveTone(null)}
-          aria-pressed={activeTone === null}
-          className="px-4 py-2 rounded-full text-[12px] font-medium transition-all active:scale-[0.95]"
-          style={{
-            background: activeTone === null ? "rgba(196,149,106,0.12)" : "transparent",
-            color: activeTone === null ? "#8B6F55" : "rgba(139,111,85,0.45)",
-            border: `1.5px solid ${activeTone === null ? "rgba(196,149,106,0.25)" : "rgba(196,149,106,0.12)"}`,
-          }}
-        >
-          전체
-        </button>
-        {(Object.keys(TONE_LABELS) as CoverTone[]).map((tone) => {
-          const isActive = activeTone === tone;
-          const style = TONE_STYLES[tone];
-          return (
-            <button
-              key={tone}
-              onClick={() => handleToneToggle(tone)}
-              aria-pressed={isActive}
-              className="px-4 py-2 rounded-full text-[12px] font-medium transition-all active:scale-[0.95]"
-              style={{
-                background: isActive ? style.bgActive : style.bg,
-                color: isActive ? style.textActive : style.text,
-                border: `1.5px solid ${isActive ? style.border : "rgba(196,149,106,0.12)"}`,
-              }}
-            >
-              {TONE_LABELS[tone]}
-            </button>
-          );
-        })}
+        <div className="flex gap-1.5 justify-start w-max mx-auto">
+          <button
+            onClick={() => setActiveFilter(null)}
+            aria-pressed={activeFilter === null}
+            className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.95] whitespace-nowrap"
+            style={{
+              background: activeFilter === null ? "rgba(196,149,106,0.12)" : "transparent",
+              color: activeFilter === null ? "#8B6F55" : "rgba(139,111,85,0.45)",
+              border: `1.5px solid ${activeFilter === null ? "rgba(196,149,106,0.25)" : "rgba(196,149,106,0.12)"}`,
+            }}
+          >
+            전체
+          </button>
+          {FILTER_ORDER.map((filter) => {
+            const isActive = activeFilter === filter;
+            const style = FILTER_STYLES[filter];
+            return (
+              <button
+                key={filter}
+                onClick={() => handleFilterToggle(filter)}
+                aria-pressed={isActive}
+                className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.95] whitespace-nowrap"
+                style={{
+                  background: isActive ? style.bgActive : "transparent",
+                  color: isActive ? style.textActive : "rgba(139,111,85,0.45)",
+                  border: `1.5px solid ${isActive ? style.border : "rgba(196,149,106,0.12)"}`,
+                }}
+              >
+                {FILTER_LABELS[filter]}
+              </button>
+            );
+          })}
+        </div>
       </motion.div>
 
       {/* ── Zone C: Thumbnail Carousel ── */}
@@ -286,7 +289,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
               >
                 <Image
                   src={img.path}
-                  alt={`${TONE_LABELS[img.tone]} 표지`}
+                  alt={`${FILTER_LABELS[img.filter]} 표지`}
                   width={88}
                   height={55}
                   className="w-full h-full object-cover object-center"
