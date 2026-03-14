@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ReferralCard } from "@/components/referral/ReferralCard";
 
 // GA4 gtag type declaration
 declare global {
@@ -387,6 +388,11 @@ function PaymentSuccessContent() {
           >
             {shareCopied ? "✓ 링크가 복사되었어요" : "친구에게 공유하기"}
           </button>
+        </div>
+
+        {/* Referral card */}
+        <div className="mt-4">
+          <ReferralCard />
         </div>
       </div>
     </div>

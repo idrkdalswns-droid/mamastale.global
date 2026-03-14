@@ -89,8 +89,13 @@ export default function Home() {
       window.history.replaceState({}, "", "/");
       setActionStart(true);
     }
+    // Save referral code for claiming after login
+    const refCode = params.get("ref");
+    if (refCode) {
+      try { sessionStorage.setItem("mamastale_ref_code", refCode); } catch {}
+    }
     // Clean URL
-    if (params.get("payment")) {
+    if (params.get("payment") || refCode) {
       window.history.replaceState({}, "", "/");
     }
   }, []);
