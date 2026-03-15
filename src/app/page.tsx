@@ -845,9 +845,21 @@ export default function Home() {
           <div className="mt-4 mb-4 px-4 py-4 rounded-2xl" style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}>
             <p className="font-serif text-[13px] text-brown font-semibold mb-2">만든 사람의 이야기</p>
             <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
-              &ldquo;아내의 산후우울증을 겪으며, 엄마들의 아픔이 아이를 위한 사랑의 이야기로 바뀔 수 있다면 얼마나 좋을까 생각했습니다.&rdquo;
+              20대 시절, 자전거 한 대에 침낭을 싣고 3개월간 동유럽 10개국을 횡단했습니다. 그중 두 달은 인적조차 드문 낯선 노지에 작은 텐트를 치고 밤을 지새워야 했습니다. 별빛 한 점 스며들지 않는 캄캄한 텐트 안. 그 완벽한 단절 속에서 저는 인간 존재의 밑바닥에 도사린 극심한 외로움과 고독을 마주했습니다.
             </p>
-            <p className="text-[10px] text-brown-pale font-light mt-2">— 강민준, mamastale 대표</p>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
+              그 순간 저는 태어나서 해 본 적 없는 행동을 하는데요. 그게 바로 글쓰기였습니다.
+            </p>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
+              누군가에게 보여주기 위한 훌륭한 문장이 아니었습니다. 그저 내 안의 두려움, 슬픔, 그리고 날것의 감정들을 토해냈습니다.
+            </p>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
+              그리고 기적이 일어났습니다.
+            </p>
+            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
+              그 기적이 지금은 마마스테일로 표현되고 있습니다.
+            </p>
+            <p className="text-[10px] text-brown-pale font-light mt-3">— 강민준, mamastale 대표</p>
           </div>
 
           {/* Medical disclaimer */}
