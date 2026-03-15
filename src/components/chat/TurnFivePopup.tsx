@@ -36,11 +36,18 @@ export default function TurnFivePopup({
     try { return localStorage.getItem("mamastale_child_name") || ""; } catch { return ""; }
   })();
 
-  // Prevent background scroll when modal is open
+  // Prevent background scroll when modal is open + Escape key to go home
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onGoHome?.();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [onGoHome]);
 
   // ── Inline ticket deduction state ──
   const [isUsingTicket, setIsUsingTicket] = useState(false);

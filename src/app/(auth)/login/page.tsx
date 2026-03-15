@@ -8,15 +8,16 @@ import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  // redirect param preserved for future post-login redirect
-  void searchParams.get("redirect");
+  const redirect = searchParams.get("redirect");
 
   return (
     <>
       <OAuthButtons
         disabled={false}
         onBeforeRedirect={() => {
-          // Preserve any saved chat state
+          if (redirect) {
+            try { sessionStorage.setItem("mamastale_redirect", redirect); } catch {}
+          }
         }}
       />
 

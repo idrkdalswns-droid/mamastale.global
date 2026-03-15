@@ -1,0 +1,167 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ReferralCard } from "@/components/referral/ReferralCard";
+import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
+
+interface ProfileData {
+  email: string;
+  createdAt: string;
+  tickets: number;
+}
+
+export default function SettingsPage() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+
+      const ticketRes = await fetch("/api/tickets", { credentials: "include" });
+      const ticketData = ticketRes.ok ? await ticketRes.json() : null;
+
+      setProfile({
+        email: user.email || "",
+        createdAt: user.created_at || "",
+        tickets: ticketData?.tickets ?? 0,
+      });
+      setLoading(false);
+    })();
+  }, [router]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/account/export", { credentials: "include" });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mamastale-data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("데이터 내보내기에 실패했습니다.");
+    }
+    setExporting(false);
+  };
+
+  const handleDelete = async () => {
+    if (deleteConfirm !== "탈퇴합니다") return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "탈퇴합니다" }),
+      });
+      if (!res.ok) throw new Error();
+      router.push("/");
+    } catch {
+      alert("계정 삭제에 실패했습니다. 다시 시도해주세요.");
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh bg-cream flex items-center justify-center">
+        <p className="text-sm text-brown-pale font-light">로딩 중...</p>
+      </div>
+    );
+  }
+
+  const joinDate = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+    : "";
+
+  return (
+    <div className="min-h-dvh bg-cream relative overflow-hidden">
+      <WatercolorBlob top={-60} right={-80} size={220} color="rgba(232,168,124,0.06)" />
+
+      <div className="relative z-[1] max-w-[430px] mx-auto px-5 py-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link href="/" className="text-brown-pale text-sm no-underline min-h-[44px] flex items-center">← 홈</Link>
+          <h1 className="font-serif text-xl font-bold text-brown">설정</h1>
+        </div>
+
+        {/* Profile Section */}
+        <section className="rounded-2xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)" }}>
+          <h2 className="text-sm font-medium text-brown mb-3">내 정보</h2>
+          <div className="space-y-2 text-[13px]">
+            <div className="flex justify-between">
+              <span className="text-brown-light font-light">이메일</span>
+              <span className="text-brown">{profile?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brown-light font-light">가입일</span>
+              <span className="text-brown">{joinDate}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brown-light font-light">잔여 티켓</span>
+              <span className="text-coral font-semibold">{profile?.tickets}장</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Referral Section */}
+        <section className="rounded-2xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)" }}>
+          <h2 className="text-sm font-medium text-brown mb-3">추천 프로그램</h2>
+          <ReferralCard />
+        </section>
+
+        {/* Data Section */}
+        <section className="rounded-2xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)" }}>
+          <h2 className="text-sm font-medium text-brown mb-3">데이터 관리</h2>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full py-3 rounded-xl text-sm font-light text-brown transition-all active:scale-[0.97] disabled:opacity-50"
+            style={{ background: "rgba(196,149,106,0.08)", border: "1px solid rgba(196,149,106,0.15)" }}
+          >
+            {exporting ? "내보내는 중..." : "내 데이터 내보내기 (JSON)"}
+          </button>
+        </section>
+
+        {/* Danger Zone */}
+        <section className="rounded-2xl p-5" style={{ background: "rgba(224,122,95,0.04)", border: "1px solid rgba(224,122,95,0.1)" }}>
+          <h2 className="text-sm font-medium text-coral mb-2">계정 삭제</h2>
+          <p className="text-[11px] text-brown-light font-light mb-3 break-keep leading-relaxed">
+            계정을 삭제하면 모든 동화, 대화 기록, 티켓이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          </p>
+          <input
+            type="text"
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            placeholder="'탈퇴합니다' 입력"
+            className="w-full px-3 py-2.5 rounded-lg text-sm font-light text-brown outline-none mb-2"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(224,122,95,0.15)" }}
+          />
+          <button
+            onClick={handleDelete}
+            disabled={deleteConfirm !== "탈퇴합니다" || deleting}
+            className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-30"
+            style={{ background: "#E07A5F" }}
+          >
+            {deleting ? "삭제 중..." : "계정 영구 삭제"}
+          </button>
+        </section>
+      </div>
+    </div>
+  );
+}

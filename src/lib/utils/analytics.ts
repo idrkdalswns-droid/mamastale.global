@@ -55,6 +55,11 @@ export function trackPdfDownload(storyId: string) {
   track("pdf_download", { story_id: storyId });
 }
 
+// ── 회원가입 ──
+export function trackSignUp(method: string) {
+  track("sign_up", { method });
+}
+
 // ── 결제 ──
 export function trackBeginCheckout(product: string, price: number) {
   track("begin_checkout", { product, value: price, currency: "KRW" });

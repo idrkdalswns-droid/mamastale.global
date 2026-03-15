@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signInWithOAuth, type OAuthProvider } from "@/lib/auth/oauth";
+import { trackSignUp } from "@/lib/utils/analytics";
 
 interface OAuthButtonsProps {
   /** Additional CSS class for the wrapper */
@@ -23,7 +24,7 @@ export function OAuthButtons({ className = "", disabled = false, onBeforeRedirec
     setErrorMsg(null);
     // CRITICAL: Save chat state BEFORE browser redirects to OAuth provider
     onBeforeRedirect?.();
-    // LAUNCH-FIX: Handle signInWithOAuth error return
+    trackSignUp(provider);
     const result = await signInWithOAuth(provider);
     if (result.error) {
       setErrorMsg(result.error);

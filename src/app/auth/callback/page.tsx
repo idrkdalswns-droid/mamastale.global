@@ -70,8 +70,15 @@ export default function AuthCallbackPage() {
           return Array.isArray(snap?.messages) && snap.messages.some((m: { role: string }) => m.role === "user");
         } catch { return false; }
       })();
-      // Redirect destination: if chat was saved, go to /?action=start to auto-restore
-      const redirectUrl = hasSavedChat ? "/?action=start" : "/";
+      // Redirect destination priority: sessionStorage redirect > saved chat > home
+      const savedRedirect = (() => {
+        try {
+          const r = sessionStorage.getItem("mamastale_redirect");
+          if (r) sessionStorage.removeItem("mamastale_redirect");
+          return r;
+        } catch { return null; }
+      })();
+      const redirectUrl = savedRedirect || (hasSavedChat ? "/?action=start" : "/");
 
       // ─── 4A. Implicit flow: hash tokens from OAuth ───
       // OAuth uses implicit flow (see oauth.ts), so tokens arrive in hash fragment.

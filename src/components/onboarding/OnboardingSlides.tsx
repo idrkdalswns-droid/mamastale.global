@@ -95,7 +95,11 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
           <input
             type="text"
             value={childName}
-            onChange={(e) => setChildName(e.target.value.slice(0, 10))}
+            onChange={(e) => {
+              const v = e.target.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9\s]/g, "").slice(0, 10);
+              setChildName(v);
+            }}
+            maxLength={10}
             placeholder="예: 서연, 민준, 하은"
             className="w-full max-w-[240px] px-4 py-3 rounded-xl text-center text-sm font-light text-brown outline-none transition-all focus:ring-2 focus:ring-[#7FBFB0]/30"
             style={{
