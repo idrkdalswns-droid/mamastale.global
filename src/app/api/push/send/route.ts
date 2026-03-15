@@ -1,6 +1,7 @@
 export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIP } from "@/lib/utils/validation";
 
 /**
  * POST /api/push/send
@@ -12,6 +13,35 @@ import { NextRequest, NextResponse } from "next/server";
  *
  * Security: Protected by internal API key check (not user-facing)
  */
+
+// Rate limiting
+const PUSH_RATE_WINDOW = 60_000;
+const pushRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkPushRate(ip: string, limit: number): boolean {
+  const now = Date.now();
+  if (pushRateMap.size > 200) {
+    for (const [k, v] of pushRateMap) { if (now > v.resetAt) pushRateMap.delete(k); }
+  }
+  const entry = pushRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    pushRateMap.set(ip, { count: 1, resetAt: now + PUSH_RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= limit) return false;
+  entry.count++;
+  return true;
+}
+
+// Constant-time string comparison to prevent timing attacks on API key
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 // Web Push requires crypto operations; this is a minimal Edge-compatible implementation
 // using the standard Web Push protocol with VAPID
@@ -43,10 +73,15 @@ async function sendWebPush(
 }
 
 export async function POST(request: NextRequest) {
-  // Simple API key check for internal use
+  const ip = getClientIP(request);
+  if (!checkPushRate(ip, 100)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  // Constant-time API key check for internal use
   const apiKey = request.headers.get("x-api-key");
   const expectedKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!apiKey || apiKey !== expectedKey) {
+  if (!apiKey || !expectedKey || !timingSafeEqual(apiKey, expectedKey)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

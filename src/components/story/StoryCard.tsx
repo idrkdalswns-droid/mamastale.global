@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { resolveCover } from "@/lib/utils/default-cover";
@@ -32,7 +32,9 @@ export const StoryCard = memo(function StoryCard({
   likeCount,
   coverImage,
 }: StoryCardProps) {
+  const [imgErr, setImgErr] = useState(false);
   const resolvedCover = resolveCover(coverImage, id, topic);
+  const fallbackCover = resolveCover(undefined, id, topic);
   const firstScene = scenes?.[0];
   const fullText = firstScene?.text || "";
   const previewText = fullText.slice(0, 80);
@@ -56,12 +58,13 @@ export const StoryCard = memo(function StoryCard({
       {/* Cover Image */}
       <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
         <Image
-          src={resolvedCover}
+          src={imgErr ? fallbackCover : resolvedCover}
           alt={`${title || "동화"} 표지`}
           fill
           className="object-cover object-center"
           sizes="(max-width: 430px) 100vw, 430px"
           loading="lazy"
+          onError={() => setImgErr(true)}
         />
 
         {/* Topic badge overlay */}

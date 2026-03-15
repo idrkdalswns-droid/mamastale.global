@@ -51,6 +51,7 @@ export function StoryGallery3D() {
                 className="object-cover"
                 sizes="(max-width: 430px) 50vw, 200px"
                 loading={i < 2 ? "eager" : "lazy"}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
               {/* Gradient overlay */}
               <div
