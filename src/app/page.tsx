@@ -8,7 +8,6 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
-import SectionTabBar from "@/components/layout/SectionTabBar";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { trackScreenView } from "@/lib/utils/analytics";
@@ -526,22 +525,38 @@ export default function Home() {
         )}
       </div>
 
-      {/* Section tab bar — sticky quick-jump navigation */}
-      <SectionTabBar
-        sections={[
-          { id: "gallery", label: "동화" },
-          { id: "how", label: "방법" },
-          { id: "reviews", label: "후기" },
-          { id: "start", label: "시작" },
-          { id: "diy", label: "DIY" },
-        ]}
-        stickyTop="top-0"
-        scrollOffset={34}
-      />
+      {/* Page navigation tab bar — sticky site navigation */}
+      <nav
+        className="sticky top-0 z-30 flex h-[34px] items-center gap-0 overflow-x-auto scrollbar-hide border-b border-brown-pale/10"
+        style={{ backgroundColor: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(12px)" }}
+        aria-label="페이지 탐색"
+      >
+        {[
+          { href: "/", label: "홈", active: true },
+          { href: "/pricing", label: "구매" },
+          { href: "/reviews", label: "후기" },
+          { href: "/diy", label: "DIY" },
+          { href: "/about", label: "소개" },
+        ].map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`relative shrink-0 px-3 py-1 text-[11px] transition-colors duration-200 no-underline ${
+              tab.active ? "font-medium text-coral" : "text-brown-pale"
+            }`}
+            aria-current={tab.active ? "page" : undefined}
+          >
+            {tab.label}
+            {tab.active && (
+              <span className="absolute bottom-0 left-1/2 h-[2px] w-4/5 -translate-x-1/2 rounded-full bg-coral" />
+            )}
+          </Link>
+        ))}
+      </nav>
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-8 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-8 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -583,9 +598,9 @@ export default function Home() {
             ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
           {!user && !authLoading && (
-            <p className="text-[10px] text-brown-pale/70 font-light text-center mb-5">
-              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725)
-            </p>
+            <Link href="/pricing" className="text-[10px] text-brown-pale/70 font-light text-center mb-5 block no-underline hover:text-coral transition-colors">
+              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725) →
+            </Link>
           )}
           {user && <div className="mb-5" />}
 
@@ -712,7 +727,7 @@ export default function Home() {
             <button
               onClick={handleStartStory}
               disabled={authLoading}
-              className="w-full py-3.5 rounded-full text-white text-[14px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
+              className="w-full py-3.5 rounded-full text-white text-[14px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
@@ -720,6 +735,9 @@ export default function Home() {
             >
               {user ? "새 동화 만들기" : "지금 시작하기"}
             </button>
+            <Link href="/pricing" className="text-[11px] text-brown-pale font-light no-underline text-center block hover:text-coral transition-colors">
+              가격 안내 보기 →
+            </Link>
           </div>
 
           {/* ════════════════════════════════════════
