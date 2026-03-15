@@ -14,10 +14,10 @@ const PARENT_ROLE_OPTIONS = [
 ];
 
 const CHILD_AGE_OPTIONS = [
-  { value: "0-2", label: "0~2세", img: "/images/onboarding/age-0-2-1.jpeg", desc: "의성어와 반복이 가득한 동화가 만들어져요" },
-  { value: "3-5", label: "3~5세", img: "/images/onboarding/age-3-5.jpeg", desc: "감각적이고 대화가 있는 동화가 만들어져요" },
-  { value: "6-8", label: "6~8세", img: "/images/onboarding/age-6-8.jpeg", desc: "은유와 내면을 담은 동화가 만들어져요" },
-  { value: "9-13", label: "9~13세", img: "/images/onboarding/age-9-13.jpeg", desc: "깊은 이야기와 복합적인 동화가 만들어져요" },
+  { value: "0-2", label: "0~2세", img: "/images/onboarding/age-0-2-1.jpeg", desc: "의성어와 반복이 가득한 동화가 만들어져요", pos: "center" },
+  { value: "3-5", label: "3~5세", img: "/images/onboarding/age-3-5.jpeg", desc: "감각적이고 대화가 있는 동화가 만들어져요", pos: "center" },
+  { value: "6-8", label: "6~8세", img: "/images/onboarding/age-6-8.jpeg", desc: "은유와 내면을 담은 동화가 만들어져요", pos: "center" },
+  { value: "9-13", label: "9~13세", img: "/images/onboarding/age-9-13.jpeg", desc: "깊은 이야기와 복합적인 동화가 만들어져요", pos: "left center" },
 ];
 
 const STEPS = [
@@ -117,39 +117,42 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             연령에 맞는 언어로 동화를 만들어 드려요
           </p>
 
-          <div className="grid grid-cols-2 gap-3 w-full max-w-[280px]">
+          <div className="grid grid-cols-2 gap-4 w-full max-w-[280px]">
             {CHILD_AGE_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 type="button"
                 onClick={() => { setChildAge(o.value); hapticLight(); }}
-                className="relative flex flex-col items-center justify-end rounded-2xl transition-all active:scale-[0.96] overflow-hidden"
-                style={{
-                  aspectRatio: "1",
-                  border: childAge === o.value
-                    ? "2.5px solid #7FBFB0"
-                    : "2px solid rgba(196,149,106,0.12)",
-                  boxShadow: childAge === o.value
-                    ? "0 6px 20px rgba(127,191,176,0.25)"
-                    : "none",
-                }}
+                className="flex flex-col items-center gap-2 transition-all active:scale-[0.96]"
                 aria-pressed={childAge === o.value}
               >
-                <Image
-                  src={o.img}
-                  alt={o.label}
-                  fill
-                  sizes="140px"
-                  className="object-cover"
-                />
-                <span
-                  className="relative z-10 w-full text-center py-1.5 text-[12px] font-medium"
+                <div
+                  className="relative w-full rounded-2xl overflow-hidden"
                   style={{
-                    background: childAge === o.value
-                      ? "rgba(127,191,176,0.85)"
-                      : "rgba(255,255,255,0.75)",
-                    color: childAge === o.value ? "#FFF" : "#5A3E2B",
-                    backdropFilter: "blur(4px)",
+                    aspectRatio: "1",
+                    border: childAge === o.value
+                      ? "2.5px solid #7FBFB0"
+                      : "1.5px solid rgba(196,149,106,0.1)",
+                    boxShadow: childAge === o.value
+                      ? "0 6px 20px rgba(127,191,176,0.2)"
+                      : "0 2px 8px rgba(90,62,43,0.04)",
+                  }}
+                >
+                  <Image
+                    src={o.img}
+                    alt={o.label}
+                    fill
+                    sizes="140px"
+                    className="object-cover"
+                    style={{ objectPosition: o.pos }}
+                  />
+                </div>
+                <span
+                  className="text-[11px] tracking-wide"
+                  style={{
+                    fontFamily: "'Nanum Myeongjo', serif",
+                    color: childAge === o.value ? "#5FA89A" : "rgb(var(--brown-light))",
+                    fontWeight: childAge === o.value ? 600 : 400,
                   }}
                 >
                   {o.label}
