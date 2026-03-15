@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { trackBeginCheckout } from "@/lib/utils/analytics";
 import { hapticMedium } from "@/lib/utils/haptic";
-import SectionTabBar from "@/components/layout/SectionTabBar";
+// SectionTabBar removed — replaced with page navigation tab bar
 
 // ─── Toss Payments SDK v2 Type Declarations ───
 declare global {
@@ -393,18 +393,34 @@ function PricingContent() {
           </p>
         </section>
 
-        {/* Section tab bar — sticky below GlobalNav */}
-        <SectionTabBar
-          sections={[
-            { id: "pricing", label: "요금" },
-            { id: "reviews", label: "후기" },
-            { id: "gallery", label: "동화" },
-            { id: "trial", label: "체험" },
-            { id: "faq", label: "FAQ" },
-          ]}
-          stickyTop="top-12"
-          scrollOffset={82}
-        />
+        {/* Page navigation tab bar — sticky below GlobalNav */}
+        <nav
+          className="sticky top-12 z-30 -mx-6 flex h-[34px] items-center gap-0 overflow-x-auto scrollbar-hide border-b border-brown-pale/10"
+          style={{ backgroundColor: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(12px)" }}
+          aria-label="페이지 탐색"
+        >
+          {[
+            { href: "/", label: "홈" },
+            { href: "/pricing", label: "구매", active: true },
+            { href: "/reviews", label: "후기" },
+            { href: "/diy", label: "DIY" },
+            { href: "/about", label: "소개" },
+          ].map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`relative shrink-0 px-3 py-1 text-[11px] transition-colors duration-200 no-underline ${
+                tab.active ? "font-medium text-coral" : "text-brown-pale"
+              }`}
+              aria-current={tab.active ? "page" : undefined}
+            >
+              {tab.label}
+              {tab.active && (
+                <span className="absolute bottom-0 left-1/2 h-[2px] w-4/5 -translate-x-1/2 rounded-full bg-coral" />
+              )}
+            </Link>
+          ))}
+        </nav>
 
         {/* #17: Soft social proof counter */}
         <p className="text-[12px] text-brown-pale font-light text-center mb-8 mt-6">
