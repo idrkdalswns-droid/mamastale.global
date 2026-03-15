@@ -15,6 +15,8 @@ const TOPIC_SUGGESTIONS = [
 interface StoryCompleteCTAProps {
   onViewStory: () => void;
   onNewStory?: () => void;
+  /** Completed story ID for community share URL */
+  storyId?: string;
   /** Auth token getter for push subscription */
   getHeaders?: (opts?: { json?: boolean }) => Promise<Record<string, string>>;
 }
@@ -46,6 +48,7 @@ const confettiPieces = Array.from({ length: 40 }, (_, i) => ({
 export default function StoryCompleteCTA({
   onViewStory,
   onNewStory,
+  storyId,
   getHeaders,
 }: StoryCompleteCTAProps) {
   const [showConfetti, setShowConfetti] = useState(true);
@@ -221,7 +224,7 @@ export default function StoryCompleteCTA({
               text: childName
                 ? `${nameWithParticle(childName, "이를", "를")} 위해 만든 특별한 동화 — 마마스테일`
                 : "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
-              url: siteUrl,
+              url: storyId ? `${siteUrl}/community/${storyId}` : siteUrl,
             };
             if (navigator.share) {
               navigator.share(shareData).catch(() => {});

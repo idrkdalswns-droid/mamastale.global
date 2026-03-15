@@ -88,6 +88,9 @@ export default function Home() {
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
+  const [showStickyCta, setShowStickyCta] = useState(false);
+  const [storyCount, setStoryCount] = useState<number | null>(null);
+  const mainCtaRef = useRef<HTMLButtonElement>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
 
@@ -223,6 +226,26 @@ export default function Home() {
     setStartPending(false);
     setScreen("onboarding");
   }, [startPending, authLoading]);
+
+  // Sticky CTA: show when main CTA button scrolls out of viewport
+  useEffect(() => {
+    if (screen !== "landing" || !mainCtaRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyCta(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(mainCtaRef.current);
+    return () => observer.disconnect();
+  }, [screen]);
+
+  // Social proof: fetch total story count for landing
+  useEffect(() => {
+    if (screen !== "landing") return;
+    fetch("/api/community?limit=0")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.total != null) setStoryCount(d.total); })
+      .catch(() => {});
+  }, [screen]);
 
   // C-1+SV-3: Auto-ticket effect REMOVED — ticket deduction now happens inline
   // during chat via TurnFivePopup's onTicketUsed callback
@@ -544,6 +567,7 @@ export default function Home() {
 
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
           <button
+            ref={mainCtaRef}
             onClick={handleStartStory}
             disabled={authLoading}
             aria-busy={authLoading}
@@ -558,11 +582,11 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
               </span>
-            ) : user ? "우리 아이 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+            ) : user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}
           </button>
           {!user && !authLoading && (
             <Link href="/pricing" className="text-[10px] text-brown-pale/70 font-light text-center mb-5 block no-underline hover:text-coral transition-colors">
-              첫 동화 ₩3,920 · 4일 프로그램 ₩14,900 (1권당 ₩3,725) →
+              첫 체험 무료 · 동화 완성 ₩3,920 · 4일 프로그램 ₩14,900 →
             </Link>
           )}
           {user && <div className="mb-5" />}
@@ -702,6 +726,20 @@ export default function Home() {
           </div>
 
           {/* ════════════════════════════════════════
+              SOCIAL PROOF — Story Counter
+              ════════════════════════════════════════ */}
+          {storyCount != null && storyCount > 10 && (
+            <p className="text-center text-[12px] text-brown-pale font-light mb-4">
+              지금까지 <span className="text-coral font-semibold">{storyCount.toLocaleString()}편</span>의 동화가 만들어졌어요
+            </p>
+          )}
+          {storyCount != null && storyCount > 0 && storyCount <= 10 && (
+            <p className="text-center text-[12px] text-brown-pale font-light mb-4">
+              엄마들의 이야기가 시작되고 있어요
+            </p>
+          )}
+
+          {/* ════════════════════════════════════════
               SOCIAL PROOF — Reviews (N3)
               ════════════════════════════════════════ */}
           <div id="reviews" className="mb-5">
@@ -833,6 +871,24 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Sticky CTA — visible when main CTA scrolls out of view */}
+      {screen === "landing" && showStickyCta && !user && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50 px-4 py-3 backdrop-blur-md"
+          style={{ background: "rgba(251,245,236,0.92)", borderTop: "1px solid rgba(196,168,130,0.15)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+        >
+          <div className="max-w-[430px] mx-auto">
+            <button
+              onClick={handleStartStory}
+              className="w-full py-3.5 rounded-full text-white text-[14px] font-medium transition-transform active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 4px 16px rgba(224,122,95,0.3)" }}
+            >
+              {process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* C-1+SV-3: TicketConfirmModal & NoTicketsModal removed —
            ticket gate now happens at turn 3 inside chat (TurnFivePopup) */}

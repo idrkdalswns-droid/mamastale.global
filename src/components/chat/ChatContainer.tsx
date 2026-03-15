@@ -338,6 +338,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       {/* Story complete celebration — only after user reads farewell */}
       {showCelebration && !showPremiumUpgrade && (
         <StoryCompleteCTA
+          storyId={completedStoryId || undefined}
           onViewStory={() => {
             // For non-premium stories, show upgrade CTA before navigating
             if (!isPremiumStory && user) {
@@ -450,6 +451,31 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
           >
             다시 시도하기
           </button>
+        </div>
+      )}
+
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="px-4 py-2 text-center text-[11px] text-brown-pale font-light" style={{ background: "rgba(224,122,95,0.08)" }}>
+          인터넷 연결이 끊겼어요
+        </div>
+      )}
+
+      {/* Guest turn counter */}
+      {freeTrialMode && !storyDone && userMsgCount > 0 && userMsgCount < FREE_TURN_LIMIT && (
+        <div className="px-4 py-1.5 flex items-center justify-center gap-2">
+          <div className="flex gap-1">
+            {Array.from({ length: FREE_TURN_LIMIT }, (_, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full transition-colors"
+                style={{ background: i < userMsgCount ? "#E07A5F" : "rgba(196,168,130,0.25)" }}
+              />
+            ))}
+          </div>
+          <span className="text-[10px] text-brown-pale font-light">
+            무료 대화 {userMsgCount}/{FREE_TURN_LIMIT}
+          </span>
         </div>
       )}
 

@@ -10,14 +10,19 @@ import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { MotionProvider } from "@/components/layout/MotionProvider";
 import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mamastale-global.pages.dev"),
-  title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
+  title: "mamastale — AI로 만드는 나만의 동화 | 엄마의 이야기가 아이의 동화가 되다",
   description:
-    "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
+    "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요. 산후우울증, 양육 번아웃을 아이에게 들려줄 아름다운 이야기로 바꿔드립니다.",
   keywords: [
+    "AI 동화",
+    "AI 동화 만들기",
+    "아이 동화 만들기",
+    "엄마 동화",
     "마마스테일",
     "엄마엄마동화",
     "산후우울증",
@@ -27,9 +32,9 @@ export const metadata: Metadata = {
     "마음 상담",
   ],
   openGraph: {
-    title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
+    title: "mamastale — AI로 만드는 나만의 동화 | 엄마의 이야기가 아이의 동화가 되다",
     description:
-      "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
+      "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요. 산후우울증, 양육 번아웃을 아이에게 들려줄 아름다운 이야기로 바꿔드립니다.",
     type: "website",
     locale: "ko_KR",
     siteName: "mamastale",
@@ -47,8 +52,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "mamastale — 엄마의 삶이 아이의 동화가 되다",
-    description: "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다. 따뜻한 대화를 나누며 아이에게 들려줄 나만의 동화를 만들어 보세요.",
+    title: "mamastale — AI로 만드는 나만의 동화",
+    description: "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요.",
     images: ["https://mamastale-global.pages.dev/images/hero.jpg"],
   },
   icons: {
@@ -129,7 +134,7 @@ export default async function RootLayout({
         <main id="main-content" className="max-w-[430px] mx-auto min-h-dvh relative overflow-x-hidden">
           <ScrollToTop />
           <GlobalNav />
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
           <Footer />
         </main>
         <ConsentGatedScripts />
