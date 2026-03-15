@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const { scenes, sessionId, metadata, isPublic } = body;
+    const { scenes, sessionId, metadata, isPublic, coverImage } = body;
     // Server-side input sanitization: enforce max lengths, strip HTML
     const title = typeof body.title === "string" ? sanitizeText(body.title.trim().slice(0, 200)) : "";
     const authorAlias = typeof body.authorAlias === "string" ? sanitizeText(body.authorAlias.trim().slice(0, 50)) : null;
@@ -211,6 +211,17 @@ export async function POST(request: NextRequest) {
       metadata: metadata || {},
       status: "completed",
     };
+
+    // DIY 동화: coverImage 저장 (PATCH 핸들러와 동일한 whitelist regex)
+    if (typeof coverImage === "string" && coverImage.length > 0) {
+      const isValidCover =
+        /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(coverImage) ||
+        /^\/images\/covers\/[A-Za-z0-9_]+\.(png|jpeg)$/.test(coverImage) ||
+        /^\/images\/diy\/[a-z0-9-]+\/[A-Za-z0-9_]+\.(jpeg|png)$/.test(coverImage);
+      if (isValidCover) {
+        storyInsert.cover_image = coverImage;
+      }
+    }
 
     // Community columns (is_public, author_alias) require 002_community migration
     // Only include if explicitly requested — graceful fallback if columns missing

@@ -17,6 +17,7 @@ interface PopupBookViewerProps {
 }
 
 const SWIPE_THRESHOLD = 50;
+const MAX_TEXT_LENGTH = 200;
 
 export function PopupBookViewer({
   images,
@@ -32,6 +33,7 @@ export function PopupBookViewer({
   const [direction, setDirection] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const totalPages = imageOrder.length;
   const currentImageIndex = imageOrder[currentPage];
   const currentText = texts[currentImageIndex] || "";
@@ -69,7 +71,19 @@ export function PopupBookViewer({
     }
   }, [isEditing]);
 
-  // #7: Keyboard navigation (← →)
+  // Keyboard handling: scrollIntoView when virtual keyboard opens
+  useEffect(() => {
+    if (!isEditing) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      textareaRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+    vv.addEventListener("resize", handler);
+    return () => vv.removeEventListener("resize", handler);
+  }, [isEditing]);
+
+  // Keyboard navigation (← →)
   useEffect(() => {
     if (isEditing) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -82,6 +96,24 @@ export function PopupBookViewer({
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isEditing, currentPage, totalPages, goToPage]);
+
+  // Auto-scroll thumbnail strip to current page
+  useEffect(() => {
+    if (!stripRef.current) return;
+    const thumbEl = stripRef.current.children[currentPage] as HTMLElement | undefined;
+    if (thumbEl) {
+      thumbEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [currentPage]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      const ta = textareaRef.current;
+      ta.style.height = "auto";
+      ta.style.height = `${Math.min(ta.scrollHeight, window.innerHeight * 0.3)}px`;
+    }
+  }, [isEditing, currentText]);
 
   const variants = {
     enter: (d: number) => ({
@@ -103,36 +135,12 @@ export function PopupBookViewer({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Page counter */}
-      <div className="flex items-center justify-between px-5 pt-3 pb-2">
-        <button
-          onClick={() => goToPage(currentPage - 1, -1)}
-          disabled={currentPage === 0}
-          aria-label="이전 장면"
-          className="text-[12px] text-brown-light disabled:opacity-20 min-h-[44px] min-w-[44px] flex items-center justify-center"
-        >
-          ← 이전
-        </button>
-        <span className="text-[11px] text-brown-pale font-light">
-          {currentPage + 1} / {totalPages}
-        </span>
-        <button
-          onClick={() => goToPage(currentPage + 1, 1)}
-          disabled={currentPage === totalPages - 1}
-          aria-label="다음 장면"
-          className="text-[12px] text-brown-light disabled:opacity-20 min-h-[44px] min-w-[44px] flex items-center justify-center"
-        >
-          다음 →
-        </button>
-      </div>
-
-      {/* 3D Book area */}
+      {/* Book area — flex-1 min-h-0 for proper sizing */}
       <div
-        className="flex-1 relative mx-4 rounded-2xl overflow-hidden"
+        className="flex-1 min-h-0 relative mx-4 rounded-2xl overflow-hidden"
         style={{
           perspective: "1200px",
           transformStyle: "preserve-3d",
-          minHeight: "360px",
         }}
       >
         <AnimatePresence initial={false} custom={direction} mode="wait">
@@ -159,12 +167,12 @@ export function PopupBookViewer({
               boxShadow: `0 8px 32px ${accent}20, 0 2px 8px rgba(0,0,0,0.08)`,
             }}
           >
-            {/* Background image */}
+            {/* Background image — object-contain to show full illustration */}
             <Image
               src={images[currentImageIndex]}
-              alt={`${storyTitle ?? ''} 장면 ${currentPage + 1}`}
+              alt={`${storyTitle ?? ""} 장면 ${currentPage + 1}`}
               fill
-              className="object-cover select-none"
+              className="object-contain select-none"
               sizes="(max-width: 430px) 100vw, 400px"
               draggable={false}
               priority={currentPage < 2}
@@ -183,17 +191,25 @@ export function PopupBookViewer({
               className="absolute bottom-0 inset-x-0 p-4"
               style={{
                 background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
+                maxHeight: "40%",
               }}
             >
-              {/* Page number badge */}
-              <div
-                className="inline-block px-2 py-0.5 rounded-full text-[9px] font-medium text-white/80 mb-2"
-                style={{
-                  background: `${accent}60`,
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                {currentPage + 1}p
+              {/* Page badge + char counter */}
+              <div className="flex items-center justify-between mb-2">
+                <div
+                  className="inline-block px-2 py-0.5 rounded-full text-[9px] font-medium text-white/80"
+                  style={{
+                    background: `${accent}60`,
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  {currentPage + 1}p
+                </div>
+                {editable && (
+                  <span className="text-[9px] text-white/50 font-light">
+                    {currentText.length}/{MAX_TEXT_LENGTH}
+                  </span>
+                )}
               </div>
 
               {editable ? (
@@ -205,14 +221,16 @@ export function PopupBookViewer({
                       onChange={(e) => onTextChange?.(currentImageIndex, e.target.value)}
                       onBlur={handleTextSubmit}
                       placeholder="이 장면의 이야기를 써주세요..."
-                      maxLength={200}
-                      rows={3}
+                      maxLength={MAX_TEXT_LENGTH}
                       className="w-full bg-white/15 backdrop-blur-md text-white text-[14px] font-serif leading-relaxed rounded-xl px-3 py-2.5 resize-none outline-none placeholder:text-white/40"
-                      style={{ border: `1px solid ${accent}40` }}
+                      style={{
+                        border: `1px solid ${accent}40`,
+                        maxHeight: "30dvh",
+                      }}
                     />
                     <button
                       onClick={handleTextSubmit}
-                      className="absolute bottom-2 right-2 px-3 py-1 rounded-full text-[10px] font-medium text-white"
+                      className="mt-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium text-white float-right"
                       style={{ background: accent }}
                     >
                       완료
@@ -251,36 +269,66 @@ export function PopupBookViewer({
             </div>
           </motion.div>
         </AnimatePresence>
+      </div>
 
-        {/* Page dots */}
-        <div className="absolute bottom-[-28px] left-0 right-0 flex justify-center gap-1.5">
-          {imageOrder.map((_, i) => {
-            const distance = Math.abs(i - currentPage);
-            const scale = distance === 0 ? 1 : distance <= 2 ? 0.7 : 0.4;
+      {/* Thumbnail strip */}
+      <div className="pt-3 pb-2 px-2">
+        <div
+          ref={stripRef}
+          className="flex gap-1.5 overflow-x-auto scrollbar-hide py-1 px-2"
+          style={{ scrollSnapType: "x mandatory" }}
+        >
+          {imageOrder.map((idx, i) => {
+            const isActive = i === currentPage;
             return (
               <button
-                key={i}
+                key={`thumb-${idx}`}
                 onClick={() => goToPage(i, i > currentPage ? 1 : -1)}
-                className="p-0.5"
+                className="shrink-0 relative rounded-lg overflow-hidden transition-transform duration-200 focus:outline-none"
+                style={{
+                  width: 44,
+                  height: 58,
+                  scrollSnapAlign: "center",
+                  transform: isActive ? "scale(1.08)" : "scale(1)",
+                  border: isActive ? `2px solid ${accent}` : "2px solid transparent",
+                }}
                 aria-label={`${i + 1}번째 장면으로 이동`}
               >
-                <div
-                  className="rounded-full transition-all duration-200"
-                  style={{
-                    width: i === currentPage ? 16 : Math.max(3, 5 * scale),
-                    height: Math.max(3, 5 * scale),
-                    background: i === currentPage ? accent : `${accent}40`,
-                    opacity: distance <= 2 || i === 0 || i === totalPages - 1 ? 1 : 0.3,
-                  }}
+                <Image
+                  src={images[idx]}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="44px"
+                  draggable={false}
                 />
+                {/* Page number overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="text-[9px] font-bold text-white drop-shadow-md"
+                    style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+                  >
+                    {i + 1}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Bottom padding for dots */}
-      <div className="h-10" />
+      {/* Prefetch adjacent images */}
+      {[-1, 1].map((offset) => {
+        const p = currentPage + offset;
+        if (p < 0 || p >= totalPages) return null;
+        return (
+          <link
+            key={`prefetch-${offset}`}
+            rel="prefetch"
+            href={images[imageOrder[p]]}
+          />
+        );
+      })}
     </div>
   );
 }

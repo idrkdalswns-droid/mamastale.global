@@ -94,6 +94,7 @@ export function DIYComplete({
         body: JSON.stringify({
           title: storyTitle,
           scenes,
+          coverImage: thumbnail,
           metadata: { source: "diy", diyStoryId },
         }),
       });
@@ -243,6 +244,11 @@ export function DIYComplete({
           ) : (
             <Link
               href="/login"
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("mamastale_diy_return", `/diy/${diyStoryId}`);
+                } catch {}
+              }}
               className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] flex items-center justify-center break-keep"
               style={{
                 color: "#5A9E94",
@@ -273,7 +279,15 @@ export function DIYComplete({
         )}
 
         {saveError && (
-          <p className="text-[11px] text-red-500 text-center">{saveError}</p>
+          <div className="text-center">
+            <p className="text-[11px] text-red-500">{saveError}</p>
+            <button
+              onClick={handleSaveToLibrary}
+              className="text-[11px] text-brown-mid underline mt-1"
+            >
+              다시 시도
+            </button>
+          </div>
         )}
 
         {/* Community share success */}

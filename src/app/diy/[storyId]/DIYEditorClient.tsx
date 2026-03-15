@@ -136,7 +136,7 @@ export function DIYEditorClient() {
   // Step: Write text
   if (step === "write") {
     return (
-      <div className="min-h-dvh bg-cream flex flex-col">
+      <div className="h-dvh bg-cream flex flex-col overflow-hidden">
         {stepper}
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-1">

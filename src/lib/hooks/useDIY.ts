@@ -6,6 +6,10 @@ interface DIYSaveData {
   storyId: string;
   imageOrder: number[];
   texts: Record<number, string>;
+  // v3.1: optional for backward compatibility with old saved data
+  step?: "sort" | "write" | "complete";
+  currentPage?: number;
+  savedStoryId?: string | null;
   updatedAt: string;
 }
 
@@ -60,6 +64,19 @@ function cleanupOldDIYData() {
   }
 }
 
+// Debounce timer for setText
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => useDIYStore.getState().save(), 500);
+}
+
+function flushSave() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  useDIYStore.getState().save();
+}
+
 export const useDIYStore = create<DIYState>((set, get) => ({
   storyId: null,
   step: "sort",
@@ -73,13 +90,15 @@ export const useDIYStore = create<DIYState>((set, get) => ({
     cleanupOldDIYData();
     // Try to restore saved data
     const saved = get().load(storyId);
-    if (saved) {
+    // imageOrder 길이 검증 — 불일치 시 기존 데이터 폐기
+    if (saved && saved.imageOrder?.length === imageCount) {
       set({
         storyId,
         imageOrder: saved.imageOrder,
-        texts: saved.texts,
-        step: "sort",
-        currentPage: 0,
+        texts: saved.texts ?? {},
+        step: saved.step ?? "sort",               // 하위 호환: old data엔 step 없음
+        currentPage: saved.currentPage ?? 0,       // 하위 호환
+        savedStoryId: saved.savedStoryId ?? null,   // 하위 호환
       });
     } else {
       set({
@@ -88,6 +107,7 @@ export const useDIYStore = create<DIYState>((set, get) => ({
         texts: {},
         step: "sort",
         currentPage: 0,
+        savedStoryId: null,
       });
     }
   },
@@ -101,21 +121,37 @@ export const useDIYStore = create<DIYState>((set, get) => ({
     set((state) => ({
       texts: { ...state.texts, [imageIndex]: text },
     }));
+    debouncedSave();
+  },
+
+  setCurrentPage: (page) => {
+    flushSave(); // 현재 페이지 텍스트 즉시 플러시 후 페이지 전환
+    set({ currentPage: page });
     get().save();
   },
 
-  setCurrentPage: (page) => set({ currentPage: page }),
-
-  setStep: (step) => set({ step }),
+  setStep: (step) => {
+    flushSave(); // 미저장 텍스트 즉시 플러시
+    const updates: Partial<Pick<DIYState, "step" | "savedStoryId">> = { step };
+    // 편집 단계로 되돌아가면 저장 상태 초기화
+    if (step === "sort" || step === "write") {
+      updates.savedStoryId = null;
+    }
+    set(updates);
+    get().save();
+  },
 
   save: () => {
-    const { storyId, imageOrder, texts } = get();
+    const { storyId, imageOrder, texts, step, currentPage, savedStoryId } = get();
     if (!storyId) return;
     try {
       const data: DIYSaveData = {
         storyId,
         imageOrder,
         texts,
+        step,
+        currentPage,
+        savedStoryId,
         updatedAt: new Date().toISOString(),
       };
       localStorage.setItem(getStorageKey(storyId), JSON.stringify(data));
@@ -149,5 +185,8 @@ export const useDIYStore = create<DIYState>((set, get) => ({
     });
   },
 
-  setSavedStoryId: (id) => set({ savedStoryId: id }),
+  setSavedStoryId: (id) => {
+    set({ savedStoryId: id });
+    get().save();
+  },
 }));

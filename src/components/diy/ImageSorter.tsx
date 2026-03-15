@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { Reorder, motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface ImageSorterProps {
   images: string[];
@@ -14,14 +14,23 @@ interface ImageSorterProps {
 }
 
 export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, accent, storyTitle }: ImageSorterProps) {
-  const [dragActive, setDragActive] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
 
-  const handleReorder = useCallback(
-    (newOrder: number[]) => {
+  function handleTap(position: number) {
+    if (selectedPosition === null) {
+      // 첫 번째 선택
+      setSelectedPosition(position);
+    } else if (selectedPosition === position) {
+      // 같은 카드 재탭 → 선택 해제
+      setSelectedPosition(null);
+    } else {
+      // 두 번째 선택 → swap
+      const newOrder = [...imageOrder];
+      [newOrder[selectedPosition], newOrder[position]] = [newOrder[position], newOrder[selectedPosition]];
       onOrderChange(newOrder);
-    },
-    [onOrderChange],
-  );
+      setSelectedPosition(null);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -35,90 +44,73 @@ export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, acc
           이미지 순서를 정해주세요
         </h2>
         <p className="text-[12px] text-brown-light font-light mt-1">
-          카드를 길게 누른 채 위아래로 드래그하세요
+          두 장을 탭하면 순서가 바뀌어요
         </p>
       </motion.div>
 
-      {/* Sortable list */}
+      {/* 2-column grid */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <Reorder.Group
-          axis="y"
-          values={imageOrder}
-          onReorder={handleReorder}
-          className="flex flex-col gap-2.5"
-        >
-          <AnimatePresence>
-            {imageOrder.map((idx, position) => (
-              <Reorder.Item
-                key={idx}
-                value={idx}
-                onDragStart={() => setDragActive(true)}
-                onDragEnd={() => setDragActive(false)}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{
-                  delay: position * 0.04,
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 25,
-                }}
-                whileDrag={{
-                  scale: 1.03,
-                  boxShadow: `0 12px 32px ${accent}30`,
-                  zIndex: 50,
-                }}
-                className="relative rounded-xl overflow-hidden cursor-grab active:cursor-grabbing"
-                style={{
-                  background: "rgb(var(--paper))",
-                  border: `1px solid rgba(var(--brown), 0.08)`,
-                }}
+        <div className="grid grid-cols-2 gap-2.5">
+          {imageOrder.map((idx, position) => (
+            <motion.button
+              key={idx}
+              layout
+              layoutId={`sort-${idx}`}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              onClick={() => handleTap(position)}
+              className="relative rounded-xl overflow-hidden focus:outline-none"
+              style={{ aspectRatio: "3/4" }}
+            >
+              {/* Image */}
+              <Image
+                src={images[idx]}
+                alt={`${storyTitle ?? ""} 장면 ${position + 1}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 430px) 50vw, 200px"
+                draggable={false}
+              />
+
+              {/* 번호 배지 */}
+              <div
+                className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
+                style={{ background: accent }}
               >
-                <div className="flex items-center gap-3 p-2">
-                  {/* Order number */}
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-                    style={{ background: accent }}
-                  >
-                    {position + 1}
-                  </div>
+                {position + 1}
+              </div>
 
-                  {/* Thumbnail */}
-                  <div className="relative w-20 h-14 rounded-lg overflow-hidden shrink-0">
-                    <Image
-                      src={images[idx]}
-                      alt={`${storyTitle ?? ''} 장면 ${position + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                      draggable={false}
-                    />
-                  </div>
+              {/* 선택 상태: ring + pulse */}
+              {selectedPosition === position && (
+                <motion.div
+                  className="absolute inset-0 rounded-xl pointer-events-none"
+                  style={{ boxShadow: `inset 0 0 0 3px ${accent}` }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, scale: [1, 1.02, 1] }}
+                  transition={{ scale: { duration: 0.3 } }}
+                />
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </div>
 
-                  {/* Drag handle hint */}
-                  <div className="flex-1 flex justify-end pr-1">
-                    <motion.div
-                      className="flex flex-col gap-[3px] opacity-50"
-                      animate={position === 0 ? { x: [0, 4, 0] } : undefined}
-                      transition={position === 0 ? { repeat: 2, duration: 0.4, delay: 1 } : undefined}
-                    >
-                      <div className="w-4 h-[2px] bg-brown rounded-full" />
-                      <div className="w-4 h-[2px] bg-brown rounded-full" />
-                      <div className="w-4 h-[2px] bg-brown rounded-full" />
-                    </motion.div>
-                  </div>
-                </div>
-              </Reorder.Item>
-            ))}
-          </AnimatePresence>
-        </Reorder.Group>
+      {/* 선택 안내 */}
+      <div className="h-6 flex items-center justify-center">
+        {selectedPosition !== null && (
+          <motion.p
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-[12px] font-medium"
+            style={{ color: accent }}
+          >
+            바꿀 카드를 탭하세요
+          </motion.p>
+        )}
       </div>
 
       {/* CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: dragActive ? 0.3 : 1 }}
-        className="px-6 pb-[calc(env(safe-area-inset-bottom,8px)+16px)] pt-3"
-      >
+      <div className="px-6 pb-[calc(env(safe-area-inset-bottom,8px)+16px)] pt-2">
         <button
           onClick={onComplete}
           className="w-full py-3.5 rounded-full text-white text-[14px] font-medium transition-all active:scale-[0.97]"
@@ -129,7 +121,7 @@ export function ImageSorter({ images, imageOrder, onOrderChange, onComplete, acc
         >
           순서 완료 — 이야기 쓰기
         </button>
-      </motion.div>
+      </div>
     </div>
   );
 }
