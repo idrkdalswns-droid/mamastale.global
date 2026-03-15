@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.6.0] - 2026-03-15
+
+### Changed
+- DIY ImageSorter: 드래그 리스트 → 2열 그리드 tap-to-swap (스크롤 충돌 해결, 이미지 크기 대폭 확대)
+- DIY PopupBookViewer: 1:1 컨테이너 → flex 기반 9:16 + object-contain (일러스트 크롭 해결)
+- DIY PopupBookViewer: 페이지 dots → 하단 썸네일 스트립 (스크롤 네비게이션)
+- DIY 상태관리: step/currentPage/savedStoryId localStorage 저장 (새로고침 복원)
+- DIY 상태관리: setText 디바운싱 500ms + step/page 전환 시 flush
+
+### Added
+- PopupBookViewer: 글자수 카운터 (0/200)
+- PopupBookViewer: visualViewport 키보드 대응 (scrollIntoView)
+- PopupBookViewer: 인접 이미지 prefetch
+- POST /api/stories: cover_image 저장 + regex 화이트리스트 검증
+- DIYComplete: 저장 에러 재시도 버튼
+- DIYComplete: 로그인 시 sessionStorage 복귀 경로 저장
+
+### Fixed
+- DIY 편집 후 돌아와도 "서재에 저장됨" 표시되던 버그 (savedStoryId stale)
+- 라이브러리에서 DIY 동화 썸네일 미표시 (coverImage POST 누락)
+
 ## [1.5.0] - 2026-03-15
 
 ### Added
