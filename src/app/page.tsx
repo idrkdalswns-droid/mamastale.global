@@ -666,7 +666,7 @@ export default function Home() {
 
           {/* DIY 동화 만들기 CTA */}
           <Link
-            href="/diy"
+            href="/diy/guide"
             className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
             style={{
               background: "linear-gradient(135deg, rgba(127,191,176,0.15), rgba(127,191,176,0.08))",

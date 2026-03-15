@@ -72,15 +72,17 @@ export function ImageSorter({
 
       {/* 2-column grid */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-3 gap-2">
           {imageOrder.map((idx, position) => (
-            <motion.button
+            <motion.div
               key={idx}
               layout
               layoutId={`sort-${idx}`}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               onClick={() => handleTap(position)}
-              className="relative rounded-xl overflow-hidden focus:outline-none"
+              role="button"
+              tabIndex={0}
+              className="relative rounded-xl overflow-hidden focus:outline-none cursor-pointer"
               style={{ aspectRatio: "3/4" }}
             >
               {/* Image */}
@@ -89,7 +91,7 @@ export function ImageSorter({
                 alt={`${storyTitle ?? ""} 장면 ${position + 1}`}
                 fill
                 className="object-cover"
-                sizes="(max-width: 430px) 50vw, 200px"
+                sizes="(max-width: 430px) 33vw, 140px"
                 draggable={false}
               />
 
@@ -126,7 +128,7 @@ export function ImageSorter({
                   transition={{ scale: { duration: 0.3 } }}
                 />
               )}
-            </motion.button>
+            </motion.div>
           ))}
         </div>
 

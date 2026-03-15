@@ -20,15 +20,16 @@ export default function DIYPage() {
         <p className="text-[13px] text-brown-light font-light mt-1.5 leading-relaxed">
           일러스트를 골라 순서를 정하고, 아이와 함께 이야기를 써보세요
         </p>
-        <div
-          className="inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-medium"
+        <Link
+          href="/diy/guide"
+          className="inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-medium no-underline transition-colors hover:opacity-80"
           style={{
             background: "rgba(127,191,176,0.15)",
             color: "#5A9E94",
           }}
         >
-          무료 서비스
-        </div>
+          사용 안내 →
+        </Link>
       </motion.div>
 
       {/* Story gallery */}

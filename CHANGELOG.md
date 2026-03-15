@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8.0] - 2026-03-15
+
+### Added
+- DIY 사용 안내 페이지 (`/diy/guide`) — 목적·취지·3단계 사용법·CTA
+- 홈페이지 "무료 DIY 동화 만들기" → 안내 페이지로 연결
+
+### Changed
+- ImageSorter: 2열 → 3열 그리드 레이아웃 (이미지 순서 정하기 화면)
+- ImageSorter: motion.button → motion.div (button-in-button 하이드레이션 경고 수정)
+- DIY 갤러리: "무료 서비스" 배지 → "사용 안내 →" 링크
+
 ## [1.7.0] - 2026-03-15
 
 ### Fixed
