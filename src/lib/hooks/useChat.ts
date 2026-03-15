@@ -303,7 +303,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // This guarantees 0% chat loss on: refresh, crash, OAuth redirect, tab close.
       // (Previously only saved when isFromDraft was true — missing fresh sessions)
       if (!data.isStoryComplete) {
-        get().saveDraft();
+        try { get().saveDraft(); } catch { /* localStorage unavailable (private browsing) */ }
       }
 
       // ─── Story complete → clear draft (no longer needed) ───
@@ -316,6 +316,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (data.isStoryComplete && data.scenes && data.scenes.length > 0 && !get().storySaved && !saveInFlight) {
         saveInFlight = true; // P1-FIX(KR-3): Module-level lock in addition to state flag
             // R3-FIX: Timeout fallback — release lock after 30s to prevent permanent deadlock
+            if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
             saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
@@ -512,7 +513,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             // Auto-save draft
             if (!event.isStoryComplete) {
-              get().saveDraft();
+              try { get().saveDraft(); } catch { /* localStorage unavailable (private browsing) */ }
             } else {
               try { localStorage.removeItem(DRAFT_KEY); } catch {}
               set({ isFromDraft: false });
@@ -522,6 +523,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (event.isStoryComplete && event.scenes && event.scenes.length > 0 && !get().storySaved && !saveInFlight) {
               saveInFlight = true;
               // R5-1: Timeout fallback — release lock after 30s (parity with non-streaming path)
+              if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
               saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
               set({ storySaved: true });
               try {

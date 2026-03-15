@@ -56,13 +56,13 @@ const chatRequestSchema = z.object({
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
   currentPhase: z.number().min(1).max(4).optional(),
-  turnCountInCurrentPhase: z.number().min(0).optional(),
+  turnCountInCurrentPhase: z.number().min(0).max(50).optional(),
   storySeed: storySeedSchema,
 });
 
 const GUEST_RATE_LIMIT = 10;
 const AUTH_RATE_LIMIT = 30;
-const GUEST_TURN_LIMIT = 5;
+const GUEST_TURN_LIMIT = 3;
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
@@ -292,6 +292,7 @@ export async function POST(request: NextRequest) {
 
   const readable = new ReadableStream({
     async start(controller) {
+      let closed = false;
       try {
         // Send initial metadata
         controller.enqueue(encoder.encode(
@@ -482,7 +483,7 @@ export async function POST(request: NextRequest) {
           })}\n\n`
         ));
 
-        controller.close();
+        if (!closed) { closed = true; controller.close(); }
 
         // Fire-and-forget logging
         logLLMCall({
@@ -504,13 +505,15 @@ export async function POST(request: NextRequest) {
           ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
           : "스트리밍 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.";
         console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
-        controller.enqueue(encoder.encode(
-          `data: ${JSON.stringify({
-            type: "error",
-            error: errorMessage,
-          })}\n\n`
-        ));
-        controller.close();
+        if (!closed) {
+          controller.enqueue(encoder.encode(
+            `data: ${JSON.stringify({
+              type: "error",
+              error: errorMessage,
+            })}\n\n`
+          ));
+          closed = true; controller.close();
+        }
 
         logEvent({
           eventType: "error",

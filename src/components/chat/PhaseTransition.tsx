@@ -32,6 +32,7 @@ export default function PhaseTransition({
   isVisible,
   phase,
 }: PhaseTransitionProps) {
+  if (phase < 1 || phase > 4) return null;
   const p = PHASES[phase];
   const msg = PHASE_MESSAGES[phase] || PHASE_MESSAGES[1];
 

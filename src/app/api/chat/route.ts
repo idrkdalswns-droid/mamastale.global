@@ -45,7 +45,7 @@ const chatRequestSchema = z.object({
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
   currentPhase: z.number().min(1).max(4).optional(),
-  turnCountInCurrentPhase: z.number().min(0).optional(),
+  turnCountInCurrentPhase: z.number().min(0).max(50).optional(),
   storySeed: storySeedSchema,
 });
 

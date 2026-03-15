@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, memo } from "react";
+import { useRef, useState, useCallback, useEffect, memo } from "react";
 import { PHASES } from "@/lib/constants/phases";
 
 interface ChatInputProps {
@@ -21,6 +21,8 @@ export default memo(function ChatInput({
   // ROUND1-FIX: Ref-based mutex to prevent duplicate sends from rapid button taps.
   // React state (isLoading) updates asynchronously, so rapid clicks can slip through.
   const sendingRef = useRef(false);
+  // Release send lock when loading completes (replaces fragile 500ms timeout)
+  useEffect(() => { if (!isLoading) sendingRef.current = false; }, [isLoading]);
   const p = PHASES[phase];
 
   const PHASE_PLACEHOLDERS: Record<number, string> = {
@@ -45,7 +47,6 @@ export default memo(function ChatInput({
     setInput("");
     if (taRef.current) taRef.current.style.height = "auto";
     onSend(text);
-    setTimeout(() => { sendingRef.current = false; }, 500);
     setTimeout(() => taRef.current?.focus(), 150);
   }, [input, isLoading, disabled, onSend]);
 
