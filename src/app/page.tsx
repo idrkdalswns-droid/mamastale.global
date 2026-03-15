@@ -10,6 +10,7 @@ import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
@@ -25,18 +26,6 @@ const FeedbackWizard = dynamic(() => import("@/components/feedback/FeedbackWizar
 const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage").then(m => ({ default: m.CommunityPage })), { ssr: false });
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
-
-const NAV_ITEMS_PUBLIC = [
-  { href: "/about", label: "소개" },
-  { href: "/pricing", label: "구매" },
-];
-
-const NAV_ITEMS_AUTH = [
-  { href: "/about", label: "소개" },
-  { href: "/library", label: "서재" },
-  { href: "/community", label: "커뮤니티" },
-  { href: "/pricing", label: "구매" },
-];
 
 /** Horizontal scroll container that auto-scrolls to a specific child index on mount */
 function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
