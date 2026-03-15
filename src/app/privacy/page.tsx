@@ -102,7 +102,7 @@ export default function PrivacyPage() {
           <p>대화 내용은 암호화되어 저장되며, API 키는 서버 측에서만 관리합니다. 인증에는 PKCE 흐름을 사용하며, 모든 데이터 전송은 TLS로 암호화됩니다.</p>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">10. 개인정보 보호 책임자</h2>
-          <p>개인정보 관련 문의 및 권리 행사: <strong>kang.minjune@icloud.com</strong></p>
+          <p>개인정보 관련 문의 및 권리 행사: <strong>idrkdalswns@gmail.com</strong></p>
 
           <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 2일 (최종 개정)</p>
         </div>

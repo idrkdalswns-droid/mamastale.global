@@ -6,10 +6,9 @@ import Image from "next/image";
 import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { trackBeginCheckout } from "@/lib/utils/analytics";
 import { hapticMedium } from "@/lib/utils/haptic";
-// SectionTabBar removed — replaced with page navigation tab bar
+// SectionTabBar and page nav tab bar removed — GlobalNav already provides page navigation
 
 // ─── Toss Payments SDK v2 Type Declarations ───
 declare global {
@@ -37,7 +36,7 @@ type PricingProduct = { name: string; amount: number; tickets: number };
 const PRODUCTS: Record<PriceType, PricingProduct> = {
   ticket: {
     name: "동화 한 편 만들기",
-    amount: 4900,
+    amount: 3920,
     tickets: 1,
   },
   bundle: {
@@ -45,12 +44,6 @@ const PRODUCTS: Record<PriceType, PricingProduct> = {
     amount: 14900,
     tickets: 4,
   },
-};
-
-const FIRST_PURCHASE_PRODUCT: PricingProduct = {
-  name: "동화 한 편 만들기 (첫 구매 할인)",
-  amount: 3920,
-  tickets: 1,
 };
 
 // ─── Social Proof Reviews ───
@@ -106,18 +99,6 @@ const GALLERY_SCENES = [
   "\"이 반짝이는 글쓰기 마법을 엄마들에게도 선물해야겠다!\" 그렇게 삼촌의 따뜻한 마음이 모여, 엄마가 적은 글이 아이에게 들려줄 동화로 변하는 마법 서재 '마마스테일'이 태어났단다.",
 ];
 
-// ─── Feature Lists (hoisted to avoid re-allocation per render) ───
-const BUNDLE_FEATURES = [
-  "매일 15~20분, 마음속 이야기를 꺼내는 시간",
-  "서로 다른 감정으로 서로 다른 동화 4편 완성",
-  "완성된 동화는 영구 보관 + PDF 다운로드",
-  "30일간 여유롭게 사용 가능",
-];
-const TICKET_FEATURES = [
-  "4단계 마음 대화 + 10장면 동화 완성",
-  "PDF 다운로드 + 영구 보관",
-  "30일간 여유롭게 사용 가능",
-];
 const TARGET_AUDIENCE = [
   "구독 부담 없이 필요할 때만 쓰고 싶은 분",
   "오늘의 마음을 한 권의 동화로 완성하고 싶은 분",
@@ -135,8 +116,8 @@ const GALLERY_OVERLAY_STYLE = {
 } as const;
 
 // ─── Helpers ───
-function resolveProduct(type: PriceType, isFirstPurchase: boolean): PricingProduct {
-  return type === "ticket" && isFirstPurchase ? FIRST_PURCHASE_PRODUCT : PRODUCTS[type];
+function resolveProduct(type: PriceType): PricingProduct {
+  return PRODUCTS[type];
 }
 
 function redirectToLogin() {
@@ -151,8 +132,6 @@ function PricingContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  // #8: 비로그인 사용자에게도 첫 구매 할인 기본 표시 (로그인 후 API로 실제 확인)
-  const [isFirstPurchase, setIsFirstPurchase] = useState(true);
   // Simplify: store only the type; derive amount/name via resolveProduct()
   const [confirmModal, setConfirmModal] = useState<PriceType | null>(null);
 
@@ -167,40 +146,6 @@ function PricingContent() {
 
   const { user, loading: authLoading } = useAuth();
   const tossClientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-
-  // Auto-detect first purchase eligibility
-  useEffect(() => {
-    if (!user) return;
-    const controller = new AbortController();
-    (async () => {
-      try {
-        const headers: Record<string, string> = {};
-        const supabase = createClient();
-        if (supabase) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-        }
-        const res = await fetch("/api/tickets", {
-          headers,
-          credentials: "include",
-          signal: controller.signal,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setIsFirstPurchase(!!data.isFirstPurchase);
-        }
-      } catch {
-        /* ignore (includes AbortError) */
-      }
-    })();
-    return () => controller.abort();
-    // Use user.id (stable string) instead of user object to prevent re-fetches
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
   // Check if SDK already loaded
   useEffect(() => {
@@ -291,7 +236,7 @@ function PricingContent() {
       setError("");
 
       try {
-        const product = resolveProduct(productType, isFirstPurchase);
+        const product = resolveProduct(productType);
         // R9-FIX(B1): Fallback for Kakao/Naver in-app browsers missing crypto.randomUUID()
         const uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
@@ -332,7 +277,7 @@ function PricingContent() {
         setIsProcessing(false);
       }
     },
-    [isProcessing, user, tossClientKey, isFirstPurchase]
+    [isProcessing, user, tossClientKey]
   );
 
   // Payment with confirmation step
@@ -350,8 +295,7 @@ function PricingContent() {
     setConfirmModal(null);
   };
 
-  // Derived modal product (avoids stale amount if isFirstPurchase changes between open/confirm)
-  const modalProduct = confirmModal ? resolveProduct(confirmModal, isFirstPurchase) : null;
+  const modalProduct = confirmModal ? resolveProduct(confirmModal) : null;
 
   return (
     <div className="min-h-dvh bg-cream relative overflow-hidden">
@@ -380,7 +324,7 @@ function PricingContent() {
         {/* ════════════════════════════════════════
             HERO
             ════════════════════════════════════════ */}
-        <section className="text-center mb-10" aria-label="요금 안내">
+        <section className="text-center mb-6" aria-label="요금 안내">
           <h1 className="font-serif text-2xl text-brown font-bold mb-3 leading-tight">
             아이를 위한
             <br />
@@ -392,35 +336,6 @@ function PricingContent() {
             세상에 단 하나뿐인 10장면 동화 스토리가 됩니다
           </p>
         </section>
-
-        {/* Page navigation tab bar — sticky below GlobalNav */}
-        <nav
-          className="sticky top-12 z-30 -mx-6 flex h-[34px] items-center gap-0 overflow-x-auto scrollbar-hide border-b border-brown-pale/10"
-          style={{ backgroundColor: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(12px)" }}
-          aria-label="페이지 탐색"
-        >
-          {[
-            { href: "/", label: "홈" },
-            { href: "/pricing", label: "구매", active: true },
-            { href: "/reviews", label: "후기" },
-            { href: "/diy", label: "DIY" },
-            { href: "/about", label: "소개" },
-          ].map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`relative shrink-0 px-3 py-1 text-[11px] transition-colors duration-200 no-underline ${
-                tab.active ? "font-medium text-coral" : "text-brown-pale"
-              }`}
-              aria-current={tab.active ? "page" : undefined}
-            >
-              {tab.label}
-              {tab.active && (
-                <span className="absolute bottom-0 left-1/2 h-[2px] w-4/5 -translate-x-1/2 rounded-full bg-coral" />
-              )}
-            </Link>
-          ))}
-        </nav>
 
         {/* #17: Soft social proof counter */}
         <p className="text-[12px] text-brown-pale font-light text-center mb-8 mt-6">
@@ -445,55 +360,25 @@ function PricingContent() {
               background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
             }}
           >
-            가장 인기
+            론칭 기념 특가
           </div>
 
           <div className="text-center mb-5 pt-2">
             <h3 className="font-serif text-lg text-brown font-semibold">
-              4일 연속 대화 프로그램
+              4일 프로그램 · 동화 4편
             </h3>
-            <p className="text-xs text-brown-light font-light mt-1.5 leading-relaxed break-keep">
+            <p className="text-xs text-brown-light font-light mt-1.5 break-keep">
               4일 연속 대화하면, 마음이 한결 가벼워집니다
-              <br />— 펜네베이커 교수 40년 연구 입증{" "}
-              <a
-                href="https://en.wikipedia.org/wiki/Expressive_writing"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple/60 no-underline hover:underline"
-              >
-                연구 알아보기 →
-              </a>
             </p>
             <div className="flex items-baseline justify-center gap-1 mt-3">
               <span className="font-serif text-3xl font-bold text-brown">
                 ₩14,900
               </span>
-              <span className="text-sm text-brown-light font-light">/4권</span>
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1.5">
-              <span
-                className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white"
-                style={{ background: "rgb(var(--purple))" }}
-              >
-                1권당 ₩1,175 절약
-              </span>
-              <span className="text-xs text-purple font-medium">
-                1권당 ₩3,725
-              </span>
-            </div>
+            <p className="text-xs text-purple font-medium mt-1">
+              1권당 ₩3,725
+            </p>
           </div>
-
-          <ul className="space-y-2.5 mb-5">
-            {BUNDLE_FEATURES.map((f, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-sm text-brown-light font-light"
-              >
-                <span className="text-[11px] mt-1 text-purple" aria-hidden="true">●</span>
-                {f}
-              </li>
-            ))}
-          </ul>
 
           <button
             onClick={() => initiatePayment("bundle")}
@@ -508,9 +393,6 @@ function PricingContent() {
               ? "결제 페이지로 이동 중..."
               : "4일 프로그램 시작하기"}
           </button>
-          <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
-            ₩14,900 · 1권당 ₩3,725
-          </p>
         </div>
 
         {/* ════════════════════════════════════════
@@ -523,60 +405,28 @@ function PricingContent() {
             border: "1.5px solid #E07A5F",
           }}
         >
-          {/* ROUND1-FIX: Conditionally show launch discount badge */}
-          {isFirstPurchase && (
-            <div
-              className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] text-white font-bold"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              }}
-            >
-              첫 구매 20% 할인
-            </div>
-          )}
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] text-white font-bold"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+            }}
+          >
+            론칭 할인 20%
+          </div>
 
           <div className="text-center mb-4">
             <h3 className="font-serif text-base text-brown font-semibold">
-              동화 한 편 완성
+              동화 한 편 · 15분 완성
             </h3>
-            <p className="text-xs text-brown-light font-light mt-1 break-keep">
-              15분 뒤, 아이가 매일 밤 읽어달라는 동화가 생깁니다
-            </p>
-            {isFirstPurchase ? (
-              <div className="flex items-baseline justify-center gap-2 mt-2">
-                <span className="text-sm text-brown-pale line-through">
-                  ₩4,900
-                </span>
-                <span className="font-serif text-2xl font-bold text-brown">
-                  ₩3,920
-                </span>
-                <span className="text-sm text-brown-light font-light">
-                  /1권
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-baseline justify-center gap-2 mt-2">
-                <span className="font-serif text-2xl font-bold text-brown">
-                  ₩4,900
-                </span>
-                <span className="text-sm text-brown-light font-light">
-                  /1권
-                </span>
-              </div>
-            )}
+            <div className="flex items-baseline justify-center gap-2 mt-2">
+              <span className="text-sm text-brown-pale line-through">
+                ₩4,900
+              </span>
+              <span className="font-serif text-2xl font-bold text-brown">
+                ₩3,920
+              </span>
+            </div>
           </div>
-
-          <ul className="space-y-2 mb-4">
-            {TICKET_FEATURES.map((f, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-xs text-brown-light font-light"
-              >
-                <span className="text-[11px] mt-0.5 text-coral" aria-hidden="true">●</span>
-                {f}
-              </li>
-            ))}
-          </ul>
 
           <button
             onClick={() => initiatePayment("ticket")}
@@ -591,35 +441,19 @@ function PricingContent() {
               ? "결제 페이지로 이동 중..."
               : "동화 한 편 만들기"}
           </button>
-          <p className="text-[11px] text-center text-brown-pale font-light mt-1.5">
-            {isFirstPurchase ? "₩3,920 (첫 구매 20% 할인)" : "₩4,900"}
-          </p>
         </div>
 
         {/* ════════════════════════════════════════
-            TRUST BADGES
+            TRUST BADGES (통합)
             ════════════════════════════════════════ */}
-        <div className="flex items-center justify-center gap-3 mb-8 text-[11px] text-brown-pale font-light">
-          <span>카드 결제 보안 적용</span>
+        <div className="flex items-center justify-center gap-2 mb-6 flex-wrap text-[11px] text-brown-pale font-light">
+          <span>카드 결제 보안</span>
           <span aria-hidden="true">·</span>
-          <span>전자영수증 발급</span>
+          <span>전자영수증</span>
           <span aria-hidden="true">·</span>
           <span>개인정보 보호</span>
-        </div>
-
-        {/* ════════════════════════════════════════
-            PAYMENT BADGE
-            ════════════════════════════════════════ */}
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          <span
-            className="px-3 py-1 rounded-full text-[11px] text-brown-mid font-medium"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(0,0,0,0.06)",
-            }}
-          >
-            토스페이먼츠 안전 결제
-          </span>
+          <span aria-hidden="true">·</span>
+          <span>토스페이먼츠</span>
         </div>
 
         {/* SDK load error */}
@@ -1007,42 +841,6 @@ function PricingContent() {
           </p>
         </div>
 
-        {/* ════════════════════════════════════════
-            BUSINESS INFO (전자상거래법 필수 표시)
-            ════════════════════════════════════════ */}
-        <div
-          className="rounded-2xl p-4 mb-4"
-          style={{
-            background: "rgba(255,255,255,0.3)",
-            border: "1px solid rgba(196,149,106,0.08)",
-          }}
-        >
-          <div className="space-y-1 text-[11px] text-brown-pale font-light leading-relaxed text-center">
-            <p className="font-medium text-brown-light text-[11px] mb-2">사업자 정보</p>
-            <p>상호: 마마스테일 | 대표: 강민준</p>
-            <p>사업자등록번호: 000-00-00000</p>
-            <p>통신판매업 신고번호: 제0000-서울강남-00000호</p>
-            <p>소재지: 서울특별시 강남구</p>
-            <div className="pt-2 flex items-center justify-center gap-3">
-              <a
-                href="mailto:hello@mamastale.com"
-                className="text-coral no-underline"
-              >
-                hello@mamastale.com
-              </a>
-              <span className="text-brown-pale/30" aria-hidden="true">·</span>
-              <a
-                href="https://pf.kakao.com/_mamastale"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-coral no-underline"
-              >
-                카카오톡 상담
-              </a>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       {/* ════════════════════════════════════════
@@ -1079,7 +877,7 @@ function PricingContent() {
               boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
             }}
           >
-            1편 · {isFirstPurchase ? "₩3,920" : "₩4,900"}
+            1편 · ₩3,920
           </button>
         </div>
       </div>

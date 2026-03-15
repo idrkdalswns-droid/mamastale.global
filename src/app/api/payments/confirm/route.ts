@@ -29,7 +29,7 @@ function checkPaymentRate(ip: string): boolean {
 
 // ─── Valid prices (server-side source of truth) ───
 const VALID_PRICES: Record<number, number> = {
-  3920: 1,   // ₩3,920 = 1 ticket (첫 구매 20% 할인)
+  3920: 1,   // ₩3,920 = 1 ticket (론칭 할인)
   4900: 1,   // ₩4,900 = 1 ticket
   14900: 4,  // ₩14,900 = 4 tickets (4일 프로그램)
 };
@@ -168,32 +168,6 @@ export async function POST(request: NextRequest) {
         { error: "유효하지 않은 결제 금액입니다." },
         { status: 400 }
       ));
-    }
-
-    // ─── First-purchase discount validation ───
-    // ₩3,920 is only valid for users with no prior purchase history
-    if (numericAmount === 3920) {
-      try {
-        const { data: profile } = await sb.client
-          .from("profiles")
-          .select("metadata")
-          .eq("id", user.id)
-          .single();
-        const meta = (profile?.metadata as Record<string, unknown>) || {};
-        const priorOrders = (meta.processed_orders as string[]) || [];
-        if (priorOrders.length > 0) {
-          return sb.applyCookies(NextResponse.json(
-            { error: "첫 구매 할인은 한 번만 사용 가능합니다." },
-            { status: 400 }
-          ));
-        }
-      } catch {
-        // If metadata check fails, DENY the discount (safe default)
-        return sb.applyCookies(NextResponse.json(
-          { error: "첫 구매 할인 자격을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요." },
-          { status: 400 }
-        ));
-      }
     }
 
     // Confirm payment with Toss Payments API (10s timeout)
@@ -336,20 +310,11 @@ export async function POST(request: NextRequest) {
       }));
     }
 
-    // First-purchase race guard
-    if (confirmedAmount === 3920 && metadata.first_purchase_claimed) {
-      console.warn(
-        `[SECURITY] First-purchase discount race detected: user=${user.id.slice(0, 8)}..., ` +
-        `order=${orderId}, prior_claim=${metadata.first_purchase_claimed}`
-      );
-    }
-
     // Pre-claim orderId in metadata (belt-and-suspenders with order_claims)
     const preClaimOrders = [...processedOrderIds.slice(-19), orderId];
     const preClaimMeta = {
       ...metadata,
       processed_orders: preClaimOrders,
-      ...(confirmedAmount === 3920 ? { first_purchase_claimed: orderId } : {}),
     };
     try {
       await sb.client

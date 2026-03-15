@@ -267,10 +267,10 @@ function PaymentSuccessContent() {
           <p className="text-[11px] text-brown-pale font-light mt-4">
             문제가 계속되면{" "}
             <a
-              href="mailto:kang.minjune@icloud.com"
+              href="mailto:idrkdalswns@gmail.com"
               className="text-coral underline underline-offset-2"
             >
-              kang.minjune@icloud.com
+              idrkdalswns@gmail.com
             </a>
             으로 문의해 주세요
           </p>

@@ -40,7 +40,7 @@ export default function TermsPage() {
             <li>대화 내용은 동화 생성이라는 서비스 제공 목적으로만 사용됩니다.</li>
             <li>대화 데이터는 Anthropic의 서버에서 처리되며, Anthropic의 데이터 처리 방침에 따릅니다.</li>
             <li>완성된 동화 및 대화 기록은 이용자의 계정에 저장되며, 이용자가 직접 삭제를 요청할 수 있습니다.</li>
-            <li>대화 내용 삭제를 원하시는 경우 kang.minjune@icloud.com으로 문의해 주세요.</li>
+            <li>대화 내용 삭제를 원하시는 경우 idrkdalswns@gmail.com으로 문의해 주세요.</li>
           </ul>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제9조 (환불 정책)</h2>

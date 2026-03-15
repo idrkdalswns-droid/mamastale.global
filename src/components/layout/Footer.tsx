@@ -26,7 +26,7 @@ export function Footer() {
             카카오톡 문의
           </a>
           <a
-            href="mailto:kang.minjune@icloud.com"
+            href="mailto:idrkdalswns@gmail.com"
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-brown-light font-medium no-underline border border-brown-pale/20 transition-all active:scale-[0.97]"
           >
             ✉️ 이메일 문의
@@ -48,10 +48,10 @@ export function Footer() {
             </a>
             {" "}| 문의:{" "}
             <a
-              href="mailto:kang.minjune@icloud.com"
+              href="mailto:idrkdalswns@gmail.com"
               className="underline underline-offset-2"
             >
-              kang.minjune@icloud.com
+              idrkdalswns@gmail.com
             </a>
           </p>
         </div>
