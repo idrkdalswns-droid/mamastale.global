@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { Message, ChatApiResponse, ChatStreamEvent, StorySeedState } from "@/lib/types/chat";
 import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
+import { nameWithParticle } from "@/lib/utils/korean";
 
 // ─── Two separate storage keys ───
 // AUTH: auto-consumed after login/signup redirect (destructive restore)
@@ -135,17 +136,25 @@ const ROLE_TITLES: Record<string, { greeting: string; honorific: string }> = {
 function buildInitialMessage(): string {
   let childAge = "";
   let parentRole = "";
+  let childName = "";
   try {
     childAge = localStorage?.getItem("mamastale_child_age") || "";
     parentRole = localStorage?.getItem("mamastale_parent_role") || "";
+    childName = localStorage?.getItem("mamastale_child_name") || "";
   } catch {}
 
   const role = ROLE_TITLES[parentRole] || ROLE_TITLES["엄마"];
+
+  // 아이 이름이 있으면 개인화된 인사: "서연이의 어머니" / 없으면 기존: "어머니"
+  const greeting = childName
+    ? `${nameWithParticle(childName, "이의", "의")} ${role.honorific}`
+    : role.greeting;
+
   const ageNote = childAge && AGE_LABELS[childAge]
     ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
     : "";
 
-  return `안녕하세요, ${role.greeting}.\n\n${ageNote}이곳은 ${role.honorific}의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. ${role.honorific}의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 ${role.honorific}의 마음은 어떠신가요?`;
+  return `안녕하세요, ${greeting}.\n\n${ageNote}이곳은 ${role.honorific}의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. ${role.honorific}의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 ${role.honorific}의 마음은 어떠신가요?`;
 }
 
 const makeInitialMessages = (): Message[] => [

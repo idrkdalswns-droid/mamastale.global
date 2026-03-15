@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { PushPermissionBanner } from "@/components/ui/PushPermissionBanner";
 import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
 import { hapticSuccess } from "@/lib/utils/haptic";
+import { nameWithParticle } from "@/lib/utils/korean";
 
 /** Topic suggestions for next story nudge */
 const TOPIC_SUGGESTIONS = [
@@ -48,6 +49,11 @@ export default function StoryCompleteCTA({
   getHeaders,
 }: StoryCompleteCTAProps) {
   const [showConfetti, setShowConfetti] = useState(true);
+
+  // Read child name for personalized celebration
+  const childName = (() => {
+    try { return localStorage.getItem("mamastale_child_name") || ""; } catch { return ""; }
+  })();
 
   // Sprint 4-B: Increment story count for PWA install prompt trigger
   useEffect(() => {
@@ -164,10 +170,19 @@ export default function StoryCompleteCTA({
           transition={{ duration: 0.5, delay: 0.7 }}
           className="text-[13px] text-brown-light font-normal leading-relaxed mb-3 break-keep"
         >
-          {/* R5-FIX(A1): Role-neutral phrasing (아빠/할머니도 사용) */}
-          소중한 이야기가 세상에 하나뿐인<br />
-          마음 동화가 되었습니다.<br />
-          완성된 동화는 내 서재에 저장되어 있어요.
+          {childName ? (
+            <>
+              {nameWithParticle(childName, "이에게", "에게")} 읽어줄 수 있는<br />
+              세상에 하나뿐인 동화가 완성됐어요!<br />
+              완성된 동화는 내 서재에 저장되어 있어요.
+            </>
+          ) : (
+            <>
+              소중한 이야기가 세상에 하나뿐인<br />
+              마음 동화가 되었습니다.<br />
+              완성된 동화는 내 서재에 저장되어 있어요.
+            </>
+          )}
         </motion.p>
 
         <motion.p
@@ -200,8 +215,12 @@ export default function StoryCompleteCTA({
           onClick={async () => {
             const siteUrl = typeof window !== "undefined" ? window.location.origin : "https://mamastale-global.pages.dev";
             const shareData = {
-              title: "나만의 마음 동화가 완성되었어요",
-              text: "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
+              title: childName
+                ? `${nameWithParticle(childName, "이를", "를")} 위해 만든 특별한 동화`
+                : "나만의 마음 동화가 완성되었어요",
+              text: childName
+                ? `${nameWithParticle(childName, "이를", "를")} 위해 만든 특별한 동화 — 마마스테일`
+                : "엄마의 이야기로 세상에 하나뿐인 동화를 만들었어요",
               url: siteUrl,
             };
             if (navigator.share) {

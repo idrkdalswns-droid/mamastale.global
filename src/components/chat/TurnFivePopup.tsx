@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { createClient } from "@/lib/supabase/client";
+import { nameWithParticle } from "@/lib/utils/korean";
 
 interface TurnFivePopupProps {
   /** Whether the user is logged in */
@@ -30,6 +31,11 @@ export default function TurnFivePopup({
   onGoHome,
   onTicketUsed,
 }: TurnFivePopupProps) {
+  // Read child name for personalized messaging
+  const childName = (() => {
+    try { return localStorage.getItem("mamastale_child_name") || ""; } catch { return ""; }
+  })();
+
   // Prevent background scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -141,13 +147,27 @@ export default function TurnFivePopup({
           style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.12)" }}
         >
           <p className="text-[13px] text-brown font-normal leading-relaxed text-center break-keep">
-            지금까지 나눈 소중한 이야기가
-            <br />
-            세상에 하나뿐인 <span className="text-coral font-semibold">마음 동화</span>가 됩니다.
-            <br />
-            <span className="text-brown-light text-xs font-light mt-1 block">
-              이 대화를 이어서 동화를 완성해 보세요.
-            </span>
+            {childName ? (
+              <>
+                {nameWithParticle(childName, "이를", "를")} 위한 소중한 이야기가
+                <br />
+                세상에 하나뿐인 <span className="text-coral font-semibold">마음 동화</span>가 됩니다.
+                <br />
+                <span className="text-brown-light text-xs font-light mt-1 block">
+                  {nameWithParticle(childName, "이에게", "에게")} 읽어줄 동화를 완성해 보세요.
+                </span>
+              </>
+            ) : (
+              <>
+                지금까지 나눈 소중한 이야기가
+                <br />
+                세상에 하나뿐인 <span className="text-coral font-semibold">마음 동화</span>가 됩니다.
+                <br />
+                <span className="text-brown-light text-xs font-light mt-1 block">
+                  이 대화를 이어서 동화를 완성해 보세요.
+                </span>
+              </>
+            )}
           </p>
         </div>
 
@@ -156,8 +176,10 @@ export default function TurnFivePopup({
             /* ── Logged-in WITH tickets: inline ticket deduction ── */
             <>
               <div className="text-center mb-4">
-                <p className="text-sm text-brown font-medium">
-                  만들기 1회를 사용하여 동화를 완성할까요?
+                <p className="text-sm text-brown font-medium break-keep">
+                  {childName
+                    ? `${nameWithParticle(childName, "이를", "를")} 위한 동화를 완성할까요?`
+                    : "만들기 1회를 사용하여 동화를 완성할까요?"}
                 </p>
                 <p className="text-xs text-brown-pale font-light mt-1">
                   남은 횟수: <span className="font-semibold text-coral">{ticketsRemaining}회</span>

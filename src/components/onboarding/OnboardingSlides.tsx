@@ -1,82 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
-import { trackOnboardingStep, trackOnboardingComplete } from "@/lib/utils/analytics";
+import { trackOnboardingComplete } from "@/lib/utils/analytics";
+import { nameWithParticle } from "@/lib/utils/korean";
 
 const PARENT_ROLE_OPTIONS = [
-  { value: "엄마", label: "엄마" },
   { value: "아빠", label: "아빠" },
   { value: "할머니", label: "할머니" },
   { value: "할아버지", label: "할아버지" },
   { value: "기타", label: "기타 보호자" },
 ];
 
-const PARENT_AGE_OPTIONS = [
-  { value: "10s", label: "10대" },
-  { value: "20s", label: "20대" },
-  { value: "30s", label: "30대" },
-  { value: "40s", label: "40대" },
-  { value: "50+", label: "50대 이상" },
-];
-
 const CHILD_AGE_OPTIONS = [
-  { value: "0-2", label: "0~2세" },
-  { value: "3-5", label: "3~5세" },
-  { value: "6-8", label: "6~8세" },
-  { value: "9-13", label: "9~13세" },
+  { value: "0-2", label: "0~2세", emoji: "👶", desc: "의성어와 반복이 가득한 동화가 만들어져요" },
+  { value: "3-5", label: "3~5세", emoji: "🧒", desc: "감각적이고 대화가 있는 동화가 만들어져요" },
+  { value: "6-8", label: "6~8세", emoji: "👦", desc: "은유와 내면을 담은 동화가 만들어져요" },
+  { value: "9-13", label: "9~13세", emoji: "👧", desc: "깊은 이야기와 복합적인 동화가 만들어져요" },
 ];
 
-interface Slide {
-  step: number; // 0 = no step badge
-  persona: string;
-  icon: string;
-  accent: string;
-  title: string;
-  body: string;
-}
-
-const slides: Slide[] = [
-  {
-    step: 1,
-    persona: "하은이가 이야기를 들어요",
-    icon: "1",
-    accent: "#7FBFB0",
-    title: "먼저, 편안하게\n마음을 열어주세요",
-    body: "하은이가 따뜻하게 귀 기울입니다.\n\n오래 참아온 마음을 말로 꺼내면\n더 이상 혼자 안고 있지 않아도 돼요.\n\n아무 판단 없이, 편안하게\n있는 그대로 이야기해 주세요.",
-  },
-  {
-    step: 2,
-    persona: "민서가 새로운 시선을 선물해요",
-    icon: "2",
-    accent: "#E07A5F",
-    title: "굳어진 마음에\n새 빛이 들어와요",
-    body: "민서가 아이의 순수한 시선으로\n부드러운 질문을 건넵니다.\n\n'엄마, 그게 정말 엄마 잘못이야?'\n\n이 질문 하나가 오래된 생각에\n작은 균열을 만들고,\n전혀 다른 각도에서\n상황을 바라보게 해 줍니다.",
-  },
-  {
-    step: 3,
-    persona: "지우가 감정을 캐릭터로 바꿔요",
-    icon: "3",
-    accent: "#8B6AAF",
-    title: "아픔이 이야기 속\n캐릭터가 돼요",
-    body: "지우가 어머니의 감정을\n동화 캐릭터로 변신시켜요.\n\n슬픔은 '비를 좋아하는 구름 토끼'로,\n불안은 '빛을 무서워하는 작은 반딧불이'로.\n\n감정이 캐릭터가 되면\n한 발 떨어져 바라보고\n돌봐줄 수 있게 됩니다.",
-  },
-  {
-    step: 4,
-    persona: "서연이 동화를 완성해요",
-    icon: "4",
-    accent: "#C4956A",
-    title: "세상에 하나뿐인\n동화가 완성돼요",
-    body: "서연이 모든 이야기를 엮어\n10장면의 마음 동화를 완성합니다.\n\n어머니의 마음이 동화가 되어\n아이에게 읽어줄 수 있는\n세상에 단 하나뿐인 이야기가 탄생해요.\n\n약 15~20분이면 충분해요.",
-  },
-  {
-    step: 0,
-    persona: "",
-    icon: "",
-    accent: "#7FBFB0",
-    title: "시작하기 전에",
-    body: "_childAge_", // special marker — rendered as custom form below
-  },
+const STEPS = [
+  { icon: "🫧", label: "대화", accent: "#7FBFB0" },
+  { icon: "🌿", label: "발견", accent: "#E07A5F" },
+  { icon: "✨", label: "은유", accent: "#8B6AAF" },
+  { icon: "📖", label: "동화", accent: "#C4956A" },
 ];
 
 interface OnboardingSlidesProps {
@@ -85,32 +32,22 @@ interface OnboardingSlidesProps {
 }
 
 export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
-  // Returning users skip to age selection slide directly
-  const hasSeenOnboarding = (() => {
-    try { return localStorage.getItem("mamastale_onboarding_done") === "1"; } catch { return false; }
-  })();
-  const [idx, setIdx] = useState(hasSeenOnboarding ? slides.length - 1 : 0);
-  const [anim, setAnim] = useState(true);
-  const [transitioning, setTransitioning] = useState(false);
-  // R7-2: Cleanup timeout on unmount to prevent setState on unmounted component
-  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current); }, []);
-  // Restore previous selections for returning users
-  const [parentRole, setParentRole] = useState(() => {
-    try { return localStorage.getItem("mamastale_parent_role") || ""; } catch { return ""; }
-  });
-  const [parentAge, setParentAge] = useState(() => {
-    try { return localStorage.getItem("mamastale_parent_age") || ""; } catch { return ""; }
+  const [childName, setChildName] = useState(() => {
+    try { return localStorage.getItem("mamastale_child_name") || ""; } catch { return ""; }
   });
   const [childAge, setChildAge] = useState(() => {
     try { return localStorage.getItem("mamastale_child_age") || ""; } catch { return ""; }
   });
+  const [parentRole, setParentRole] = useState(() => {
+    try { return localStorage.getItem("mamastale_parent_role") || "엄마"; } catch { return "엄마"; }
+  });
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   const saveAndDone = () => {
     try {
-      if (parentRole) localStorage.setItem("mamastale_parent_role", parentRole);
-      if (parentAge) localStorage.setItem("mamastale_parent_age", parentAge);
+      localStorage.setItem("mamastale_parent_role", parentRole);
       if (childAge) localStorage.setItem("mamastale_child_age", childAge);
+      if (childName.trim()) localStorage.setItem("mamastale_child_name", childName.trim());
       localStorage.setItem("mamastale_onboarding_done", "1");
     } catch {}
     hapticSuccess();
@@ -118,113 +55,167 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
     onDone();
   };
 
-  const go = (next: boolean) => {
-    if (transitioning) return; // Prevent multi-tap skipping/crash
-    setTransitioning(true);
-    setAnim(false);
-    // R7-2: Store timer ref for cleanup on unmount
-    transitionTimerRef.current = setTimeout(() => {
-      if (next) {
-        const nextIdx = Math.min(idx + 1, slides.length - 1);
-        setIdx(nextIdx);
-        trackOnboardingStep(nextIdx);
-      } else {
-        saveAndDone();
-      }
-      setAnim(true);
-      setTransitioning(false);
-    }, 250);
-    hapticLight();
-  };
+  const selectedAgeOption = CHILD_AGE_OPTIONS.find((o) => o.value === childAge);
 
-  const s = slides[idx];
-  const isLast = idx === slides.length - 1;
+  // CTA 텍스트: 아이 이름이 있으면 개인화
+  const ctaText = childName.trim()
+    ? `${nameWithParticle(childName.trim(), "이를", "를")} 위한 이야기 시작하기`
+    : "이야기 시작하기";
 
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
-      {/* Progress dots — decorative indicators (not interactive, so role="group" not "tablist") */}
-      <div className="flex gap-1.5 justify-center pt-5" role="group" aria-label="온보딩 진행 상태">
-        {slides.map((_, i) => (
-          <div
-            key={i}
-            aria-hidden="true"
-            className="h-1.5 rounded-sm transition-all duration-[400ms]"
+        {/* Scrollable content area */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8 overflow-y-auto">
+
+          {/* 4-step flow icons */}
+          <div className="flex items-center gap-2 mb-1.5">
+            {STEPS.map((step, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-base">{step.icon}</span>
+                  <span className="text-[9px] font-light" style={{ color: step.accent }}>{step.label}</span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <span className="text-[10px] text-brown-pale/40 -mt-2.5">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-brown-pale font-light mb-7">약 15분이면 충분해요</p>
+
+          {/* Child name input */}
+          <h2
+            className="text-[20px] font-semibold mb-4 text-center leading-snug"
+            style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
+          >
+            아이 이름을 알려주세요
+          </h2>
+          <input
+            type="text"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value.slice(0, 10))}
+            placeholder="예: 서연, 민준, 하은"
+            className="w-full max-w-[240px] px-4 py-3 rounded-xl text-center text-sm font-light text-brown outline-none transition-all focus:ring-2 focus:ring-[#7FBFB0]/30"
             style={{
-              width: i === idx ? 22 : 6,
-              background: i === idx ? s.accent : "rgba(0,0,0,0.07)",
+              background: "rgba(255,255,255,0.7)",
+              border: "1.5px solid rgba(196,149,106,0.15)",
             }}
+            aria-label="아이 이름 (선택)"
           />
-        ))}
-        <span className="sr-only">{idx + 1} / {slides.length} 단계</span>
-      </div>
+          <p className="text-[10px] text-brown-pale font-light mt-1.5 mb-6">선택사항이에요</p>
 
-      {/* Content */}
-      <div
-        className="flex-1 flex flex-col items-center justify-center px-10 text-center transition-all duration-[250ms]"
-        style={{
-          opacity: anim ? 1 : 0,
-          transform: anim ? "none" : "translateY(10px)",
-        }}
-      >
-        {/* Step badge — only for persona slides */}
-        {s.step > 0 && (
-          <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium tracking-wide mb-5"
+          {/* Child age selector */}
+          <h3
+            className="text-[15px] font-medium mb-1 text-center"
+            style={{ color: "rgb(var(--brown))" }}
+          >
+            아이는 몇 살인가요?
+          </h3>
+          <p className="text-[12px] text-brown-light font-light mb-4 text-center break-keep">
+            연령에 맞는 언어로 동화를 만들어 드려요
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 w-full max-w-[280px]">
+            {CHILD_AGE_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => { setChildAge(o.value); hapticLight(); }}
+                className="flex flex-col items-center justify-center py-4 rounded-2xl transition-all active:scale-[0.96] min-h-[80px]"
+                style={{
+                  background: childAge === o.value
+                    ? "linear-gradient(135deg, #7FBFB0, #5FA89A)"
+                    : "rgba(255,255,255,0.7)",
+                  color: childAge === o.value ? "#FFF" : "#5A3E2B",
+                  border: childAge === o.value
+                    ? "2px solid transparent"
+                    : "2px solid rgba(196,149,106,0.12)",
+                  boxShadow: childAge === o.value
+                    ? "0 6px 20px rgba(127,191,176,0.3)"
+                    : "none",
+                }}
+                aria-pressed={childAge === o.value}
+              >
+                <span className="text-2xl mb-1">{o.emoji}</span>
+                <span className="text-[13px] font-medium">{o.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Micro-feedback on age selection */}
+          <div className="h-8 flex items-center justify-center mt-2">
+            {selectedAgeOption ? (
+              <p
+                className="text-[11px] text-brown-light font-light text-center transition-opacity duration-300"
+                style={{ opacity: 1 }}
+              >
+                {selectedAgeOption.desc}
+              </p>
+            ) : (
+              <p className="text-[11px] text-brown-pale/50 font-light text-center">
+                선택하지 않아도 시작할 수 있어요
+              </p>
+            )}
+          </div>
+
+          {/* Testimonial */}
+          <p className="text-[11px] text-brown-light/60 italic text-center mt-3 mb-2">
+            &ldquo;아이가 매일 읽어달라고 해요&rdquo;
+            <span className="not-italic text-brown-pale"> — 준우맘</span>
+          </p>
+
+        </div>
+
+        {/* Fixed bottom area — CTA + role selector + crisis info */}
+        <div className="shrink-0 px-8 pb-5 pt-3">
+          <button
+            type="button"
+            onClick={saveAndDone}
+            className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-all active:scale-[0.97]"
             style={{
-              background: `${s.accent}12`,
-              color: s.accent,
-              border: `1px solid ${s.accent}20`,
+              background: "linear-gradient(135deg, #7FBFB0, #5FA89A)",
+              boxShadow: "0 6px 24px rgba(127,191,176,0.3)",
             }}
           >
-            <span>{s.step}단계</span>
-            <span style={{ opacity: 0.4 }}>·</span>
-            <span>{s.persona}</span>
-          </div>
-        )}
+            {ctaText}
+          </button>
 
-        {s.icon && (
-          <div
-            className="w-[88px] h-[88px] rounded-full flex items-center justify-center text-[28px] font-bold mb-7"
-            style={{
-              background: `${s.accent}15`,
-              border: `2px solid ${s.accent}30`,
-              color: s.accent,
-            }}
-          >
-            {s.icon}
-          </div>
-        )}
-
-        <h2 className="font-serif text-[22px] text-brown font-semibold mb-5 leading-[1.5] whitespace-pre-line">
-          {s.title}
-        </h2>
-
-        {s.body === "_childAge_" ? (
-          <div className="w-full max-w-xs space-y-4">
-            {/* Parent role selector — chip buttons */}
-            <div>
-              <label className="block text-xs text-brown font-medium mb-2.5 text-left">
-                아이와의 관계
-              </label>
-              <div className="flex flex-wrap gap-2">
+          {/* Parent role — collapsed link */}
+          <div className="flex justify-center mt-3">
+            {parentRole === "엄마" && !showRoleSelector ? (
+              <button
+                type="button"
+                onClick={() => setShowRoleSelector(true)}
+                className="text-[11px] text-brown-pale underline underline-offset-2 decoration-brown-pale/30 min-h-[32px] flex items-center"
+              >
+                다른 보호자이신가요?
+              </button>
+            ) : showRoleSelector ? (
+              <div className="flex gap-2 flex-wrap justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setParentRole("엄마"); setShowRoleSelector(false); hapticLight(); }}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
+                  style={{
+                    background: parentRole === "엄마" ? "linear-gradient(135deg, #E07A5F, #C96B52)" : "rgba(255,255,255,0.7)",
+                    color: parentRole === "엄마" ? "#FFF" : "#5A3E2B",
+                    border: "1px solid rgba(196,149,106,0.15)",
+                  }}
+                  aria-pressed={parentRole === "엄마"}
+                >
+                  엄마
+                </button>
                 {PARENT_ROLE_OPTIONS.map((o) => (
                   <button
                     key={o.value}
                     type="button"
-                    onClick={() => setParentRole(o.value)}
-                    className="px-4 py-2.5 rounded-full text-[13px] font-medium transition-all active:scale-[0.96] min-h-[44px]"
+                    onClick={() => { setParentRole(o.value); setShowRoleSelector(false); hapticLight(); }}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
                     style={{
-                      background: parentRole === o.value
-                        ? "linear-gradient(135deg, #E07A5F, #C96B52)"
-                        : "rgba(255,255,255,0.7)",
+                      background: parentRole === o.value ? "linear-gradient(135deg, #E07A5F, #C96B52)" : "rgba(255,255,255,0.7)",
                       color: parentRole === o.value ? "#FFF" : "#5A3E2B",
-                      border: parentRole === o.value
-                        ? "1.5px solid transparent"
-                        : "1.5px solid rgba(196,149,106,0.2)",
-                      boxShadow: parentRole === o.value
-                        ? "0 4px 12px rgba(224,122,95,0.25)"
-                        : "none",
+                      border: "1px solid rgba(196,149,106,0.15)",
                     }}
                     aria-pressed={parentRole === o.value}
                   >
@@ -232,145 +223,35 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Parent age selector */}
-            <div>
-              <label className="block text-xs text-brown font-medium mb-2 text-left">
-                연령대 (선택)
-              </label>
-              <div className="flex gap-2">
-                {PARENT_AGE_OPTIONS.filter(o => o.value).map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => setParentAge(o.value)}
-                    className="flex-1 py-2.5 rounded-xl text-[13px] font-medium transition-all active:scale-[0.96] min-h-[44px]"
-                    style={{
-                      background: parentAge === o.value
-                        ? "linear-gradient(135deg, #6D4C91, #8B6FB0)"
-                        : "rgba(255,255,255,0.7)",
-                      color: parentAge === o.value ? "#FFF" : "#5A3E2B",
-                      border: parentAge === o.value
-                        ? "1.5px solid transparent"
-                        : "1.5px solid rgba(196,149,106,0.2)",
-                      boxShadow: parentAge === o.value
-                        ? "0 4px 12px rgba(109,76,145,0.25)"
-                        : "none",
-                    }}
-                    aria-pressed={parentAge === o.value}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Child age selector */}
-            <div>
-              <label className="block text-xs text-brown font-medium mb-2 text-left">
-                자녀 연령대 (선택)
-              </label>
-              <div className="flex gap-2">
-                {CHILD_AGE_OPTIONS.filter(o => o.value).map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => setChildAge(o.value)}
-                    className="flex-1 py-2.5 rounded-xl text-[12px] font-medium transition-all active:scale-[0.96] min-h-[44px]"
-                    style={{
-                      background: childAge === o.value
-                        ? "linear-gradient(135deg, #7FBFB0, #5FA89A)"
-                        : "rgba(255,255,255,0.7)",
-                      color: childAge === o.value ? "#FFF" : "#5A3E2B",
-                      border: childAge === o.value
-                        ? "1.5px solid transparent"
-                        : "1.5px solid rgba(196,149,106,0.2)",
-                      boxShadow: childAge === o.value
-                        ? "0 4px 12px rgba(127,191,176,0.25)"
-                        : "none",
-                    }}
-                    aria-pressed={childAge === o.value}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10px] text-brown-pale font-light mt-1.5 text-left">
-                동화의 언어 수준이 아이 연령에 맞게 조절됩니다
-              </p>
-            </div>
-
-            {/* Informed consent note */}
-            <div
-              className="rounded-xl p-4 text-left"
-              style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.15)" }}
-            >
-              <p className="text-xs text-brown-light leading-6 font-light break-keep">
-                이 대화는 깊은 감정을 다룰 수 있습니다.
-                현재 심리적으로 많이 힘드신 상황이라면
-                전문 상담을 먼저 권합니다.
-              </p>
-              <p className="text-[10px] text-brown-pale font-light mt-2 leading-5">
-                자살예방상담전화 <a href="tel:1393" className="underline font-medium text-brown-light">1393</a> (24시간)
-                <br />
-                정신건강위기상담전화 <a href="tel:1577-0199" className="underline font-medium text-brown-light">1577-0199</a> (24시간)
-                <br />
-                해외 거주 시 <a href="tel:988" className="underline font-medium text-brown-light">988</a> Suicide & Crisis Lifeline (미국)
-              </p>
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowRoleSelector(true)}
+                className="text-[11px] text-brown-light min-h-[32px] flex items-center"
+              >
+                {parentRole === "기타" ? "기타 보호자" : parentRole}로 설정됨 · <span className="underline underline-offset-2 decoration-brown-pale/30 ml-0.5">변경</span>
+              </button>
+            )}
           </div>
-        ) : (
-          <p className="text-sm text-brown-light leading-8 font-normal whitespace-pre-line break-keep">
-            {s.body}
+
+          {/* Crisis info — minimal */}
+          <p className="text-[10px] text-brown-pale/60 font-light text-center mt-3 break-keep">
+            힘드실 땐{" "}
+            <a href="tel:1393" className="underline text-brown-pale">1393</a>(자살예방) ·{" "}
+            <a href="tel:1577-0199" className="underline text-brown-pale">1577-0199</a>(정신건강)
           </p>
-        )}
-      </div>
 
-      {/* Buttons */}
-      <div className="px-8 pb-5">
-        <button
-          onClick={() => go(!isLast)}
-          disabled={transitioning}
-          className="w-full py-4 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 disabled:pointer-events-none"
-          style={{
-            background: `linear-gradient(135deg, ${s.accent}, ${s.accent}CC)`,
-            boxShadow: `0 6px 24px ${s.accent}30`,
-          }}
-        >
-          {isLast ? "대화 시작하기" : "다음"}
-        </button>
-
-        {!isLast && (
-          <button
-            onClick={() => {
-              // Skip to the last slide (age selection) instead of skipping entirely
-              if (transitioning) return;
-              setTransitioning(true);
-              setAnim(false);
-              setTimeout(() => {
-                setIdx(slides.length - 1);
-                setAnim(true);
-                setTransitioning(false);
-              }, 250);
-            }}
-            disabled={transitioning}
-            className="block w-full mt-3.5 bg-transparent border-none text-[13px] text-brown-mid cursor-pointer font-sans py-2.5 disabled:opacity-40 underline underline-offset-2 decoration-brown-pale/30 min-h-[44px]"
-          >
-            건너뛰고 바로 시작하기
-          </button>
-        )}
-
-        {onGoHome && (
-          <button
-            onClick={onGoHome}
-            className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light min-h-[44px]"
-          >
-            ← 홈으로 돌아가기
-          </button>
-        )}
-      </div>
-      <div className="h-3" />
+          {onGoHome && (
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light min-h-[44px]"
+            >
+              ← 홈으로 돌아가기
+            </button>
+          )}
+        </div>
+        <div className="h-3" />
       </div>
     </div>
   );
