@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { detectInAppBrowser } from "@/lib/utils/browser-detect";
 
 export type OAuthProvider = "kakao" | "google";
 
@@ -23,6 +24,11 @@ export type OAuthProvider = "kakao" | "google";
 export async function signInWithOAuth(
   provider: OAuthProvider
 ): Promise<{ error: string | null }> {
+  // Google은 인앱 브라우저(WebView)에서 OAuth를 차단함 (403 disallowed_useragent)
+  // 카카오 로그인은 인앱에서도 정상 동작하므로 Google만 차단
+  if (provider === "google" && detectInAppBrowser()) {
+    return { error: "inapp_google" };
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

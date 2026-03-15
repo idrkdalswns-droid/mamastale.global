@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.1] - 2026-03-15
+
+### Added
+- 인앱 브라우저 감지 유틸리티 (`browser-detect.ts`) — 카카오톡, 네이버, 인스타그램 등 7종
+- Google OAuth 인앱 브라우저 사전 차단 + "링크 복사하기" 안내 UI
+- 콜백 페이지: `disallowed_useragent` 에러 시 친절한 안내 메시지
+
+### Fixed
+- CSP 헤더에 `accounts.google.com`, `oauth2.googleapis.com` 누락 수정
+- OAuthButtons 에러 메시지 줄바꿈(`\n`) 미표시 수정 (`whitespace-pre-line`)
+- OAuth 버튼 로딩 타임아웃 5초 → 15초 (느린 네트워크 대응)
+
 ## [1.8.0] - 2026-03-15
 
 ### Added

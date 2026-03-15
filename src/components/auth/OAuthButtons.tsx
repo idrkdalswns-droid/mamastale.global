@@ -15,7 +15,6 @@ interface OAuthButtonsProps {
 
 export function OAuthButtons({ className = "", disabled = false, onBeforeRedirect }: OAuthButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
-
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleOAuth = async (provider: OAuthProvider) => {
@@ -32,14 +31,49 @@ export function OAuthButtons({ className = "", disabled = false, onBeforeRedirec
       return;
     }
     // Browser will redirect; loading state only matters if redirect fails
-    setTimeout(() => setLoading(null), 5000);
+    setTimeout(() => setLoading(null), 15000);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText(window.location.href).then(() => {
+      setErrorMsg("URL이 복사되었습니다.\nSafari나 Chrome에서 붙여넣기 해주세요.");
+    }).catch(() => {
+      setErrorMsg("Safari나 Chrome에서\nmamastale.com 을 직접 입력해주세요.");
+    });
   };
 
   return (
     <div className={`space-y-2.5 ${className}`}>
-      {errorMsg && (
-        <p className="text-xs text-red-500 text-center" role="alert">{errorMsg}</p>
-      )}
+      {/* 인앱 브라우저 Google 차단 — 링크 복사 안내 UI */}
+      {errorMsg === "inapp_google" ? (
+        <div
+          className="rounded-xl p-4 text-center"
+          style={{
+            background: "rgba(224,122,95,0.08)",
+            border: "1px solid rgba(224,122,95,0.15)",
+          }}
+        >
+          <p className="text-xs text-brown font-medium mb-1.5">
+            인앱 브라우저에서는 Google 로그인을 사용할 수 없어요
+          </p>
+          <p className="text-[11px] text-brown-light font-light mb-3 break-keep">
+            아래 버튼을 눌러 Safari나 Chrome에서 열어주세요
+          </p>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="px-4 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97]"
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+          >
+            링크 복사하기
+          </button>
+        </div>
+      ) : errorMsg ? (
+        <p className="text-xs text-red-500 text-center whitespace-pre-line" role="alert">
+          {errorMsg}
+        </p>
+      ) : null}
+
       <p className="text-[10px] text-brown-pale font-light text-center break-keep">
         로그인 시{" "}
         <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</Link> 및{" "}

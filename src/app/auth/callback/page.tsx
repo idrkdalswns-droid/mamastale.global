@@ -41,7 +41,12 @@ export default function AuthCallbackPage() {
     const urlError = queryError || hashError;
     if (urlError) {
       window.history.replaceState({}, "", "/auth/callback");
-      setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+      // Google의 인앱 브라우저 차단 (403 disallowed_useragent) 또는 access_denied
+      if (urlError.includes("disallowed_useragent") || urlError.includes("disallowed_user")) {
+        setErrorMsg("인앱 브라우저에서는 Google 로그인이 제한됩니다.\nSafari나 Chrome 브라우저에서 열어주세요.");
+      } else {
+        setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+      }
       setDebugInfo(urlError);
       setStatus("error");
       return;
