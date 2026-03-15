@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
 import { trackOnboardingComplete } from "@/lib/utils/analytics";
 import { nameWithParticle } from "@/lib/utils/korean";
@@ -13,10 +14,10 @@ const PARENT_ROLE_OPTIONS = [
 ];
 
 const CHILD_AGE_OPTIONS = [
-  { value: "0-2", label: "0~2세", emoji: "👶", desc: "의성어와 반복이 가득한 동화가 만들어져요" },
-  { value: "3-5", label: "3~5세", emoji: "🧒", desc: "감각적이고 대화가 있는 동화가 만들어져요" },
-  { value: "6-8", label: "6~8세", emoji: "👦", desc: "은유와 내면을 담은 동화가 만들어져요" },
-  { value: "9-13", label: "9~13세", emoji: "👧", desc: "깊은 이야기와 복합적인 동화가 만들어져요" },
+  { value: "0-2", label: "0~2세", img: "/images/onboarding/age-0-2-1.jpeg", desc: "의성어와 반복이 가득한 동화가 만들어져요" },
+  { value: "3-5", label: "3~5세", img: "/images/onboarding/age-3-5.jpeg", desc: "감각적이고 대화가 있는 동화가 만들어져요" },
+  { value: "6-8", label: "6~8세", img: "/images/onboarding/age-6-8.jpeg", desc: "은유와 내면을 담은 동화가 만들어져요" },
+  { value: "9-13", label: "9~13세", img: "/images/onboarding/age-9-13.jpeg", desc: "깊은 이야기와 복합적인 동화가 만들어져요" },
 ];
 
 const STEPS = [
@@ -122,23 +123,37 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                 key={o.value}
                 type="button"
                 onClick={() => { setChildAge(o.value); hapticLight(); }}
-                className="flex flex-col items-center justify-center py-4 rounded-2xl transition-all active:scale-[0.96] min-h-[80px]"
+                className="relative flex flex-col items-center justify-end rounded-2xl transition-all active:scale-[0.96] overflow-hidden"
                 style={{
-                  background: childAge === o.value
-                    ? "linear-gradient(135deg, #7FBFB0, #5FA89A)"
-                    : "rgba(255,255,255,0.7)",
-                  color: childAge === o.value ? "#FFF" : "#5A3E2B",
+                  aspectRatio: "1",
                   border: childAge === o.value
-                    ? "2px solid transparent"
+                    ? "2.5px solid #7FBFB0"
                     : "2px solid rgba(196,149,106,0.12)",
                   boxShadow: childAge === o.value
-                    ? "0 6px 20px rgba(127,191,176,0.3)"
+                    ? "0 6px 20px rgba(127,191,176,0.25)"
                     : "none",
                 }}
                 aria-pressed={childAge === o.value}
               >
-                <span className="text-2xl mb-1">{o.emoji}</span>
-                <span className="text-[13px] font-medium">{o.label}</span>
+                <Image
+                  src={o.img}
+                  alt={o.label}
+                  fill
+                  sizes="140px"
+                  className="object-cover"
+                />
+                <span
+                  className="relative z-10 w-full text-center py-1.5 text-[12px] font-medium"
+                  style={{
+                    background: childAge === o.value
+                      ? "rgba(127,191,176,0.85)"
+                      : "rgba(255,255,255,0.75)",
+                    color: childAge === o.value ? "#FFF" : "#5A3E2B",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  {o.label}
+                </span>
               </button>
             ))}
           </div>
