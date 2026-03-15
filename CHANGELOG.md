@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.10.0] - 2026-03-16
+
+### Fixed
+- SSE 스트림 controller 이중 close 크래시 방지 (closed flag)
+- useChat saveInFlightTimer 레이스 컨디션 (clearTimeout 추가)
+- ChatInput sendingRef 500ms 하드코딩 → isLoading 연동
+- saveDraft 예외 미처리 (private browsing localStorage 비활성 대응)
+- GUEST_TURN_LIMIT 서버 불일치 (5→3 통일)
+- PhaseTransition 잘못된 phase 값 null 체크
+
+### Added
+- 랜딩 CTA "무료로 체험하기" + 모바일 하단 sticky CTA (IntersectionObserver)
+- 게스트 턴 카운터 프로그레스 바 ("무료 대화 2/3")
+- 오프라인 감지 배너 ("인터넷 연결이 끊겼어요")
+- 실시간 동화 카운터 (소셜 프루프, 10편 이상 시 표시)
+- StoryCompleteCTA 공유 URL에 storyId 포함 (바이럴 루프 복원)
+- 설정 페이지 (/settings): 프로필, 추천코드, 데이터 내보내기, 계정 삭제
+- OAuth 로그인 후 redirect 복원 (sessionStorage)
+- GA4 sign_up 이벤트 추가
+- `/api/referral` POST rate limiting (5/min per IP)
+- `/api/push/send` rate limiting (100/min) + constant-time API key 비교
+- 깨진 이미지 fallback (StoryCard, StoryGallery3D)
+- TurnFivePopup Escape 키 닫기
+- 온보딩 이름 입력 한글/영문/숫자 검증
+- 글로벌 ErrorBoundary (root layout)
+
+### Changed
+- SEO 타이틀: "mamastale — AI로 만드는 나만의 동화"
+- keywords 추가: AI 동화, AI 동화 만들기, 아이 동화 만들기
+- 이미지 최적화 활성화 (unoptimized: true 제거)
+- turnCountInCurrentPhase 상한 .max(50) 추가
+
 ## [1.9.2] - 2026-03-15
 
 ### Changed
