@@ -6,10 +6,21 @@ import { StoryViewer } from "@/components/story/StoryViewer";
 import { StoryEditor } from "@/components/story/StoryEditor";
 import { CoverPicker } from "@/components/story/CoverPicker";
 import { CoverPickerModal } from "@/components/story/CoverPickerModal";
+import { PopupBookViewer } from "@/components/diy/PopupBookViewer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
+import { cleanSceneText } from "@/lib/utils/story-parser";
 import type { Scene } from "@/lib/types/story";
+
+const TOPIC_OPTIONS = [
+  { value: "parenting", label: "양육" },
+  { value: "healing", label: "치유" },
+  { value: "growth", label: "성장" },
+  { value: "relationship", label: "관계" },
+  { value: "identity", label: "정체성" },
+  { value: "other", label: "기타" },
+];
 
 interface StoryData {
   id: string;
@@ -20,6 +31,7 @@ interface StoryData {
   author_alias?: string;
   topic?: string;
   cover_image?: string;
+  source?: string;
 }
 
 export default function LibraryStoryPage() {
@@ -37,6 +49,11 @@ export default function LibraryStoryPage() {
   const [publishing, setPublishing] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [showCoverPickerAfterEdit, setShowCoverPickerAfterEdit] = useState(false);
+  // DIY story states
+  const [diyPage, setDiyPage] = useState(0);
+  const [showDiyShareForm, setShowDiyShareForm] = useState(false);
+  const [shareAlias, setShareAlias] = useState("");
+  const [shareTopic, setShareTopic] = useState("parenting");
 
   useEffect(() => {
     if (!params.id) return;
@@ -229,6 +246,117 @@ export default function LibraryStoryPage() {
           }}
           onSkip={() => setShowCoverPickerAfterEdit(false)}
         />
+      </ErrorBoundary>
+    );
+  }
+
+  // DIY story: use PopupBookViewer in read-only mode (StoryViewer untouched)
+  if (story.source === "diy") {
+    const diyImages = story.scenes.map(s => s.imagePrompt).filter((v): v is string => !!v);
+    const diyOrder = diyImages.map((_, i) => i);
+    const diyTexts: Record<number, string> = {};
+    story.scenes.forEach((s, i) => {
+      if (s.text) diyTexts[i] = cleanSceneText(s.text);
+    });
+
+    return (
+      <ErrorBoundary fullScreen>
+        <div className="h-dvh bg-cream flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
+            <button
+              onClick={() => router.push("/library")}
+              className="text-[12px] text-brown-light min-h-[44px] flex items-center"
+            >
+              ← 서재
+            </button>
+            <h2 className="text-[14px] font-serif font-bold text-brown truncate max-w-[200px]">
+              {story.title || "DIY 동화"}
+            </h2>
+            <div className="w-[44px]" />
+          </div>
+
+          {/* PopupBookViewer read-only */}
+          <div className="flex-1 min-h-0">
+            <PopupBookViewer
+              images={diyImages}
+              imageOrder={diyOrder}
+              texts={diyTexts}
+              currentPage={diyPage}
+              onPageChange={setDiyPage}
+              accent="#8B6AAF"
+              editable={false}
+              storyTitle={story.title}
+            />
+          </div>
+
+          {/* Bottom actions: community share */}
+          <div className="shrink-0 px-4 pb-4 pt-2">
+            {!story.is_public ? (
+              showDiyShareForm ? (
+                <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(139,106,175,0.05)", border: "1px solid rgba(139,106,175,0.15)" }}>
+                  <p className="text-[13px] text-brown font-medium mb-1 break-keep">커뮤니티에 공유하기</p>
+                  <input
+                    type="text"
+                    value={shareAlias}
+                    onChange={e => setShareAlias(e.target.value)}
+                    placeholder="닉네임 (예: 지아맘)"
+                    maxLength={50}
+                    className="w-full px-3 py-2 rounded-lg text-[13px] text-brown bg-white border border-brown-pale/20 focus:outline-none focus:border-purple/40"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {TOPIC_OPTIONS.map(t => (
+                      <button
+                        key={t.value}
+                        onClick={() => setShareTopic(t.value)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all"
+                        style={{
+                          background: shareTopic === t.value ? "rgba(139,106,175,0.15)" : "rgba(139,106,175,0.04)",
+                          color: shareTopic === t.value ? "#6D4C91" : "#8B6F5B",
+                          border: `1px solid ${shareTopic === t.value ? "rgba(139,106,175,0.3)" : "rgba(139,106,175,0.1)"}`,
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        const ok = await handlePublish(shareAlias.trim(), shareTopic);
+                        if (ok) setShowDiyShareForm(false);
+                      }}
+                      disabled={!shareAlias.trim() || publishing}
+                      className="flex-1 py-2.5 rounded-full text-[12px] font-medium text-white transition-all active:scale-[0.97] disabled:opacity-50"
+                      style={{ background: "linear-gradient(135deg, #8B6AAF, #6D4C91)" }}
+                    >
+                      {publishing ? "공유 중..." : "공유하기"}
+                    </button>
+                    <button
+                      onClick={() => setShowDiyShareForm(false)}
+                      className="px-4 py-2.5 rounded-full text-[11px] text-brown-pale font-light"
+                      style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowDiyShareForm(true)}
+                  className="w-full py-3 rounded-full text-[13px] font-medium text-white transition-all active:scale-[0.97]"
+                  style={{ background: "linear-gradient(135deg, #8B6AAF, #6D4C91)", boxShadow: "0 4px 16px rgba(139,106,175,0.25)" }}
+                >
+                  커뮤니티에 공유하기
+                </button>
+              )
+            ) : (
+              <div className="text-center text-[12px] text-brown-light py-2">
+                ✓ 커뮤니티에 공유됨
+              </div>
+            )}
+          </div>
+        </div>
       </ErrorBoundary>
     );
   }

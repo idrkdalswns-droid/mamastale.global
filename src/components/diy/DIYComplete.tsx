@@ -148,7 +148,7 @@ export function DIYComplete({
 
   if (showBook) {
     return (
-      <div className="min-h-dvh bg-cream flex flex-col">
+      <div className="h-dvh bg-cream flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <button
             onClick={() => setShowBook(false)}
@@ -162,7 +162,7 @@ export function DIYComplete({
           </h3>
           <div className="w-[44px]" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <PopupBookViewer
             images={images}
             imageOrder={imageOrder}

@@ -27,6 +27,8 @@ interface DIYState {
   setText: (imageIndex: number, text: string) => void;
   setCurrentPage: (page: number) => void;
   setStep: (step: "sort" | "write" | "complete") => void;
+  deleteImage: (imageIndex: number) => void;
+  restoreImage: (imageIndex: number) => void;
   save: () => void;
   load: (storyId: string) => DIYSaveData | null;
   reset: () => void;
@@ -90,8 +92,12 @@ export const useDIYStore = create<DIYState>((set, get) => ({
     cleanupOldDIYData();
     // Try to restore saved data
     const saved = get().load(storyId);
-    // imageOrder 길이 검증 — 불일치 시 기존 데이터 폐기
-    if (saved && saved.imageOrder?.length === imageCount) {
+    // imageOrder 검증 — 최소 3장, 인덱스 유효, 중복 없음
+    const validOrder = saved?.imageOrder &&
+      saved.imageOrder.length >= 3 &&
+      saved.imageOrder.every((i: number) => i >= 0 && i < imageCount) &&
+      new Set(saved.imageOrder).size === saved.imageOrder.length;
+    if (saved && validOrder) {
       set({
         storyId,
         imageOrder: saved.imageOrder,
@@ -138,6 +144,24 @@ export const useDIYStore = create<DIYState>((set, get) => ({
       updates.savedStoryId = null;
     }
     set(updates);
+    get().save();
+  },
+
+  deleteImage: (imageIndex: number) => {
+    const { imageOrder, currentPage } = get();
+    const newOrder = imageOrder.filter((i) => i !== imageIndex);
+    if (newOrder.length < 3) return; // 최소 3장
+    set({
+      imageOrder: newOrder,
+      currentPage: Math.min(currentPage, newOrder.length - 1),
+    });
+    get().save();
+  },
+
+  restoreImage: (imageIndex: number) => {
+    const { imageOrder } = get();
+    if (imageOrder.includes(imageIndex)) return; // 이미 있으면 무시
+    set({ imageOrder: [...imageOrder, imageIndex] });
     get().save();
   },
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PopupBookViewerProps {
   images: string[];
@@ -34,6 +34,7 @@ export function PopupBookViewer({
   const [isEditing, setIsEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const pointerRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const totalPages = imageOrder.length;
   const currentImageIndex = imageOrder[currentPage];
   const currentText = texts[currentImageIndex] || "";
@@ -47,17 +48,24 @@ export function PopupBookViewer({
     [totalPages, onPageChange],
   );
 
-  const handleDragEnd = useCallback(
-    (_: unknown, info: PanInfo) => {
-      if (isEditing) return;
-      if (info.offset.x < -SWIPE_THRESHOLD && currentPage < totalPages - 1) {
-        goToPage(currentPage + 1, 1);
-      } else if (info.offset.x > SWIPE_THRESHOLD && currentPage > 0) {
-        goToPage(currentPage - 1, -1);
-      }
-    },
-    [currentPage, totalPages, goToPage, isEditing],
-  );
+  function handlePointerDown(e: React.PointerEvent) {
+    if (isEditing) return;
+    pointerRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (!pointerRef.current || isEditing) return;
+    const dx = e.clientX - pointerRef.current.x;
+    const dy = e.clientY - pointerRef.current.y;
+    const dt = Date.now() - pointerRef.current.t;
+    pointerRef.current = null;
+
+    // Horizontal > vertical, min 40px, within 500ms
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40 && dt < 500) {
+      if (dx < 0 && currentPage < totalPages - 1) goToPage(currentPage + 1, 1);
+      else if (dx > 0 && currentPage > 0) goToPage(currentPage - 1, -1);
+    }
+  }
 
   const handleTextSubmit = useCallback(() => {
     setIsEditing(false);
@@ -134,7 +142,7 @@ export function PopupBookViewer({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-x-hidden">
       {/* Book area — flex-1 min-h-0 for proper sizing */}
       <div
         className="flex-1 min-h-0 relative mx-4 rounded-2xl overflow-hidden"
@@ -156,13 +164,11 @@ export function PopupBookViewer({
               rotateY: { type: "spring", stiffness: 300, damping: 30 },
               opacity: { duration: 0.2 },
             }}
-            drag={isEditing ? false : "x"}
-            dragDirectionLock
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.15}
-            onDragEnd={handleDragEnd}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
             className="absolute inset-0 rounded-2xl overflow-hidden"
             style={{
+              touchAction: "pan-y",
               transformStyle: "preserve-3d",
               boxShadow: `0 8px 32px ${accent}20, 0 2px 8px rgba(0,0,0,0.08)`,
             }}

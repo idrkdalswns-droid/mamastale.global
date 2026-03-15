@@ -75,7 +75,7 @@ export async function GET(
 
   const { data: story, error } = await supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, cover_image, view_count, like_count, comment_count, created_at")
+    .select("id, title, scenes, author_alias, cover_image, view_count, like_count, comment_count, metadata, created_at")
     .eq("id", id)
     .eq("is_public", true)
     .single();
@@ -99,5 +99,12 @@ export async function GET(
     }
   }
 
-  return NextResponse.json({ story });
+  // Extract source from metadata, don't expose raw metadata to client
+  const { metadata, ...storyFields } = story;
+  const safeStory = {
+    ...storyFields,
+    source: (metadata as Record<string, unknown> | null)?.source || "ai",
+  };
+
+  return NextResponse.json({ story: safeStory });
 }

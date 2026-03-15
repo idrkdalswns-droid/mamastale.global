@@ -33,6 +33,8 @@ export function DIYEditorClient() {
     setText,
     setCurrentPage,
     setStep,
+    deleteImage,
+    restoreImage,
     reset,
   } = useDIYStore();
 
@@ -127,6 +129,8 @@ export function DIYEditorClient() {
             onComplete={() => setStep("write")}
             accent={story.accent}
             storyTitle={story.title}
+            onDeleteImage={deleteImage}
+            onRestoreImage={restoreImage}
           />
         </motion.div>
       </div>

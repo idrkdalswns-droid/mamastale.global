@@ -595,7 +595,7 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
               </span>
-            ) : user ? "새 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+            ) : user ? "내 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
           {!user && !authLoading && (
             <Link href="/pricing" className="text-[10px] text-brown-pale/70 font-light text-center mb-5 block no-underline hover:text-coral transition-colors">
@@ -668,6 +668,53 @@ export default function Home() {
           </div>
 
           {/* ════════════════════════════════════════
+              DIY THUMBNAILS — Free stories preview (M1)
+              ════════════════════════════════════════ */}
+          <div id="diy" className="mb-5">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+              무료 DIY 동화
+            </p>
+            <p className="text-[11px] text-brown-pale font-light text-center mb-3">
+              직접 이미지를 골라 나만의 동화를 만들어 보세요
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {DIY_STORIES.slice(0, 3).map((story) => (
+                <Link key={story.id} href={`/diy/${story.id}`} className="no-underline group">
+                  <div className="rounded-lg overflow-hidden aspect-square relative">
+                    <Image
+                      src={story.thumbnail}
+                      alt={story.title}
+                      width={120}
+                      height={120}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}>
+                      <p className="text-[9px] text-white font-medium leading-tight">{story.title}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <Link href="/diy" className="text-[11px] text-coral font-light no-underline text-center block mt-2">
+              6개 동화 모두 보기 →
+            </Link>
+          </div>
+
+          {/* DIY 동화 만들기 CTA */}
+          <Link
+            href="/diy"
+            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            style={{
+              background: "linear-gradient(135deg, rgba(127,191,176,0.15), rgba(127,191,176,0.08))",
+              color: "#5A9E94",
+              border: "1.5px solid rgba(127,191,176,0.25)",
+            }}
+          >
+            무료 DIY 동화 만들기 →
+          </Link>
+
+          {/* ════════════════════════════════════════
               HOW IT WORKS — 3-step process (B2)
               ════════════════════════════════════════ */}
           <div id="how" className="mb-6">
@@ -721,71 +768,6 @@ export default function Home() {
               후기 더보기 →
             </Link>
           </div>
-
-          {/* ⭐ CTA 2차 — Reviews 직후 (사회적 증거로 설득된 사용자 캡처) */}
-          <div id="start" className="mb-5">
-            <button
-              onClick={handleStartStory}
-              disabled={authLoading}
-              className="w-full py-3.5 rounded-full text-white text-[14px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.25)",
-              }}
-            >
-              {user ? "새 동화 만들기" : "지금 시작하기"}
-            </button>
-            <Link href="/pricing" className="text-[11px] text-brown-pale font-light no-underline text-center block hover:text-coral transition-colors">
-              가격 안내 보기 →
-            </Link>
-          </div>
-
-          {/* ════════════════════════════════════════
-              DIY THUMBNAILS — Free stories preview (M1)
-              ════════════════════════════════════════ */}
-          <div id="diy" className="mb-5">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
-              무료 DIY 동화
-            </p>
-            <p className="text-[11px] text-brown-pale font-light text-center mb-3">
-              직접 이미지를 골라 나만의 동화를 만들어 보세요
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {DIY_STORIES.slice(0, 3).map((story) => (
-                <Link key={story.id} href={`/diy/${story.id}`} className="no-underline group">
-                  <div className="rounded-lg overflow-hidden aspect-square relative">
-                    <Image
-                      src={story.thumbnail}
-                      alt={story.title}
-                      width={120}
-                      height={120}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}>
-                      <p className="text-[9px] text-white font-medium leading-tight">{story.title}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <Link href="/diy" className="text-[11px] text-coral font-light no-underline text-center block mt-2">
-              6개 동화 모두 보기 →
-            </Link>
-          </div>
-
-          {/* DIY 동화 만들기 CTA */}
-          <Link
-            href="/diy"
-            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
-            style={{
-              background: "linear-gradient(135deg, rgba(127,191,176,0.15), rgba(127,191,176,0.08))",
-              color: "#5A9E94",
-              border: "1.5px solid rgba(127,191,176,0.25)",
-            }}
-          >
-            무료 DIY 동화 만들기 →
-          </Link>
 
           {/* 서비스 소개 */}
           <Link

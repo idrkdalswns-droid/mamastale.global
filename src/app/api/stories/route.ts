@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
 
   const { data: stories, error } = await sb.client
     .from("stories")
-    // R7-F1: Include cover_image & topic for library carousel display
-    .select("id, title, scenes, status, is_public, cover_image, topic, created_at")
+    // R7-F1: Include cover_image, topic, metadata (for source detection)
+    .select("id, title, scenes, status, is_public, cover_image, topic, metadata, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false })
@@ -96,7 +96,13 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
   }
 
-  return sb.applyCookies(NextResponse.json({ stories: stories || [] }));
+  // Extract source from metadata, don't expose raw metadata to client
+  const safeStories = (stories || []).map(({ metadata, ...s }) => ({
+    ...s,
+    source: (metadata as Record<string, unknown> | null)?.source || "ai",
+  }));
+
+  return sb.applyCookies(NextResponse.json({ stories: safeStories }));
 }
 
 // POST: Save a new story (with ticket check & deduction)

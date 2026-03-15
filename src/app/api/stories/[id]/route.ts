@@ -48,8 +48,8 @@ export async function GET(
 
   const { data: story, error } = await sb.client
     .from("stories")
-    // R10-2: Exclude metadata from client response (least-privilege; metadata contains internal fields)
-    .select("id, title, scenes, status, is_public, author_alias, topic, cover_image, created_at")
+    // R10-2: Include metadata for source detection, but only expose source field to client
+    .select("id, title, scenes, status, is_public, author_alias, topic, cover_image, metadata, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -58,7 +58,14 @@ export async function GET(
     return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
   }
 
-  return sb.applyCookies(NextResponse.json({ story }));
+  // Extract source from metadata, don't expose raw metadata to client
+  const { metadata, ...storyFields } = story;
+  const safeStory = {
+    ...storyFields,
+    source: (metadata as Record<string, unknown> | null)?.source || "ai",
+  };
+
+  return sb.applyCookies(NextResponse.json({ story: safeStory }));
 }
 
 // PATCH: Update story (e.g., share to community)
