@@ -11,6 +11,7 @@ const NAV_ITEMS_PUBLIC = [
   { href: "/about", label: "소개" },
   { href: "/diy", label: "DIY 동화" },
   { href: "/pricing", label: "구매" },
+  { href: "/reviews", label: "후기" },
 ];
 
 const NAV_ITEMS_AUTH = [
@@ -19,6 +20,7 @@ const NAV_ITEMS_AUTH = [
   { href: "/library", label: "서재" },
   { href: "/community", label: "커뮤니티" },
   { href: "/pricing", label: "구매" },
+  { href: "/reviews", label: "후기" },
 ];
 
 /**

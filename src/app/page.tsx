@@ -26,6 +26,22 @@ const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage"
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
 
+const KAKAO_CHANNEL_URL = "https://open.kakao.com/o/gSSkFmii";
+
+const NAV_ITEMS_PUBLIC = [
+  { href: "/about", label: "소개" },
+  { href: "/diy", label: "DIY 동화" },
+  { href: "/pricing", label: "구매" },
+];
+
+const NAV_ITEMS_AUTH = [
+  { href: "/about", label: "소개" },
+  { href: "/diy", label: "DIY 동화" },
+  { href: "/library", label: "서재" },
+  { href: "/community", label: "커뮤니티" },
+  { href: "/pricing", label: "구매" },
+];
+
 /** Horizontal scroll container that auto-scrolls to a specific child index on mount */
 function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -473,85 +489,59 @@ export default function Home() {
       <WatercolorBlob top={-80} right={-100} size={280} color="rgba(232,168,124,0.07)" />
       <WatercolorBlob bottom={100} left={-80} size={240} color="rgba(184,216,208,0.08)" />
 
-      {/* Top navigation bar */}
-      <div className="max-w-md mx-auto w-full flex items-center justify-between px-6 pt-4 pb-2 relative z-[2]">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="font-serif text-sm font-bold text-brown tracking-wide no-underline">
-            mamastale
-          </Link>
-          <ThemeToggle />
-        </div>
-        {!authLoading && (
-          <div className="flex items-center gap-1">
-            {user ? (
-              <>
-                <Link
-                  href="/library"
-                  className="text-xs text-brown-mid font-medium no-underline hover:text-coral transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center px-2"
-                >
-                  내 서재
-                </Link>
-                <Link
-                  href="/about"
-                  className="text-xs text-brown-mid font-medium no-underline hover:text-coral transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center px-2"
-                >
-                  소개
-                </Link>
-                <button
-                  onClick={signOut}
-                  className="text-xs text-brown-pale font-light min-h-[44px] flex items-center px-2"
-                >
-                  로그아웃
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-xs text-brown-mid font-medium no-underline min-h-[44px] flex items-center px-2"
-                >
-                  로그인
-                </Link>
-                <Link
-                  href="/signup"
-                  className="text-xs text-white font-medium no-underline px-3 py-1.5 rounded-full min-h-[44px] flex items-center"
-                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-                >
-                  회원가입
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Page navigation tab bar — sticky site navigation */}
+      {/* Top navigation bar — matches GlobalNav items */}
       <nav
-        className="sticky top-0 z-30 flex h-[34px] items-center gap-0 overflow-x-auto scrollbar-hide border-b border-brown-pale/10"
-        style={{ backgroundColor: "rgb(var(--cream) / 0.92)", backdropFilter: "blur(12px)" }}
-        aria-label="페이지 탐색"
+        className="sticky top-0 z-40 backdrop-blur-lg border-b border-brown-pale/10"
+        style={{ background: "rgb(var(--cream) / 0.85)" }}
+        aria-label="메인 내비게이션"
       >
-        {[
-          { href: "/", label: "홈", active: true },
-          { href: "/pricing", label: "구매" },
-          { href: "/reviews", label: "후기" },
-          { href: "/diy", label: "DIY" },
-          { href: "/about", label: "소개" },
-        ].map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`relative shrink-0 px-3 py-1 text-[11px] transition-colors duration-200 no-underline ${
-              tab.active ? "font-medium text-coral" : "text-brown-pale"
-            }`}
-            aria-current={tab.active ? "page" : undefined}
-          >
-            {tab.label}
-            {tab.active && (
-              <span className="absolute bottom-0 left-1/2 h-[2px] w-4/5 -translate-x-1/2 rounded-full bg-coral" />
-            )}
-          </Link>
-        ))}
+        <div className="flex items-center justify-between h-12 px-4 max-w-md mx-auto">
+          <div className="flex items-center gap-2">
+            <Link href="/" className="font-serif text-base font-bold text-brown no-underline">
+              mamastale
+            </Link>
+            <ThemeToggle />
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            {(user ? NAV_ITEMS_AUTH : NAV_ITEMS_PUBLIC).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-[11px] whitespace-nowrap no-underline transition-colors min-h-[44px] justify-center px-1 sm:px-2 flex items-center text-brown-mid font-light"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <a
+              href={KAKAO_CHANNEL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="카카오톡 고객센터"
+              className="text-brown-mid min-h-[44px] flex items-center px-1"
+              title="카카오톡 문의"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2C6.48 2 2 5.83 2 10.5c0 2.95 1.95 5.54 4.88 7.01l-1.01 3.74c-.08.3.26.54.52.37l4.43-2.95c.38.04.78.08 1.18.08 5.52 0 10-3.83 10-8.25S17.52 2 12 2z" />
+              </svg>
+            </a>
+            {!authLoading && (user ? (
+              <button
+                onClick={signOut}
+                className="text-[11px] whitespace-nowrap text-brown-pale font-light min-h-[44px] flex items-center"
+              >
+                로그아웃
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-[11px] whitespace-nowrap text-white font-medium no-underline px-2 sm:px-2.5 py-1 rounded-full min-h-[44px] flex items-center"
+                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+              >
+                로그인
+              </Link>
+            ))}
+          </div>
+        </div>
       </nav>
 
       {/* Main content — centered, max-width for desktop */}
