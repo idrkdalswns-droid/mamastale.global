@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.7.0] - 2026-03-15
+
+### Fixed
+- PopupBookViewer: 페이지 밀림 버그 수정 — Framer Motion drag → pointer event 기반 스와이프
+- DIYComplete: 완성 동화 표시 안 되던 버그 수정 — min-h-dvh → h-dvh overflow-hidden
+- 서재/커뮤니티에서 DIY 동화 이미지 표시 안 되던 버그 수정
+
+### Added
+- ImageSorter: 이미지 삭제 기능 (× 버튼) + 삭제된 이미지 복원 UI
+- useDIY: deleteImage/restoreImage 액션, initStory 검증 완화 (삭제된 이미지 허용)
+- 서재 상세: DIY 동화 → PopupBookViewer 읽기 모드 + 커뮤니티 공유 폼
+- 커뮤니티 상세: DIY 동화 → PopupBookViewer 읽기 모드 조건부 렌더링
+- API: stories/community GET 응답에 source 필드 추가 (metadata에서 추출)
+
+### Changed
+- 홈페이지: CTA 버튼 1개로 통합 ("내 동화 만들기"), 중복 CTA 삭제
+- 홈페이지: "무료 DIY 동화" 섹션을 "이렇게 만들어져요" 위로 이동
+
 ## [1.6.0] - 2026-03-15
 
 ### Changed
