@@ -26,17 +26,13 @@ const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage"
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
 
-const KAKAO_CHANNEL_URL = "https://open.kakao.com/o/gSSkFmii";
-
 const NAV_ITEMS_PUBLIC = [
   { href: "/about", label: "소개" },
-  { href: "/diy", label: "DIY 동화" },
   { href: "/pricing", label: "구매" },
 ];
 
 const NAV_ITEMS_AUTH = [
   { href: "/about", label: "소개" },
-  { href: "/diy", label: "DIY 동화" },
   { href: "/library", label: "서재" },
   { href: "/community", label: "커뮤니티" },
   { href: "/pricing", label: "구매" },
@@ -512,18 +508,6 @@ export default function Home() {
                 {item.label}
               </Link>
             ))}
-            <a
-              href={KAKAO_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="카카오톡 고객센터"
-              className="text-brown-mid min-h-[44px] flex items-center px-1"
-              title="카카오톡 문의"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2C6.48 2 2 5.83 2 10.5c0 2.95 1.95 5.54 4.88 7.01l-1.01 3.74c-.08.3.26.54.52.37l4.43-2.95c.38.04.78.08 1.18.08 5.52 0 10-3.83 10-8.25S17.52 2 12 2z" />
-              </svg>
-            </a>
             {!authLoading && (user ? (
               <button
                 onClick={signOut}
@@ -546,7 +530,7 @@ export default function Home() {
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full px-8 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-8 pt-6 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -585,7 +569,7 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
               </span>
-            ) : user ? "내 동화 만들기" : "15분이면 완성! 지금 시작하기"}
+            ) : user ? "우리 아이 동화 만들기" : "15분이면 완성! 지금 시작하기"}
           </button>
           {!user && !authLoading && (
             <Link href="/pricing" className="text-[10px] text-brown-pale/70 font-light text-center mb-5 block no-underline hover:text-coral transition-colors">
