@@ -596,6 +596,28 @@ export default function Home() {
           )}
           {user && <div className="mb-5" />}
 
+          {/* 선생님 모드 CTA */}
+          {process.env.NEXT_PUBLIC_TEACHER_MODE_ENABLED !== "false" && (
+            <button
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("mamastale_post_login_redirect", "/teacher");
+                } catch { /* ignore */ }
+                if (user) {
+                  window.location.href = "/teacher";
+                } else {
+                  window.location.href = "/login";
+                }
+              }}
+              className="w-full py-2.5 rounded-full text-[12px] font-medium text-brown-light
+                         border border-brown-pale/25 bg-paper/40 mb-3
+                         hover:bg-paper hover:border-coral/30
+                         active:scale-[0.98] transition-all"
+            >
+              🏫 선생님이신가요? 우리 반 맞춤 동화 만들기 →
+            </button>
+          )}
+
           {/* ════════════════════════════════════════
               STORYBOOK GALLERY — Product showcase
               ════════════════════════════════════════ */}

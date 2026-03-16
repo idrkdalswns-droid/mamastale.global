@@ -35,7 +35,7 @@ export interface LLMCallParams {
   sessionId?: string;
   userId?: string | null;
   model: string;
-  phase: number;
+  phase: number | null;
   inputTokens: number;
   outputTokens: number;
   latencyMs: number;

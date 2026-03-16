@@ -102,7 +102,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const protectedPaths = ["/dashboard", "/library", "/settings"];
+  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   const authPaths = ["/login", "/signup", "/reset-password"];
@@ -140,7 +140,7 @@ export async function middleware(request: NextRequest) {
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
       // Strict redirect validation: only allow known local paths (prevent open redirect)
-      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests"];
+      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
       if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
         loginUrl.searchParams.set("redirect", pathname);
       }
@@ -156,7 +156,7 @@ export async function middleware(request: NextRequest) {
     // Fail-closed for protected routes
     if (isProtected) {
       const loginUrl = new URL("/login", request.url);
-      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests"];
+      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
       if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
         loginUrl.searchParams.set("redirect", pathname);
       }
