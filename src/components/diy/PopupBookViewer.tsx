@@ -39,6 +39,15 @@ export function PopupBookViewer({
   const currentImageIndex = imageOrder[currentPage];
   const currentText = texts[currentImageIndex] || "";
 
+  // V5-FIX #22: Guard against empty imageOrder/images
+  if (!imageOrder.length || !images.length) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] text-sm text-brown-light font-light">
+        이미지를 불러올 수 없어요.
+      </div>
+    );
+  }
+
   const goToPage = useCallback(
     (page: number, dir: number) => {
       if (page < 0 || page >= totalPages) return;

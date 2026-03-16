@@ -83,6 +83,8 @@ export default function TurnFivePopup({
       });
 
       if (res.ok) {
+        // V5-FIX #16: Reset submittingRef BEFORE calling onTicketUsed (which unmounts this component)
+        submittingRef.current = false;
         // Ticket deducted → lift free trial limit (popup will auto-dismiss)
         onTicketUsed?.();
       } else {

@@ -117,6 +117,8 @@ const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
 // R3-FIX: Add timeout fallback to prevent permanent lock on network failure
 let saveInFlight = false;
 let saveInFlightTimer: ReturnType<typeof setTimeout> | null = null;
+// V5-FIX #20: Module-level lock to prevent double-click concurrent sendMessage
+let sendInFlight = false;
 
 const AGE_LABELS: Record<string, string> = {
   "0-2": "어린 아이를 돌보시느라",
@@ -194,7 +196,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   sendMessage: async (text: string) => {
     const state = get();
-    if (!text.trim() || state.isLoading) return;
+    // V5-FIX #20: Module-level lock prevents concurrent sends (double-click, fast Enter)
+    if (!text.trim() || state.isLoading || sendInFlight) return;
+    sendInFlight = true;
 
     const userMsg: Message = {
       id: genId("user"),
@@ -317,7 +321,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         saveInFlight = true; // P1-FIX(KR-3): Module-level lock in addition to state flag
             // R3-FIX: Timeout fallback — release lock after 30s to prevent permanent deadlock
             if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
-            saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
+            // V5-FIX #17: Timeout also resets storySaved so user can retry after deadlock
+            saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; set({ storySaved: false }); }, 30_000);
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = "나의 마음 동화";
@@ -374,12 +379,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((s) => ({ messages: [...s.messages, errorMsg] }));
     } finally {
       set({ isLoading: false });
+      sendInFlight = false; // V5-FIX #20: Release module-level send lock
     }
   },
 
   sendMessageStreaming: async (text: string) => {
     const state = get();
-    if (!text.trim() || state.isLoading) return;
+    // V5-FIX #20: Module-level lock prevents concurrent sends
+    if (!text.trim() || state.isLoading || sendInFlight) return;
+    sendInFlight = true;
 
     const userMsg: Message = {
       id: genId("user"),
@@ -587,6 +595,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((s) => ({ messages: [...s.messages, errorMsg] }));
     } finally {
       set({ isLoading: false });
+      sendInFlight = false; // V5-FIX #20: Release module-level send lock
     }
   },
 
@@ -754,8 +763,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // P1-FIX(KR-3): Prevent concurrent retry attempts
     if (saveInFlight) return false;
     saveInFlight = true;
+    // V5-FIX #17: Timeout protection for retrySaveStory (same 30s deadlock prevention)
+    if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
+    saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
 
     try {
+      // V5-FIX #28: Fresh auth headers (token may have refreshed since first attempt)
       const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/stories", {
         method: "POST",
@@ -785,6 +798,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return false;
     } finally {
       saveInFlight = false;
+      // V5-FIX #17: Clear timeout timer on completion
+      if (saveInFlightTimer) { clearTimeout(saveInFlightTimer); saveInFlightTimer = null; }
     }
   },
 

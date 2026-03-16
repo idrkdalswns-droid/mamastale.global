@@ -114,9 +114,10 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   }, [messages.length]);
 
   // ── DEFENSE LAYER 1: Auto-save chat on page unload ──
-  // Catches ALL navigation scenarios: OAuth redirect, back button, URL change, tab close
+  // V5-FIX #19: Use pagehide instead of beforeunload — fires reliably on mobile tab swipe/close
+  // beforeunload is unreliable on iOS Safari and some Android browsers
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handlePageHide = () => {
       const state = useChatStore.getState();
       const userMsgs = state.messages.filter(m => m.role === "user").length;
       // Save if user has sent at least 1 message and story isn't done
@@ -125,8 +126,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         state.persistToStorage(); // Also save auth copy as backup
       }
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
   }, []);
 
   // ── DEFENSE LAYER 2: Periodic auto-save every 30s ──
@@ -432,12 +433,12 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-[60] flex justify-center pb-2">
           <button
             onClick={() => {
-              // ROUND1-FIX: Remove error messages AND the last user message, then re-send.
-              // sendMessage() adds a new user message internally, so we must remove the original
-              // to prevent duplicate user bubbles in the chat.
-              const lastUserMsg = [...messages].reverse().find(m => m.role === "user" && !m.isError);
+              // V5-FIX #18: Use fresh state from store (not stale render-captured `messages`)
+              // Prevents race condition where messages array changed between render and click
+              const freshMessages = useChatStore.getState().messages;
+              const lastUserMsg = [...freshMessages].reverse().find(m => m.role === "user" && !m.isError);
               if (lastUserMsg) {
-                const withoutErrors = messages.filter(m => !m.isError);
+                const withoutErrors = freshMessages.filter(m => !m.isError);
                 const withoutLastUser = withoutErrors.filter(m => m.id !== lastUserMsg.id);
                 useChatStore.setState({ messages: withoutLastUser });
                 sendMessage(lastUserMsg.content);

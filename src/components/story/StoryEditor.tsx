@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import toast from "react-hot-toast";
 import type { Scene } from "@/lib/types/story";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 
@@ -136,6 +137,13 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   );
 
   const handleDone = useCallback(() => {
+    // V5-FIX #21: Validate no empty scenes before completing
+    const hasEmptyScene = editedScenes.some(s => !s.text?.trim());
+    if (hasEmptyScene) {
+      const emptyIdx = editedScenes.findIndex(s => !s.text?.trim());
+      toast.error(`${emptyIdx + 1}페이지의 내용이 비어있어요.`);
+      return;
+    }
     try { localStorage.removeItem("mamastale_editor_draft"); } catch {}
     onDone(editedScenes, editedTitle);
   }, [editedScenes, editedTitle, onDone]);
