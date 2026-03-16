@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.12.0] - 2026-03-16
+
+### Fixed
+- 결제 안정성: CAS 재시도 3→5회 + jitter 백오프, RPC 에러 분류, 멀티 isolate order_claims 경합 방어
+- 서버 방어: Phase 조기 전환 차단 (minTurns 미달 시 strip), 축하합니다 단독 false positive 제거
+- 의료 조언 차단: output-safety 로그 전용 → 실제 차단으로 전환
+- 스트리밍 안정성: 초기 30s 타임아웃, finalMessage 5s 타임아웃, atomic close, request.signal 연결
+- 크래시 방지: saveInFlight 30초 타임아웃 시 storySaved 리셋, handleRetry 최신 state 사용
+- 모바일 안정성: beforeunload → pagehide 전환 (iOS Safari 대응)
+- 동시전송 방지: sendMessage module-level lock 추가
+- StoryEditor 빈 장면 검증, PopupBookViewer 빈 배열 가드
+
+### Changed
+- 무료 대화 3회 → 5회 확대 (클라이언트 + 서버 동기화)
+- 주제 추천 긍정 키워드로 변경 (나의 꿈, 가족 사랑, 용기와 모험 등)
+- TurnFivePopup 긴급감 카피 + 게스트 loss aversion 문구 추가
+- 새 이야기 버튼 coral gradient CTA로 강화
+
 ## [1.11.1] - 2026-03-16
 
 ### Fixed
