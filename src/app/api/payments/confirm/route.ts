@@ -265,34 +265,59 @@ export async function POST(request: NextRequest) {
       try {
         const { error: claimErr } = await serviceClient
           .from("order_claims")
-          .insert({ user_id: user.id, order_id: orderId });
+          .insert({ user_id: user.id, order_id: orderId, status: "pending" });
 
         if (claimErr) {
           if (claimErr.code === "23505") {
-            // V5-FIX #3: PostgreSQL unique_violation → another isolate claimed this order.
-            // Wait briefly for the other isolate to finish, then verify completion.
-            await new Promise(r => setTimeout(r, 2000));
-            try {
-              const { data: verifyProfile } = await sb.client
-                .from("profiles")
-                .select("metadata")
-                .eq("id", user.id)
-                .single();
-              const verifyMeta = (verifyProfile?.metadata as Record<string, unknown>) || {};
-              const verifyOrders = (verifyMeta.processed_orders as string[]) || [];
-              if (!verifyOrders.includes(orderId)) {
-                // Other isolate claimed but didn't complete — rare crash edge case
-                console.error(`[CRITICAL] Order ${orderId} claimed in order_claims but not in metadata. User ${user.id.slice(0, 8)}… may need manual ticket grant.`);
-              }
-            } catch {
-              // Verification query failed — log and proceed with alreadyProcessed
-              console.warn("[Toss] order_claims duplicate verification failed for:", orderId);
+            // P1-FIX(S7): Check existing claim status to decide action
+            const { data: existingClaim } = await serviceClient
+              .from("order_claims")
+              .select("status")
+              .eq("user_id", user.id)
+              .eq("order_id", orderId)
+              .single();
+
+            if (existingClaim?.status === "confirmed") {
+              // Truly already processed
+              markOrderProcessed(orderId);
+              return sb.applyCookies(NextResponse.json({ success: true, alreadyProcessed: true }));
             }
-            markOrderProcessed(orderId);
-            return sb.applyCookies(NextResponse.json({
-              success: true,
-              alreadyProcessed: true,
-            }));
+
+            if (existingClaim?.status === "rolled_back") {
+              // Previous attempt failed — reclaim with CAS (only if still rolled_back)
+              const { error: reclaimErr } = await serviceClient
+                .from("order_claims")
+                .update({ status: "pending", updated_at: new Date().toISOString() })
+                .eq("user_id", user.id)
+                .eq("order_id", orderId)
+                .eq("status", "rolled_back");
+
+              if (reclaimErr) {
+                // Another isolate reclaimed first
+                markOrderProcessed(orderId);
+                return sb.applyCookies(NextResponse.json({ success: true, alreadyProcessed: true }));
+              }
+              // Fall through → metadata dedup → Toss confirm → ticket increment
+            } else {
+              // status='pending' — another isolate is currently processing
+              await new Promise(r => setTimeout(r, 2000));
+              try {
+                const { data: verifyProfile } = await sb.client
+                  .from("profiles")
+                  .select("metadata")
+                  .eq("id", user.id)
+                  .single();
+                const verifyMeta = (verifyProfile?.metadata as Record<string, unknown>) || {};
+                const verifyOrders = (verifyMeta.processed_orders as string[]) || [];
+                if (!verifyOrders.includes(orderId)) {
+                  console.error(`[CRITICAL] Order ${orderId} pending but not completed. User ${user.id.slice(0, 8)}… may need manual ticket grant.`);
+                }
+              } catch {
+                console.warn("[Toss] order_claims duplicate verification failed for:", orderId);
+              }
+              markOrderProcessed(orderId);
+              return sb.applyCookies(NextResponse.json({ success: true, alreadyProcessed: true }));
+            }
           }
           // Other DB errors — log but proceed (metadata dedup still protects)
           console.warn("[Toss] order_claims insert error:", claimErr.code);
@@ -358,12 +383,12 @@ export async function POST(request: NextRequest) {
       } catch {
         console.error("[Toss] metadata rollback failed for order:", orderId);
       }
-      // Rollback order_claims row so retry is possible
+      // P1-FIX(S7): Mark order_claims as rolled_back (instead of DELETE, which can fail permanently)
       if (serviceClient) {
         try {
           await serviceClient
             .from("order_claims")
-            .delete()
+            .update({ status: "rolled_back", updated_at: new Date().toISOString() })
             .eq("user_id", user.id)
             .eq("order_id", orderId);
         } catch {
@@ -379,6 +404,20 @@ export async function POST(request: NextRequest) {
 
     // Mark as processed in-memory after successful ticket increment
     markOrderProcessed(orderId);
+
+    // P1-FIX(S7): Update order_claims to confirmed status
+    if (serviceClient) {
+      try {
+        await serviceClient
+          .from("order_claims")
+          .update({ status: "confirmed", updated_at: new Date().toISOString() })
+          .eq("user_id", user.id)
+          .eq("order_id", orderId);
+      } catch {
+        // Non-critical — claim stays as 'pending' but ticket was granted
+        console.warn("[Toss] order_claims confirm update failed:", orderId);
+      }
+    }
 
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";
