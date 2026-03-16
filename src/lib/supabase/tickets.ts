@@ -21,15 +21,24 @@ export async function incrementTickets(
       p_count: count,
     });
     if (!error && typeof data === "number") return data;
-  } catch {
-    // RPC not available — fall through to non-atomic
+    // V5-FIX #2: Differentiate RPC errors — only fall back to CAS for "function not found"
+    if (error && error.code !== "PGRST116") {
+      throw new Error(`RPC increment_tickets failed: ${error.code} ${error.message}`);
+    }
+  } catch (rpcErr) {
+    // PGRST116 = function not found → expected, fall through to CAS
+    // Other errors (timeout, auth, connection) → re-throw
+    if (rpcErr instanceof Error && !rpcErr.message.includes("PGRST116")) {
+      throw rpcErr;
+    }
   }
 
   // IN-1: Fallback uses read-then-update.
   // CTO-FIX: Added CAS guard (.eq on current value) to prevent TOCTOU race condition.
   console.warn("[Tickets] increment_tickets RPC unavailable — using CAS fallback. Deploy 006_ticket_increment.sql for best performance.");
 
-  const MAX_CAS_RETRIES = 3;
+  // V5-FIX #1: 3→5 retries + jitter backoff for better concurrency handling
+  const MAX_CAS_RETRIES = 5;
   for (let attempt = 0; attempt < MAX_CAS_RETRIES; attempt++) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -59,8 +68,8 @@ export async function incrementTickets(
     // CAS miss — another concurrent write changed the value; retry with backoff
     if (attempt < MAX_CAS_RETRIES - 1) {
       console.warn(`[Tickets] CAS miss for user=${userId.slice(0, 8)}…, retry ${attempt + 1}/${MAX_CAS_RETRIES}`);
-      // LAUNCH-FIX: Add exponential backoff between CAS retries to reduce collision probability
-      await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
+      // V5-FIX #1: Exponential backoff with random jitter to reduce collision probability
+      await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1) + Math.random() * 50));
     }
   }
 

@@ -269,7 +269,25 @@ export async function POST(request: NextRequest) {
 
         if (claimErr) {
           if (claimErr.code === "23505") {
-            // PostgreSQL unique_violation → already claimed by another isolate
+            // V5-FIX #3: PostgreSQL unique_violation → another isolate claimed this order.
+            // Wait briefly for the other isolate to finish, then verify completion.
+            await new Promise(r => setTimeout(r, 2000));
+            try {
+              const { data: verifyProfile } = await sb.client
+                .from("profiles")
+                .select("metadata")
+                .eq("id", user.id)
+                .single();
+              const verifyMeta = (verifyProfile?.metadata as Record<string, unknown>) || {};
+              const verifyOrders = (verifyMeta.processed_orders as string[]) || [];
+              if (!verifyOrders.includes(orderId)) {
+                // Other isolate claimed but didn't complete — rare crash edge case
+                console.error(`[CRITICAL] Order ${orderId} claimed in order_claims but not in metadata. User ${user.id.slice(0, 8)}… may need manual ticket grant.`);
+              }
+            } catch {
+              // Verification query failed — log and proceed with alreadyProcessed
+              console.warn("[Toss] order_claims duplicate verification failed for:", orderId);
+            }
             markOrderProcessed(orderId);
             return sb.applyCookies(NextResponse.json({
               success: true,

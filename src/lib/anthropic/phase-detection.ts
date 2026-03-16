@@ -62,17 +62,17 @@ export function isStoryComplete(text: string, phase: number | null, clientPhase?
   if (effectivePhase !== 4) return false;
 
   // Check for story completion markers (English, Korean scene, Korean chapter)
-  return (
-    text.includes("WISDOM 1") ||
-    text.includes("WISDOM 2") ||
-    text.includes("[WISDOM") ||
+  const hasWisdom = text.includes("WISDOM 1") || text.includes("WISDOM 2") || text.includes("[WISDOM");
+  const hasLateScene =
     text.includes("장면 9") ||
     text.includes("장면 10") ||
     text.includes("[장면 10]") ||
-    // Korean chapter format: "9장", "10장" (AI may use N장 instead of 장면 N)
     /(?:^|\D)9\s*장[.:\s]/m.test(text) ||
-    /(?:^|\D)10\s*장[.:\s]/m.test(text) ||
-    // Also check for the completion celebration text as a safety net
-    text.includes("축하합니다")
-  );
+    /(?:^|\D)10\s*장[.:\s]/m.test(text);
+  const hasCelebration = text.includes("축하합니다");
+
+  // V5-FIX #9: "축하합니다" alone is too prone to false positives (can appear in Phase 1-3).
+  // Only treat it as completion when combined with actual scene markers.
+  // Standalone "축하합니다" without WISDOM/late scene markers is no longer a completion signal.
+  return hasWisdom || hasLateScene;
 }

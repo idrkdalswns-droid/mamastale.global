@@ -95,8 +95,13 @@ describe("isStoryComplete", () => {
     expect(isStoryComplete("장면 10: 아이에게 전합니다.", 4)).toBe(true);
   });
 
-  it("detects completion with 축하합니다 (celebration text)", () => {
-    expect(isStoryComplete("축하합니다! 동화가 완성되었습니다.", 4)).toBe(true);
+  // V5-FIX #9: "축하합니다" alone no longer triggers completion (false positive risk)
+  it("does NOT detect completion with 축하합니다 alone (false positive prevention)", () => {
+    expect(isStoryComplete("축하합니다! 동화가 완성되었습니다.", 4)).toBe(false);
+  });
+
+  it("detects completion with 축하합니다 + WISDOM scene marker", () => {
+    expect(isStoryComplete("축하합니다! WISDOM 1: 교훈입니다.", 4)).toBe(true);
   });
 
   it("returns false for phase 3 even with WISDOM text", () => {
