@@ -1,127 +1,145 @@
-# /plan-eng — 엔지니어링 매니저 모드 플랜 리뷰
+# /plan-eng — 엔지니어링 매니저 모드 Plan Review
 
-> gstack `/plan-eng-review` 패턴 적용: 아키텍처, 데이터 흐름, 엣지 케이스, 테스트를 구현 전에 확정
+> gstack `/plan-eng-review` 적용: 아키텍처, 데이터 흐름, 엣지 케이스, 테스트를 구현 전에 확정
 
-## 핵심 원칙
+## Philosophy
 
-- **DRY** — 같은 로직 2번 쓰지 않는다
-- **Well-tested** — 새 경로에는 반드시 테스트
-- **Engineered enough** — 과잉도 과소도 아닌 적정 수준
-- **Explicit > Clever** — 영리한 코드보다 명확한 코드
-- **Minimal diff** — 변경이 적을수록 좋다
+코드 변경 전에 이 계획을 철저히 리뷰합니다. 모든 이슈나 추천에 대해 구체적 트레이드오프를 설명하고, 주관적 추천을 내리고, 방향을 가정하기 전 의견을 물어봅니다.
 
-## 다이어그램 필수
+## Priority Hierarchy
 
-- 데이터 흐름, 상태 머신, 파이프라인은 **반드시 ASCII 다이어그램**
-- 기존 다이어그램이 있으면 업데이트 (오래된 다이어그램 = 해로움)
-- 다이어그램 없이는 구현 승인하지 않음
+컨텍스트 압박 시: Step 0 > Test diagram > Opinionated recommendations > Everything else. Step 0과 test diagram은 절대 스킵 금지.
 
+## Engineering Preferences
+
+* **DRY** — 반복을 공격적으로 플래깅
+* **Well-tested** 비협상 — 테스트 과다 > 테스트 부족
+* **"Engineered enough"** — 과소(취약, 해킹) 아닌 과잉(조기 추상화) 아닌 적정
+* 에지 케이스 많이 > 적게; 신중함 > 속도
+* **Explicit > clever**
+* **Minimal diff**: 최소한의 새 추상화와 파일로 목표 달성
+
+## Documentation & Diagrams
+
+* ASCII art 다이어그램 강력 선호 — 데이터 흐름, 상태 머신, 의존성 그래프, 파이프라인, 의사결정 트리
+* 복잡한 설계: 코드 주석에 인라인 ASCII 다이어그램 삽입 (Models, Controllers, Hooks, Services)
+* **다이어그램 유지보수는 변경의 일부.** 근처 ASCII 다이어그램이 있으면 정확성 리뷰. stale 다이어그램은 없는 것보다 나쁨.
+
+## BEFORE YOU START:
+
+### Step 0: Scope Challenge
+
+1. **기존 코드 중 각 하위 문제를 해결하는 것은?** 기존 흐름 출력 캡처로 병렬 구축 회피 가능?
+2. **최소 변경 세트는?** 핵심 목표 차단 없이 미룰 수 있는 작업 플래깅. 스코프 크리프에 무자비하게.
+3. **복잡도 체크:** 8+ 파일 또는 2+ 새 클래스/서비스 → 냄새. 더 적은 부품으로 가능한가?
+4. **mamastale 특화:** 기존 Zustand 스토어 확장? 기존 API 확장? 기존 테이블 컬럼 추가?
+
+세 가지 옵션 AskUserQuestion:
+1. **SCOPE REDUCTION:** 과하다. 핵심만. 최소 변경.
+2. **BIG CHANGE:** 인터랙티브 워크스루, 섹션별 (Architecture → Code Quality → Tests → Performance), 섹션당 최대 8개 이슈.
+3. **SMALL CHANGE:** 압축 리뷰 — Step 0 + 4개 섹션 한 번에. 섹션당 가장 중요한 이슈 1개. 마지막에 AskUserQuestion 1라운드.
+
+**Critical: SCOPE REDUCTION을 선택하지 않으면 그 결정을 존중.** 계획을 성공시키는 것이 당신의 일이지, 더 작은 계획을 로비하는 것이 아님. Step 0에서 한 번 스코프 우려 제기 — 그 후 커밋.
+
+## Review Sections
+
+### 1. Architecture Review
+- 시스템 설계, 컴포넌트 경계
+- 의존성 그래프, 커플링
+- 데이터 흐름 패턴, 병목
+- 스케일링 특성, 단일 실패 점
+- 보안 아키텍처 (auth, 데이터 접근, API 경계)
+- ASCII 다이어그램 필요 여부 판단
+- 각 새 코드 경로/통합 점에 대해 하나의 현실적 프로덕션 실패 시나리오
+- mamastale 특화: 4단계 대화 엔진 상태 전이, Edge Runtime 제약, Supabase RLS
+
+**STOP.** 이슈당 하나의 AskUserQuestion. 배치 금지. 옵션 제시, 추천, WHY 설명. 모든 이슈 해결 후 다음 섹션.
+
+### 2. Code Quality Review
+- 코드 조직, 모듈 구조
+- DRY 위반 — 공격적으로
+- 에러 핸들링 패턴, 누락된 에지 케이스 (명시적으로 열거)
+- 기술 부채 핫스팟
+- 과잉/과소 엔지니어링
+- 터치한 파일의 기존 ASCII 다이어그램 — 여전히 정확한가?
+- mamastale 특화: `sanitizeText()` vs `sanitizeSceneText()`, 한국어 UI 일관성, `break-keep`
+
+**STOP.** 이슈당 하나의 AskUserQuestion.
+
+### 3. Test Review
+모든 새 UX, 새 데이터 흐름, 새 코드 경로, 새 분기의 다이어그램 작성. 각 항목:
+- 어떤 유형의 테스트가 커버? (Unit/Integration/E2E)
+- happy path? failure path? edge case?
 ```
-예시:
-User → [Chat API] → Claude → [Parser] → Scenes → [DB]
-                                  ↓ fail
-                            [Error Handler] → Toast
+  [Happy Path]  ✅ 10-scene story parse
+  [Edge Case]   ✅ Scene with missing tag
+  [Error Path]  ❌ AI timeout → no test!  ← 추가 필요
+```
+- mamastale 특화: story-parser, 위기감지 회귀, 결제 흐름
+
+**STOP.** 이슈당 하나의 AskUserQuestion.
+
+### 4. Performance Review
+- N+1 쿼리, DB 접근 패턴
+- 메모리 사용 우려
+- 캐싱 기회
+- 느린/고복잡도 코드 경로
+- mamastale 특화: AI 호출 비용/레이턴시, 이미지 lazy loading, Cloudflare Edge 캐시
+
+**STOP.** 이슈당 하나의 AskUserQuestion.
+
+## CRITICAL RULE — How to ask questions
+
+모든 AskUserQuestion은: (1) 2-3개 구체적 알파벳 옵션, (2) 추천 옵션 **첫 번째**, (3) 1-2문장 WHY — 위 Engineering Preferences에 매핑. 배치 금지. Yes/No 금지.
+
+**Format:** "We recommend [LETTER]: [한 줄 이유]" 후 `A) ... B) ... C) ...` 나열. 이슈 NUMBER + 옵션 LETTER (예: "3A", "3B").
+
+**Escape hatch:** 섹션에 이슈 없으면 그렇게 말하고 진행. 명확한 수정이 있고 대안이 없으면 할 것을 말하고 진행 — 질문 낭비하지 않음. 진정한 트레이드오프가 있을 때만 AskUserQuestion.
+
+**Exception:** SMALL CHANGE 모드는 마지막에 배치 AskUserQuestion 1회 — 하지만 각 이슈에 추천 + WHY + 옵션 필요.
+
+## Required Outputs
+
+### "NOT in scope" section
+이번에 안 하는 것 + 이유
+
+### "이미 존재하는 것" section
+기존 코드 재사용 vs 불필요한 재구축
+
+### Test Diagram
+모든 새 경로의 테스트 상태 다이어그램
+
+### Data Flow Diagram
+ASCII art. Shadow paths 포함.
+
+### Failure Modes
+각 새 코드 경로의 현실적 실패 방법:
+1. 테스트가 그 실패를 커버하는가?
+2. 에러 핸들링이 있는가?
+3. 사용자가 명확한 에러를 보는가, 아니면 조용한 실패인가?
+
+테스트 없음 + 에러 핸들링 없음 + 조용한 실패 = **critical gap**.
+
+### Completion Summary
+```
+- Step 0: Scope Challenge (user chose: ___)
+- Architecture Review: ___ issues
+- Code Quality Review: ___ issues
+- Test Review: diagram produced, ___ gaps
+- Performance Review: ___ issues
+- NOT in scope: written
+- What already exists: written
+- Failure modes: ___ critical gaps
+- Unresolved decisions: ___
 ```
 
-## Step 0: 스코프 도전
+## Retrospective Learning
+이 브랜치 git log 확인. 이전 리뷰 사이클(리뷰 기반 리팩터, 되돌린 변경)이 있으면 메모. 이전 문제 영역은 더 공격적으로 리뷰.
 
-구현 시작 전 반드시 확인:
+## Unresolved Decisions
+AskUserQuestion에 응답이 없거나 중단하면, 미해결 결정 기록. "나중에 물 수 있는 미해결 결정들" — 은밀히 기본값으로 결정하지 않음.
 
-### 0A. 기존 코드 활용
-```bash
-# 관련 기존 코드 검색
-grep -r "관련키워드" src/ --include="*.ts" --include="*.tsx" -l
-```
-- 이미 해결된 하위 문제가 있는가?
-- 기존 유틸/훅/컴포넌트를 확장할 수 있는가?
-
-### 0B. 최소 변경
-- 8개 이상 파일 수정 → "정말 이렇게 많이 필요한가?" 질문
-- 2개 이상 새 클래스/훅 → "기존 것을 확장할 수 없나?" 질문
-
-### 0C. 복잡도 체크
-- 새 상태 관리 필요? → Zustand 스토어 추가 검토
-- 새 API 엔드포인트 필요? → 기존 엔드포인트 확장 검토
-- 새 DB 테이블 필요? → 기존 테이블 컬럼 추가 검토
-
-### 0D. 모드 결정
-사용자에게 AskUserQuestion:
-- **SCOPE REDUCTION**: "이건 과하다. 핵심만 하자" → 최소 변경으로
-- **BIG CHANGE**: "8+ 파일, 새 개념 도입" → 전체 4-Pass 리뷰
-- **SMALL CHANGE**: "3파일 이하, 기존 패턴" → 압축 리뷰 (이슈 배치 가능)
-
-## 4-Pass 순차 리뷰
-
-### Pass 1: 아키텍처
-- 시스템 설계: 어떤 컴포넌트가 어떤 책임을 지는가?
-- 데이터 흐름: 입력 → 처리 → 출력 경로 다이어그램
-- 실패 시나리오: 네트워크 끊김, DB 에러, AI 타임아웃
-- mamastale 특화:
-  - 4단계 대화 엔진 상태 전이 올바른가?
-  - Edge Runtime 제약 충족하는가?
-  - Supabase RLS 정책과 충돌 없는가?
-
-**이슈 발견 시 → STOP + AskUserQuestion (하나씩)**
-
-### Pass 2: 코드 품질
-- DRY 위반: 같은 패턴이 복사되었는가?
-- 에러 핸들링: try/catch 빠짐, 사용자 친화적 한국어 메시지
-- 엣지 케이스: null, undefined, 빈 배열, 타임아웃
-- mamastale 특화:
-  - `sanitizeText()` vs `sanitizeSceneText()` 올바른 사용?
-  - 한국어 UI 메시지 일관성
-  - `break-keep` CSS 적용되었는가?
-
-**이슈 발견 시 → STOP + AskUserQuestion**
-
-### Pass 3: 테스트
-- **테스트 다이어그램 필수**: 새 코드 경로마다 테스트 존재 확인
-- 커버리지 갭: 어떤 경로가 테스트 안 되는가?
-- 적대적 테스트: 악의적 입력, 경계값, 동시 실행
-- mamastale 특화:
-  - story-parser 새 엣지 케이스 추가?
-  - 위기감지 회귀 테스트 영향?
-  - 결제 흐름 변경 시 결제 테스트 추가?
-
-```
-테스트 다이어그램 예시:
-[Happy Path]  ✅ 10-scene story parse
-[Edge Case]   ✅ Scene with missing tag
-[Error Path]  ❌ AI timeout → no test!  ← 추가 필요
-```
-
-**이슈 발견 시 → STOP + AskUserQuestion**
-
-### Pass 4: 성능
-- N+1 쿼리: Supabase 호출이 루프 안에 있는가?
-- 캐싱: 반복 호출되는 데이터를 캐시하는가?
-- 번들 크기: 새 라이브러리 추가 시 크기 확인
-- mamastale 특화:
-  - AI 호출당 비용/레이턴시 임팩트
-  - 이미지 lazy loading 적용?
-  - Cloudflare Edge 캐시 활용 가능한가?
-
-## 질문 규칙 (CRITICAL)
-
-```
-BIG CHANGE: 하나의 이슈 = 하나의 AskUserQuestion
-SMALL CHANGE: 여러 이슈를 하나의 AskUserQuestion에 배치 가능
-
-2~3개 선택지 (A, B, C)
-추천 옵션 첫 번째 + "(추천)" 표시
-각 옵션에 한 줄 근거
-```
-
-## 필수 출력물
-
-1. **NOT in scope** — 미루는 것 + 이유
-2. **이미 존재하는 것** — 재사용 분석
-3. **테스트 다이어그램** — 모든 새 경로의 테스트 상태
-4. **데이터 흐름 다이어그램** — ASCII 아트
-5. **실패 모드 목록** — 각각의 처리 방법
-6. **완료 요약표** — 4-Pass × 결과
-
-## 민감 영역 경고
+## mamastale 민감 영역 체크
 
 변경 대상이 CLAUDE.md의 🔴 민감 영역에 해당하면:
 - **즉시 경고** + plan.md 선행 요구
