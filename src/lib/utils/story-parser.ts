@@ -36,10 +36,11 @@ export function cleanSceneText(text: string): string {
   // 1c. P1-FIX(C2): Strip AI meta-commentary lines
   cleaned = cleaned.replace(/^\[TAGS:.*\]$/gim, "");
   cleaned = cleaned.replace(/^\[Image Prompt:.*\]$/gim, "");
-  // Phase 4 closing celebration lines (line-start anchor — won't match mid-sentence)
-  cleaned = cleaned.replace(/^(축하합니다|당신은 방금|이 동화는 단순한|이건 당신의 여정|당신의 강함의|당신의 사랑의|동화가 완성되었어요|오늘 나눈 이야기는|깊은 숨을 쉬어보세요)[^\n]*$/gm, "");
-  // AI meta phrases (scene instructions, author notes)
-  cleaned = cleaned.replace(/^(이 장면에서는|다음 장면으로|작가 노트)[^\n]*$/gm, "");
+  // Phase 4 closing celebration / grounding / self-care lines
+  // (line-start anchor — won't match mid-sentence in story prose)
+  cleaned = cleaned.replace(/^(축하합니다|당신은 방금|이 동화는 단순한|이건 당신의 여정|당신의 강함의|당신의 사랑의|동화가 완성되었어요|오늘 나눈 이야기는|깊은 숨을 쉬어보세요|오늘 많은 감정을|자신을 위해|당신은 충분히|지금 이 순간의|어머니의 용기에서)[^\n]*$/gm, "");
+  // AI meta phrases (scene instructions, author notes, commentary)
+  cleaned = cleaned.replace(/^(이 장면에서는|다음 장면으로|작가 노트|이 이야기는|이 동화가|당신의 이야기|당신의 동화|이야기를 통해|위의 동화는)[^\n]*$/gm, "");
   cleaned = cleaned.replace(/^\(해설\)[^\n]*$/gm, "");
 
   // 2. Strip horizontal rules (--- or *** or ___)
@@ -59,8 +60,8 @@ export function cleanSceneText(text: string): string {
   // 5. Strip strikethrough ~~
   cleaned = cleaned.replace(/~~(.+?)~~/g, "$1");
 
-  // 6. Strip heading markers (# at start of line)
-  cleaned = cleaned.replace(/^#{1,6}\s+/gm, "");
+  // 6. Strip heading markers (# at start of line) — handles ##제목 (no space) and ## alone
+  cleaned = cleaned.replace(/^#{1,6}\s*/gm, "");
 
   // 7. Strip inline code backticks
   cleaned = cleaned.replace(/`([^`]+?)`/g, "$1");
