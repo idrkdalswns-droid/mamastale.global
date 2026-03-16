@@ -52,7 +52,8 @@ const chatRequestSchema = z.object({
 // ─── Rate Limiting (in-memory fallback only — primary is now Supabase) ───
 const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
-const GUEST_TURN_LIMIT = 3;   // Server-side guest message limit (must match client FREE_TURN_LIMIT)
+// V5-FIX #5: 3→5 to match client FREE_TURN_LIMIT
+const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client FREE_TURN_LIMIT)
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
@@ -453,8 +454,18 @@ export async function POST(request: NextRequest) {
       .join("");
 
     const detectedPhase = detectPhase(rawText);
-    // Server-side forward-only enforcement: never go backward
-    const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
+    // V5-FIX #11: Phase null → safePhase (prevent frontend UI breakage)
+    // V5-FIX #8: minTurns strip — block premature phase advance when minimum turns not met
+    let phase: number;
+    if (detectedPhase === null) {
+      phase = safePhase;
+    } else if (detectedPhase < safePhase) {
+      phase = safePhase; // forward-only enforcement
+    } else if (detectedPhase > safePhase && safeTurnCount < minTurns) {
+      phase = safePhase; // server-side minTurns enforcement
+    } else {
+      phase = detectedPhase;
+    }
     const textNoPhase = stripPhaseTag(rawText);
     // Sprint 2-C: Extract AI-suggested tags before stripping
     const suggestedTags = extractTags(textNoPhase);
@@ -463,6 +474,11 @@ export async function POST(request: NextRequest) {
 
     // ─── OUTPUT SAFETY VALIDATION (psysafe-ai inspired) ───
     const safetyResult = validateOutputSafety(cleanText, safePhase, detectedPhase);
+    // V5-FIX #10: Block medical advice responses (was log-only, now enforced)
+    const hasMedicalAdvice = safetyResult.violations.some(v => v.type === "medical_advice");
+    const finalContent = hasMedicalAdvice
+      ? "저는 의료 전문가가 아니에요. 건강에 관한 걱정이 있으시다면 전문의 상담을 권해드려요. 😊\n\n우리 동화 이야기로 돌아가 볼까요?"
+      : cleanText;
     if (!safetyResult.passed) {
       console.warn("[Chat] Output safety violations:", safetyResult.violations.map(v => `${v.type}:${v.matched}`).join(", "));
       logEvent({
@@ -473,6 +489,7 @@ export async function POST(request: NextRequest) {
           violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })),
           phase: safePhase,
           model: modelUsed,
+          blocked: hasMedicalAdvice,
         },
       }).catch(() => {});
     }
@@ -492,8 +509,8 @@ export async function POST(request: NextRequest) {
 
     // ─── CACHE Phase 1 response (if applicable) ───
     // R2-FIX(C2): Use context-aware cache key to prevent cross-user personalization leaks
-    if (safePhase === 1 && !storyComplete && latestUserMsg && crisisResult.severity === null) {
-      setCachedResponse(cacheKey, safePhase, cleanText, phase ?? 1).catch(() => {});
+    if (safePhase === 1 && !storyComplete && latestUserMsg && crisisResult.severity === null && !hasMedicalAdvice) {
+      setCachedResponse(cacheKey, safePhase, finalContent, phase).catch(() => {});
     }
 
     let storyId: string | undefined;
@@ -515,7 +532,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      content: cleanText,
+      content: finalContent,
       phase,
       isStoryComplete: storyComplete,
       storyId,

@@ -62,7 +62,8 @@ const chatRequestSchema = z.object({
 
 const GUEST_RATE_LIMIT = 10;
 const AUTH_RATE_LIMIT = 30;
-const GUEST_TURN_LIMIT = 3;
+// V5-FIX #5: 3→5 to match client FREE_TURN_LIMIT
+const GUEST_TURN_LIMIT = 5;
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
@@ -345,16 +346,19 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // P1-FIX: Streaming timeout — abort if no data for 90 seconds
+        // V5-FIX #12: Faster initial timeout (30s) for first chunk, then 90s idle
         // R8-FIX(C1): Absolute timeout to prevent slow-drip resource exhaustion
-        const STREAM_TIMEOUT_MS = 90_000;
+        const STREAM_INITIAL_TIMEOUT_MS = 30_000; // 30s for first chunk
+        const STREAM_TIMEOUT_MS = 90_000; // 90s idle between chunks
         const STREAM_ABSOLUTE_TIMEOUT_MS = 300_000; // 5 minutes absolute max
         const streamStartTime = Date.now();
         let lastChunkTime = Date.now();
+        let firstChunkReceived = false;
         const timeoutCheck = setInterval(() => {
           const now = Date.now();
-          if (now - lastChunkTime > STREAM_TIMEOUT_MS) {
-            console.warn("[Stream] Idle timeout (90s no data)");
+          const idleLimit = firstChunkReceived ? STREAM_TIMEOUT_MS : STREAM_INITIAL_TIMEOUT_MS;
+          if (now - lastChunkTime > idleLimit) {
+            console.warn(`[Stream] ${firstChunkReceived ? "Idle" : "Initial"} timeout (${idleLimit / 1000}s no data)`);
             clearInterval(timeoutCheck);
             stream.abort();
           } else if (now - streamStartTime > STREAM_ABSOLUTE_TIMEOUT_MS) {
@@ -369,7 +373,10 @@ export async function POST(request: NextRequest) {
 
         try {
           for await (const event of stream) {
+            // V5-FIX #15: Check client disconnect
+            if (request.signal.aborted) break;
             lastChunkTime = Date.now();
+            if (!firstChunkReceived) firstChunkReceived = true;
             if (
               event.type === "content_block_delta" &&
               event.delta.type === "text_delta"
@@ -414,6 +421,8 @@ export async function POST(request: NextRequest) {
 
               try {
                 for await (const event of fallbackStream) {
+                  // V5-FIX #15: Check client disconnect in fallback loop too
+                  if (request.signal.aborted) break;
                   lastChunkTime = Date.now();
                   if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
                     fullText += event.delta.text;
@@ -442,11 +451,31 @@ export async function POST(request: NextRequest) {
         }
 
         const apiLatencyMs = Date.now() - apiStartTime;
-        const finalMessage = await stream.finalMessage();
+        // V5-FIX #13: Wrap finalMessage() in 5s timeout to prevent hang
+        let finalMessage: Awaited<ReturnType<typeof stream.finalMessage>>;
+        try {
+          finalMessage = await Promise.race([
+            stream.finalMessage(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("finalMessage timeout")), 5_000)),
+          ]);
+        } catch {
+          // Timeout or error — construct minimal usage data
+          finalMessage = { usage: { input_tokens: 0, output_tokens: 0 } } as Awaited<ReturnType<typeof stream.finalMessage>>;
+        }
 
         // Post-stream processing
         const detectedPhase = detectPhase(fullText);
-        const phase = detectedPhase !== null && detectedPhase < safePhase ? safePhase : detectedPhase;
+        // V5-FIX #11: Phase null → safePhase; #8: minTurns strip
+        let phase: number;
+        if (detectedPhase === null) {
+          phase = safePhase;
+        } else if (detectedPhase < safePhase) {
+          phase = safePhase;
+        } else if (detectedPhase > safePhase && safeTurnCount < minTurns) {
+          phase = safePhase;
+        } else {
+          phase = detectedPhase;
+        }
         const textNoPhase = stripPhaseTag(fullText);
         // Sprint 2-C: Extract AI-suggested tags before stripping
         const suggestedTags = extractTags(textNoPhase);
@@ -455,12 +484,14 @@ export async function POST(request: NextRequest) {
 
         // Output safety validation
         const safetyResult = validateOutputSafety(cleanText, safePhase, detectedPhase);
+        // V5-FIX #10: Block medical advice responses
+        const hasMedicalAdvice = safetyResult.violations.some(v => v.type === "medical_advice");
         if (!safetyResult.passed) {
           logEvent({
             eventType: "output_safety_violation",
             endpoint: "/api/chat/stream",
             userId,
-            metadata: { violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })) },
+            metadata: { violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })), blocked: hasMedicalAdvice },
           }).catch(() => {});
         }
 
@@ -474,11 +505,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Send completion event
+        // V5-FIX #10: Include medicalBlocked flag for client-side message replacement
         controller.enqueue(encoder.encode(
           `data: ${JSON.stringify({
             type: "done",
             phase,
             isStoryComplete: storyComplete,
+            ...(hasMedicalAdvice ? { medicalBlocked: true } : {}),
             ...(storyComplete && scenes.length > 0 ? { scenes, storyId: `story_${Date.now()}` } : {}),
             ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
             ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
@@ -489,7 +522,8 @@ export async function POST(request: NextRequest) {
           })}\n\n`
         ));
 
-        if (!closed) { closed = true; controller.close(); }
+        // V5-FIX #14: Atomic close with try-catch to prevent double-close crash
+        if (!closed) { closed = true; try { controller.close(); } catch {} }
 
         // Fire-and-forget logging
         logLLMCall({
@@ -511,14 +545,18 @@ export async function POST(request: NextRequest) {
           ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
           : "스트리밍 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.";
         console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
+        // V5-FIX #14: Atomic close in error handler
         if (!closed) {
-          controller.enqueue(encoder.encode(
-            `data: ${JSON.stringify({
-              type: "error",
-              error: errorMessage,
-            })}\n\n`
-          ));
-          closed = true; controller.close();
+          try {
+            controller.enqueue(encoder.encode(
+              `data: ${JSON.stringify({
+                type: "error",
+                error: errorMessage,
+              })}\n\n`
+            ));
+          } catch {}
+          closed = true;
+          try { controller.close(); } catch {}
         }
 
         logEvent({

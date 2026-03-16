@@ -130,8 +130,9 @@ export default function TurnFivePopup({
 
         {/* Progress indicator */}
         <div className="text-center mb-4">
+          {/* V5-FIX #24: Urgency copy — "거의 완성" framing */}
           <h3 className="font-serif text-lg font-bold text-brown mb-1.5 leading-tight">
-            동화가 만들어지고 있어요
+            동화가 거의 완성되고 있어요!
           </h3>
           <div
             className="mx-auto w-[70%] h-2 rounded-full overflow-hidden mb-2"
@@ -270,6 +271,16 @@ export default function TurnFivePopup({
         ) : (
           /* ── Guest: sign up first ── */
           <>
+            {/* V5-FIX #25: Loss aversion — emphasize unsaved state */}
+            <div
+              className="rounded-xl p-3 mb-3 text-center"
+              style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}
+            >
+              <p className="text-[11px] text-coral font-medium break-keep">
+                ⚠ 로그인하지 않으면 지금까지의 대화가 사라질 수 있어요
+              </p>
+            </div>
+
             <div className="space-y-2 mb-4">
               {[
                 { icon: "·", text: "대화 이어서 진행" },

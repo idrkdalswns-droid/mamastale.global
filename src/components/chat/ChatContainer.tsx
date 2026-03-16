@@ -17,7 +17,8 @@ import TurnFivePopup from "./TurnFivePopup";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 
-const FREE_TURN_LIMIT = 3;
+// V5-FIX #4: 3→5 free turns for better engagement before paywall
+const FREE_TURN_LIMIT = 5;
 
 interface ChatPageProps {
   onComplete: () => void;

@@ -7,9 +7,9 @@ import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
 import { hapticSuccess } from "@/lib/utils/haptic";
 import { nameWithParticle } from "@/lib/utils/korean";
 
-/** Topic suggestions for next story nudge */
+/** V5-FIX #6: Positive topic suggestions (avoid negative framing post-completion) */
 const TOPIC_SUGGESTIONS = [
-  "양육 번아웃", "경력 단절", "자존감", "가족 갈등", "산후 우울",
+  "나의 꿈", "가족 사랑", "용기와 모험", "소중한 추억", "성장 이야기",
 ];
 
 interface StoryCompleteCTAProps {
@@ -264,13 +264,13 @@ export default function StoryCompleteCTA({
                 </span>
               ))}
             </div>
+            {/* V5-FIX #26: Coral gradient CTA for better conversion */}
             <button
               onClick={onNewStory}
-              className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97]"
+              className="w-full py-3 rounded-full text-[13px] font-medium text-white transition-all active:scale-[0.97]"
               style={{
-                background: "transparent",
-                color: "#8B6F55",
-                border: "1.5px dashed rgba(196,149,106,0.3)",
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
               + 새로운 이야기 시작하기
