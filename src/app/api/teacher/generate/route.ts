@@ -140,6 +140,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 멱등성: 이미 이 세션에서 생성된 동화가 있으면 기존 결과 반환
+  const { data: existingStory } = await sb.client
+    .from("teacher_stories")
+    .select("id, title, spreads, metadata, brief_context")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (existingStory) {
+    return sb.applyCookies(
+      NextResponse.json({
+        id: existingStory.id,
+        title: existingStory.title,
+        spreads: existingStory.spreads,
+        metadata: existingStory.metadata,
+        briefContext: existingStory.brief_context,
+        spreadCount: Array.isArray(existingStory.spreads)
+          ? existingStory.spreads.length
+          : 0,
+      })
+    );
+  }
+
   const onboarding = session.onboarding || {};
   const anthropic = getAnthropicClient();
 
@@ -301,7 +325,9 @@ export async function POST(request: NextRequest) {
         stories_created: (session.stories_created || 0) + 1,
       })
       .eq("id", sessionId)
-      .then(() => {});
+      .then(({ error }) => {
+        if (error) console.error("[Teacher Generate] Failed to update session:", error.message);
+      });
 
     // 이벤트 로깅
     logEvent({
@@ -331,10 +357,8 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("[Teacher Generate] Sonnet generation failed:", err);
 
-    // 3초 후 1회 재시도
+    // 즉시 1회 재시도 (Edge Runtime에서 blocking sleep 회피)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
       const retryResult = await anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
         system: [
@@ -375,31 +399,46 @@ export async function POST(request: NextRequest) {
       if (retryParsed.spreads.length > 0) {
         const title = extractStoryTitle(retryParsed.spreads, briefContext.topic);
 
-        const { data: story } = await sb.client
+        // 중복 방지: 1차 시도가 부분 성공했을 수 있으므로 기존 story 확인
+        const { data: existingRetry } = await sb.client
           .from("teacher_stories")
-          .insert({
-            session_id: sessionId,
-            teacher_id: user.id,
-            title,
-            spreads: retryParsed.spreads,
-            metadata: retryParsed.metadata,
-            brief_context: briefContext,
-          })
           .select("id")
+          .eq("session_id", sessionId)
+          .limit(1)
           .single();
 
-        sb.client
-          .from("teacher_sessions")
-          .update({
-            current_phase: "DONE",
-            stories_created: (session.stories_created || 0) + 1,
-          })
-          .eq("id", sessionId)
-          .then(() => {});
+        let storyId = existingRetry?.id || null;
+
+        if (!existingRetry) {
+          const { data: story } = await sb.client
+            .from("teacher_stories")
+            .insert({
+              session_id: sessionId,
+              teacher_id: user.id,
+              title,
+              spreads: retryParsed.spreads,
+              metadata: retryParsed.metadata,
+              brief_context: briefContext,
+            })
+            .select("id")
+            .single();
+          storyId = story?.id || null;
+
+          sb.client
+            .from("teacher_sessions")
+            .update({
+              current_phase: "DONE",
+              stories_created: (session.stories_created || 0) + 1,
+            })
+            .eq("id", sessionId)
+            .then(({ error }) => {
+              if (error) console.error("[Teacher Generate] Retry session update failed:", error.message);
+            });
+        }
 
         return sb.applyCookies(
           NextResponse.json({
-            id: story?.id || null,
+            id: storyId,
             title,
             spreads: retryParsed.spreads,
             metadata: retryParsed.metadata,

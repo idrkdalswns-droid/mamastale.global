@@ -215,7 +215,9 @@ export async function POST(request: NextRequest) {
             content: message,
             phase: currentPhase,
           })
-          .then(() => {});
+          .then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to save user message:", error.message);
+          });
 
         // AI 응답 저장 ([GENERATE_READY] 태그 제거)
         const cleanResponse = fullResponse
@@ -229,7 +231,9 @@ export async function POST(request: NextRequest) {
             content: cleanResponse,
             phase: currentPhase,
           })
-          .then(() => {});
+          .then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
+          });
 
         // 세션 업데이트 (턴 카운트 + Phase)
         sb.client
@@ -239,7 +243,9 @@ export async function POST(request: NextRequest) {
             current_phase: newPhase,
           })
           .eq("id", sessionId)
-          .then(() => {});
+          .then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
+          });
 
         // LLM 로깅
         logLLMCall({
@@ -281,7 +287,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return new Response(readable, {
+  const sseResponse = new NextResponse(readable, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
@@ -289,4 +295,5 @@ export async function POST(request: NextRequest) {
       "X-Accel-Buffering": "no",
     },
   });
+  return sb.applyCookies(sseResponse);
 }
