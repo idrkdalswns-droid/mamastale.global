@@ -1,6 +1,7 @@
 "use client";
 
 import type { Scene } from "@/lib/types/story";
+import { cleanSceneText } from "@/lib/utils/story-parser";
 
 interface SceneCardProps {
   scene: Scene;
@@ -26,7 +27,7 @@ export function SceneCard({ scene, isActive }: SceneCardProps) {
       }}
     >
       <p className="font-serif text-sm text-brown leading-[2.2] break-keep whitespace-pre-wrap">
-        {scene.text}
+        {cleanSceneText(scene.text)}
       </p>
     </div>
   );
