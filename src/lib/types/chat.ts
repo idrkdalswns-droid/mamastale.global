@@ -75,4 +75,8 @@ export interface ChatStreamEvent {
   usage?: { inputTokens: number; outputTokens: number };
   /** Error message (for 'error' events) */
   error?: string;
+  /** Whether this is a crisis intervention response (for 'done' events) */
+  isCrisisIntervention?: boolean;
+  /** Whether medical advice was detected and blocked (for 'done' events) */
+  medicalBlocked?: boolean;
 }
