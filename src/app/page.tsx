@@ -92,7 +92,7 @@ export default function Home() {
   const [showStickyCta, setShowStickyCta] = useState(false);
   const [storyCount, setStoryCount] = useState<number | null>(null);
   const mainCtaRef = useRef<HTMLButtonElement>(null);
-  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearStorage, isPremiumStory } = useChatStore();
+  const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearDraft, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
 
   // GA: Track screen view on every screen change
@@ -434,7 +434,7 @@ export default function Home() {
           onBack={() => setScreen(feedbackDone ? "community" : "feedback")}
           onBackLabel={feedbackDone ? "돌아가기" : "피드백 남기기 →"}
           isPremium={isPremiumStory}
-          onNewStory={() => { reset(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
+          onNewStory={() => { reset(); clearDraft(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
           ticketsRemaining={ticketsRemaining}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
@@ -464,6 +464,7 @@ export default function Home() {
         <CommunityPage
           onRestart={() => {
             reset(); // LOW-11 fix: reset chat store
+            clearDraft(); // P1-FIX(H3): Clear draft on new story start
             clearTicketSession();
             setSelectedCover(null);
             setEditedTitle("");
