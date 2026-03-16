@@ -46,8 +46,11 @@ export function cleanSceneText(text: string): string {
   cleaned = cleaned.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "");
 
   // 3. Strip bold markers ** or __ (must come before italic)
-  cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, "$1");
-  cleaned = cleaned.replace(/__(.+?)__/g, "$1");
+  //    Use [\s\S] instead of /s flag for ES2017 compat (tsconfig target)
+  cleaned = cleaned.replace(/\*\*([\s\S]+?)\*\*/g, "$1");
+  cleaned = cleaned.replace(/__([\s\S]+?)__/g, "$1");
+  // 3b. Strip any remaining orphan ** markers (unmatched pairs, line-boundary leftovers)
+  cleaned = cleaned.replace(/\*\*/g, "");
 
   // 4. Strip italic markers * or _
   cleaned = cleaned.replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "$1");
