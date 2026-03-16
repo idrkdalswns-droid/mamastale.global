@@ -6,6 +6,9 @@ import type { Scene } from "@/lib/types/story";
  * (StoryViewer, StoryEditor, PDF, copy/share).
  */
 export function cleanSceneText(text: string): string {
+  // P1-FIX(D1): Null/undefined defense — DB JSONB can produce null despite TypeScript signature
+  if (!text) return "";
+
   let cleaned = text;
 
   // 1. Decode HTML entities FIRST — loop to handle multi-level encoding
@@ -29,6 +32,15 @@ export function cleanSceneText(text: string): string {
   // 1b. LAUNCH-FIX R2: Strip any HTML tags that may have been decoded from entities
   // Defense-in-depth: ensures no raw HTML survives into clean output
   cleaned = cleaned.replace(/<[^>]*>/g, "");
+
+  // 1c. P1-FIX(C2): Strip AI meta-commentary lines
+  cleaned = cleaned.replace(/^\[TAGS:.*\]$/gim, "");
+  cleaned = cleaned.replace(/^\[Image Prompt:.*\]$/gim, "");
+  // Phase 4 closing celebration lines (line-start anchor — won't match mid-sentence)
+  cleaned = cleaned.replace(/^(축하합니다|당신은 방금|이 동화는 단순한|이건 당신의 여정|당신의 강함의|당신의 사랑의|동화가 완성되었어요|오늘 나눈 이야기는|깊은 숨을 쉬어보세요)[^\n]*$/gm, "");
+  // AI meta phrases (scene instructions, author notes)
+  cleaned = cleaned.replace(/^(이 장면에서는|다음 장면으로|작가 노트)[^\n]*$/gm, "");
+  cleaned = cleaned.replace(/^\(해설\)[^\n]*$/gm, "");
 
   // 2. Strip horizontal rules (--- or *** or ___)
   cleaned = cleaned.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, "");

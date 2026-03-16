@@ -399,6 +399,60 @@ describe("cleanSceneText", () => {
 });
 
 // ────────────────────────────────────────────────────────
+// cleanSceneText — null/undefined defense (P1-FIX D1)
+// ────────────────────────────────────────────────────────
+
+describe("cleanSceneText — null/undefined defense", () => {
+  it("returns empty string for null input", () => {
+    expect(cleanSceneText(null as unknown as string)).toBe("");
+  });
+
+  it("returns empty string for undefined input", () => {
+    expect(cleanSceneText(undefined as unknown as string)).toBe("");
+  });
+
+  it("returns empty string for empty string input", () => {
+    expect(cleanSceneText("")).toBe("");
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// cleanSceneText — AI meta stripping (P1-FIX C2)
+// ────────────────────────────────────────────────────────
+
+describe("cleanSceneText — AI meta stripping", () => {
+  it("strips [TAGS:...] lines", () => {
+    expect(cleanSceneText("동화 텍스트\n[TAGS: 감정, 치유, 성장]\n더 많은 텍스트")).toBe(
+      "동화 텍스트\n\n더 많은 텍스트"
+    );
+  });
+
+  it("strips [Image Prompt:...] lines case-insensitively", () => {
+    expect(cleanSceneText("장면 내용\n[image prompt: A watercolor illustration of a rabbit]\n다음")).toBe(
+      "장면 내용\n\n다음"
+    );
+  });
+
+  it("strips Phase 4 celebration patterns", () => {
+    const input = "동화 마지막 문장이에요.\n축하합니다! 아름다운 동화가 완성되었어요.\n동화가 완성되었어요! 당신의 이야기는 빛나고 있어요.";
+    const result = cleanSceneText(input);
+    expect(result).toBe("동화 마지막 문장이에요.");
+  });
+
+  it("strips AI meta phrases (scene instructions, author notes)", () => {
+    const input = "토끼가 길을 걸었어요.\n이 장면에서는 주인공의 내면을 묘사합니다.\n작가 노트: 여기서 감정을 강조하세요.\n(해설) 이 부분은 치유의 핵심입니다.";
+    const result = cleanSceneText(input);
+    expect(result).toBe("토끼가 길을 걸었어요.");
+  });
+
+  it("preserves story text mixed with meta lines", () => {
+    const input = "옛날 옛적 작은 마을에 토끼가 살았어요.\n[TAGS: 용기, 모험]\n토끼는 매일 아침 산책을 했어요.\n축하합니다! 동화가 완성되었어요.\n[Image Prompt: A cute rabbit walking]";
+    const result = cleanSceneText(input);
+    expect(result).toBe("옛날 옛적 작은 마을에 토끼가 살았어요.\n\n토끼는 매일 아침 산책을 했어요.");
+  });
+});
+
+// ────────────────────────────────────────────────────────
 // Strategy 2b: Korean chapter tags (N장 format)
 // ────────────────────────────────────────────────────────
 
