@@ -311,7 +311,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         <TurnFivePopup
           isLoggedIn={!!user}
           ticketsRemaining={ticketsRemaining}
-          onPersistChat={persistToStorage}
+          onPersistChat={() => { persistToStorage(); saveDraft(); }}
           onGoHome={onGoHome}
           onTicketUsed={onTicketUsed}
         />

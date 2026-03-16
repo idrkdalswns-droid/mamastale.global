@@ -82,8 +82,7 @@ const FAQS = [
   },
 ];
 
-// ─── Social Proof Counter (update periodically) ───
-const STORY_COUNT = 127;
+// STORY_COUNT is now fetched dynamically inside PricingContent
 
 // ─── Gallery Scene Texts (hoisted to avoid re-allocation per render) ───
 const GALLERY_SCENES = [
@@ -134,6 +133,15 @@ function PricingContent() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   // Simplify: store only the type; derive amount/name via resolveProduct()
   const [confirmModal, setConfirmModal] = useState<PriceType | null>(null);
+
+  // Dynamic social proof counter
+  const [storyCount, setStoryCount] = useState(0);
+  useEffect(() => {
+    fetch("/api/community?limit=0")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.total) setStoryCount(d.total); })
+      .catch(() => {});
+  }, []);
 
   // #26: Gallery dot indicator
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
@@ -337,10 +345,14 @@ function PricingContent() {
           </p>
         </section>
 
-        {/* #17: Soft social proof counter */}
-        <p className="text-[12px] text-brown-pale font-light text-center mb-8 mt-6">
-          지금까지 <span className="text-coral font-medium">{STORY_COUNT}명</span>의 엄마가 동화를 만들었어요
-        </p>
+        {/* #17: Dynamic social proof counter */}
+        {storyCount > 0 && (
+          <p className="text-[12px] text-brown-pale font-light text-center mb-8 mt-6">
+            {storyCount > 10
+              ? <>지금까지 <span className="text-coral font-medium">{storyCount}편</span>의 동화가 만들어졌어요</>
+              : "엄마들의 이야기가 시작되고 있어요"}
+          </p>
+        )}
 
         {/* ════════════════════════════════════════
             BUNDLE (₩14,900) — PRIMARY · Claymorphism

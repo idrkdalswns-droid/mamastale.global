@@ -5,6 +5,24 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+/** Attempt to claim a referral code stored in sessionStorage after login */
+async function claimReferralCode(accessToken: string | null) {
+  try {
+    const code = sessionStorage.getItem("mamastale_ref_code");
+    if (!code) return;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+    const res = await fetch("/api/referral", {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ code }),
+    });
+    // Clear on success (200) or duplicate (409) — prevent infinite retries
+    if (res.ok || res.status === 409) sessionStorage.removeItem("mamastale_ref_code");
+  } catch { /* referral failure must never block login */ }
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
@@ -93,6 +111,7 @@ export default function AuthCallbackPage() {
         });
 
         if (!error) {
+          await claimReferralCode(hashAccessToken);
           setStatus("success");
           setTimeout(() => router.push(redirectUrl), 1500);
           return;
@@ -114,6 +133,8 @@ export default function AuthCallbackPage() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error) {
+          const { data: { session } } = await supabase.auth.getSession();
+          await claimReferralCode(session?.access_token ?? null);
           setStatus("success");
           setTimeout(() => router.push(redirectUrl), 1500);
           return;
@@ -144,6 +165,8 @@ export default function AuthCallbackPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        await claimReferralCode(session?.access_token ?? null);
         router.push(redirectUrl);
         return;
       }

@@ -164,13 +164,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Create referral record
-  const { error: insertErr } = await sb.client.from("referrals").insert({
-    referrer_id: referrer.id,
-    referred_id: user.id,
-    referrer_rewarded: true,
-    referred_rewarded: true,
-  });
+  // Service role required for cross-user writes (RLS blocks anon client INSERT on referrals)
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serviceKey || !supabaseUrl) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "서비스 설정 오류입니다." }, { status: 503 })
+    );
+  }
+
+  const { createClient } = await import("@supabase/supabase-js");
+  const admin = createClient(supabaseUrl, serviceKey);
+
+  // Step 1: Insert referral record with rewarded=false (rollback-safe)
+  const { data: refRecord, error: insertErr } = await admin
+    .from("referrals")
+    .insert({
+      referrer_id: referrer.id,
+      referred_id: user.id,
+      referrer_rewarded: false,
+      referred_rewarded: false,
+    })
+    .select("id")
+    .single();
 
   if (insertErr) {
     if (insertErr.code === "23505") {
@@ -183,24 +199,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Update referred_by
-  await sb.client
+  // Step 2: Update referred_by on profile
+  await admin
     .from("profiles")
     .update({ referred_by: referrer.id })
     .eq("id", user.id);
 
-  // Award tickets to both (using service role for cross-user update)
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (serviceKey && supabaseUrl) {
-    const { createClient } = await import("@supabase/supabase-js");
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // +1 ticket to referrer
+  // Step 3: Award tickets — with rollback on failure
+  try {
     await admin.rpc("increment_tickets", { p_user_id: referrer.id, p_count: 1 });
-    // +1 ticket to referred
     await admin.rpc("increment_tickets", { p_user_id: user.id, p_count: 1 });
+    // Mark both as rewarded
+    await admin
+      .from("referrals")
+      .update({ referrer_rewarded: true, referred_rewarded: true })
+      .eq("id", refRecord.id);
+  } catch {
+    // ROLLBACK: delete referral record + reset referred_by so user can retry
+    await admin.from("referrals").delete().eq("id", refRecord.id);
+    await admin.from("profiles").update({ referred_by: null }).eq("id", user.id);
+    return sb.applyCookies(
+      NextResponse.json({ error: "티켓 지급에 실패했습니다. 다시 시도해 주세요." }, { status: 500 })
+    );
   }
 
   return sb.applyCookies(

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
+import toast from "react-hot-toast";
 
 interface ProfileData {
   email: string;
@@ -20,6 +21,8 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [refCode, setRefCode] = useState("");
+  const [claimingRef, setClaimingRef] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -77,6 +80,44 @@ export default function SettingsPage() {
     }
   };
 
+  const handleClaimRef = async () => {
+    const code = refCode.trim().toUpperCase();
+    if (!code || code.length < 4 || code.length > 8) {
+      toast.error("추천 코드 4~8자리를 입력해 주세요.");
+      return;
+    }
+    setClaimingRef(true);
+    try {
+      const supabase = createClient();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch("/api/referral", {
+        method: "POST", headers, credentials: "include",
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success("추천 보상 지급! 양쪽 모두 티켓 1장 🎉");
+        setRefCode("");
+        setProfile(p => p ? { ...p, tickets: p.tickets + 1 } : p);
+      } else if (res.status === 409) {
+        toast.error("이미 추천을 받으셨습니다.");
+      } else if (res.status === 404) {
+        toast.error("존재하지 않는 추천 코드입니다.");
+      } else if (res.status === 400) {
+        toast.error(data.error || "유효하지 않은 코드입니다.");
+      } else {
+        toast.error("일시적 오류입니다. 다시 시도해 주세요.");
+      }
+    } catch {
+      toast.error("네트워크 오류입니다. 인터넷 연결을 확인해 주세요.");
+    }
+    setClaimingRef(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
@@ -123,6 +164,31 @@ export default function SettingsPage() {
         <section className="rounded-2xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.1)" }}>
           <h2 className="text-sm font-medium text-brown mb-3">추천 프로그램</h2>
           <ReferralCard />
+
+          {/* Manual referral code input */}
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(196,149,106,0.1)" }}>
+            <p className="text-[12px] text-brown-light font-light mb-2">추천 코드를 받으셨나요?</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={refCode}
+                onChange={(e) => setRefCode(e.target.value)}
+                placeholder="추천 코드 입력"
+                maxLength={8}
+                aria-label="추천 코드 입력"
+                className="flex-1 px-3 py-2.5 rounded-lg text-sm font-light text-brown outline-none"
+                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(196,149,106,0.15)" }}
+              />
+              <button
+                onClick={handleClaimRef}
+                disabled={claimingRef || !refCode.trim()}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-50"
+                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+              >
+                {claimingRef ? "..." : "적용"}
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* Data Section */}

@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
 import { ReferralCard } from "@/components/referral/ReferralCard";
+import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
@@ -120,7 +121,10 @@ export default function Home() {
     // Save referral code for claiming after login
     const refCode = params.get("ref");
     if (refCode) {
-      try { sessionStorage.setItem("mamastale_ref_code", refCode); } catch {}
+      try {
+        sessionStorage.setItem("mamastale_ref_code", refCode);
+        toast("추천 링크로 오셨네요! 가입하면 무료 티켓을 드려요 🎁", { duration: 4000 });
+      } catch {}
     }
     // Clean URL
     if (params.get("payment") || refCode) {
