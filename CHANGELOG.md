@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0] - 2026-03-16
+
+### Fixed
+- cleanSceneText null/undefined 방어 — DB JSONB 유입 시 크래시 방지 (D1)
+- AI 메타 코멘트 제거 — [TAGS:...], [Image Prompt:...], 축하합니다 계열, 메타 해설 자동 제거 (C2)
+- 새 이야기 시작 시 옛 Draft 카드 잔류 수정 — clearDraft() 호출 추가 (H3)
+- HIGH crisis 응답 SSE 변환 — 이중 API 호출 및 이중 로깅 제거 (C5)
+- order_claims DELETE 롤백 → status 플래그 — 결제 실패 시 재시도 불가 문제 해결 (S7)
+
+### Changed
+- ChatStreamEvent에 isCrisisIntervention, medicalBlocked 타입 추가 (D2)
+
 ## [1.12.0] - 2026-03-16
 
 ### Fixed
