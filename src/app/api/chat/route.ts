@@ -315,7 +315,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Phase context ───
-    const MAX_TURNS_PER_PHASE = 10;
+    const MAX_TURNS_PER_PHASE: Record<number, number> = { 1: 7, 2: 10, 3: 10, 4: 999 };
+    const MIN_TURNS_PER_PHASE: Record<number, number> = { 1: 3, 2: 3, 3: 3, 4: 0 };
     const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
     const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
     const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
@@ -395,10 +396,15 @@ export async function POST(request: NextRequest) {
       systemPrompt += parentContext;
     }
 
-    if (safeTurnCount >= MAX_TURNS_PER_PHASE && safePhase < 4) {
-      systemPrompt += `\n\n<phase_turn_limit_exceeded>\n[긴급] 현재 Phase ${safePhase}에서 ${safeTurnCount}턴이 경과했습니다. 10턴 제한을 초과했으므로 반드시 Phase ${safePhase + 1}로 전환하십시오.\n이번 응답에서 [PHASE:${safePhase + 1}]을 출력하고, Phase ${safePhase + 1}의 역할로 자연스럽게 전환하십시오.\n</phase_turn_limit_exceeded>`;
+    const maxTurns = MAX_TURNS_PER_PHASE[safePhase] ?? 10;
+    const minTurns = MIN_TURNS_PER_PHASE[safePhase] ?? 3;
+
+    if (safeTurnCount >= maxTurns && safePhase < 4) {
+      systemPrompt += `\n\n<phase_turn_limit_exceeded>\n[긴급] 현재 Phase ${safePhase}에서 ${safeTurnCount}턴이 경과했습니다. ${maxTurns}턴 제한을 초과했으므로 반드시 Phase ${safePhase + 1}로 전환하십시오.\n이번 응답에서 [PHASE:${safePhase + 1}]을 출력하고, Phase ${safePhase + 1}의 역할로 자연스럽게 전환하십시오.\n</phase_turn_limit_exceeded>`;
+    } else if (safeTurnCount < minTurns && safePhase < 4) {
+      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${maxTurns} (최소 ${minTurns}턴 필요)\n[중요] 아직 이 단계에서 최소 ${minTurns}턴의 대화가 필요합니다. 절대 다음 Phase로 전환하지 마십시오.\n사용자가 빨리 넘어가고 싶어하더라도, 이 Phase에서 충분한 정보 수집이 되지 않았으므로 부드럽게 대화를 이어가십시오.\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
     } else {
-      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${MAX_TURNS_PER_PHASE}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
+      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${maxTurns}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
     }
 
     // Inject active phase's clinical protocol
