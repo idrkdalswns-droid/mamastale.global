@@ -185,11 +185,40 @@ export async function POST(request: NextRequest) {
         keywords: crisisResult.detectedKeywords.slice(0, 5),
         reasoning: crisisResult.reasoning,
       }).catch(() => {});
-      return NextResponse.json({
-        content: crisisResult.response!,
-        phase: clientPhase || 1,
-        isStoryComplete: false,
-        isCrisisIntervention: true,
+      // P1-FIX(C5): Return SSE format for HIGH crisis (prevents unnecessary fallback to /api/chat)
+      const crisisEncoder = new TextEncoder();
+      const crisisStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(crisisEncoder.encode(
+            `data: ${JSON.stringify({ type: "meta", phase: clientPhase || 1 })}\n\n`
+          ));
+          controller.enqueue(crisisEncoder.encode(
+            `data: ${JSON.stringify({ type: "text", text: crisisResult.response! })}\n\n`
+          ));
+          controller.enqueue(crisisEncoder.encode(
+            `data: ${JSON.stringify({
+              type: "done",
+              phase: clientPhase || 1,
+              isStoryComplete: false,
+              isCrisisIntervention: true,
+            })}\n\n`
+          ));
+          controller.close();
+        },
+      });
+      return new Response(crisisStream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Connection": "keep-alive",
+          "X-Accel-Buffering": "no",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "DENY",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+          "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+          "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+          "Content-Security-Policy": "default-src 'none'",
+        },
       });
     }
     // MEDIUM/LOW severity → log with CSSRS detail
