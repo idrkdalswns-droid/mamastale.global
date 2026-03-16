@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.11.0] - 2026-03-16
+
+### Fixed
+- 추천 코드 시스템 완전 수리: anon client → service role (RLS INSERT 차단 해결)
+- 추천 코드 부분 실패 시 rollback 추가 (UNIQUE 제약 잠금 방지, 재시도 가능)
+- 결제 전 채팅 이중 저장 (persistToStorage + saveDraft) — 결제 리다이렉트 시 유실 방지
+
+### Added
+- OAuth 로그인 후 자동 추천 코드 claim (implicit/PKCE/fallback 3경로 대응)
+- 설정 페이지에 수동 추천 코드 입력 UI (toast 피드백 포함)
+- 추천 링크 방문 시 환영 토스트 ("가입하면 무료 티켓을 드려요 🎁")
+- Pricing 소셜 프루프 동적화 (하드코딩 127 → /api/community 실시간 조회)
+
 ## [1.10.0] - 2026-03-16
 
 ### Fixed
