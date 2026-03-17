@@ -36,10 +36,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="w-11 h-11 rounded-full flex items-center justify-center text-lg active:scale-90 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
-      style={{
-        background: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
-      }}
+      className="w-8 h-8 flex items-center justify-center text-sm active:scale-90 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
       aria-label={dark ? "라이트 모드로 전환" : "다크 모드로 전환"}
     >
       {dark ? "\u2600\uFE0F" : "\uD83C\uDF19"}

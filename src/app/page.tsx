@@ -16,6 +16,52 @@ import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
+/** Horizontal scroll container that auto-scrolls to a specific child index on mount */
+function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cards = el.children;
+    if (cards.length <= initialIndex) return;
+    const card = cards[initialIndex] as HTMLElement;
+    const scrollLeft = card.offsetLeft - el.offsetWidth / 2 + card.offsetWidth / 2;
+    el.scrollTo({ left: scrollLeft, behavior: "instant" });
+  }, [initialIndex]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollAmount = 190;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      el.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  }, []);
+
+  return (
+    <div className="relative">
+      <div className="absolute left-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, rgb(var(--cream)), transparent)" }} />
+      <div className="absolute right-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, rgb(var(--cream)), transparent)" }} />
+      <div
+        ref={scrollRef}
+        className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/30 rounded-lg"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+        tabIndex={0}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="동화 장면 갤러리 — 좌우 화살표 키로 탐색"
+        onKeyDown={handleKeyDown}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
 const OnboardingSlides = dynamic(() => import("@/components/onboarding/OnboardingSlides").then(m => ({ default: m.OnboardingSlides })), { ssr: false });
 const ChatPage = dynamic(() => import("@/components/chat/ChatContainer").then(m => ({ default: m.ChatPage })), { ssr: false });
@@ -512,9 +558,18 @@ export default function Home() {
             mamastale
           </h1>
 
-          <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
-            엄마의 삶이 아이의 동화가 되다
-          </p>
+          <div className="flex items-center justify-between mb-0.5">
+            <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed">
+              엄마의 삶이 아이의 동화가 되다
+            </p>
+            <Link
+              href="/about"
+              className="text-[11px] text-brown-pale font-light no-underline hover:text-brown-light transition-colors flex items-center gap-0.5 flex-shrink-0"
+            >
+              서비스 소개
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+            </Link>
+          </div>
           <div className="mb-4" />
 
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
@@ -543,7 +598,65 @@ export default function Home() {
           )}
           {user && <div className="mb-5" />}
 
-
+          {/* ════════════════════════════════════════
+              GALLERY — 이런 동화가 완성돼요 (B1)
+              ════════════════════════════════════════ */}
+          <div className="mb-5">
+            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+              이런 동화가 완성돼요
+            </p>
+            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
+              ← 옆으로 넘겨보세요 →
+            </p>
+            <GalleryScroller initialIndex={7}>
+              {[
+                "옛날 옛적, 예쁜 아기를 낳은 엄마가 있었어요. 엄마는 매일매일 설거지를 했어요. 물소리가 졸졸졸, 그릇이 반짝반짝.",
+                "그런데 설거지를 할 때마다 엄마 마음이 이상했어요. 뭔가 쓸쓸하고, 뭔가 그리워요. \"내가 언제 이렇게 엄마가 되었지?\"",
+                "어느 날, 엄마가 설거지를 하고 있을 때였어요. 창가에 작은 새 한 마리가 날아왔어요. 아기 새였어요, 너무너무 작은.",
+                "아기 새는 말이 없었어요. 그냥 조용히 앉아 있었어요. 엄마도 말이 없었어요. 둘이 함께 조용조용.",
+                "매일매일 설거지 시간이 되면 아기 새가 왔어요. 엄마는 혼자가 아니었어요. \"안녕, 작은 새야.\"",
+                "어느 날 엄마가 물어봤어요. \"너는 왜 여기 오는 거야?\" 아기 새가 대답했어요. \"엄마도 새로 태어났거든요.\"",
+                "\"나도 새로 태어났다고?\" 엄마가 깜짝 놀랐어요. 아기 새가 말했어요. \"엄마가 되면서 새로운 마음이 생겼어요.\"",
+                "그때부터 엄마는 알았어요. 설거지할 때 느끼는 그 마음이 새로운 자신이라는 걸. 쓸쓸하지만 소중한 마음.",
+                "\"나라는 존재는 변하지 않았지만, 새로운 마음이 하나 더 생겼구나.\" 엄마가 웃으며 말했어요.",
+                "작은 아기야, 엄마에게도 새로운 마음이 자라고 있어요. 그 마음이 바로 너를 사랑하는 마음이야. 쓸쓸해도 괜찮아, 그것도 사랑이니까.",
+              ].map((text, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
+                  style={{
+                    width: "180px",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+                  }}
+                >
+                  <Image
+                    src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
+                    alt={`동화 장면 ${i + 1}`}
+                    width={180}
+                    height={320}
+                    className="w-full aspect-[9/16] object-cover object-top"
+                    loading={i >= 6 && i <= 8 ? "eager" : "lazy"}
+                  />
+                  <div
+                    className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
+                    style={{
+                      background: "linear-gradient(to top, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.86) 50%, rgba(255,255,255,0) 100%)",
+                    }}
+                  >
+                    <p
+                      className="font-serif text-[10.5px] leading-[1.85] break-keep"
+                      style={{ color: "#5A3E2B" }}
+                    >
+                      {text}
+                    </p>
+                    <p className="text-[8px] text-brown-pale font-light mt-1.5 text-right">
+                      {i + 1} / 10
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </GalleryScroller>
+          </div>
 
           {/* ════════════════════════════════════════
               DIY THUMBNAILS — Free stories preview (M1)
@@ -600,8 +713,8 @@ export default function Home() {
                 { step: "3", icon: "/images/teacher/phase/phase-d.jpeg", title: "세상에 하나뿐인 책", desc: "완성된 동화를 PDF로 저장하고 아이에게 읽어줘요" },
               ].map((item) => (
                 <div key={item.step} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(127,191,176,0.06)" }}>
-                  <div className="w-6 h-6 rounded-lg overflow-hidden relative flex-shrink-0 mt-0.5">
-                    <Image src={item.icon} alt={item.title} fill className="object-cover" sizes="24px" />
+                  <div className="w-11 h-11 rounded-lg overflow-hidden relative flex-shrink-0 mt-0.5">
+                    <Image src={item.icon} alt={item.title} fill className="object-cover scale-[2]" sizes="44px" />
                   </div>
                   <div>
                     <p className="text-[12px] text-brown font-medium">{item.title}</p>
@@ -656,14 +769,6 @@ export default function Home() {
               후기 더보기 →
             </Link>
           </div>
-
-          {/* 서비스 소개 */}
-          <Link
-            href="/about"
-            className="text-[12px] text-brown-pale font-light no-underline underline-offset-2 hover:text-brown-light transition-colors text-center block mb-3"
-          >
-            서비스 소개 →
-          </Link>
 
           {/* Draft resume card */}
           {draftInfo && (
