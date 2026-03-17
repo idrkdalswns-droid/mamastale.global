@@ -54,6 +54,7 @@ const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
 const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
 // V5-FIX #5: 3→5 to match client FREE_TURN_LIMIT
 const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client FREE_TURN_LIMIT)
+const AUTH_TURN_LIMIT = 30;   // Freemium v2: all authenticated users capped at 30 turns per story
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
@@ -234,10 +235,14 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // NOTE: Authenticated users are NOT turn-limited here.
-    // Tickets are deducted at session start (/api/tickets/use), so an authenticated user
-    // in an active session has already paid. Checking hasActiveTickets here would incorrectly
-    // block users whose balance hit 0 after the ticket was consumed for this session.
+    // Freemium v2: Authenticated users capped at 30 turns per story
+    // (generous limit — refresh resets messages array, but context loss deters abuse)
+    if (isAuthenticated && userMsgCount > AUTH_TURN_LIMIT) {
+      return NextResponse.json(
+        { error: "동화를 완성해 주세요. 대화 횟수가 상한에 도달했습니다." },
+        { status: 403 }
+      );
+    }
 
     // ─── MULTI-TIER CRISIS PRE-SCREENING (v2.0) ───
     const latestUserMsg = messages.filter((m) => m.role === "user").pop();

@@ -183,8 +183,13 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             )}
           </div>
 
+          {/* Freemium v2: First story free notice */}
+          <p className="text-[11px] text-mint-deep font-medium text-center mt-3 mb-1">
+            첫 동화는 무료로 완성할 수 있어요
+          </p>
+
           {/* Testimonial */}
-          <p className="text-[11px] text-brown-light/60 italic text-center mt-3 mb-2">
+          <p className="text-[11px] text-brown-light/60 italic text-center mt-1 mb-2">
             &ldquo;아이가 매일 읽어달라고 해요&rdquo;
             <span className="not-italic text-brown-pale"> — 준우맘</span>
           </p>

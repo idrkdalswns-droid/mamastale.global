@@ -419,6 +419,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Freemium v2: Auto-unlock all locked stories on first purchase (best-effort)
+    if (serviceClient) {
+      try {
+        await serviceClient
+          .from("stories")
+          .update({ is_unlocked: true })
+          .eq("user_id", user.id)
+          .eq("is_unlocked", false);
+      } catch {
+        console.warn("[Toss] Auto-unlock stories failed for user:", user.id.slice(0, 8));
+      }
+    }
+
     // KR-04: Mask user ID in logs to prevent PII leakage
     const maskedUserId = user.id.slice(0, 8) + "…";
     // Log payment method for analytics (카드/카카오페이/네이버페이/토스페이 etc.)

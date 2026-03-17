@@ -54,6 +54,7 @@ interface StoryItem {
   scenes: Scene[];
   status: string;
   is_public?: boolean;
+  is_unlocked?: boolean;
   cover_image?: string;
   topic?: string;
   created_at: string;

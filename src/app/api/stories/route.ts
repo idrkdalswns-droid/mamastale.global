@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
   const { data: stories, error } = await sb.client
     .from("stories")
     // R7-F1: Include cover_image, topic, metadata (for source detection)
-    .select("id, title, scenes, status, is_public, cover_image, topic, metadata, created_at")
+    // Freemium v2: include is_unlocked for lock badge
+    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false })
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
   // Extract source from metadata, don't expose raw metadata to client
   const safeStories = (stories || []).map(({ metadata, ...s }) => ({
     ...s,
+    is_unlocked: s.is_unlocked ?? true, // backward compat: missing = unlocked
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
   }));
 
@@ -204,6 +206,23 @@ export async function POST(request: NextRequest) {
     // Ticket deduction is now handled upfront at /api/tickets/use (chat start).
     // This endpoint only saves the completed story.
 
+    // Freemium v2: Determine if this is the user's first completed story
+    // First story → is_unlocked=false (locked preview), subsequent → is_unlocked=true
+    let isFirstStory = false;
+    try {
+      const { count, error: countErr } = await sb.client
+        .from("stories")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "completed");
+      if (!countErr && count !== null) {
+        isFirstStory = count === 0;
+      }
+    } catch {
+      // fallback: treat as not-first (unlocked) — safer than locking paid content
+      isFirstStory = false;
+    }
+
     // Validate session_id: must be a valid UUID or null
     // Client sends "session_${Date.now()}" which is NOT a UUID → skip FK
     const isValidUUID = sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
@@ -216,6 +235,8 @@ export async function POST(request: NextRequest) {
       scenes,
       metadata: metadata || {},
       status: "completed",
+      // Freemium v2: first story is locked (preview only), subsequent are unlocked
+      is_unlocked: !isFirstStory,
     };
 
     // DIY 동화: coverImage 저장 (PATCH 핸들러와 동일한 whitelist regex)

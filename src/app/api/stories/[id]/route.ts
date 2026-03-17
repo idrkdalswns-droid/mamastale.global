@@ -49,7 +49,8 @@ export async function GET(
   const { data: story, error } = await sb.client
     .from("stories")
     // R10-2: Include metadata for source detection, but only expose source field to client
-    .select("id, title, scenes, status, is_public, author_alias, topic, cover_image, metadata, created_at")
+    // Freemium v2: include is_unlocked for lock filtering
+    .select("id, title, scenes, status, is_public, is_unlocked, author_alias, topic, cover_image, metadata, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -60,8 +61,19 @@ export async function GET(
 
   // Extract source from metadata, don't expose raw metadata to client
   const { metadata, ...storyFields } = story;
+  const isUnlocked = storyFields.is_unlocked ?? true; // backward compat: missing = unlocked
+  const allScenes = Array.isArray(storyFields.scenes) ? storyFields.scenes : [];
+  const totalScenes = allScenes.length;
+
+  // Freemium v2: locked stories only expose first 6 scenes (server-side filtering)
+  // Scenes 7-10 (RESOLUTION + WISDOM) are hidden until payment
+  const visibleScenes = isUnlocked ? allScenes : allScenes.slice(0, 6);
+
   const safeStory = {
     ...storyFields,
+    scenes: visibleScenes,
+    total_scenes: totalScenes,
+    is_unlocked: isUnlocked,
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
   };
 
@@ -110,6 +122,23 @@ export async function PATCH(
       return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
     const updates: Record<string, unknown> = {};
+
+    // Freemium v2: Block publishing locked stories to community
+    // /api/community/[id] returns ALL scenes, so a locked story published publicly would bypass the lock
+    if (body.isPublic === true) {
+      const { data: storyCheck } = await sb.client
+        .from("stories")
+        .select("is_unlocked")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+      if (storyCheck && storyCheck.is_unlocked === false) {
+        return sb.applyCookies(NextResponse.json(
+          { error: "잠금 해제 후 공유할 수 있습니다." },
+          { status: 403 }
+        ));
+      }
+    }
 
     // Only allow specific fields to be updated
     if (typeof body.isPublic === "boolean") updates.is_public = body.isPublic;

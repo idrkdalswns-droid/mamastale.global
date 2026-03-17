@@ -12,6 +12,7 @@ interface StoryItem {
   scenes: Scene[];
   status: string;
   is_public?: boolean;
+  is_unlocked?: boolean;
   cover_image?: string;
   topic?: string;
   created_at: string;
@@ -175,6 +176,16 @@ export default function StoryCarousel({ stories }: StoryCarouselProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Freemium v2: Lock badge for locked stories */}
+                {s.is_unlocked === false && (
+                  <span
+                    className="absolute top-3.5 left-4 px-2.5 py-1 rounded-full text-[10px] font-medium"
+                    style={{ background: "rgba(0,0,0,0.5)", color: "rgba(255,255,255,0.9)", backdropFilter: "blur(4px)" }}
+                  >
+                    미리보기
+                  </span>
+                )}
 
                 {/* mamastale watermark */}
                 <span className="absolute top-3.5 right-4 text-white/25 text-[9px] font-light tracking-wider">

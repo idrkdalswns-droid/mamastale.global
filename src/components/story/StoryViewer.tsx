@@ -67,11 +67,26 @@ interface StoryViewerProps {
   storyId?: string;
   /** Sprint 7-D: Remaining tickets for upsell CTA */
   ticketsRemaining?: number | null;
+  /** Freemium v2: Story is locked (show 6/10 scenes with blur overlay) */
+  isLocked?: boolean;
+  /** Freemium v2: Total scene count (for "N scenes remaining" display) */
+  totalScenes?: number;
+  /** Freemium v2: Callback when user clicks unlock CTA */
+  onUnlock?: () => void;
+  /** Freemium v2: Preview mode — full scenes shown but PDF/share/edit hidden */
+  previewMode?: boolean;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
+
+  // Freemium v2: Calculate locked page boundary
+  const lockedRemainingScenes = isLocked && totalScenesProp ? totalScenesProp - (scenes?.length || 0) : 0;
+  // Total pages including locked ones (for grayed-out progress display)
+  const totalPagesWithLocked = isLocked && totalScenesProp ? Math.ceil(totalScenesProp / 2) : totalPages;
+  // Hide edit/share/PDF in locked or preview mode
+  const hideActions = isLocked || previewMode;
 
   // M-7: Use storyId for localStorage key isolation (prevents title collision)
   const pageStorageKey = storyId ? `mamastale_last_page_${storyId}` : title ? `mamastale_last_page_${title.slice(0, 40)}` : "";
@@ -174,6 +189,16 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     const startIdx = currentPage * 2;
     return scenes.slice(startIdx, startIdx + 2);
   }, [scenes, currentPage]);
+
+  // Freemium v2: GA event when preview user reaches last page (Phase 6)
+  useEffect(() => {
+    if (previewMode && isLast && totalPages > 0) {
+      window.gtag?.("event", "freemium_preview_complete", {
+        story_id: storyId,
+        total_pages: totalPages,
+      });
+    }
+  }, [previewMode, isLast, totalPages, storyId]);
 
   // Swipe gestures
   const goNext = useCallback(() => { setCurrentPage((p) => Math.min(totalPages - 1, p + 1)); hapticLight(); }, [totalPages]);
@@ -300,7 +325,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   표지
                 </button>
               )}
-              {onEdit && (
+              {onEdit && !hideActions && (
                 <button
                   onClick={onEdit}
                   className="w-11 h-11 rounded-full text-[11px] text-brown-mid active:scale-90 transition-transform ml-1 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
@@ -311,23 +336,29 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               )}
             </div>
           </div>
-          {/* Progress — 5 page segments */}
+          {/* Progress — page segments (locked pages shown grayed out) */}
           <div className="flex gap-0.5 px-4 pb-2">
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentPage(i)}
-                className="flex-1 min-h-[44px] flex items-center cursor-pointer"
-                aria-label={`${i + 1}페이지로 이동`}
-              >
-                <div
-                  className="h-[6px] w-full rounded-full transition-all duration-300"
-                  style={{
-                    background: i < currentPage ? "rgba(224,122,95,0.53)" : i === currentPage ? "#E07A5F" : "rgba(0,0,0,0.06)",
-                  }}
-                />
-              </button>
-            ))}
+            {Array.from({ length: totalPagesWithLocked }, (_, i) => {
+              const isLockedPage = i >= totalPages;
+              return (
+                <button
+                  key={i}
+                  onClick={() => !isLockedPage && setCurrentPage(i)}
+                  className={`flex-1 min-h-[44px] flex items-center ${isLockedPage ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                  aria-label={isLockedPage ? `${i + 1}페이지 (잠김)` : `${i + 1}페이지로 이동`}
+                  disabled={isLockedPage}
+                >
+                  <div
+                    className="h-[6px] w-full rounded-full transition-all duration-300"
+                    style={{
+                      background: isLockedPage
+                        ? "rgba(0,0,0,0.08)"
+                        : i < currentPage ? "rgba(224,122,95,0.53)" : i === currentPage ? "#E07A5F" : "rgba(0,0,0,0.06)",
+                    }}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -392,8 +423,63 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             })()}
           </div>
 
+          {/* Freemium v2: Lock overlay on last visible page */}
+          {isLocked && isLast && lockedRemainingScenes > 0 && (
+            <div className="relative mt-6">
+              {/* Blur fade effect */}
+              <div
+                className="absolute -top-16 left-0 right-0 h-16 pointer-events-none"
+                style={{ background: "linear-gradient(to bottom, transparent, rgba(251,245,236,0.95))" }}
+              />
+              {/* Lock CTA card */}
+              <div
+                className="rounded-2xl p-6 text-center"
+                style={{
+                  background: "linear-gradient(180deg, rgba(255,249,245,0.95), rgba(255,255,255,0.98))",
+                  border: "1.5px solid rgba(196,149,106,0.15)",
+                  boxShadow: "0 8px 32px rgba(90,62,43,0.06)",
+                }}
+                role="region"
+                aria-label="잠긴 콘텐츠"
+              >
+                <p className="font-serif text-base text-brown font-semibold mb-1 leading-snug">
+                  이야기의 결말이
+                  <br />
+                  기다리고 있어요
+                </p>
+                <p className="text-xs text-brown-light font-light mb-4">
+                  {lockedRemainingScenes}장면이 남았어요
+                </p>
+                <button
+                  onClick={() => {
+                    window.gtag?.("event", "freemium_lock_cta_click", {
+                      story_id: storyId,
+                      remaining_scenes: lockedRemainingScenes,
+                    });
+                    onUnlock?.();
+                  }}
+                  className="w-full py-3.5 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] mb-2"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                    boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  이 순간을 간직하기
+                </button>
+                <p className="text-[11px] text-brown-pale font-light">
+                  ₩3,920
+                </p>
+                <p className="text-[11px] text-brown-light font-light mt-2 break-keep leading-relaxed">
+                  PDF로 인쇄해서
+                  <br />
+                  아이에게 읽어줄 수 있어요
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Last page extras */}
-          {isLast && (
+          {isLast && !isLocked && (
             <div className="mt-8 space-y-4">
               <div
                 className="rounded-2xl p-4"
@@ -440,6 +526,9 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
         <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
         {isLast ? (
           <div className="space-y-2.5">
+            {/* Freemium v2: Hide share/PDF in locked or preview mode */}
+            {!hideActions && (
+            <>
             <div className="flex gap-2">
               <button
                 onClick={async () => {
@@ -452,7 +541,6 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                     imageUrl: coverImage ? `${siteUrl}${coverImage}` : undefined,
                   });
                   if (!ok) {
-                    // Kakao SDK 미설정 시 기본 공유로 fallback
                     if (typeof navigator !== "undefined" && navigator.share) {
                       navigator.share({ title: storyTitle, url: siteUrl }).catch(() => {});
                     } else {
@@ -588,6 +676,17 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                     </button>
                   </>
                 )}
+              </div>
+            )}
+            </>
+            )}
+            {/* Freemium v2: Preview mode bottom bar */}
+            {previewMode && (
+              <div
+                className="py-2.5 rounded-full text-center text-xs font-light text-brown-light"
+                style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}
+              >
+                미리보기 중
               </div>
             )}
             {/* B-6: Clear labels for last page navigation */}

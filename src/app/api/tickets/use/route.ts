@@ -108,16 +108,15 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // New user — no profile row yet → create with 1 free ticket
+    // New user — no profile row yet → create with 0 free tickets
+    // (first story is free without ticket — freemium model v2)
     if (!profile) {
       // LAUNCH-FIX: Use ignoreDuplicates to prevent overwriting existing profile
-      // Without this, concurrent requests for a new user would each reset
-      // free_stories_remaining to 1, allowing unlimited free ticket exploitation.
       const { error: insertErr } = await sb.client
         .from("profiles")
         .upsert({
           id: user.id,
-          free_stories_remaining: 1,
+          free_stories_remaining: 0,
           updated_at: new Date().toISOString(),
         }, { onConflict: "id", ignoreDuplicates: true });
 

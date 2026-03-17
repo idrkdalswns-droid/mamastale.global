@@ -70,15 +70,15 @@ export async function GET(request: NextRequest) {
 
   let remaining = 0;
 
-  // New user — no profile row yet → auto-create with 1 free ticket
+  // New user — no profile row yet → auto-create with 0 free tickets
+  // (first story is free without ticket — freemium model v2)
   if (!profile) {
     // LAUNCH-FIX: Use ignoreDuplicates to prevent overwriting existing profile
-    // (race between GET /api/tickets and POST /api/tickets/use could reset remaining to 1)
     const { error: upsertErr } = await sb.client
       .from("profiles")
       .upsert({
         id: user.id,
-        free_stories_remaining: 1,
+        free_stories_remaining: 0,
         updated_at: new Date().toISOString(),
       }, { onConflict: "id", ignoreDuplicates: true });
 
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    remaining = actualProfile?.free_stories_remaining ?? 1;
+    remaining = actualProfile?.free_stories_remaining ?? 0;
   } else {
     remaining = profile.free_stories_remaining ?? 0;
   }
@@ -115,5 +115,21 @@ export async function GET(request: NextRequest) {
     isFirstPurchase = false;
   }
 
-  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase }));
+  // Freemium v2: Count completed stories to determine first-story eligibility
+  let storyCount = 0;
+  try {
+    const { count, error: countErr } = await sb.client
+      .from("stories")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "completed");
+    if (!countErr && count !== null) {
+      storyCount = count;
+    }
+    // fallback: 0 (treat as first story — giving one extra free is safer than forcing payment)
+  } catch {
+    storyCount = 0;
+  }
+
+  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase, storyCount }));
 }

@@ -212,7 +212,8 @@ function PaymentSuccessContent() {
       setAutoRedirectCount((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success");
+          // Freemium v2: Primary redirect to library (where unlocked stories await)
+          router.push("/library");
           return 0;
         }
         return prev - 1;
@@ -353,22 +354,42 @@ function PaymentSuccessContent() {
           </div>
         </div>
 
-        <p className="text-sm text-brown-light font-light leading-relaxed mb-5 break-keep">
-          {hasSavedChat ? (
-            <>이전 대화를 이어서<br /><span className="text-coral font-medium">동화를 완성</span>해 볼까요?</>
-          ) : (
-            <>이제 아이를 위한 아름다운<br /><span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />만들어 볼까요?</>
-          )}
-        </p>
+        {/* Freemium v2: Warm unlock message */}
+        <div
+          className="rounded-xl p-4 mb-5 text-center"
+          style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}
+        >
+          <p className="text-[13px] text-brown font-medium mb-1 break-keep">
+            동화가 온전히 당신의 것이 되었어요.
+          </p>
+          <p className="text-[11px] text-brown-light font-light break-keep">
+            티켓 {ticketsAdded}장으로 새로운 동화도 만들 수 있어요.
+          </p>
+        </div>
+
         <button
-          onClick={() => router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success")}
+          onClick={() => {
+            // Freemium v2: GA event for first purchase unlock
+            window.gtag?.("event", "freemium_unlock_success", {
+              tickets_added: ticketsAdded,
+              amount: receiptAmount,
+            });
+            router.push("/library");
+          }}
           className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
           style={{
             background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
           }}
         >
-          {hasSavedChat ? "대화 이어서 동화 만들기" : "지금 바로 동화 만들기"}
+          서재에서 동화 읽기
+        </button>
+        <button
+          onClick={() => router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success")}
+          className="w-full py-3 rounded-full text-sm font-medium text-brown-mid transition-all active:scale-[0.97] mb-2"
+          style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+        >
+          {hasSavedChat ? "대화 이어서 동화 만들기" : "새 동화 만들기"}
         </button>
         {autoRedirectCount > 0 && (
           <p className="text-[11px] text-brown-pale font-light mb-2">

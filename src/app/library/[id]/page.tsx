@@ -32,6 +32,8 @@ interface StoryData {
   topic?: string;
   cover_image?: string;
   source?: string;
+  is_unlocked?: boolean;
+  total_scenes?: number;
 }
 
 export default function LibraryStoryPage() {
@@ -368,6 +370,7 @@ export default function LibraryStoryPage() {
       title={story.title || "나의 마음 동화"}
       authorName={user?.user_metadata?.name || undefined}
       coverImage={story.cover_image || undefined}
+      storyId={story.id}
       onBack={() => router.push("/library")}
       onEdit={() => setEditing(true)}
       onChangeCover={() => setShowCoverPicker(true)}
@@ -376,6 +379,9 @@ export default function LibraryStoryPage() {
       onPublish={handlePublish}
       onUnpublish={handleUnpublish}
       suggestedTags={story.topic ? [story.topic] : undefined}
+      isLocked={story.is_unlocked === false}
+      totalScenes={story.total_scenes}
+      onUnlock={() => router.push("/pricing")}
     />
 
     {/* Cover picker modal (from viewer "표지" button) */}

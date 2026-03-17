@@ -64,6 +64,7 @@ const GUEST_RATE_LIMIT = 10;
 const AUTH_RATE_LIMIT = 30;
 // V5-FIX #5: 3→5 to match client FREE_TURN_LIMIT
 const GUEST_TURN_LIMIT = 5;
+const AUTH_TURN_LIMIT = 30;   // Freemium v2: all authenticated users capped at 30 turns per story
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
@@ -145,9 +146,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." }, { status: 403 });
     }
   }
-  // NOTE: Authenticated users are NOT turn-limited here.
-  // Tickets are deducted at session start (/api/tickets/use), so an authenticated user
-  // in an active session has already paid.
+  // Freemium v2: Authenticated users capped at 30 turns per story
+  if (isAuthenticated && userMsgCount > AUTH_TURN_LIMIT) {
+    return NextResponse.json(
+      { error: "동화를 완성해 주세요. 대화 횟수가 상한에 도달했습니다." },
+      { status: 403 }
+    );
+  }
 
   // ─── Crisis pre-screening ───
   const latestUserMsg = messages.filter((m) => m.role === "user").pop();

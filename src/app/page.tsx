@@ -71,7 +71,7 @@ const CoverPicker = dynamic(() => import("@/components/story/CoverPicker").then(
 const FeedbackWizard = dynamic(() => import("@/components/feedback/FeedbackWizard").then(m => ({ default: m.FeedbackWizard })), { ssr: false });
 const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage").then(m => ({ default: m.CommunityPage })), { ssr: false });
 
-type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
+type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "previewNotice" | "story" | "feedback" | "community";
 
 export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
@@ -198,7 +198,7 @@ export default function Home() {
   // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
   useEffect(() => {
     if (!user || screen !== "landing") {
-      if (!user) setTicketsRemaining(null);
+      if (!user) { setTicketsRemaining(null); setStoryCount(null); }
       return;
     }
     (async () => {
@@ -212,10 +212,15 @@ export default function Home() {
         const res = await fetch("/api/tickets", { headers, credentials: "include" });
         if (res.ok) {
           const data = await res.json();
-          if (data) setTicketsRemaining(data.remaining ?? 0);
+          if (data) {
+            setTicketsRemaining(data.remaining ?? 0);
+            // Freemium v2: storyCount for first-story detection
+            setStoryCount(data.storyCount ?? 0);
+          }
         }
       } catch {
         setTicketsRemaining(0);
+        setStoryCount(0); // fallback: treat as first story (safer)
         console.warn("[Tickets] 티켓 정보 로드 실패 — 기본값 0으로 설정");
       }
     })();
@@ -329,13 +334,15 @@ export default function Home() {
         console.warn("[CoverPicker] Failed to persist cover_image to DB");
       }
     }
-    setScreen("story");
-  }, [completedStoryId]);
+    // Freemium v2: first story → show preview notice before viewer
+    setScreen(storyCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+  }, [completedStoryId, storyCount, ticketUsedForSession]);
 
   const handleCoverSkip = useCallback(() => {
     setSelectedCover(null);
-    setScreen("story");
-  }, []);
+    // Freemium v2: first story → show preview notice before viewer
+    setScreen(storyCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+  }, [storyCount, ticketUsedForSession]);
 
   // ─── Browser history integration (JP-Y12) ───
   // Push state on screen changes so back button navigates within the flow
@@ -379,7 +386,7 @@ export default function Home() {
         <ChatPage
           onComplete={() => setScreen("edit")}
           onGoHome={() => { clearTicketSession(); setShow(false); setScreen("landing"); }}
-          freeTrialMode={!ticketUsedForSession}
+          freeTrialMode={!ticketUsedForSession && storyCount !== 0}
           ticketsRemaining={ticketsRemaining}
           onTicketUsed={() => {
             setTicketUsedForSession(true);
@@ -418,9 +425,43 @@ export default function Home() {
     );
   }
 
+  // Freemium v2: Preview notice card before first story viewing
+  if (screen === "previewNotice") {
+    return (
+      <div className="min-h-dvh bg-cream flex items-center justify-center px-6">
+        <div className="w-full max-w-[340px] text-center">
+          <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: "rgba(196,149,106,0.1)" }}>
+            <span className="text-2xl font-serif font-bold" style={{ color: "#C4956A" }}>M</span>
+          </div>
+          <h2 className="text-lg font-serif font-bold text-brown mb-2 break-keep">
+            동화가 완성되었어요!
+          </h2>
+          <p className="text-[13px] text-brown-light font-light leading-relaxed mb-2 break-keep">
+            지금 전체 동화를 미리 읽어볼 수 있어요.
+          </p>
+          <p className="text-[12px] text-brown-pale font-light leading-relaxed mb-6 break-keep">
+            서재에 영구 보관하려면 잠금 해제가 필요해요.
+          </p>
+          <button
+            onClick={() => setScreen("story")}
+            className="w-full py-3.5 rounded-full text-white text-[14px] font-medium transition-all active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+            }}
+          >
+            지금 읽어보기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Story viewing screen (read-only) after editing
   // feedbackDone = false: first viewing → go to feedback
   // feedbackDone = true: re-viewing from community → go back to community
+  // Freemium v2: first story (storyCount === 0 at start) → previewMode (1회 전체 열람, PDF/공유/편집 비활성)
+  const isFirstStoryPreview = storyCount === 0 && !ticketUsedForSession;
   if (screen === "story") {
     return (
       <ErrorBoundary fullScreen>
@@ -434,6 +475,7 @@ export default function Home() {
           isPremium={isPremiumStory}
           onNewStory={() => { reset(); clearDraft(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
           ticketsRemaining={ticketsRemaining}
+          previewMode={isFirstStoryPreview}
         />
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
