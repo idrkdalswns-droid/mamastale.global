@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.15.0] - 2026-03-17
+
+### Added
+- 선생님 모드 웰컴 메시지 개인화 — 온보딩 주제/연령 반영 + 클릭형 프롬프트 칩
+- 그림책 창작 파이프라인 7개 에이전트 스킬 (pb-orchestrator~pb-dev-reviewer)
+
+### Changed
+- 선생님 온보딩 카드 48px→풀카드 이미지 (캐릭터 선명하게 보이도록)
+- PhaseIndicator 원 28→36px, 이미지 fill 모드, 연결선 확대
+- Preview 탭/PDF 아이콘 16→20px
+- 메인 서비스 이모지(🫧🌿✨📖💬) → 일러스트 이미지로 교체 (OnboardingSlides, 랜딩, StoryCompleteCTA)
+- 선생님 채팅 타이머 제거 + 만료 감지 인라인 (useRef 안정화)
+
+### Removed
+- TeacherTimer.tsx 컴포넌트 삭제 (로직은 TeacherChat에 인라인)
+
 ## [1.14.1] - 2026-03-17
 
 ### Fixed
