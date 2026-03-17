@@ -48,5 +48,24 @@ export function createApiSupabaseClient(request: NextRequest) {
     return response;
   }
 
-  return { client, applyCookies };
+  /**
+   * Return raw Set-Cookie header strings for pending auth-refresh cookies.
+   * Use this for raw Response objects (e.g., SSE streams) where NextResponse
+   * cookies API is not available.
+   */
+  function getCookieHeaders(): string[] {
+    return pendingCookies.map(({ name, value, options }) => {
+      const parts = [`${name}=${value}`];
+      const path = (options?.path as string) ?? "/";
+      parts.push(`Path=${path}`);
+      if (options?.httpOnly !== false) parts.push("HttpOnly");
+      if (options?.secure !== false) parts.push("Secure");
+      const sameSite = (options?.sameSite as string) ?? "Lax";
+      parts.push(`SameSite=${sameSite}`);
+      if (options?.maxAge != null) parts.push(`Max-Age=${options.maxAge}`);
+      return parts.join("; ");
+    });
+  }
+
+  return { client, applyCookies, getCookieHeaders };
 }

@@ -56,9 +56,11 @@ export interface StorySeedState {
  * SSE streaming event types for /api/chat/stream
  */
 export interface ChatStreamEvent {
-  type: "meta" | "text" | "done" | "error";
+  type: "meta" | "text" | "done" | "error" | "safety_redirect";
   /** Streaming text chunk (for 'text' events) */
   text?: string;
+  /** Warm redirect message (for 'safety_redirect' events) */
+  message?: string;
   /** Current phase (for 'meta' and 'done' events) */
   phase?: number | null;
   /** Story completion flag (for 'done' events) */
@@ -77,6 +79,6 @@ export interface ChatStreamEvent {
   error?: string;
   /** Whether this is a crisis intervention response (for 'done' events) */
   isCrisisIntervention?: boolean;
-  /** Whether medical advice was detected and blocked (for 'done' events) */
-  medicalBlocked?: boolean;
+  /** Whether medical advice was detected and redirected (for 'done' events) */
+  medicalRedirected?: boolean;
 }

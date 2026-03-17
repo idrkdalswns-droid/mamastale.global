@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   // Constant-time API key check for internal use
   const apiKey = request.headers.get("x-api-key");
-  const expectedKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const expectedKey = process.env.PUSH_API_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || !expectedKey || !timingSafeEqual(apiKey, expectedKey)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
