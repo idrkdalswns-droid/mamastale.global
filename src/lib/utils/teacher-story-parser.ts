@@ -53,18 +53,35 @@ function parseMetadata(text: string): TeacherMetadata {
   return result;
 }
 
+// ─── 부가자료 제거 헬퍼 ───
+
+/** 4개 부가자료 태그를 본문에서 제거 (paired → 미닫힘 fallback) */
+function stripMetadataSections(text: string): string {
+  const tags = ["READING_GUIDE", "ILLUST_PROMPTS", "NURI_MAP", "DEV_REVIEW"];
+  let result = text;
+  for (const tag of tags) {
+    // 1차: paired tag (닫힘 태그 있음)
+    result = result.replace(
+      new RegExp(`\\[${tag}\\][\\s\\S]*?\\[\\/${tag}\\]`, "gi"),
+      ""
+    );
+    // 2차 fallback: 미닫힘 (닫힘 태그 없이 끝까지)
+    result = result.replace(
+      new RegExp(`\\[${tag}\\](?![\\s\\S]*\\[\\/${tag}\\])[\\s\\S]*$`, "gi"),
+      ""
+    );
+  }
+  return result;
+}
+
 // ─── 스프레드 파싱 전략 ───
 
 /** 전략 1: [SP01] ~ [SP14] 영문 태그 (메인) */
 function parseWithSPTags(text: string): TeacherSpread[] {
   const spreads: TeacherSpread[] = [];
 
-  // 부가자료 섹션 이전까지만 파싱
-  const mainText = text
-    .replace(/\[READING_GUIDE\][\s\S]*$/i, "")
-    .replace(/\[ILLUST_PROMPTS\][\s\S]*$/i, "")
-    .replace(/\[NURI_MAP\][\s\S]*$/i, "")
-    .replace(/\[DEV_REVIEW\][\s\S]*$/i, "");
+  // 부가자료 섹션 제거 (paired + 미닫힘 fallback)
+  const mainText = stripMetadataSections(text);
 
   const pattern = /\[SP\s*0?(\d{1,2})\]\s*([\s\S]*?)(?=\[SP\s*0?\d{1,2}\]|$)/gi;
 
@@ -97,11 +114,7 @@ function parseWithSPTags(text: string): TeacherSpread[] {
 function parseWithKoreanTags(text: string): TeacherSpread[] {
   const spreads: TeacherSpread[] = [];
 
-  const mainText = text
-    .replace(/\[READING_GUIDE\][\s\S]*$/i, "")
-    .replace(/\[ILLUST_PROMPTS\][\s\S]*$/i, "")
-    .replace(/\[NURI_MAP\][\s\S]*$/i, "")
-    .replace(/\[DEV_REVIEW\][\s\S]*$/i, "");
+  const mainText = stripMetadataSections(text);
 
   // [스프레드 1], 스프레드 1:, **스프레드 1** 등
   const pattern = /(?:\[스프레드\s*(\d{1,2})\]|스프레드\s*(\d{1,2})\s*:|^\*\*스프레드\s*(\d{1,2})\*\*)\s*([\s\S]*?)(?=(?:\[스프레드\s*\d|스프레드\s*\d{1,2}\s*:|\*\*스프레드\s*\d)|$)/gim;
@@ -135,11 +148,7 @@ function parseWithKoreanTags(text: string): TeacherSpread[] {
 function parseWithNumberedList(text: string): TeacherSpread[] {
   const spreads: TeacherSpread[] = [];
 
-  const mainText = text
-    .replace(/\[READING_GUIDE\][\s\S]*$/i, "")
-    .replace(/\[ILLUST_PROMPTS\][\s\S]*$/i, "")
-    .replace(/\[NURI_MAP\][\s\S]*$/i, "")
-    .replace(/\[DEV_REVIEW\][\s\S]*$/i, "");
+  const mainText = stripMetadataSections(text);
 
   const pattern = /^(\d{1,2})[.)]\s*([\s\S]*?)(?=^\d{1,2}[.)]\s|$)/gm;
 
@@ -230,7 +239,11 @@ export function extractStoryTitle(
   spreads: TeacherSpread[],
   topic?: string | null
 ): string {
+  // SP01 제목을 우선, 제네릭 제목이면 topic fallback
+  const firstTitle = spreads[0]?.title;
+  if (firstTitle && !/^스프레드\s*\d+$/.test(firstTitle)) {
+    return firstTitle;
+  }
   if (topic) return `${topic} 이야기`;
-  if (spreads.length > 0) return spreads[0].title;
   return "새 동화";
 }

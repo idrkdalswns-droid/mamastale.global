@@ -13,47 +13,16 @@
  */
 
 import type { TeacherSpread, TeacherStoryMetadata } from "@/lib/types/teacher";
+import { escapeHtml, getActLabel, getActColor, AGE_LABELS } from "./teacher-pdf-utils";
 
 // ─── 유틸 ───
 
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/** 스프레드 → 3막 구조 라벨 */
-function getActLabel(num: number): string {
-  if (num <= 4) return "도입";
-  if (num <= 11) return "전개";
-  return "결말";
-}
-
-/** 3막 색상 */
-function getActColor(num: number): string {
-  if (num <= 4) return "#7FBFB0";
-  if (num <= 11) return "#E07A5F";
-  return "#8B6AAF";
-}
-
-/** 3막 배경색 */
+/** 3막 배경색 (활동지 전용) */
 function getActBg(num: number): string {
   if (num <= 4) return "#EEF6F3";
   if (num <= 11) return "#FFF4ED";
   return "#F3EDF7";
 }
-
-// ─── 연령 라벨 ───
-
-const AGE_LABELS: Record<string, string> = {
-  infant: "영아반 (0-2세)",
-  toddler: "유아반 (3-4세)",
-  kindergarten: "유치반 (5-7세)",
-  mixed: "혼합연령반",
-};
 
 // ─── 핵심 스프레드 10개 선택 ───
 
@@ -250,7 +219,7 @@ export function generateActivitySheetHtml(params: ActivitySheetParams): string {
       <span class="page-icon">🤝</span>
       <h2>우리 반 약속</h2>
     </div>
-    <p class="promise-intro">${escapeHtml(safeTitle)}을(를) 읽고 우리 반이 함께 지킬 약속을 만들어봐요!</p>
+    <p class="promise-intro">${safeTitle}을(를) 읽고 우리 반이 함께 지킬 약속을 만들어봐요!</p>
     <div class="promise-list">
       ${Array(5)
         .fill(null)

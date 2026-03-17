@@ -29,6 +29,10 @@ export function TeacherChat({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const generateTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup generate timer on unmount
+  useEffect(() => () => clearTimeout(generateTimerRef.current), []);
 
   // 자동 스크롤
   useEffect(() => {
@@ -53,9 +57,14 @@ export function TeacherChat({
 
       if (isGenerateRequest && turnCount >= 4) {
         // 최소 4턴 이상이면 즉시 생성 가능
-        await sendMessageStreaming(text, true); // forceGenerate=true
-        // 생성 요청은 상위에서 처리
-        setTimeout(() => onRequestGenerate(), 500);
+        const success = await sendMessageStreaming(text, true);
+        // 스트리밍 성공 시에만 생성 요청
+        if (success) {
+          generateTimerRef.current = setTimeout(
+            () => onRequestGenerate(),
+            500
+          );
+        }
         return;
       }
 

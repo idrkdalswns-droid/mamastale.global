@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   TeacherStory,
   TeacherSpread,
@@ -44,6 +44,13 @@ export function TeacherPreview({
   );
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  // story.spreads가 변경되면 동기화 (부모가 1회만 set하므로 실질적으로 초기화 용도)
+  useEffect(() => {
+    setEditedSpreads(story.spreads || []);
+    setEditingSpread(null);
+    setCurrentSpread(0);
+  }, [story.spreads]);
 
   const metadata = story.metadata || {};
   const spreads = editedSpreads;
@@ -266,7 +273,7 @@ export function TeacherPreview({
       <div className="px-4 pb-4 pt-2 border-t border-brown-pale/20 space-y-2
                        pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
         <p className="text-[11px] text-brown-pale text-center mb-2">
-          PDF로 저장하기
+          인쇄 / PDF 저장
         </p>
         {pdfError && (
           <p className="text-xs text-red-500 text-center break-keep mb-1">

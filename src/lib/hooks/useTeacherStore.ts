@@ -55,7 +55,7 @@ interface TeacherState {
   reset: () => void;
   persistToStorage: () => void;
   restoreFromStorage: () => boolean;
-  sendMessageStreaming: (text: string, forceGenerate?: boolean) => Promise<void>;
+  sendMessageStreaming: (text: string, forceGenerate?: boolean) => Promise<boolean>;
 }
 
 const initialState = {
@@ -74,6 +74,8 @@ const initialState = {
 
 // Module-level mutex to prevent concurrent sends
 let sendInFlight = false;
+// Module-level AbortController for stream cancellation
+let currentAbort: AbortController | null = null;
 
 export const useTeacherStore = create<TeacherState>((set, get) => ({
   ...initialState,
@@ -122,6 +124,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     }),
 
   reset: () => {
+    currentAbort?.abort();
     set({ ...initialState });
     try {
       sessionStorage.removeItem(STORAGE_KEY);
@@ -161,14 +164,14 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
     return false;
   },
 
-  sendMessageStreaming: async (text: string, forceGenerate?: boolean) => {
-    if (sendInFlight) return;
+  sendMessageStreaming: async (text: string, forceGenerate?: boolean): Promise<boolean> => {
+    if (sendInFlight) return false;
     sendInFlight = true;
 
     const state = get();
     if (!state.sessionId) {
       sendInFlight = false;
-      return;
+      return false;
     }
 
     // 사용자 메시지 추가
@@ -194,7 +197,12 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       messages: [...s.messages, assistantMessage],
     }));
 
+    currentAbort = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     try {
+      timeoutId = setTimeout(() => currentAbort?.abort(), 60_000);
+
       const res = await fetch("/api/teacher/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,6 +211,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
           message: text,
           ...(forceGenerate ? { forceGenerate: true } : {}),
         }),
+        signal: currentAbort.signal,
       });
 
       if (!res.ok) {
@@ -255,7 +264,23 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
           }
         }
       }
+      return true;
     } catch (err) {
+      // AbortError — 사용자에게 에러 표시 안 함, 빈 어시스턴트 메시지만 제거
+      if (err instanceof DOMException && err.name === "AbortError") {
+        set((s) => {
+          const msgs = [...s.messages];
+          if (
+            msgs.length > 0 &&
+            msgs[msgs.length - 1].role === "assistant" &&
+            !msgs[msgs.length - 1].content
+          ) {
+            msgs.pop();
+          }
+          return { messages: msgs };
+        });
+        return false;
+      }
       // 에러 메시지로 교체
       set((s) => {
         const msgs = [...s.messages];
@@ -272,7 +297,10 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
         }
         return { messages: msgs };
       });
+      return false;
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      currentAbort = null;
       set({ isLoading: false });
       sendInFlight = false;
       get().persistToStorage();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface TeacherTimerProps {
   expiresAt: string;
@@ -12,8 +12,18 @@ export function TeacherTimer({ expiresAt, onExpired }: TeacherTimerProps) {
   const [progress, setProgress] = useState(100);
   const [isWarning, setIsWarning] = useState(false);
 
+  // Ref로 콜백 안정화 + 이중 호출 방지
+  const onExpiredRef = useRef(onExpired);
   useEffect(() => {
+    onExpiredRef.current = onExpired;
+  }, [onExpired]);
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    firedRef.current = false;
     const totalMs = 3 * 60 * 60 * 1000; // 3시간
+
+    let timer: ReturnType<typeof setInterval>; // let으로 선언 (TDZ 방지)
 
     const update = () => {
       const now = Date.now();
@@ -23,7 +33,11 @@ export function TeacherTimer({ expiresAt, onExpired }: TeacherTimerProps) {
       if (diff <= 0) {
         setRemaining("만료됨");
         setProgress(0);
-        onExpired();
+        if (!firedRef.current) {
+          firedRef.current = true;
+          onExpiredRef.current();
+        }
+        clearInterval(timer); // 첫 호출 시 timer는 undefined → clearInterval(undefined)은 no-op
         return;
       }
 
@@ -44,9 +58,9 @@ export function TeacherTimer({ expiresAt, onExpired }: TeacherTimerProps) {
     };
 
     update();
-    const timer = setInterval(update, 1000);
+    timer = setInterval(update, 1000);
     return () => clearInterval(timer);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt]); // onExpired를 deps에서 제거 (ref로 안정화)
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-paper/80 border border-brown-pale/20">

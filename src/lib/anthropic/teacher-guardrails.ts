@@ -92,12 +92,12 @@ export const NARRATIVE_STRUCTURE_MATRIX: Record<
   string,
   Record<string, number>
 > = {
-  반복: { infant: 3, toddler: 2, kindergarten: 1 },
-  일상서사: { infant: 3, toddler: 2, kindergarten: 1 },
-  누적: { infant: 1, toddler: 3, kindergarten: 3 },
-  원형: { infant: 0, toddler: 3, kindergarten: 3 },
-  "문제-해결": { infant: 0, toddler: 2, kindergarten: 3 },
-  점층: { infant: 0, toddler: 2, kindergarten: 3 },
+  반복: { infant: 3, toddler: 2, kindergarten: 1, mixed: 2 },
+  일상서사: { infant: 3, toddler: 2, kindergarten: 1, mixed: 2 },
+  누적: { infant: 1, toddler: 3, kindergarten: 3, mixed: 2 },
+  원형: { infant: 0, toddler: 3, kindergarten: 3, mixed: 2 },
+  "문제-해결": { infant: 0, toddler: 2, kindergarten: 3, mixed: 2 },
+  점층: { infant: 0, toddler: 2, kindergarten: 3, mixed: 1 },
 };
 
 /** 연령별 허용 어휘 카테고리 */
@@ -120,6 +120,13 @@ export const VOCABULARY_LEVELS: Record<string, string[]> = {
     "비유: ~처럼, ~만큼, 마치 ~같은",
     "시간: 옛날옛날, 어느 날, 드디어, 갑자기",
     "논리: 그래서, 하지만, 왜냐하면, 만약에",
+  ],
+  mixed: [
+    "감정: 기쁘다, 슬프다, 화나다, 좋아하다",
+    "관계: 친구, 함께, 도와주다, 미안하다, 고마워",
+    "동작: 달리다, 뛰다, 숨다, 찾다, 놀다",
+    "자연: 비, 바람, 해, 나비",
+    "의성어: 냠냠, 쿨쿨, 뒤뚱뒤뚱, 반짝반짝",
   ],
 };
 

@@ -3,6 +3,24 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { z } from "zod";
+
+/** Layer 1: API 경계 Zod 검증 — 인젝션 1차 방어선 */
+const onboardingSchema = z
+  .object({
+    ageGroup: z
+      .enum(["infant", "toddler", "kindergarten", "mixed"])
+      .optional(),
+    context: z
+      .enum(["large_group", "small_group", "free_choice", "home_connection"])
+      .optional(),
+    topic: z.string().max(50).optional(), // 클라이언트 maxLength={50}과 일치
+    characterType: z
+      .enum(["animal", "child", "object", "fantasy", "auto"])
+      .optional(),
+    situation: z.string().max(200).optional(), // 클라이언트 maxLength={200}과 일치
+  })
+  .strict();
 
 /**
  * GET /api/teacher/session — 세션 복구 (auth.uid() 기반)
@@ -75,19 +93,38 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  let body: { sessionId?: string; onboarding?: Record<string, unknown> };
+  let raw: Record<string, unknown>;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return sb.applyCookies(
       NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
     );
   }
 
-  if (!body.sessionId || !body.onboarding) {
+  const sessionId =
+    typeof raw.sessionId === "string" ? raw.sessionId : undefined;
+  if (!sessionId || !raw.onboarding) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "sessionId와 onboarding 데이터가 필요합니다." },
+        { status: 400 }
+      )
+    );
+  }
+
+  // Layer 1: Zod 검증 — 구조적 검증 + 길이 제한
+  let onboarding: z.infer<typeof onboardingSchema>;
+  try {
+    onboarding = onboardingSchema.parse(raw.onboarding);
+  } catch (zodError) {
+    console.warn(
+      "[Teacher] Onboarding validation failed:",
+      zodError instanceof z.ZodError ? zodError.issues : zodError
+    );
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: "온보딩 데이터 형식이 올바르지 않습니다." },
         { status: 400 }
       )
     );
@@ -97,7 +134,7 @@ export async function PATCH(request: NextRequest) {
   const { data: session } = await sb.client
     .from("teacher_sessions")
     .select("id, expires_at")
-    .eq("id", body.sessionId)
+    .eq("id", sessionId)
     .eq("teacher_id", user.id)
     .single();
 
@@ -113,11 +150,11 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // 온보딩 데이터 업데이트
+  // 온보딩 데이터 업데이트 (Zod 검증 통과한 데이터만 저장)
   const { error: updateError } = await sb.client
     .from("teacher_sessions")
-    .update({ onboarding: body.onboarding })
-    .eq("id", body.sessionId)
+    .update({ onboarding })
+    .eq("id", sessionId)
     .eq("teacher_id", user.id);
 
   if (updateError) {

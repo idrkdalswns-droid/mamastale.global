@@ -14,6 +14,7 @@
 import type { TeacherOnboarding } from "@/lib/types/teacher";
 import { formatGuardrailsForPrompt, getAgeGuardrails, NARRATIVE_STRUCTURE_MATRIX, VOCABULARY_LEVELS } from "./teacher-guardrails";
 import { formatNuriForPrompt, TOPIC_TO_NURI } from "./nuri-curriculum";
+import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
 
 // ─── Phase 전환 로직 ───
 
@@ -85,9 +86,9 @@ function getPhaseAPrompt(onboarding: TeacherOnboarding, remaining: number): stri
 ### 온보딩 정보
 - 연령대: ${ageLabel}
 - 활용 맥락: ${contextLabel}
-- 주제: ${onboarding.topic || "미정"}
-- 캐릭터 유형: ${onboarding.characterType || "미정"}
-- 특별 상황: ${onboarding.situation || "없음"}
+- 주제: ${sanitizeUserInput(onboarding.topic, 50)}
+- 캐릭터 유형: ${sanitizeUserInput(onboarding.characterType, 30)}
+- 특별 상황: ${sanitizeUserInput(onboarding.situation, 200)}
 
 ### 임무
 온보딩에서 받은 정보를 토대로, 동화 제작에 필요한 **추가 맥락**을 자연스럽게 수집하세요.
@@ -207,7 +208,7 @@ ${vocabList.map(v => `- ${v}`).join("\n")}
 - **독립형**: 각각 다른 이야기 전달 (고급)
 
 ### 대화 전략
-- 교사가 선택한 캐릭터 유형(${onboarding.characterType || "미정"})을 기반으로 구체화
+- 교사가 선택한 캐릭터 유형(${sanitizeUserInput(onboarding.characterType, 30)})을 기반으로 구체화
 - 캐릭터 이름을 교사와 함께 정하세요
 - 연령에 맞는 텍스트 스타일을 안내하되, 교사의 선호 반영
 - 남은 턴이 1-2회면 "캐릭터가 잘 잡혔어요! 세부 조율로 넘어갈까요?"`;
@@ -265,7 +266,8 @@ ${nuriInfo}
 교사가 다음과 같은 말을 하면 생성을 시작합니다:
 - "네", "좋아요", "만들어주세요", "생성해주세요", "시작해주세요"
 - 이 경우 응답 맨 끝에 반드시 [GENERATE_READY] 태그를 포함하세요
-- 예: "좋아요! 지금 동화를 만들기 시작할게요! 📚 [GENERATE_READY]"`;
+- 예: "좋아요! 지금 동화를 만들기 시작할게요! 📚 [GENERATE_READY]"
+${remaining === 0 ? "\n### ⚠️ 마지막 턴\n이번이 마지막 턴입니다. 교사에게 최종 확인을 받고, 응답 끝에 [GENERATE_READY] 태그를 반드시 포함하세요." : ""}`;
 }
 
 /** Phase별 프롬프트 동적 조립 */
@@ -380,12 +382,12 @@ export function getTeacherGenerationPrompt(
   const charInfo = brief.characterDNA
     ? `
 ### 주인공
-- 이름: ${brief.characterDNA.name || "미정"}
-- 유형: ${brief.characterDNA.type || "미정"}
-- 성격: ${brief.characterDNA.personality?.join(", ") || "미정"}
-- 외형: ${brief.characterDNA.appearance?.join(", ") || "미정"}
-- 말투: ${brief.characterDNA.speechPattern || "미정"}
-- 변화: ${brief.characterDNA.arc ? `${brief.characterDNA.arc.start} → ${brief.characterDNA.arc.end}` : "미정"}`
+- 이름: ${sanitizeUserInput(brief.characterDNA.name, 30)}
+- 유형: ${sanitizeUserInput(brief.characterDNA.type, 30)}
+- 성격: ${brief.characterDNA.personality?.length ? brief.characterDNA.personality.map(p => sanitizeUserInput(p, 30)).join(", ") : "미정"}
+- 외형: ${brief.characterDNA.appearance?.length ? brief.characterDNA.appearance.map(a => sanitizeUserInput(a, 50)).join(", ") : "미정"}
+- 말투: ${sanitizeUserInput(brief.characterDNA.speechPattern, 50)}
+- 변화: ${brief.characterDNA.arc ? `${sanitizeUserInput(brief.characterDNA.arc.start, 50)} → ${sanitizeUserInput(brief.characterDNA.arc.end, 50)}` : "미정"}`
     : "";
 
   const supportChars = brief.supportingCharacters?.length
@@ -399,15 +401,15 @@ export function getTeacherGenerationPrompt(
 ## 브리프
 
 - 대상 연령: ${guardrails.label}
-- 주제: ${brief.topic || "미정"}
-- 핵심 메시지: ${brief.coreMessage || "미정"}
-- 서사 구조: ${brief.narrativeStructure || "문제-해결"}
-- 분위기: ${brief.mood || "따뜻하고 포근"}
-- 배경: ${brief.setting || "미정"}
-- 결말: ${brief.endingType || "해피엔딩"}
-- 기피 요소: ${brief.avoidElements?.join(", ") || "없음"}
-- 활용 맥락: ${brief.context || onboarding.context || "미정"}
-- 교사 상황: ${brief.situation || onboarding.situation || "없음"}
+- 주제: ${sanitizeUserInput(brief.topic, 50)}
+- 핵심 메시지: ${sanitizeUserInput(brief.coreMessage, 150)}
+- 서사 구조: ${sanitizeUserInput(brief.narrativeStructure, 30)}
+- 분위기: ${sanitizeUserInput(brief.mood, 30)}
+- 배경: ${sanitizeUserInput(brief.setting, 100)}
+- 결말: ${sanitizeUserInput(brief.endingType, 30)}
+- 기피 요소: ${brief.avoidElements?.length ? brief.avoidElements.map(e => sanitizeUserInput(e, 50)).join(", ") : "없음"}
+- 활용 맥락: ${sanitizeUserInput(brief.context || onboarding.context, 30)}
+- 교사 상황: ${sanitizeUserInput(brief.situation || onboarding.situation, 200)}
 ${charInfo}
 ${supportChars}
 

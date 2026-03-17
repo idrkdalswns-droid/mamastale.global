@@ -23,6 +23,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { parseTeacherStory, extractStoryTitle } from "@/lib/utils/teacher-story-parser";
+import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -172,6 +173,13 @@ export async function POST(request: NextRequest) {
   const extractionStart = Date.now();
 
   try {
+    // Layer 3: 추출 프롬프트에 삽입 전 사용자 유래 필드 위생처리
+    const safeOnboarding = {
+      ...onboarding,
+      topic: sanitizeUserInput(onboarding?.topic as string | undefined, 50),
+      situation: sanitizeUserInput(onboarding?.situation as string | undefined, 200),
+    };
+
     const extractionResult = await anthropic.messages.create({
       model: "claude-haiku-3-5-20241022",
       system: [
@@ -184,7 +192,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "user" as const,
-          content: `온보딩 정보:\n${JSON.stringify(onboarding, null, 2)}\n\n대화 히스토리:\n${messages.map((m) => `[${m.role}]: ${m.content}`).join("\n\n")}`,
+          content: `온보딩 정보:\n${JSON.stringify(safeOnboarding, null, 2)}\n\n대화 히스토리:\n${messages.map((m) => `[${m.role}]: ${m.content}`).join("\n\n")}`,
         },
       ],
       max_tokens: 2048,

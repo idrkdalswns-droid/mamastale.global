@@ -11,34 +11,7 @@
  */
 
 import type { TeacherSpread, TeacherStoryMetadata } from "@/lib/types/teacher";
-
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function getActLabel(num: number): string {
-  if (num <= 4) return "도입";
-  if (num <= 11) return "전개";
-  return "결말";
-}
-
-function getActColor(num: number): string {
-  if (num <= 4) return "#7FBFB0";
-  if (num <= 11) return "#E07A5F";
-  return "#8B6AAF";
-}
-
-const AGE_LABELS: Record<string, string> = {
-  infant: "영아반 (0-2세)",
-  toddler: "유아반 (3-4세)",
-  kindergarten: "유치반 (5-7세)",
-  mixed: "혼합연령반",
-};
+import { escapeHtml, getActLabel, getActColor, AGE_LABELS } from "./teacher-pdf-utils";
 
 export interface ReadingGuideParams {
   title: string;
@@ -258,6 +231,7 @@ export function generateReadingGuideHtml(params: ReadingGuideParams): string {
     .story-spread-num { font-size: 0.7rem; color: #C4956A; }
     .story-spread-title { font-size: 0.85rem; font-weight: 600; color: #5A3E2B; }
     .story-spread-text { font-size: 0.85rem; color: #44403c; line-height: 1.8; white-space: pre-line; word-break: keep-all; padding-left: 12px; border-left: 2px solid #E8E0D4; }
+    .story-spread:nth-child(8) { page-break-before: always; }
 
     /* ── 검수 ── */
     .review-section { margin-bottom: 28px; }

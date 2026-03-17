@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/teacher";
 
 interface TeacherOnboardingProps {
@@ -81,6 +81,22 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
   const [situation, setSituation] = useState("");
 
   const currentStep = STEPS[step];
+
+  // Step 4(situation) 진입 시 data.situation이 있으면 textarea에 복원
+  useEffect(() => {
+    if (currentStep.isTextInput && currentStep.key === "situation" && data.situation) {
+      setSituation(data.situation as string);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const handleBack = () => {
+    // situation textarea에서 뒤로가기 시 data에 임시 저장
+    if (currentStep.isTextInput && currentStep.key === "situation" && situation.trim()) {
+      setData((prev) => ({ ...prev, situation: situation.trim() }));
+    }
+    setStep(step - 1);
+  };
 
   const handleSelect = (value: string) => {
     if (currentStep.key === "topic" && value === "_custom") {
@@ -245,10 +261,10 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
         </div>
       )}
 
-      {/* 뒤로 가기 */}
-      {step > 0 && !currentStep.isTextInput && (
+      {/* 뒤로 가기 — 모든 단계에서 표시 */}
+      {step > 0 && (
         <button
-          onClick={() => setStep(step - 1)}
+          onClick={handleBack}
           className="mt-6 text-[12px] text-brown-pale underline underline-offset-2
                      decoration-brown-pale/30 mx-auto"
         >

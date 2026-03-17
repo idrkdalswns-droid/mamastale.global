@@ -7,6 +7,7 @@ import { TeacherCodeModal } from "@/components/teacher/TeacherCodeModal";
 import { TeacherOnboarding } from "@/components/teacher/TeacherOnboarding";
 import { TeacherChat } from "@/components/teacher/TeacherChat";
 import { TeacherPreview } from "@/components/teacher/TeacherPreview";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/teacher";
 
 export default function TeacherPage() {
@@ -209,21 +210,22 @@ export default function TeacherPage() {
     return null;
   }
 
-  // 상태 머신 기반 렌더링
-  switch (store.screenState) {
-    case "CODE_ENTRY":
-      return <TeacherCodeModal onVerified={handleCodeVerified} />;
+  // 상태 머신 기반 렌더링 (ErrorBoundary로 render 에러 catch)
+  const renderScreen = () => {
+    switch (store.screenState) {
+      case "CODE_ENTRY":
+        return <TeacherCodeModal onVerified={handleCodeVerified} />;
 
-    case "ONBOARDING":
-      return <TeacherOnboarding onComplete={handleOnboardingComplete} />;
+      case "ONBOARDING":
+        return <TeacherOnboarding onComplete={handleOnboardingComplete} />;
 
-    case "CHAT":
-      return (
-        <TeacherChat
-          onSessionExpired={handleSessionExpired}
-          onRequestGenerate={handleRequestGenerate}
-        />
-      );
+      case "CHAT":
+        return (
+          <TeacherChat
+            onSessionExpired={handleSessionExpired}
+            onRequestGenerate={handleRequestGenerate}
+          />
+        );
 
     case "GENERATING":
       return (
@@ -294,7 +296,10 @@ export default function TeacherPage() {
         </div>
       );
 
-    default:
-      return null;
-  }
+      default:
+        return null;
+    }
+  };
+
+  return <ErrorBoundary>{renderScreen()}</ErrorBoundary>;
 }
