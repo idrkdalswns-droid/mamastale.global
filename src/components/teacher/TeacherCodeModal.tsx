@@ -11,6 +11,7 @@ interface TeacherCodeModalProps {
     currentPhase: string;
     turnCount: number;
     isExisting: boolean;
+    teacherCode?: string;
   }) => void;
 }
 
@@ -49,7 +50,7 @@ export function TeacherCodeModal({ onVerified }: TeacherCodeModalProps) {
         return;
       }
 
-      onVerified(data);
+      onVerified({ ...data, teacherCode: trimmed });
     } catch {
       setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {

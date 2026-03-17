@@ -3,20 +3,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import { TeacherCodeModal } from "@/components/teacher/TeacherCodeModal";
 import { TeacherOnboarding } from "@/components/teacher/TeacherOnboarding";
 import { TeacherChat } from "@/components/teacher/TeacherChat";
 import { TeacherPreview } from "@/components/teacher/TeacherPreview";
+import { TeacherHome } from "@/components/teacher/TeacherHome";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/teacher";
+import type { TeacherOnboarding as TeacherOnboardingType, TeacherStory } from "@/lib/types/teacher";
 
 export default function TeacherPage() {
   const { user, loading: authLoading } = useAuth();
   const store = useTeacherStore();
   const router = useRouter();
   const [isRecovering, setIsRecovering] = useState(true);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   // 킬 스위치 체크
   const isEnabled = process.env.NEXT_PUBLIC_TEACHER_MODE_ENABLED !== "false";
@@ -36,17 +39,7 @@ export default function TeacherPage() {
         const data = await res.json();
         if (data.session) {
           store.restoreSession(data.session, data.messages || []);
-          // 온보딩 완료 여부에 따라 스크린 결정
-          const hasOnboarding =
-            data.session.onboarding &&
-            Object.keys(data.session.onboarding).length > 0;
-          if (data.session.currentPhase === "DONE") {
-            store.setScreenState("DONE");
-          } else if (hasOnboarding) {
-            store.setScreenState("CHAT");
-          } else {
-            store.setScreenState("ONBOARDING");
-          }
+          store.setScreenState("HOME");
         } else {
           store.setScreenState("CODE_ENTRY");
         }
@@ -70,6 +63,7 @@ export default function TeacherPage() {
       currentPhase: string;
       turnCount: number;
       isExisting: boolean;
+      teacherCode?: string;
     }) => {
       store.setSession({
         sessionId: data.sessionId,
@@ -77,6 +71,7 @@ export default function TeacherPage() {
         kindergartenName: data.kindergartenName,
         currentPhase: (data.currentPhase as "A" | "B" | "C" | "D" | "E") || "A",
         turnCount: data.turnCount || 0,
+        teacherCode: data.teacherCode,
       });
 
       if (data.isExisting && data.turnCount > 0) {
@@ -86,14 +81,12 @@ export default function TeacherPage() {
           .then((sessionData) => {
             if (sessionData.session && sessionData.messages?.length > 0) {
               store.restoreSession(sessionData.session, sessionData.messages);
-              store.setScreenState("CHAT");
-            } else {
-              store.setScreenState("ONBOARDING");
             }
+            store.setScreenState("HOME");
           })
-          .catch(() => store.setScreenState("ONBOARDING"));
+          .catch(() => store.setScreenState("HOME"));
       } else {
-        store.setScreenState("ONBOARDING");
+        store.setScreenState("HOME");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,7 +153,6 @@ export default function TeacherPage() {
       store.setScreenState("PREVIEW");
     } catch (err) {
       console.error("[Teacher] Generation failed:", err);
-      // 에러 시 챗으로 돌아감
       store.setScreenState("CHAT");
       store.addMessage({
         role: "assistant",
@@ -173,27 +165,71 @@ export default function TeacherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.sessionId]);
 
-  // 새 동화 만들기
-  const handleNewStory = useCallback(() => {
-    store.reset();
-    store.setScreenState("ONBOARDING");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 새 동화 만들기 — 기존 세션 강제 만료 + verify-code 재호출
+  const handleNewStory = useCallback(async () => {
+    setIsCreatingNew(true);
+    const currentCode = store.teacherCode;
 
-  // 채팅에서 나가기
-  const handleChatExit = useCallback(
-    (save: boolean) => {
-      if (save) {
-        // TODO: 서재에 대화 저장 로직 (추후 구현)
-        // 현재는 홈으로만 이동
-        router.push("/");
-      } else {
-        store.reset();
-        store.setScreenState("ONBOARDING");
+    // 1. 기존 세션 강제 만료
+    if (store.sessionId) {
+      await fetch("/api/teacher/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: store.sessionId,
+          currentPhase: "DONE",
+          expiresAt: new Date().toISOString(),
+        }),
+      }).catch(() => {});
+    }
+
+    // 2. store 초기화
+    store.reset();
+
+    // 3. 동일 코드로 새 세션 생성
+    if (currentCode) {
+      try {
+        const res = await fetch("/api/teacher/verify-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: currentCode }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          store.setSession({
+            sessionId: data.sessionId,
+            expiresAt: data.expiresAt,
+            kindergartenName: data.kindergartenName,
+            currentPhase: (data.currentPhase as "A" | "B" | "C" | "D" | "E") || "A",
+            turnCount: data.turnCount || 0,
+            teacherCode: currentCode,
+          });
+          store.setScreenState("ONBOARDING");
+        } else {
+          toast.error("오늘 동화 만들기 횟수를 초과했어요.");
+          store.setScreenState("HOME");
+        }
+      } catch {
+        toast.error("네트워크 오류. 다시 시도해주세요.");
+        store.setScreenState("HOME");
       }
+    } else {
+      // teacherCode 없으면 코드 입력부터 다시
+      store.setScreenState("CODE_ENTRY");
+    }
+
+    setIsCreatingNew(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.sessionId, store.teacherCode]);
+
+  // 채팅에서 나가기 → HOME으로
+  const handleChatExit = useCallback(
+    () => {
+      store.setScreenState("HOME");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router]
+    []
   );
 
   // ─── 렌더링 ───
@@ -237,11 +273,30 @@ export default function TeacherPage() {
       case "CODE_ENTRY":
         return <TeacherCodeModal onVerified={handleCodeVerified} />;
 
+      case "HOME":
+        return (
+          <TeacherHome
+            kindergartenName={store.kindergartenName}
+            onNewStory={handleNewStory}
+            onContinue={() => store.setScreenState("CHAT")}
+            onContinueOnboarding={() => store.setScreenState("ONBOARDING")}
+            onViewStory={(story: TeacherStory) => {
+              store.setGeneratedStory(story);
+              store.setScreenState("PREVIEW");
+            }}
+            onExit={() => router.push("/")}
+            messages={store.messages}
+            onboarding={store.onboarding}
+            currentPhase={store.currentPhase}
+            isCreatingNew={isCreatingNew}
+          />
+        );
+
       case "ONBOARDING":
         return (
           <TeacherOnboarding
             onComplete={handleOnboardingComplete}
-            onExit={() => router.push("/")}
+            onExit={() => store.setScreenState("HOME")}
           />
         );
 
@@ -278,7 +333,7 @@ export default function TeacherPage() {
       return store.generatedStory ? (
         <TeacherPreview
           story={store.generatedStory}
-          onNewStory={handleNewStory}
+          onNewStory={() => store.setScreenState("HOME")}
         />
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
@@ -290,7 +345,7 @@ export default function TeacherPage() {
               동화 데이터를 찾을 수 없습니다.
             </p>
             <button
-              onClick={handleNewStory}
+              onClick={() => store.setScreenState("HOME")}
               className="px-6 py-3 rounded-full text-white text-sm font-medium
                          active:scale-[0.97] transition-all"
               style={{
@@ -298,7 +353,7 @@ export default function TeacherPage() {
                 boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
-              새 동화 만들기
+              홈으로
             </button>
           </div>
         </div>
@@ -315,7 +370,7 @@ export default function TeacherPage() {
               오늘도 멋진 동화를 만드셨어요!
             </p>
             <button
-              onClick={handleNewStory}
+              onClick={() => store.setScreenState("HOME")}
               className="px-6 py-3 rounded-full text-white text-sm font-medium
                          active:scale-[0.97] transition-all"
               style={{
@@ -323,7 +378,7 @@ export default function TeacherPage() {
                 boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
-              새 동화 만들기
+              홈으로
             </button>
           </div>
         </div>

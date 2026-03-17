@@ -667,15 +667,15 @@ export default function Home() {
                   key={i}
                   className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
                   style={{
-                    width: "180px",
+                    width: "220px",
                     boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
                   }}
                 >
                   <Image
                     src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
                     alt={`동화 장면 ${i + 1}`}
-                    width={180}
-                    height={320}
+                    width={220}
+                    height={391}
                     className="w-full aspect-[9/16] object-cover object-top"
                     loading={i >= 6 && i <= 8 ? "eager" : "lazy"}
                   />
@@ -686,7 +686,7 @@ export default function Home() {
                     }}
                   >
                     <p
-                      className="font-serif text-[10.5px] leading-[1.85] break-keep"
+                      className="font-serif text-[11.5px] leading-[1.85] break-keep"
                       style={{ color: "#5A3E2B" }}
                     >
                       {text}

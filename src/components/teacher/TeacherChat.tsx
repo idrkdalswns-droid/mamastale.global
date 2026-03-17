@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
+import TypingIndicator from "@/components/chat/TypingIndicator";
 import { TeacherPhaseIndicator } from "./TeacherPhaseIndicator";
 import { TEACHER_PHASE_TO_NUMBER } from "@/lib/types/teacher";
 import type { Message } from "@/lib/types/chat";
@@ -13,7 +14,7 @@ import type { Message } from "@/lib/types/chat";
 interface TeacherChatProps {
   onSessionExpired: () => void;
   onRequestGenerate: () => void;
-  onExit: (save: boolean) => void;
+  onExit: () => void;
 }
 
 export function TeacherChat({
@@ -34,7 +35,10 @@ export function TeacherChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const generateTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const userScrolledRef = useRef(false);
+  const isInitialMount = useRef(true);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   // Cleanup generate timer on unmount
   useEffect(() => () => clearTimeout(generateTimerRef.current), []);
@@ -67,16 +71,52 @@ export function TeacherChat({
     return () => clearInterval(id);
   }, [expiresAt]);
 
-  // 자동 스크롤
+  // 스마트 스크롤 — 초기 마운트 시 즉시 하단, 이후 사용자 스크롤 위치 존중
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (isInitialMount.current && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      isInitialMount.current = false;
+      return;
+    }
+    const el = containerRef.current;
+    if (el && !userScrolledRef.current) {
+      el.scrollTop = el.scrollHeight;
+    } else if (el && userScrolledRef.current) {
+      setShowScrollDown(true);
+    }
+  }, [messages, isLoading]);
+
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    userScrolledRef.current = distFromBottom > 80;
+    if (!userScrolledRef.current) {
+      setShowScrollDown(false);
+    }
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    userScrolledRef.current = false;
+    setShowScrollDown(false);
+    containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
+  }, []);
+
+  // beforeunload — 채팅 중 탭 닫기 방지
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [messages.length]);
 
   // Phase 번호 매핑 (기존 MessageBubble/ChatInput 호환)
   const phaseNumber = TEACHER_PHASE_TO_NUMBER[currentPhase] || 1;
 
   const handleSend = useCallback(
     async (text: string) => {
+      userScrolledRef.current = false;
+      setShowScrollDown(false);
       // "생성해주세요" 등 명시적 생성 요청 감지 (오탐 방지를 위해 패턴 엄격화)
       const generatePatterns = [
         /동화.{0,4}(생성|만들어|시작)/,
@@ -145,7 +185,7 @@ export function TeacherChat({
                        safe-top">
         <div className="flex items-center px-3 py-1.5">
           <button
-            onClick={() => messages.length > 0 ? setShowExitDialog(true) : onExit(false)}
+            onClick={() => messages.length > 0 ? setShowExitDialog(true) : onExit()}
             className="p-1.5 -ml-1 text-brown-light active:scale-[0.9] transition-transform"
             aria-label="나가기"
           >
@@ -166,21 +206,21 @@ export function TeacherChat({
           <div className="bg-cream rounded-2xl p-6 mx-6 max-w-sm w-full"
                style={{ boxShadow: "0 8px 32px rgba(90,62,43,0.15)" }}>
             <p className="text-[15px] text-brown font-medium text-center break-keep">
-              대화를 저장하시겠습니까?
+              대화를 나가시겠어요?
             </p>
             <p className="text-xs text-brown-light text-center mt-2 break-keep">
-              저장하면 내 서재에서 확인할 수 있어요
+              대화는 자동 저장되어 홈에서 이어할 수 있어요
             </p>
             <div className="flex gap-3 mt-5">
               <button
-                onClick={() => { setShowExitDialog(false); onExit(false); }}
+                onClick={() => setShowExitDialog(false)}
                 className="flex-1 py-3 rounded-full text-sm font-medium text-brown-light
                            border border-brown-pale/30 active:scale-[0.97] transition-all"
               >
-                저장 안 함
+                계속하기
               </button>
               <button
-                onClick={() => { setShowExitDialog(false); onExit(true); }}
+                onClick={() => { setShowExitDialog(false); onExit(); }}
                 className="flex-1 py-3 rounded-full text-white text-sm font-medium
                            active:scale-[0.97] transition-all"
                 style={{
@@ -188,7 +228,7 @@ export function TeacherChat({
                   boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
                 }}
               >
-                저장하기
+                홈으로
               </button>
             </div>
           </div>
@@ -198,7 +238,8 @@ export function TeacherChat({
       {/* 메시지 영역 */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        onScroll={handleScroll}
+        className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3"
       >
         {/* 웰컴 메시지 (첫 메시지 없을 때) */}
         {messages.length === 0 && (
@@ -244,34 +285,30 @@ export function TeacherChat({
         {/* 타이핑 인디케이터 */}
         {isLoading &&
           messages.length > 0 &&
-          messages[messages.length - 1].role === "user" && (
-            <div className="flex items-center gap-1.5 px-4 py-2">
-              <div
-                className="w-2 h-2 rounded-full animate-bounce"
-                style={{
-                  backgroundColor: "#8B6F55",
-                  animationDelay: "0ms",
-                }}
-              />
-              <div
-                className="w-2 h-2 rounded-full animate-bounce"
-                style={{
-                  backgroundColor: "#8B6F55",
-                  animationDelay: "150ms",
-                }}
-              />
-              <div
-                className="w-2 h-2 rounded-full animate-bounce"
-                style={{
-                  backgroundColor: "#8B6F55",
-                  animationDelay: "300ms",
-                }}
-              />
-            </div>
-          )}
+          (messages[messages.length - 1].role === "user" ||
+           (messages[messages.length - 1].role === "assistant" &&
+            messages[messages.length - 1].content.trim() === "")) && (
+          <TypingIndicator phase={phaseNumber} />
+        )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* 새 메시지 플로팅 버튼 */}
+      {showScrollDown && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10
+                     px-4 py-2 rounded-full text-xs font-medium text-white
+                     active:scale-[0.95] transition-all animate-fade-in"
+          style={{
+            background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+            boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+          }}
+        >
+          새 메시지 ↓
+        </button>
+      )}
 
       {/* 입력 영역 */}
       <div className="flex-shrink-0 border-t border-brown-pale/15 bg-cream/80 backdrop-blur-sm

@@ -86,6 +86,14 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "no-store, must-revalidate");
   }
 
+  // HTML 문서 CDN 캐시 방지 (Cloudflare Pages는 Cache-Control 직접 사용)
+  if (!pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
+    const accept = request.headers.get("accept") || "";
+    if (accept.includes("text/html") || !pathname.includes(".")) {
+      response.headers.set("Cache-Control", "no-store, must-revalidate");
+    }
+  }
+
   // ─── Safety net: redirect /?code= to /auth/callback ───
   // Handles legacy email links or misconfigured redirects
   // CTO-FIX: Forward all auth params (code, type, error_description, etc.)

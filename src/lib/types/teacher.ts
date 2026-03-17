@@ -7,6 +7,7 @@ export type TeacherPhase = "A" | "B" | "C" | "D" | "E" | "DONE";
 export type TeacherScreenState =
   | "LOGIN"
   | "CODE_ENTRY"
+  | "HOME"
   | "ONBOARDING"
   | "CHAT"
   | "GENERATING"

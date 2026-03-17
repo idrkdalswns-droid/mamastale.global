@@ -17,6 +17,7 @@ interface TeacherState {
   sessionId: string | null;
   expiresAt: string | null;
   kindergartenName: string | null;
+  teacherCode: string | null;
 
   // Chat
   messages: TeacherMessage[];
@@ -42,6 +43,7 @@ interface TeacherState {
     kindergartenName: string;
     currentPhase?: TeacherPhase;
     turnCount?: number;
+    teacherCode?: string;
   }) => void;
   setOnboarding: (onboarding: TeacherOnboarding) => void;
   addMessage: (message: TeacherMessage) => void;
@@ -62,6 +64,7 @@ const initialState = {
   sessionId: null as string | null,
   expiresAt: null as string | null,
   kindergartenName: null as string | null,
+  teacherCode: null as string | null,
   messages: [] as TeacherMessage[],
   currentPhase: "A" as TeacherPhase,
   turnCount: 0,
@@ -82,13 +85,14 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
 
   setScreenState: (screenState) => set({ screenState }),
 
-  setSession: ({ sessionId, expiresAt, kindergartenName, currentPhase, turnCount }) =>
+  setSession: ({ sessionId, expiresAt, kindergartenName, currentPhase, turnCount, teacherCode }) =>
     set({
       sessionId,
       expiresAt,
       kindergartenName,
       currentPhase: currentPhase || "A",
       turnCount: turnCount || 0,
+      ...(teacherCode ? { teacherCode } : {}),
     }),
 
   setOnboarding: (onboarding) => set({ onboarding }),
@@ -141,6 +145,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
           currentPhase: state.currentPhase,
           turnCount: state.turnCount,
           screenState: state.screenState,
+          teacherCode: state.teacherCode,
         })
       );
     } catch { /* ignore */ }
@@ -157,6 +162,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
           currentPhase: data.currentPhase || "A",
           turnCount: data.turnCount || 0,
           screenState: data.screenState || "CHAT",
+          teacherCode: data.teacherCode || null,
         });
         return true;
       }

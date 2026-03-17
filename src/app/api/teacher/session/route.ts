@@ -104,33 +104,66 @@ export async function PATCH(request: NextRequest) {
 
   const sessionId =
     typeof raw.sessionId === "string" ? raw.sessionId : undefined;
-  if (!sessionId || !raw.onboarding) {
+  if (!sessionId) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "sessionId와 onboarding 데이터가 필요합니다." },
+        { error: "sessionId가 필요합니다." },
         { status: 400 }
       )
     );
   }
 
-  // Layer 1: Zod 검증 — 구조적 검증 + 길이 제한
-  let onboarding: z.infer<typeof onboardingSchema>;
-  try {
-    onboarding = onboardingSchema.parse(raw.onboarding);
-  } catch (zodError) {
-    console.warn(
-      "[Teacher] Onboarding validation failed:",
-      zodError instanceof z.ZodError ? zodError.issues : zodError
-    );
+  // 업데이트 페이로드 구성 (onboarding / currentPhase / expiresAt 선택적)
+  const updatePayload: Record<string, unknown> = {};
+
+  if (raw.onboarding) {
+    // Layer 1: Zod 검증 — 구조적 검증 + 길이 제한
+    let onboarding: z.infer<typeof onboardingSchema>;
+    try {
+      onboarding = onboardingSchema.parse(raw.onboarding);
+    } catch (zodError) {
+      console.warn(
+        "[Teacher] Onboarding validation failed:",
+        zodError instanceof z.ZodError ? zodError.issues : zodError
+      );
+      return sb.applyCookies(
+        NextResponse.json(
+          { error: "온보딩 데이터 형식이 올바르지 않습니다." },
+          { status: 400 }
+        )
+      );
+    }
+    updatePayload.onboarding = onboarding;
+  }
+
+  if (typeof raw.currentPhase === "string" &&
+      ["A", "B", "C", "D", "E", "DONE"].includes(raw.currentPhase)) {
+    updatePayload.current_phase = raw.currentPhase;
+  }
+
+  if (typeof raw.expiresAt === "string") {
+    // 보안: 과거 시간만 허용 (세션 강제 만료 전용)
+    if (new Date(raw.expiresAt) > new Date()) {
+      return sb.applyCookies(
+        NextResponse.json(
+          { error: "세션 연장은 허용되지 않습니다." },
+          { status: 400 }
+        )
+      );
+    }
+    updatePayload.expires_at = raw.expiresAt;
+  }
+
+  if (Object.keys(updatePayload).length === 0) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "온보딩 데이터 형식이 올바르지 않습니다." },
+        { error: "업데이트할 데이터가 필요합니다." },
         { status: 400 }
       )
     );
   }
 
-  // 세션 소유권 + 만료 확인
+  // 세션 소유권 확인
   const { data: session } = await sb.client
     .from("teacher_sessions")
     .select("id, expires_at")
@@ -144,21 +177,22 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  if (new Date(session.expires_at) < new Date()) {
+  // 만료 확인 — expiresAt 업데이트(강제 만료) 시에는 스킵
+  if (!updatePayload.expires_at && new Date(session.expires_at) < new Date()) {
     return sb.applyCookies(
       NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 })
     );
   }
 
-  // 온보딩 데이터 업데이트 (Zod 검증 통과한 데이터만 저장)
+  // 업데이트 실행
   const { error: updateError } = await sb.client
     .from("teacher_sessions")
-    .update({ onboarding })
+    .update(updatePayload)
     .eq("id", sessionId)
     .eq("teacher_id", user.id);
 
   if (updateError) {
-    console.error("[Teacher] Onboarding update failed:", updateError.message);
+    console.error("[Teacher] Session update failed:", updateError.message);
     return sb.applyCookies(
       NextResponse.json(
         { error: "업데이트에 실패했습니다." },
