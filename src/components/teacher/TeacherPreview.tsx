@@ -225,8 +225,8 @@ export function TeacherPreview({
               <Image
                 src={TAB_ICONS[tab.id]}
                 alt={tab.label}
-                width={16}
-                height={16}
+                width={20}
+                height={20}
                 className="rounded object-cover"
               />
               <span>{tab.label}</span>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { hapticLight } from "@/lib/utils/haptic";
 import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/teacher";
 
 /** 온보딩 옵션 value → 일러스트 이미지 경로 매핑 */
@@ -225,8 +226,8 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {currentStep.options.map((opt) => {
+        <div className="grid grid-cols-2 gap-4 overflow-y-auto max-h-[calc(60dvh-100px)] pb-2">
+          {currentStep.options.map((opt, optIdx) => {
             // 직접 입력 옵션 (주제)
             if (opt.value === "_custom") {
               return (
@@ -266,13 +267,15 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                                  hover:bg-paper/80 active:scale-[0.98] transition-all"
                     >
                       {ICON_IMAGES[opt.value] ? (
-                        <Image
-                          src={ICON_IMAGES[opt.value]}
-                          alt={opt.label}
-                          width={20}
-                          height={20}
-                          className="inline-block rounded object-cover mr-1.5"
-                        />
+                        <div className="w-5 h-5 relative rounded overflow-hidden inline-block mr-1.5 align-middle">
+                          <Image
+                            src={ICON_IMAGES[opt.value]}
+                            alt={opt.label}
+                            fill
+                            className="object-cover"
+                            sizes="20px"
+                          />
+                        </div>
                       ) : (
                         <span className="mr-1">{opt.icon}</span>
                       )}
@@ -283,29 +286,50 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
               );
             }
 
+            // 홀수 마지막 아이템 (캐릭터 5개 중 auto) → col-span-2
+            const isLastOdd = currentStep.options.length % 2 === 1
+              && optIdx === currentStep.options.length - 1
+              || (currentStep.options[currentStep.options.length - 1]?.value === "_custom"
+                && currentStep.options.length % 2 === 0
+                && optIdx === currentStep.options.length - 2);
+            const colSpan = isLastOdd ? "col-span-2" : "";
+
             return (
               <button
                 key={opt.value}
-                onClick={() => handleSelect(opt.value)}
-                className="flex flex-col items-center gap-2 py-4 px-3 rounded-xl
-                           border border-brown-pale/20 bg-paper/60
-                           hover:border-coral/30 hover:bg-paper
-                           active:scale-[0.97] transition-all"
+                onClick={() => { handleSelect(opt.value); hapticLight(); }}
+                className={`flex flex-col items-center gap-2 transition-all active:scale-[0.96] ${colSpan}`}
+                aria-pressed={data[currentStep.key] === opt.value}
               >
-                {ICON_IMAGES[opt.value] ? (
-                  <div className="w-12 h-12 relative rounded-lg overflow-hidden">
-                    <Image
-                      src={ICON_IMAGES[opt.value]}
-                      alt={opt.label}
-                      fill
-                      className="object-cover"
-                      sizes="48px"
-                    />
-                  </div>
-                ) : (
-                  <span className="text-2xl">{opt.icon}</span>
-                )}
-                <span className="text-sm font-medium text-brown break-keep text-center">
+                <div
+                  className="relative w-full rounded-2xl overflow-hidden"
+                  style={{
+                    aspectRatio: isLastOdd ? "2/1" : "1",
+                    border: data[currentStep.key] === opt.value
+                      ? "2.5px solid #7FBFB0"
+                      : "1.5px solid rgba(196,149,106,0.1)",
+                    boxShadow: data[currentStep.key] === opt.value
+                      ? "0 6px 20px rgba(127,191,176,0.2)"
+                      : "0 2px 8px rgba(90,62,43,0.04)",
+                  }}
+                >
+                  <Image
+                    src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
+                    alt={opt.label}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width:430px) 45vw, 200px"
+                    loading={optIdx >= 4 ? "lazy" : undefined}
+                  />
+                </div>
+                <span
+                  className="text-[11px] font-medium break-keep text-center"
+                  style={{
+                    fontFamily: "'Nanum Myeongjo', serif",
+                    color: data[currentStep.key] === opt.value ? "#5FA89A" : "rgb(var(--brown-light))",
+                    fontWeight: data[currentStep.key] === opt.value ? 600 : 400,
+                  }}
+                >
                   {opt.label}
                 </span>
               </button>

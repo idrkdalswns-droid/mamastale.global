@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { PushPermissionBanner } from "@/components/ui/PushPermissionBanner";
 import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
@@ -148,14 +149,15 @@ export default function StoryCompleteCTA({
             background: "radial-gradient(circle, rgba(224,122,95,0.12) 0%, transparent 70%)",
           }}
         >
-          <motion.span
+          <motion.div
             initial={{ scale: 0, rotate: -30 }}
             animate={{ scale: [0, 1.3, 1], rotate: [-30, 10, 0] }}
             transition={{ duration: 0.8, delay: 0.4, type: "spring", stiffness: 180, damping: 12 }}
-            className="text-[56px]"
+            className="relative w-14 h-14 mx-auto"
           >
-            📖
-          </motion.span>
+            <Image src="/images/teacher/state/done.jpeg" alt="완성" fill
+              className="object-cover rounded-2xl" sizes="56px" />
+          </motion.div>
         </motion.div>
 
         <motion.h2

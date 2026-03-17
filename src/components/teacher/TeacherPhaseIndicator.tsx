@@ -26,7 +26,7 @@ export function TeacherPhaseIndicator({
             {/* 연결선 */}
             {idx > 0 && (
               <div
-                className="w-4 h-0.5 mx-0.5 rounded-full transition-colors"
+                className="w-6 h-0.5 mx-0.5 rounded-full transition-colors"
                 style={{
                   backgroundColor: isActive ? info.accent : "#D4C5B0",
                 }}
@@ -35,20 +35,20 @@ export function TeacherPhaseIndicator({
             {/* 단계 원 */}
             <div className="flex flex-col items-center">
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all"
+                className="w-9 h-9 rounded-full overflow-hidden relative"
                 style={{
-                  backgroundColor: isActive ? info.accent : "#F0E8DE",
-                  color: isActive ? "#FFF" : "#B5A28D",
-                  transform: isCurrent ? "scale(1.15)" : "scale(1)",
+                  border: isActive ? `2px solid ${info.accent}` : "2px solid #F0E8DE",
+                  transform: isCurrent ? "scale(1.2)" : "scale(1)",
                   boxShadow: isCurrent
-                    ? `0 2px 8px ${info.accent}40`
+                    ? `0 3px 10px ${info.accent}40`
                     : "none",
+                  transition: "all 0.3s ease",
                 }}
               >
-                <Image src={info.icon} alt={info.name} width={16} height={16} className="rounded-full object-cover" />
+                <Image src={info.icon} alt={info.name} fill className="object-cover" sizes="36px" />
               </div>
               <span
-                className="text-[9px] mt-1 font-medium whitespace-nowrap"
+                className="text-[10px] mt-1 font-medium whitespace-nowrap"
                 style={{ color: isActive ? info.text : "#B5A28D" }}
               >
                 {info.name}

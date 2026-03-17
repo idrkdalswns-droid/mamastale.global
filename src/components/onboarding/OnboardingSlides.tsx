@@ -21,10 +21,10 @@ const CHILD_AGE_OPTIONS = [
 ];
 
 const STEPS = [
-  { icon: "🫧", label: "대화", accent: "#7FBFB0" },
-  { icon: "🌿", label: "발견", accent: "#E07A5F" },
-  { icon: "✨", label: "은유", accent: "#8B6AAF" },
-  { icon: "📖", label: "동화", accent: "#C4956A" },
+  { icon: "/images/teacher/phase/phase-a.jpeg", label: "대화", accent: "#7FBFB0" },
+  { icon: "/images/teacher/phase/phase-b.jpeg", label: "발견", accent: "#E07A5F" },
+  { icon: "/images/teacher/phase/phase-c.jpeg", label: "은유", accent: "#8B6AAF" },
+  { icon: "/images/teacher/phase/phase-d.jpeg", label: "동화", accent: "#C4956A" },
 ];
 
 interface OnboardingSlidesProps {
@@ -74,7 +74,9 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             {STEPS.map((step, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-base">{step.icon}</span>
+                  <div className="w-5 h-5 rounded-full overflow-hidden relative">
+                    <Image src={step.icon} alt={step.label} fill className="object-cover" sizes="20px" />
+                  </div>
                   <span className="text-[9px] font-light" style={{ color: step.accent }}>{step.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (

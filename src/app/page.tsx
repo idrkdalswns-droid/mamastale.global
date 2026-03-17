@@ -737,12 +737,14 @@ export default function Home() {
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { step: "1", icon: "💬", title: "엄마의 이야기", desc: "AI 상담사와 15분 대화하며 마음속 이야기를 나눠요" },
-                { step: "2", icon: "✨", title: "동화로 변환", desc: "엄마의 감정이 아름다운 10장면 동화로 재탄생해요" },
-                { step: "3", icon: "📖", title: "세상에 하나뿐인 책", desc: "완성된 동화를 PDF로 저장하고 아이에게 읽어줘요" },
+                { step: "1", icon: "/images/teacher/phase/phase-a.jpeg", title: "엄마의 이야기", desc: "AI 상담사와 15분 대화하며 마음속 이야기를 나눠요" },
+                { step: "2", icon: "/images/teacher/phase/phase-c.jpeg", title: "동화로 변환", desc: "엄마의 감정이 아름다운 10장면 동화로 재탄생해요" },
+                { step: "3", icon: "/images/teacher/phase/phase-d.jpeg", title: "세상에 하나뿐인 책", desc: "완성된 동화를 PDF로 저장하고 아이에게 읽어줘요" },
               ].map((item) => (
                 <div key={item.step} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(127,191,176,0.06)" }}>
-                  <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+                  <div className="w-6 h-6 rounded-lg overflow-hidden relative flex-shrink-0 mt-0.5">
+                    <Image src={item.icon} alt={item.title} fill className="object-cover" sizes="24px" />
+                  </div>
                   <div>
                     <p className="text-[12px] text-brown font-medium">{item.title}</p>
                     <p className="text-[11px] text-brown-pale font-light leading-relaxed break-keep">{item.desc}</p>
