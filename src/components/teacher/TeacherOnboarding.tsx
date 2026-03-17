@@ -36,6 +36,7 @@ const ICON_IMAGES: Record<string, string> = {
 
 interface TeacherOnboardingProps {
   onComplete: (data: TeacherOnboardingType) => void;
+  onExit?: () => void;
 }
 
 interface OnboardingStep {
@@ -105,7 +106,7 @@ const STEPS: OnboardingStep[] = [
   },
 ];
 
-export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
+export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<TeacherOnboardingType>({});
   const [customTopic, setCustomTopic] = useState("");
@@ -166,7 +167,21 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
 
   return (
     <div className="flex flex-col min-h-[60dvh] px-4 pt-4">
-      {/* 진행 바 */}
+      {/* 나가기 버튼 + 진행 바 */}
+      <div className="flex items-center mb-4">
+        {onExit && (
+          <button
+            onClick={onExit}
+            className="p-1.5 -ml-1 text-brown-light active:scale-[0.9] transition-transform"
+            aria-label="홈으로"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        )}
+        <div className="flex-1" />
+      </div>
       <div className="flex gap-1.5 mb-6">
         {STEPS.map((_, idx) => (
           <div
@@ -226,7 +241,7 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 overflow-y-auto max-h-[calc(60dvh-100px)] pb-2">
+        <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(70dvh-100px)] pb-2">
           {currentStep.options.map((opt, optIdx) => {
             // 직접 입력 옵션 (주제)
             if (opt.value === "_custom") {
@@ -302,7 +317,7 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                 aria-pressed={data[currentStep.key] === opt.value}
               >
                 <div
-                  className="relative w-full rounded-2xl overflow-hidden"
+                  className="relative w-full rounded-2xl overflow-hidden max-h-[140px]"
                   style={{
                     aspectRatio: isLastOdd ? "2/1" : "1",
                     border: data[currentStep.key] === opt.value
@@ -317,7 +332,7 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                     src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
                     alt={opt.label}
                     fill
-                    className="object-cover"
+                    className="object-cover scale-[1.5]"
                     sizes="(max-width:430px) 45vw, 200px"
                     loading={optIdx >= 4 ? "lazy" : undefined}
                   />

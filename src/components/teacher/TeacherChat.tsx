@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
@@ -13,11 +13,13 @@ import type { Message } from "@/lib/types/chat";
 interface TeacherChatProps {
   onSessionExpired: () => void;
   onRequestGenerate: () => void;
+  onExit: (save: boolean) => void;
 }
 
 export function TeacherChat({
   onSessionExpired,
   onRequestGenerate,
+  onExit,
 }: TeacherChatProps) {
   const {
     messages,
@@ -32,6 +34,7 @@ export function TeacherChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const generateTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   // Cleanup generate timer on unmount
   useEffect(() => () => clearTimeout(generateTimerRef.current), []);
@@ -137,13 +140,60 @@ export function TeacherChat({
 
   return (
     <div className="flex flex-col h-[100dvh] max-h-[100dvh]">
-      {/* 상단 바: Phase 인디케이터 + 타이머 */}
+      {/* 상단 바: 나가기 + Phase 인디케이터 */}
       <div className="flex-shrink-0 border-b border-brown-pale/15 bg-cream/50 backdrop-blur-sm
                        safe-top">
-        <div className="flex items-center justify-center px-3 py-1.5">
-          <TeacherPhaseIndicator currentPhase={currentPhase} />
+        <div className="flex items-center px-3 py-1.5">
+          <button
+            onClick={() => messages.length > 0 ? setShowExitDialog(true) : onExit(false)}
+            className="p-1.5 -ml-1 text-brown-light active:scale-[0.9] transition-transform"
+            aria-label="나가기"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <div className="flex-1 flex justify-center">
+            <TeacherPhaseIndicator currentPhase={currentPhase} />
+          </div>
+          <div className="w-8" />
         </div>
       </div>
+
+      {/* 나가기 확인 다이얼로그 */}
+      {showExitDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-cream rounded-2xl p-6 mx-6 max-w-sm w-full"
+               style={{ boxShadow: "0 8px 32px rgba(90,62,43,0.15)" }}>
+            <p className="text-[15px] text-brown font-medium text-center break-keep">
+              대화를 저장하시겠습니까?
+            </p>
+            <p className="text-xs text-brown-light text-center mt-2 break-keep">
+              저장하면 내 서재에서 확인할 수 있어요
+            </p>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => { setShowExitDialog(false); onExit(false); }}
+                className="flex-1 py-3 rounded-full text-sm font-medium text-brown-light
+                           border border-brown-pale/30 active:scale-[0.97] transition-all"
+              >
+                저장 안 함
+              </button>
+              <button
+                onClick={() => { setShowExitDialog(false); onExit(true); }}
+                className="flex-1 py-3 rounded-full text-white text-sm font-medium
+                           active:scale-[0.97] transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                  boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
+                }}
+              >
+                저장하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 메시지 영역 */}
       <div

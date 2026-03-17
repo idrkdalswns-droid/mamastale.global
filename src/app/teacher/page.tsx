@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
@@ -14,6 +15,7 @@ import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/tea
 export default function TeacherPage() {
   const { user, loading: authLoading } = useAuth();
   const store = useTeacherStore();
+  const router = useRouter();
   const [isRecovering, setIsRecovering] = useState(true);
 
   // 킬 스위치 체크
@@ -178,6 +180,22 @@ export default function TeacherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 채팅에서 나가기
+  const handleChatExit = useCallback(
+    (save: boolean) => {
+      if (save) {
+        // TODO: 서재에 대화 저장 로직 (추후 구현)
+        // 현재는 홈으로만 이동
+        router.push("/");
+      } else {
+        store.reset();
+        store.setScreenState("ONBOARDING");
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [router]
+  );
+
   // ─── 렌더링 ───
 
   // 킬 스위치
@@ -220,13 +238,19 @@ export default function TeacherPage() {
         return <TeacherCodeModal onVerified={handleCodeVerified} />;
 
       case "ONBOARDING":
-        return <TeacherOnboarding onComplete={handleOnboardingComplete} />;
+        return (
+          <TeacherOnboarding
+            onComplete={handleOnboardingComplete}
+            onExit={() => router.push("/")}
+          />
+        );
 
       case "CHAT":
         return (
           <TeacherChat
             onSessionExpired={handleSessionExpired}
             onRequestGenerate={handleRequestGenerate}
+            onExit={handleChatExit}
           />
         );
 
