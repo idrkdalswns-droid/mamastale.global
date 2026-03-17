@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.2] - 2026-03-17
+
+### Removed
+- 데드 컴포넌트 12개 삭제 (Library 3D, Bookshelf, AdBanner, SignupModal, SceneCard, TicketConfirmModal, PDF generator)
+- 데드 API 라우트 삭제 (Stripe checkout — Toss 전환 후 잔재)
+- 미사용 import 4건 제거 (getClientIP, createClient, trackPdfDownload, hapticSuccess)
+- 미사용 export 함수 9건 제거 (analytics 5, error-tracker 2, haptic 1, story-parser 1)
+
 ## [1.15.1] - 2026-03-17
 
 ### Changed
