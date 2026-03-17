@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { T } from "@/lib/constants/design-tokens";
 import { PHASES } from "@/lib/constants/phases";
@@ -58,7 +59,11 @@ export default function PhaseTransition({
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="text-center px-8"
           >
-            <div className="text-[52px] mb-4">{p?.icon}</div>
+            {p?.icon && (
+              <div className="w-[52px] h-[52px] rounded-full overflow-hidden relative mx-auto mb-4">
+                <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="52px" />
+              </div>
+            )}
 
             {/* Phase indicator */}
             <div

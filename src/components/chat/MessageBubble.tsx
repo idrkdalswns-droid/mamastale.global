@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import Image from "next/image";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, FONT_SIZE_MAP } from "@/lib/hooks/useSettings";
 import type { Message } from "@/lib/types/chat";
@@ -28,13 +29,13 @@ const MessageBubble = memo(function MessageBubble({
       {/* Assistant avatar */}
       {!isUser && (
         <div
-          className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm mr-2 mt-1"
+          className="w-8 h-8 rounded-full overflow-hidden relative shrink-0 mr-2 mt-1"
           style={{
-            background: `${mp.accent}12`,
+            backgroundColor: `${mp.accent}12`,
             border: `1px solid ${mp.accent}18`,
           }}
         >
-          {mp.icon}
+          <Image src={mp.icon} alt={mp.name} fill className="object-cover" sizes="32px" />
         </div>
       )}
 

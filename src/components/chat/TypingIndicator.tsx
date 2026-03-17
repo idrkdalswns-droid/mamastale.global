@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { PHASES } from "@/lib/constants/phases";
 
@@ -32,13 +33,13 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
     >
       {/* Phase icon avatar */}
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"
+        className="w-8 h-8 rounded-full overflow-hidden relative shrink-0"
         style={{
-          background: `${p.accent}12`,
+          backgroundColor: `${p.accent}12`,
           border: `1px solid ${p.accent}18`,
         }}
       >
-        {p.icon}
+        <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="32px" />
       </div>
 
       <div>

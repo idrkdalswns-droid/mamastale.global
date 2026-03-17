@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, memo } from "react";
+import Image from "next/image";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, useSettingsHydration, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
 import type { FontSize } from "@/lib/hooks/useSettings";
@@ -102,10 +103,10 @@ export default memo(function PhaseHeader({
           style={{ opacity: isTransitioning ? 0 : 1 }}
         >
           <span
-            className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-            style={{ background: p.accent }}
+            className="w-6 h-6 rounded-full overflow-hidden relative inline-block"
+            style={{ border: `1.5px solid ${p.accent}` }}
           >
-            {p.icon}
+            <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="24px" />
           </span>
           <div>
             <div
