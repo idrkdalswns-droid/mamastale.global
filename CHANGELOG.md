@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.16.0] - 2026-03-17
+
+### Added
+- **Freemium 잠금 모델 v2** — "Try Before You Buy" 수익화 메커니즘
+  - 첫 동화 무료 완성 (턴 게이트 면제, 30턴 상한)
+  - 완성 직후 전체 1회 미리보기 (PDF/공유/편집 비활성)
+  - 서재에서 6/10 장면만 공개 (해결+교훈 장면 잠금)
+  - 잠긴 페이지 블러 + 따뜻한 CTA 카드 ("이 순간을 간직하기")
+  - 결제 시 자동 잠금 해제 (auto-unlock)
+  - 온보딩 "첫 동화 무료" 안내 문구
+  - GA 전환 이벤트 3개 (lock_cta_click, preview_complete, unlock_success)
+- DB 마이그레이션: `is_unlocked` 컬럼 (023_revenue_model_v2.sql)
+- 인증 유저 30턴 상한 (AUTH_TURN_LIMIT)
+- 잠긴 동화 커뮤니티 공개 차단 (서버사이드)
+- 결제 성공 페이지 서재 CTA + 잠금 해제 안내
+
+### Changed
+- 신규 유저 무료 티켓: 1장 → 0장
+- 결제 성공 후 자동 리디렉트: 홈 → 서재
+
 ## [1.15.4] - 2026-03-17
 
 ### Changed
