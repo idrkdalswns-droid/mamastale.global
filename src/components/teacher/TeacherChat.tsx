@@ -179,7 +179,7 @@ export function TeacherChat({
   }));
 
   return (
-    <div className="flex flex-col h-[100dvh] max-h-[100dvh]">
+    <div className="relative flex flex-col h-[100dvh] max-h-[100dvh]">
       {/* 상단 바: 나가기 + Phase 인디케이터 */}
       <div className="flex-shrink-0 border-b border-brown-pale/15 bg-cream/50 backdrop-blur-sm
                        safe-top">

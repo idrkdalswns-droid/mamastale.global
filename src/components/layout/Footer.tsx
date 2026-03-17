@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const KAKAO_CHANNEL_URL = "https://open.kakao.com/o/gSSkFmii";
 
 export function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/teacher")) return null;
+
   return (
     <footer className="w-full border-t border-brown-pale/10 mt-12 pt-6 pb-8 px-6">
       <div className="max-w-[430px] mx-auto text-center space-y-3">

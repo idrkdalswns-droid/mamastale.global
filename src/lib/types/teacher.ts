@@ -18,7 +18,7 @@ export interface TeacherOnboarding {
   ageGroup?: "infant" | "toddler" | "kindergarten" | "mixed";
   context?: "large_group" | "small_group" | "free_choice" | "home_connection";
   topic?: string;
-  characterType?: "animal" | "child" | "object" | "fantasy" | "auto";
+  characterType?: string;
   situation?: string;
 }
 

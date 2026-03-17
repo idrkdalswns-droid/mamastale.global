@@ -29,13 +29,13 @@ const MessageBubble = memo(function MessageBubble({
       {/* Assistant avatar */}
       {!isUser && (
         <div
-          className="w-8 h-8 rounded-full overflow-hidden relative shrink-0 mr-2 mt-1"
+          className="w-10 h-10 rounded-full overflow-hidden relative shrink-0 mr-2 mt-1"
           style={{
             backgroundColor: `${mp.accent}12`,
             border: `1px solid ${mp.accent}18`,
           }}
         >
-          <Image src={mp.icon} alt={mp.name} fill className="object-cover" sizes="32px" />
+          <Image src={mp.icon} alt={mp.name} fill className="object-cover" sizes="40px" />
         </div>
       )}
 

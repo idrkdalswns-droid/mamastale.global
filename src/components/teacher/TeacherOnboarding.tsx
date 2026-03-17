@@ -31,7 +31,6 @@ const ICON_IMAGES: Record<string, string> = {
   child: "/images/teacher/onboarding/char-child.jpeg",
   object: "/images/teacher/onboarding/char-object.jpeg",
   fantasy: "/images/teacher/onboarding/char-fantasy.jpeg",
-  auto: "/images/teacher/onboarding/char-auto.jpeg",
 };
 
 interface TeacherOnboardingProps {
@@ -94,7 +93,6 @@ const STEPS: OnboardingStep[] = [
       { value: "child", label: "사람 아이", icon: "👧" },
       { value: "object", label: "사물 의인화", icon: "🧸" },
       { value: "fantasy", label: "판타지 생물", icon: "🦄" },
-      { value: "auto", label: "알아서 해주세요!", icon: "🎲" },
     ],
   },
   {
@@ -110,6 +108,7 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
   const [step, setStep] = useState(0);
   const [data, setData] = useState<TeacherOnboardingType>({});
   const [customTopic, setCustomTopic] = useState("");
+  const [customCharacterInput, setCustomCharacterInput] = useState("");
   const [situation, setSituation] = useState("");
 
   const currentStep = STEPS[step];
@@ -154,6 +153,12 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
       const newData = { ...data, topic: customTopic.trim() };
       setData(newData);
       setStep(step + 1);
+    } else if (currentStep.key === "characterType") {
+      if (!customCharacterInput.trim()) return;
+      const newData = { ...data, characterType: customCharacterInput.trim() };
+      setData(newData);
+      setCustomCharacterInput("");
+      setStep(step + 1);
     }
   };
 
@@ -181,6 +186,18 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
           </button>
         )}
         <div className="flex-1" />
+        {onExit && (
+          <button
+            onClick={onExit}
+            className="p-1.5 text-brown-light active:scale-[0.9] transition-transform"
+            aria-label="서재로 이동"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="flex gap-1.5 mb-6">
         {STEPS.map((_, idx) => (
@@ -241,116 +258,151 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(70dvh-100px)] pb-2">
-          {currentStep.options.map((opt, optIdx) => {
-            // 직접 입력 옵션 (주제)
-            if (opt.value === "_custom") {
-              return (
-                <div key={opt.value} className="col-span-2">
-                  {customTopic !== null && data.topic === undefined ? (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={customTopic}
-                        onChange={(e) => setCustomTopic(e.target.value)}
-                        placeholder="주제를 입력해주세요"
-                        maxLength={50}
-                        className="flex-1 px-4 py-3 rounded-xl border border-brown-pale/30
-                                   text-sm text-brown placeholder:text-brown-pale/50
-                                   focus:outline-none focus:ring-2 focus:ring-coral/30
-                                   bg-paper"
-                        style={{ fontSize: "16px" }}
-                      />
+        <>
+          <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(70dvh-100px)] pb-2">
+            {currentStep.options.map((opt, optIdx) => {
+              // 직접 입력 옵션 (주제)
+              if (opt.value === "_custom") {
+                return (
+                  <div key={opt.value} className="col-span-2">
+                    {customTopic !== null && data.topic === undefined ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customTopic}
+                          onChange={(e) => setCustomTopic(e.target.value)}
+                          placeholder="주제를 입력해주세요"
+                          maxLength={50}
+                          className="flex-1 px-4 py-3 rounded-xl border border-brown-pale/30
+                                     text-sm text-brown placeholder:text-brown-pale/50
+                                     focus:outline-none focus:ring-2 focus:ring-coral/30
+                                     bg-paper"
+                          style={{ fontSize: "16px" }}
+                        />
+                        <button
+                          onClick={handleTextSubmit}
+                          disabled={!customTopic.trim()}
+                          className="px-4 py-3 rounded-xl text-white text-sm font-medium
+                                     disabled:opacity-50 active:scale-[0.97] transition-all"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #E07A5F, #C96B52)",
+                          }}
+                        >
+                          확인
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={handleTextSubmit}
-                        disabled={!customTopic.trim()}
-                        className="px-4 py-3 rounded-xl text-white text-sm font-medium
-                                   disabled:opacity-50 active:scale-[0.97] transition-all"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #E07A5F, #C96B52)",
-                        }}
+                        onClick={() => handleSelect("_custom")}
+                        className="w-full py-3 rounded-xl border border-dashed border-brown-pale/40
+                                   text-sm text-brown-light font-medium
+                                   hover:bg-paper/80 active:scale-[0.98] transition-all"
                       >
-                        확인
+                        {ICON_IMAGES[opt.value] ? (
+                          <div className="w-5 h-5 relative rounded overflow-hidden inline-block mr-1.5 align-middle">
+                            <Image
+                              src={ICON_IMAGES[opt.value]}
+                              alt={opt.label}
+                              fill
+                              className="object-cover"
+                              sizes="20px"
+                            />
+                          </div>
+                        ) : (
+                          <span className="mr-1">{opt.icon}</span>
+                        )}
+                        {opt.label}
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleSelect("_custom")}
-                      className="w-full py-3 rounded-xl border border-dashed border-brown-pale/40
-                                 text-sm text-brown-light font-medium
-                                 hover:bg-paper/80 active:scale-[0.98] transition-all"
-                    >
-                      {ICON_IMAGES[opt.value] ? (
-                        <div className="w-5 h-5 relative rounded overflow-hidden inline-block mr-1.5 align-middle">
-                          <Image
-                            src={ICON_IMAGES[opt.value]}
-                            alt={opt.label}
-                            fill
-                            className="object-cover"
-                            sizes="20px"
-                          />
-                        </div>
-                      ) : (
-                        <span className="mr-1">{opt.icon}</span>
-                      )}
-                      {opt.label}
-                    </button>
-                  )}
-                </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // 홀수 마지막 아이템 → col-span-2
+              const isLastOdd = currentStep.options.length % 2 === 1
+                && optIdx === currentStep.options.length - 1
+                || (currentStep.options[currentStep.options.length - 1]?.value === "_custom"
+                  && currentStep.options.length % 2 === 0
+                  && optIdx === currentStep.options.length - 2);
+              const colSpan = isLastOdd ? "col-span-2" : "";
+
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => { handleSelect(opt.value); hapticLight(); }}
+                  className={`flex flex-col items-center gap-2 transition-all active:scale-[0.96] ${colSpan}`}
+                  aria-pressed={data[currentStep.key] === opt.value}
+                >
+                  <div
+                    className="relative w-full rounded-2xl overflow-hidden max-h-[140px]"
+                    style={{
+                      aspectRatio: isLastOdd ? "2/1" : "1",
+                      border: data[currentStep.key] === opt.value
+                        ? "2.5px solid #7FBFB0"
+                        : "1.5px solid rgba(196,149,106,0.1)",
+                      boxShadow: data[currentStep.key] === opt.value
+                        ? "0 6px 20px rgba(127,191,176,0.2)"
+                        : "0 2px 8px rgba(90,62,43,0.04)",
+                    }}
+                  >
+                    <Image
+                      src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
+                      alt={opt.label}
+                      fill
+                      className={`object-cover scale-[1.5]${opt.value === "child" ? " object-top" : ""}`}
+                      sizes="(max-width:430px) 45vw, 200px"
+                      loading={optIdx >= 4 ? "lazy" : undefined}
+                    />
+                  </div>
+                  <span
+                    className="text-[11px] font-medium break-keep text-center"
+                    style={{
+                      fontFamily: "'Nanum Myeongjo', serif",
+                      color: data[currentStep.key] === opt.value ? "#5FA89A" : "rgb(var(--brown-light))",
+                      fontWeight: data[currentStep.key] === opt.value ? 600 : 400,
+                    }}
+                  >
+                    {opt.label}
+                  </span>
+                </button>
               );
-            }
+            })}
+          </div>
 
-            // 홀수 마지막 아이템 (캐릭터 5개 중 auto) → col-span-2
-            const isLastOdd = currentStep.options.length % 2 === 1
-              && optIdx === currentStep.options.length - 1
-              || (currentStep.options[currentStep.options.length - 1]?.value === "_custom"
-                && currentStep.options.length % 2 === 0
-                && optIdx === currentStep.options.length - 2);
-            const colSpan = isLastOdd ? "col-span-2" : "";
-
-            return (
-              <button
-                key={opt.value}
-                onClick={() => { handleSelect(opt.value); hapticLight(); }}
-                className={`flex flex-col items-center gap-2 transition-all active:scale-[0.96] ${colSpan}`}
-                aria-pressed={data[currentStep.key] === opt.value}
-              >
-                <div
-                  className="relative w-full rounded-2xl overflow-hidden max-h-[140px]"
+          {/* 캐릭터 직접 입력 필드 (그리드 외부) */}
+          {currentStep.key === "characterType" && (
+            <div className="mt-3">
+              <p className="text-xs text-brown-light mb-1.5">
+                위 옵션이 없다면 직접 입력해주세요
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customCharacterInput}
+                  onChange={(e) => setCustomCharacterInput(e.target.value)}
+                  maxLength={30}
+                  placeholder="예: 구름, 낙엽, 로봇..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-brown-pale/20 bg-paper
+                             text-sm text-brown placeholder:text-brown-pale/60
+                             focus:outline-none focus:border-brown-pale/40"
+                  style={{ fontSize: "16px" }}
+                />
+                <button
+                  onClick={handleTextSubmit}
+                  disabled={!customCharacterInput.trim()}
+                  className="px-4 py-3 rounded-xl text-white text-sm font-medium
+                             disabled:opacity-50 active:scale-[0.97] transition-all"
                   style={{
-                    aspectRatio: isLastOdd ? "2/1" : "1",
-                    border: data[currentStep.key] === opt.value
-                      ? "2.5px solid #7FBFB0"
-                      : "1.5px solid rgba(196,149,106,0.1)",
-                    boxShadow: data[currentStep.key] === opt.value
-                      ? "0 6px 20px rgba(127,191,176,0.2)"
-                      : "0 2px 8px rgba(90,62,43,0.04)",
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                   }}
                 >
-                  <Image
-                    src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
-                    alt={opt.label}
-                    fill
-                    className="object-cover scale-[1.5]"
-                    sizes="(max-width:430px) 45vw, 200px"
-                    loading={optIdx >= 4 ? "lazy" : undefined}
-                  />
-                </div>
-                <span
-                  className="text-[11px] font-medium break-keep text-center"
-                  style={{
-                    fontFamily: "'Nanum Myeongjo', serif",
-                    color: data[currentStep.key] === opt.value ? "#5FA89A" : "rgb(var(--brown-light))",
-                    fontWeight: data[currentStep.key] === opt.value ? 600 : 400,
-                  }}
-                >
-                  {opt.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  확인
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* 뒤로 가기 — 모든 단계에서 표시 */}

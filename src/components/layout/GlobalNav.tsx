@@ -14,8 +14,8 @@ export function GlobalNav() {
   const pathname = usePathname();
   const { user, loading, signOut } = useAuth();
 
-  // Hide on home page (SPA with its own nav) and auth callback
-  if (pathname === "/" || pathname === "/auth/callback") return null;
+  // Hide on home page (SPA with its own nav), auth callback, and teacher mode
+  if (pathname === "/" || pathname === "/auth/callback" || pathname.startsWith("/teacher")) return null;
 
   return (
     <nav

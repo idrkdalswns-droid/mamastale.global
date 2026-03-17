@@ -33,13 +33,13 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
     >
       {/* Phase icon avatar */}
       <div
-        className="w-8 h-8 rounded-full overflow-hidden relative shrink-0"
+        className="w-10 h-10 rounded-full overflow-hidden relative shrink-0"
         style={{
           backgroundColor: `${p.accent}12`,
           border: `1px solid ${p.accent}18`,
         }}
       >
-        <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="32px" />
+        <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="40px" />
       </div>
 
       <div>
