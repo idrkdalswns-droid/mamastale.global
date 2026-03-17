@@ -30,6 +30,8 @@ interface StoryListItem {
   metadata?: Record<string, unknown>;
   brief_context?: Record<string, unknown>;
   session_id: string;
+  is_mine?: boolean;
+  author?: string;
 }
 
 export function TeacherHome({
@@ -48,6 +50,11 @@ export function TeacherHome({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<"mine" | "shared">("mine");
+  const [sharedStories, setSharedStories] = useState<StoryListItem[] | null>(null);
+  const [sharedLoading, setSharedLoading] = useState(false);
+  const [sharedError, setSharedError] = useState(false);
+
   useEffect(() => {
     const fetchStories = async () => {
       try {
@@ -63,6 +70,27 @@ export function TeacherHome({
     };
     fetchStories();
   }, []);
+
+  const fetchSharedStories = async () => {
+    setSharedLoading(true);
+    setSharedError(false);
+    try {
+      const res = await fetch("/api/teacher/stories?scope=shared");
+      if (!res.ok) throw new Error("fetch failed");
+      const data = await res.json();
+      setSharedStories(data.stories || []);
+    } catch {
+      setSharedError(true);
+    } finally {
+      setSharedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "shared" && sharedStories === null && !sharedLoading) {
+      fetchSharedStories();
+    }
+  }, [activeTab, sharedStories, sharedLoading]);
 
   const hasInProgressChat = messages.length > 0 && onboarding && currentPhase !== "DONE";
   const hasIncompleteOnboarding = !onboarding && currentPhase !== "DONE";
@@ -169,86 +197,194 @@ export function TeacherHome({
         <div className="mt-8">
           <h3 className="text-sm font-medium text-brown mb-3">완성된 동화</h3>
 
-          {loading && (
-            <div className="text-center py-8">
-              <div className="animate-spin w-6 h-6 border-2 border-coral border-t-transparent rounded-full mx-auto mb-2" />
-              <p className="text-xs text-brown-light">불러오는 중...</p>
-            </div>
-          )}
+          {/* 탭 */}
+          <div className="flex gap-2 mb-3" role="tablist">
+            <button
+              role="tab"
+              aria-selected={activeTab === "mine"}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                background: activeTab === "mine" ? "#E07A5F" : "transparent",
+                color: activeTab === "mine" ? "#fff" : "#8B6F55",
+                border: activeTab === "mine" ? "none" : "1px solid rgba(196,168,130,0.12)",
+              }}
+              onClick={() => setActiveTab("mine")}
+            >
+              내 동화
+            </button>
+            <button
+              role="tab"
+              aria-selected={activeTab === "shared"}
+              className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                background: activeTab === "shared" ? "#E07A5F" : "transparent",
+                color: activeTab === "shared" ? "#fff" : "#8B6F55",
+                border: activeTab === "shared" ? "none" : "1px solid rgba(196,168,130,0.12)",
+              }}
+              onClick={() => setActiveTab("shared")}
+            >
+              우리 유치원 서재
+            </button>
+          </div>
 
-          {error && !loading && (
-            <div className="text-center py-8">
-              <p className="text-xs text-brown-light mb-3">목록을 불러올 수 없습니다.</p>
-              <button
-                onClick={() => {
-                  setError(false);
-                  setLoading(true);
-                  fetch("/api/teacher/stories")
-                    .then((r) => r.json())
-                    .then((d) => setStories(d.stories || []))
-                    .catch(() => setError(true))
-                    .finally(() => setLoading(false));
-                }}
-                className="text-xs text-coral underline underline-offset-2"
-              >
-                다시 시도
-              </button>
-            </div>
-          )}
+          {/* 내 동화 탭 */}
+          {activeTab === "mine" && (
+            <>
+              {loading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-6 h-6 border-2 border-coral border-t-transparent rounded-full mx-auto mb-2" />
+                  <p className="text-xs text-brown-light">불러오는 중...</p>
+                </div>
+              )}
 
-          {!loading && !error && stories.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
-                <Image
-                  src="/images/teacher/state/generating.jpeg"
-                  alt="빈 서재"
-                  fill
-                  className="object-cover opacity-60"
-                  sizes="64px"
-                />
-              </div>
-              <p className="text-xs text-brown-light break-keep">
-                아직 완성된 동화가 없어요.
-              </p>
-              <p className="text-xs text-brown-pale mt-1 break-keep">
-                위 버튼을 눌러 첫 동화를 만들어보세요!
-              </p>
-            </div>
-          )}
+              {error && !loading && (
+                <div className="text-center py-8">
+                  <p className="text-xs text-brown-light mb-3">목록을 불러올 수 없습니다.</p>
+                  <button
+                    onClick={() => {
+                      setError(false);
+                      setLoading(true);
+                      fetch("/api/teacher/stories")
+                        .then((r) => r.json())
+                        .then((d) => setStories(d.stories || []))
+                        .catch(() => setError(true))
+                        .finally(() => setLoading(false));
+                    }}
+                    className="text-xs text-coral underline underline-offset-2"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              )}
 
-          {!loading && !error && stories.length > 0 && (
-            <div className="space-y-3">
-              {stories.map((story) => (
-                <button
-                  key={story.id}
-                  onClick={() =>
-                    onViewStory({
-                      id: story.id,
-                      sessionId: story.session_id,
-                      title: story.title,
-                      spreads: (story.spreads || []) as TeacherStory["spreads"],
-                      metadata: (story.metadata || {}) as TeacherStory["metadata"],
-                      briefContext: story.brief_context as TeacherStory["briefContext"],
-                      createdAt: story.created_at,
-                    })
-                  }
-                  className="w-full p-4 rounded-2xl text-left border border-brown-pale/15
-                             bg-paper active:scale-[0.98] transition-all"
-                  style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
-                >
-                  <p className="text-sm font-medium text-brown truncate">
-                    {story.title || "제목 없는 동화"}
+              {!loading && !error && stories.length === 0 && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
+                    <Image
+                      src="/images/teacher/state/generating.jpeg"
+                      alt="빈 서재"
+                      fill
+                      className="object-cover opacity-60"
+                      sizes="64px"
+                    />
+                  </div>
+                  <p className="text-xs text-brown-light break-keep">
+                    아직 완성된 동화가 없어요.
                   </p>
-                  <p className="text-xs text-brown-light mt-1">
-                    {new Date(story.created_at).toLocaleDateString("ko-KR", {
-                      month: "long",
-                      day: "numeric",
-                    })}{" "}
-                    · {(story.spreads || []).length}장
+                  <p className="text-xs text-brown-pale mt-1 break-keep">
+                    위 버튼을 눌러 첫 동화를 만들어보세요!
                   </p>
-                </button>
-              ))}
-            </div>
+                </div>
+              )}
+
+              {!loading && !error && stories.length > 0 && (
+                <div className="space-y-3">
+                  {stories.map((story) => (
+                    <button
+                      key={story.id}
+                      onClick={() =>
+                        onViewStory({
+                          id: story.id,
+                          sessionId: story.session_id,
+                          title: story.title,
+                          spreads: (story.spreads || []) as TeacherStory["spreads"],
+                          metadata: (story.metadata || {}) as TeacherStory["metadata"],
+                          briefContext: story.brief_context as TeacherStory["briefContext"],
+                          createdAt: story.created_at,
+                        })
+                      }
+                      className="w-full p-4 rounded-2xl text-left border border-brown-pale/15
+                                 bg-paper active:scale-[0.98] transition-all"
+                      style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
+                    >
+                      <p className="text-sm font-medium text-brown truncate">
+                        {story.title || "제목 없는 동화"}
+                      </p>
+                      <p className="text-xs text-brown-light mt-1">
+                        {new Date(story.created_at).toLocaleDateString("ko-KR", {
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        · {(story.spreads || []).length}장
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 우리 유치원 서재 탭 */}
+          {activeTab === "shared" && (
+            <>
+              {sharedLoading && (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-6 h-6 border-2 border-coral border-t-transparent rounded-full mx-auto mb-2" />
+                  <p className="text-xs text-brown-light">불러오는 중...</p>
+                </div>
+              )}
+
+              {sharedError && !sharedLoading && (
+                <div className="text-center py-8">
+                  <p className="text-xs text-brown-light mb-3">공유 동화를 불러올 수 없습니다.</p>
+                  <button
+                    onClick={() => fetchSharedStories()}
+                    className="text-xs text-coral underline underline-offset-2"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              )}
+
+              {!sharedLoading && !sharedError && sharedStories && sharedStories.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-xs text-brown-light break-keep">
+                    아직 다른 선생님의 동화가 없어요.
+                  </p>
+                  <p className="text-xs text-brown-pale mt-1 break-keep">
+                    동화를 만들면 같은 유치원 선생님들과 공유됩니다.
+                  </p>
+                </div>
+              )}
+
+              {!sharedLoading && !sharedError && sharedStories && sharedStories.length > 0 && (
+                <div className="space-y-3">
+                  {sharedStories.map((story) => (
+                    <button
+                      key={story.id}
+                      onClick={() =>
+                        onViewStory({
+                          id: story.id,
+                          sessionId: story.session_id,
+                          title: story.title,
+                          spreads: (story.spreads || []) as TeacherStory["spreads"],
+                          metadata: (story.metadata || {}) as TeacherStory["metadata"],
+                          briefContext: story.brief_context as TeacherStory["briefContext"],
+                          createdAt: story.created_at,
+                        })
+                      }
+                      className="w-full p-4 rounded-2xl text-left border border-brown-pale/15
+                                 bg-paper active:scale-[0.98] transition-all"
+                      style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
+                    >
+                      <p className="text-sm font-medium text-brown truncate">
+                        {story.title || "제목 없는 동화"}
+                      </p>
+                      <p className="text-xs text-brown-light mt-1">
+                        {new Date(story.created_at).toLocaleDateString("ko-KR", {
+                          month: "long",
+                          day: "numeric",
+                        })}{" "}
+                        · {(story.spreads || []).length}장
+                        {!story.is_mine && story.author && (
+                          <span className="text-brown-pale"> · {story.author}</span>
+                        )}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
