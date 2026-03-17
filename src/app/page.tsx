@@ -12,7 +12,6 @@ import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
-import { ReferralCard } from "@/components/referral/ReferralCard";
 import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
@@ -27,53 +26,6 @@ const FeedbackWizard = dynamic(() => import("@/components/feedback/FeedbackWizar
 const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage").then(m => ({ default: m.CommunityPage })), { ssr: false });
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "story" | "feedback" | "community";
-
-/** Horizontal scroll container that auto-scrolls to a specific child index on mount */
-function GalleryScroller({ initialIndex, children }: { initialIndex: number; children: React.ReactNode }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const cards = el.children;
-    if (cards.length <= initialIndex) return;
-    const card = cards[initialIndex] as HTMLElement;
-    const scrollLeft = card.offsetLeft - el.offsetWidth / 2 + card.offsetWidth / 2;
-    el.scrollTo({ left: scrollLeft, behavior: "instant" });
-  }, [initialIndex]);
-
-  // SA4: Keyboard navigation for carousel accessibility
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const scrollAmount = 190; // card width + gap
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      el.scrollBy({ left: scrollAmount, behavior: "smooth" });
-    }
-  }, []);
-
-  return (
-    <div className="relative">
-      <div className="absolute left-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to right, rgb(var(--cream)), transparent)" }} />
-      <div className="absolute right-0 top-0 bottom-2 w-6 z-10 pointer-events-none" style={{ background: "linear-gradient(to left, rgb(var(--cream)), transparent)" }} />
-      <div
-        ref={scrollRef}
-        className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/30 rounded-lg"
-        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
-        tabIndex={0}
-        role="region"
-        aria-roledescription="carousel"
-        aria-label="동화 장면 갤러리 — 좌우 화살표 키로 탐색"
-        onKeyDown={handleKeyDown}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const [screen, setScreen] = useState<ScreenState>("landing");
@@ -563,12 +515,7 @@ export default function Home() {
           <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed mb-0.5">
             엄마의 삶이 아이의 동화가 되다
           </p>
-          <p className="text-[12px] text-brown-pale font-light mb-1 break-keep">
-            우리 아이를 위한 세상에 단 하나뿐인 동화를 만들어 보세요
-          </p>
-          <p className="text-[11px] text-brown-pale/70 font-light mb-4 break-keep">
-            AI 대화로 엄마의 이야기가 10장면 동화로 완성돼요
-          </p>
+          <div className="mb-4" />
 
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
           <button
@@ -596,90 +543,7 @@ export default function Home() {
           )}
           {user && <div className="mb-5" />}
 
-          {/* 선생님 모드 CTA */}
-          {process.env.NEXT_PUBLIC_TEACHER_MODE_ENABLED !== "false" && (
-            <button
-              onClick={() => {
-                try {
-                  sessionStorage.setItem("mamastale_post_login_redirect", "/teacher");
-                } catch { /* ignore */ }
-                if (user) {
-                  window.location.href = "/teacher";
-                } else {
-                  window.location.href = "/login";
-                }
-              }}
-              className="w-full py-2.5 rounded-full text-[12px] font-medium text-brown-light
-                         border border-brown-pale/25 bg-paper/40 mb-3
-                         hover:bg-paper hover:border-coral/30
-                         active:scale-[0.98] transition-all"
-            >
-              🏫 선생님이신가요? 우리 반 맞춤 동화 만들기 →
-            </button>
-          )}
 
-          {/* ════════════════════════════════════════
-              STORYBOOK GALLERY — Product showcase
-              ════════════════════════════════════════ */}
-          <div id="gallery" className="mb-5">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
-              이런 동화가 완성돼요
-            </p>
-            <p className="text-[10px] text-brown-pale font-light text-center mb-1">
-              실제 완성된 동화의 한 장면이에요
-            </p>
-            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
-              ← 옆으로 넘겨보세요 →
-            </p>
-            <GalleryScroller initialIndex={7}>
-              {[
-                "옛날 옛적, 예쁜 아기를 낳은 엄마가 있었어요. 엄마는 매일매일 설거지를 했어요. 물소리가 졸졸졸, 그릇이 반짝반짝.",
-                "그런데 설거지를 할 때마다 엄마 마음이 이상했어요. 뭔가 쓸쓸하고, 뭔가 그리워요. \"내가 언제 이렇게 엄마가 되었지?\"",
-                "어느 날, 엄마가 설거지를 하고 있을 때였어요. 창가에 작은 새 한 마리가 날아왔어요. 아기 새였어요, 너무너무 작은.",
-                "아기 새는 말이 없었어요. 그냥 조용히 앉아 있었어요. 엄마도 말이 없었어요. 둘이 함께 조용조용.",
-                "매일매일 설거지 시간이 되면 아기 새가 왔어요. 엄마는 혼자가 아니었어요. \"안녕, 작은 새야.\"",
-                "어느 날 엄마가 물어봤어요. \"너는 왜 여기 오는 거야?\" 아기 새가 대답했어요. \"엄마도 새로 태어났거든요.\"",
-                "\"나도 새로 태어났다고?\" 엄마가 깜짝 놀랐어요. 아기 새가 말했어요. \"엄마가 되면서 새로운 마음이 생겼어요.\"",
-                "그때부터 엄마는 알았어요. 설거지할 때 느끼는 그 마음이 새로운 자신이라는 걸. 쓸쓸하지만 소중한 마음.",
-                "\"나라는 존재는 변하지 않았지만, 새로운 마음이 하나 더 생겼구나.\" 엄마가 웃으며 말했어요.",
-                "작은 아기야, 엄마에게도 새로운 마음이 자라고 있어요. 그 마음이 바로 너를 사랑하는 마음이야. 쓸쓸해도 괜찮아, 그것도 사랑이니까.",
-              ].map((text, i) => (
-                <div
-                  key={i}
-                  className="flex-shrink-0 snap-center rounded-xl overflow-hidden relative"
-                  style={{
-                    width: "180px",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
-                  }}
-                >
-                  <Image
-                    src={`/images/sample/scene-${String(i + 1).padStart(2, "0")}.jpg`}
-                    alt={`동화 장면 ${i + 1}`}
-                    width={180}
-                    height={320}
-                    className="w-full aspect-[9/16] object-cover object-top"
-                    loading={i >= 6 && i <= 8 ? "eager" : "lazy"}
-                  />
-                  <div
-                    className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
-                    style={{
-                      background: "linear-gradient(to top, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.86) 50%, rgba(255,255,255,0) 100%)",
-                    }}
-                  >
-                    <p
-                      className="font-serif text-[10.5px] leading-[1.85] break-keep"
-                      style={{ color: "#5A3E2B" }}
-                    >
-                      {text}
-                    </p>
-                    <p className="text-[8px] text-brown-pale font-light mt-1.5 text-right">
-                      {i + 1} / 10
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </GalleryScroller>
-          </div>
 
           {/* ════════════════════════════════════════
               DIY THUMBNAILS — Free stories preview (M1)
@@ -687,9 +551,6 @@ export default function Home() {
           <div id="diy" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               무료 DIY 동화
-            </p>
-            <p className="text-[11px] text-brown-pale font-light text-center mb-3">
-              직접 이미지를 골라 나만의 동화를 만들어 보세요
             </p>
             <div className="grid grid-cols-3 gap-2">
               {DIY_STORIES.slice(0, 3).map((story) => (
@@ -710,9 +571,6 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-            <Link href="/diy" className="text-[11px] text-coral font-light no-underline text-center block mt-2">
-              6개 동화 모두 보기 →
-            </Link>
           </div>
 
           {/* DIY 동화 만들기 CTA */}
@@ -860,12 +718,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* S2: Referral UI — show for logged-in users */}
-          {user && !authLoading && (
-            <div className="mb-4">
-              <ReferralCard />
-            </div>
-          )}
 
         </div>
 
@@ -873,7 +725,7 @@ export default function Home() {
         <div>
           {/* M2: Founder story — brand trust */}
           <div className="mt-4 mb-4 px-4 py-4 rounded-2xl" style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}>
-            <p className="font-serif text-[13px] text-brown font-semibold mb-2">만든 사람의 이야기</p>
+            <p className="font-serif text-[13px] text-brown font-semibold mb-2">mamastale 대표 강민준의 이야기</p>
             <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
               20대 시절, 자전거 한 대에 침낭을 싣고 3개월간 동유럽 10개국을 횡단했습니다. 그중 두 달은 인적조차 드문 낯선 노지에 작은 텐트를 치고 밤을 지새워야 했습니다. 별빛 한 점 스며들지 않는 캄캄한 텐트 안. 그 완벽한 단절 속에서 저는 인간 존재의 밑바닥에 도사린 극심한 외로움과 고독을 마주했습니다.
             </p>

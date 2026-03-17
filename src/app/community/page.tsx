@@ -106,9 +106,18 @@ export default function CommunityBrowsePage() {
       <div className="relative z-[1] max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="font-serif text-lg text-brown font-semibold">
-            커뮤니티
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-serif text-lg text-brown font-semibold">
+              커뮤니티
+            </h1>
+            <Link
+              href="/library"
+              className="text-[11px] text-brown-light font-medium no-underline px-3 py-1.5 rounded-full min-h-[44px] flex items-center transition-all active:scale-[0.97]"
+              style={{ border: "1.5px solid rgba(196,149,106,0.2)", background: "rgba(255,255,255,0.5)" }}
+            >
+              📚 내 서재
+            </Link>
+          </div>
           <p className="text-xs text-brown-light font-light mt-1">
             {totalCount !== null && totalCount > 0
               ? `${totalCount}개의 이야기가 공유되었어요`
