@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.18.0] - 2026-03-17
+
+### Added
+- **유치원 서재** — 같은 teacher_code 그룹의 선생님 동화 공유 열람 (SECURITY DEFINER 함수 + RLS)
+- TeacherHome "내 동화" / "우리 유치원 서재" 탭 UI (레이지 페치 + 캐시)
+- **아바타 일러스트** — 4단계 AI 상담사 프로필을 이수지 스타일 캐릭터 이미지로 교체 (메인 + 선생님 모드 동시 적용)
+- DB 마이그레이션 024: `get_shared_session_ids()` 함수 + `shared_library_read` RLS + 성능 인덱스
+
 ## [1.17.0] - 2026-03-17
 
 ### Added
