@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.20.0] - 2026-03-18
+
+### Security
+- **RLS 강화** — crisis_events, crisis_sessions 테이블을 service-role 전용 접근으로 제한
+- **Push API 시크릿 분리** — SUPABASE_SERVICE_ROLE_KEY 대신 전용 PUSH_API_SECRET 사용
+- **메시지 길이 제한** — 서버/클라이언트 모두 2000자 제한 (기존 50000/5000)
+
+### Fixed
+- **Stripe ₩3,920 매핑** — 20% 할인가 결제 시 티켓 미지급 수정
+- **계정 삭제 정합** — HTTP 메서드 POST→DELETE, 확인 문구 한국어 통일 ("탈퇴합니다")
+- **Rate limit cleanup** — 24시간 윈도우 게스트 턴이 5분 뒤 삭제되는 문제 수정 (window_seconds 컬럼 추가)
+
+### Added
+- **SSE 쿠키 전파** — chat/stream에서 getCookieHeaders()로 인증 토큰 갱신 지원
+- **게스트 턴 서버 추적** — IP 기반 영속적 5턴 제한 (localStorage 우회 방지)
+- **Output safety redirect** — 의료 조언 감지 시 차단 대신 전문 상담 안내 추가
+- **ImageSorter 접근성** — 키보드 Enter/Space 활성화 + focus-visible 링
+
 ## [1.19.0] - 2026-03-17
 
 ### Fixed
