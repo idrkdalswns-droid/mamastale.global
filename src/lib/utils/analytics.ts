@@ -25,34 +25,13 @@ export function trackScreenView(screen: string) {
 }
 
 // ── 온보딩 ──
-export function trackOnboardingStep(step: number) {
-  track("onboarding_step", { step });
-}
-
 export function trackOnboardingComplete(parentRole: string, childAge: string) {
   track("onboarding_complete", { parent_role: parentRole, child_age: childAge });
 }
 
-// ── 대화 ──
-export function trackPhaseTransition(from: number, to: number) {
-  track("phase_transition", { from_phase: from, to_phase: to });
-}
-
-export function trackChatTurn(phase: number, turnCount: number) {
-  track("chat_turn", { phase, turn_count: turnCount });
-}
-
 // ── 동화 ──
-export function trackStoryComplete(storyId: string) {
-  track("story_complete", { story_id: storyId });
-}
-
 export function trackStoryShare(storyId: string, method: string) {
   track("story_share", { story_id: storyId, method });
-}
-
-export function trackPdfDownload(storyId: string) {
-  track("pdf_download", { story_id: storyId });
 }
 
 // ── 회원가입 ──

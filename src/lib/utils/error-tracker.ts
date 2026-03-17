@@ -13,8 +13,6 @@
  * @module error-tracker
  */
 
-import { logEvent } from "./llm-logger";
-
 // ─── Deduplication ───
 const recentErrors = new Map<string, number>();
 const DEDUP_WINDOW_MS = 60_000; // 1 minute
@@ -38,77 +36,6 @@ function isDuplicate(fingerprint: string): boolean {
     }
   }
   return false;
-}
-
-/**
- * Track a server-side error. Fire-and-forget.
- */
-export function trackServerError(
-  error: unknown,
-  context: {
-    endpoint?: string;
-    userId?: string | null;
-    phase?: number;
-    extra?: Record<string, unknown>;
-  } = {}
-): void {
-  const fingerprint = getErrorFingerprint(error, context.endpoint);
-  if (isDuplicate(fingerprint)) return;
-
-  const errorInfo = error instanceof Error
-    ? {
-        name: error.name,
-        message: error.message.slice(0, 500),
-        stack: error.stack?.slice(0, 1000),
-      }
-    : { name: "Unknown", message: String(error).slice(0, 500) };
-
-  logEvent({
-    eventType: "error",
-    endpoint: context.endpoint,
-    userId: context.userId,
-    metadata: {
-      ...errorInfo,
-      phase: context.phase,
-      ...context.extra,
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-    },
-  }).catch(() => {});
-
-  // Console output for Cloudflare Pages logs
-  console.error(`[ErrorTracker] ${context.endpoint || "unknown"}: ${errorInfo.name} - ${errorInfo.message}`);
-}
-
-/**
- * Track an API response error (4xx/5xx). Fire-and-forget.
- */
-export function trackApiError(
-  statusCode: number,
-  message: string,
-  context: {
-    endpoint?: string;
-    method?: string;
-    userId?: string | null;
-  } = {}
-): void {
-  // Only track 5xx errors (server errors) — 4xx are expected
-  if (statusCode < 500) return;
-
-  const fingerprint = getErrorFingerprint(message, context.endpoint);
-  if (isDuplicate(fingerprint)) return;
-
-  logEvent({
-    eventType: "api_error",
-    endpoint: context.endpoint,
-    method: context.method,
-    statusCode,
-    userId: context.userId,
-    metadata: {
-      message: message.slice(0, 500),
-      timestamp: new Date().toISOString(),
-    },
-  }).catch(() => {});
 }
 
 /**

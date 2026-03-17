@@ -26,7 +26,6 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
-import { getClientIP } from "@/lib/utils/validation";
 import { z } from "zod";
 
 const requestSchema = z.object({

@@ -8,8 +8,8 @@ import { useSwipe } from "@/lib/hooks/useSwipe";
 import type { Scene } from "@/lib/types/story";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import { shareToKakao } from "@/lib/share/kakao";
-import { trackStoryShare, trackPdfDownload } from "@/lib/utils/analytics";
-import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
+import { trackStoryShare } from "@/lib/utils/analytics";
+import { hapticLight } from "@/lib/utils/haptic";
 
 /**
  * B-2: Detect AI-generated closing/celebration text patterns.

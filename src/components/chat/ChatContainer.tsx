@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { PHASES } from "@/lib/constants/phases";
 import PhaseHeader from "./PhaseHeader";
 import PhaseTransition from "./PhaseTransition";

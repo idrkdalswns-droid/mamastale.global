@@ -235,14 +235,3 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
   return scenes;
 }
 
-/**
- * Combine all Phase 4 assistant messages into a single text for parsing
- */
-export function combinePhase4Messages(
-  messages: { role: string; content: string; phase?: number }[]
-): string {
-  return messages
-    .filter((m) => m.role === "assistant" && m.phase === 4)
-    .map((m) => m.content)
-    .join("\n\n");
-}

@@ -27,10 +27,3 @@ export function hapticSuccess() {
   }
 }
 
-export function hapticError() {
-  try {
-    navigator.vibrate?.([30, 30, 30]);
-  } catch {
-    // Not supported
-  }
-}
