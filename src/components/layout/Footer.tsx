@@ -35,9 +35,10 @@ export function Footer() {
 
         {/* Business info (전자상거래법 필수 표시사항) */}
         <div className="text-[11px] text-brown-pale font-light leading-relaxed space-y-0.5">
-          <p>상호명: 엄마엄마동화 | 대표: 강민준</p>
+          <p>상호명: 엄마엄마동화 | 대표자: 강민준</p>
           <p>사업자등록번호: 409-28-94015</p>
-          <p>주소: 서울특별시 강서구 초록마을로19길 18, B01호</p>
+          <p>통신판매업신고번호: 2026-서울강서-0925</p>
+          <p>주소: 서울특별시 강서구 초록마을로19길 18, B01호(화곡동, 대한빌라)</p>
           <p>
             대표번호:{" "}
             <a
