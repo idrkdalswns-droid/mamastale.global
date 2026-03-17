@@ -748,7 +748,14 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 | `/crisis-test` | `.claude/commands/crisis-test.md` | 위기감지 회귀 테스트 |
 | `/i18n-add` | `.claude/commands/i18n-add.md` | 6개 언어 번역 키 추가 |
 | `/catchup` | `.claude/commands/catchup.md` | `/clear` 후 컨텍스트 복원 |
-| `/review` | `.claude/commands/review.md` | 편집광 2-Pass 코드 리뷰 (CRITICAL→IMPORTANT→INFO) |
+| `/review` | `.claude/commands/review.md` | 7-Pass 직렬 코드 리뷰 파이프라인 오케스트레이터 |
+| `/review-security` | `.claude/commands/review-security.md` | 1차 보안 검수 (OWASP + 프롬프트 인젝션 + 결제) |
+| `/review-backend` | `.claude/commands/review-backend.md` | 2차 백엔드 검수 (API + DB + 에러 핸들링) |
+| `/review-frontend` | `.claude/commands/review-frontend.md` | 3차 프론트엔드 검수 (WCAG + CWV + 상태 관리) |
+| `/review-ux` | `.claude/commands/review-ux.md` | 4차 UX 검수 (Nielsen 10 + 페르소나 + 감정 디자인) |
+| `/review-architecture` | `.claude/commands/review-architecture.md` | 5차 아키텍처 검수 (근본 원인 + 확장성 + 기술 부채) |
+| `/review-business` | `.claude/commands/review-business.md` | 6차 비즈니스 검수 (Devil's Advocate + Monte Carlo) |
+| `/review-integration` | `.claude/commands/review-integration.md` | 7차 통합 검수 (교차 레이어 + SHIP/FIX/HALT 판정) |
 | `/simplify` | `.claude/commands/simplify.md` | 코드 간소화 |
 | `/a11y-audit` | `.claude/commands/a11y-audit.md` | WCAG 2.1 AA 접근성 감사 |
 | `/perf-audit` | `.claude/commands/perf-audit.md` | 번들 크기·이미지·렌더링 성능 분석 |
@@ -762,6 +769,14 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 | `/ship` | `.claude/commands/ship.md` | 완전 자동 Ship (merge→test→review→version→changelog→commit→push) |
 | `/illust` | `.claude/commands/illust.md` | 이수지 스타일 미니멀 일러스트 프롬프트 생성 (나노바나나프로용) |
 | `checklist.md` | `.claude/commands/checklist.md` | 코드 리뷰 체크리스트 (독립 참조 파일) |
+| `/pb-orchestrator` | `.claude/commands/pb-orchestrator.md` | 그림책 창작 오케스트레이터 — 7개 에이전트 파이프라인 총괄 지휘 |
+| `/pb-story-architect` | `.claude/commands/pb-story-architect.md` | 서사 구조 설계 — 6가지 구조 유형, 14스프레드 플롯 분해, 누리과정 매핑 |
+| `/pb-character-dna` | `.claude/commands/pb-character-dna.md` | 캐릭터 DNA 설계 — 형태 언어, 색상 팔레트, 표정 시스템, AI 일관성 시트 |
+| `/pb-text-writer` | `.claude/commands/pb-text-writer.md` | 그림책 텍스트 작성 — 연령별 어휘 가드레일, 글-그림 역할 분담, 운율 |
+| `/pb-art-director` | `.claude/commands/pb-art-director.md` | 아트 디렉션 — 몰리 뱅 시각 원칙, 색채 시퀀스, 삽화 지시서 |
+| `/pb-ai-illustrator` | `.claude/commands/pb-ai-illustrator.md` | AI 삽화 생성 — MJ/DALL-E/Leonardo/SD 프롬프트, 캐릭터 일관성, 업스케일 |
+| `/pb-layout-composer` | `.claude/commands/pb-layout-composer.md` | 레이아웃 조판 — 보드북/32p/확장판, 인쇄 PDF/PPT/ePub 출력 |
+| `/pb-dev-reviewer` | `.claude/commands/pb-dev-reviewer.md` | 발달단계 검수 — 6영역 100점 채점, 누리과정 59개 내용 검증, 안전성 |
 
 ---
 

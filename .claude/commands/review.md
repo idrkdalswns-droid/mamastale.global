@@ -1,87 +1,99 @@
-# /review — Pre-Landing 코드 리뷰
-
-> gstack 패턴 적용: "CI를 통과하지만 프로덕션에서 터지는 버그를 찾아라"
-
-현재 브랜치의 diff를 main 대비 분석하여 구조적 이슈를 찾습니다.
-
+---
+name: review-orchestrator
+description: "7-Pass 직렬 코드 리뷰 파이프라인 오케스트레이터. 보안→백엔드→프론트→UX→아키텍처→비즈니스→통합 순서로 7개 전문 에이전트를 순차 실행한다. 각 패스는 이전 패스의 findings.json을 읽고 교차 분석한다."
 ---
 
-## Step 1: 브랜치 확인
+# /review — 7-Pass 직렬 코드 리뷰 파이프라인
 
-1. `git branch --show-current`로 현재 브랜치 확인.
-2. `main`에 있으면: **"리뷰할 것이 없습니다 — main 브랜치입니다."** 출력 후 중단.
-3. `git fetch origin main --quiet && git diff origin/main --stat` 실행. diff 없으면 같은 메시지 출력 후 중단.
+> mamastale 전용. 7개 전문 검수관이 순차적으로 코드를 분석하고, 파일 기반으로 컨텍스트를 전달한다.
 
----
-
-## Step 2: 체크리스트 읽기
-
-`.claude/commands/checklist.md` 읽기.
-
-**파일을 읽을 수 없으면 STOP.** 체크리스트 없이 진행하지 않음.
-
----
-
-## Step 3: diff 가져오기
-
-최신 main을 가져와서 stale main으로 인한 false positive 방지:
+## STEP 0: 초기화
 
 ```bash
-git fetch origin main --quiet
+mkdir -p .review/pass-{1..7}
+echo '{"pipeline_version":"2.0","start_time":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","project":"mamastale"}' > .review/config.json
 ```
 
-`git diff origin/main` 실행. 커밋된 변경과 미커밋 변경 모두 포함.
+## STEP 1~7: 순차 실행
 
----
+각 패스를 **순서대로** 실행한다. 병렬 실행 금지 — 이전 패스의 findings.json이 다음 패스의 입력이다.
 
-## Step 4: Two-pass 리뷰
+| 순서 | 슬래시 커맨드 | 역할 | 출력 |
+|------|-------------|------|------|
+| 1 | `/review-security` | OWASP + 프롬프트 인젝션 + 결제 | `.review/pass-1/findings.json` |
+| 2 | `/review-backend` | API + DB + 에러 핸들링 + AI 파이프라인 | `.review/pass-2/findings.json` |
+| 3 | `/review-frontend` | WCAG + CWV + 상태 관리 + 반응형 | `.review/pass-3/findings.json` |
+| 4 | `/review-ux` | Nielsen 10 + 페르소나 3명 + 감정 디자인 | `.review/pass-4/findings.json` |
+| 5 | `/review-architecture` | 근본 원인 + 확장성 + 기술 부채 등급 | `.review/pass-5/findings.json` |
+| 6 | `/review-business` | Devil's Advocate + Monte Carlo + Pre-mortem | `.review/pass-6/findings.json` |
+| 7 | `/review-integration` | 교차 레이어 + 런치 판정 + 최종 리포트 | `.review/pass-7/findings.json` |
 
-체크리스트를 diff에 적용 (2패스):
+## 실행 방법
 
-1. **Pass 1 (CRITICAL):** 결제 안전, 인증/권한, SQL/데이터, XSS/출력, 위기감지, 시크릿
-2. **Pass 2 (INFORMATIONAL):** Edge Runtime, 에러 처리, Rate Limiting, 타입 안전, 성능, 코드 품질, UI/스타일, 테스트, 접근성
-
-체크리스트의 출력 형식을 따름. Suppressions 섹션 준수 — "DO NOT flag" 항목은 플래깅 금지.
-
----
-
-## Step 5: 결과 출력
-
-**항상 모든 발견사항 출력** — CRITICAL과 INFORMATIONAL 모두.
+### 전체 파이프라인
 
 ```
-🔍 Pre-Landing Review: N issues (X critical, Y informational)
-
-**CRITICAL** (배포 차단):
-- [file:line] 문제 설명
-  Fix: 수정 제안
-
-**Issues** (비차단):
-- [file:line] 문제 설명
-  Fix: 수정 제안
+/review
 ```
 
-이슈 없으면: `Pre-Landing Review: No issues found.`
+7개 패스를 순차 실행. 약 30~60분 소요.
 
-- **CRITICAL 발견 시:** 각 CRITICAL 이슈에 대해 개별 AskUserQuestion:
-  - 문제 (`file:line` + 설명)
-  - 추천 수정안
-  - 선택지: A) 지금 수정 (추천), B) 인지하고 진행, C) False positive — 스킵
-  모든 질문 답변 후, A(수정) 선택한 이슈가 있으면 수정 적용.
+### 개별 패스
 
-- **비 CRITICAL만 있으면:** 출력 후 완료. 추가 액션 불필요.
+```
+/review-security      # 1차만
+/review-backend       # 2차만 (1차 findings 필요)
+/review-integration   # 7차만 (1~6차 findings 필요)
+```
 
-- **이슈 없으면:** `Pre-Landing Review: No issues found.` 출력.
+## 게이트 정책
 
----
+각 패스 완료 후 게이트 체크:
 
-## 특별 규칙
+- **CRITICAL ≥ 1** → 🔴 HALT (이후 패스 중단, 즉시 수정 필요)
+- **HIGH ≥ 3** → 🟡 WARN (경고 후 계속 진행)
+- 그 외 → 🟢 PASS
 
-- **전체 diff를 읽고 나서 코멘트.** diff에서 이미 해결된 이슈는 플래깅하지 않음.
-- **기본적으로 읽기 전용.** 사용자가 "지금 수정"을 선택한 경우에만 파일 수정. 커밋, 푸시, PR 생성 금지.
-- **간결하게.** 한 줄 문제, 한 줄 수정. 서두 없음.
-- **실제 문제만 플래깅.** 괜찮은 것은 스킵.
-- 민감 영역(결제/인증/위기감지) 변경 시: "⚠️ plan.md 선행 필수 영역입니다" 경고
-- 500줄 이상 변경 시: "⚠️ 변경 규모가 큽니다. 서브태스크 분할을 고려하세요" 경고
-- 새 API 라우트 추가 시: Edge Runtime + Rate Limiting + 인증 3종 세트 확인
-- `.env` 관련 변경 시: git stage 여부 반드시 확인
+## Finding ID 체계
+
+```
+F{pass}-{seq}
+예: F1-001 (1차 보안 검수 첫 번째 발견), F7-003 (7차 통합 검수 세 번째 발견)
+```
+
+## 최종 판정 (7차에서 산출)
+
+| 판정 | 조건 |
+|------|------|
+| 🟢 **SHIP** | CRITICAL 0, HIGH ≤ 2, 교차 레이어 CRITICAL 0 |
+| 🟡 **FIX** | CRITICAL 0, HIGH 3~5 또는 교차 레이어 HIGH 존재 |
+| 🔴 **HALT** | CRITICAL ≥ 1 또는 HIGH ≥ 6 |
+
+## 참조 파일
+
+모든 참조 문서는 `.claude/commands/review-refs/`에 위치:
+
+| 파일 | 용도 |
+|------|------|
+| `execution-protocol.md` | findings.json 스키마, 스캔 전략, 심각도 기준 |
+| `cross-layer-matrix.md` | 12개 교차 레이어 패턴 |
+| `security-scan.md` | 보안 스캔 명령 + mamastale 파일 우선순위 |
+| `backend-scan.md` | API 센서스 + N+1 패턴 |
+| `frontend-scan.md` | 접근성 + 성능 스캔 |
+| `heuristic-checklist.md` | Nielsen 10 + 페르소나 + 감정 디자인 |
+| `tech-debt-criteria.md` | 기술 부채 A~E 등급 |
+| `revenue-model.md` | 단위 경제학 + Monte Carlo 변수 |
+
+## 출력 구조
+
+```
+.review/
+├── config.json              # 파이프라인 메타데이터
+├── pass-1/
+│   ├── findings.json        # 보안 검수 결과
+│   └── scan-log.txt         # 스캔 로그
+├── pass-2/ ~ pass-6/        # 각 패스 동일 구조
+└── pass-7/
+    ├── findings.json        # 통합 검수 결과
+    └── final-report.md      # 최종 리포트 (판정 + 통계 + 로드맵)
+```
