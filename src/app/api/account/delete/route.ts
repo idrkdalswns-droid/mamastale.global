@@ -47,8 +47,8 @@ export async function DELETE(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "확인 정보가 필요합니다." }, { status: 400 });
   }
-  if (body?.confirm !== "DELETE_MY_ACCOUNT") {
-    return NextResponse.json({ error: "삭제 확인이 필요합니다. confirm: 'DELETE_MY_ACCOUNT'를 전송해 주세요." }, { status: 400 });
+  if (body?.confirm !== "탈퇴합니다") {
+    return NextResponse.json({ error: "'탈퇴합니다'를 입력해 주세요." }, { status: 400 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility

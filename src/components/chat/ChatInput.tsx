@@ -101,7 +101,7 @@ export default memo(function ChatInput({
           aria-label="메시지 입력"
           placeholder={disabled ? "체험이 종료되었습니다" : PHASE_PLACEHOLDERS[phase] || "이야기를 들려주세요..."}
           rows={1}
-          maxLength={5000}
+          maxLength={2000}
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
           style={{
             border: `1.5px solid ${p.accent}22`,

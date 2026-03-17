@@ -80,9 +80,11 @@ export function ImageSorter({
               layoutId={`sort-${idx}`}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               onClick={() => handleTap(position)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleTap(position); } }}
               role="button"
               tabIndex={0}
-              className="relative rounded-xl overflow-hidden focus:outline-none cursor-pointer"
+              aria-label={`장면 ${position + 1}${selectedPosition !== null ? " — 이 카드와 교환" : ""}`}
+              className="relative rounded-xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer"
               style={{ aspectRatio: "3/4" }}
             >
               {/* Image */}

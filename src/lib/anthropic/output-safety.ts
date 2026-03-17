@@ -16,8 +16,12 @@ export interface SafetyViolation {
     | "medical_advice"
     | "phase_inconsistency";
   matched: string;
-  severity: "block" | "warn";
+  severity: "block" | "warn" | "redirect";
 }
+
+/** Warm redirect message for medical advice — guides to professional help without blocking */
+export const MEDICAL_REDIRECT_MESSAGE =
+  "이 부분은 전문 상담사와 함께하시면 좋겠어요. 정신건강 위기상담 전화 1393, 자살예방 상담 1577-0199로 연락하실 수 있어요.";
 
 export interface SafetyCheckResult {
   passed: boolean;
@@ -132,7 +136,7 @@ export function validateOutputSafety(
         violations.push({
           type: "medical_advice",
           matched: phrase,
-          severity: "warn",
+          severity: "redirect",
         });
       }
     }

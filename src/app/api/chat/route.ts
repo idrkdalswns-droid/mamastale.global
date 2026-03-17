@@ -36,7 +36,7 @@ const chatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),
-      content: z.string().min(1).max(50000),  // Korean text can be much longer per token
+      content: z.string().min(1).max(2000),
     })
   ).max(120),  // Generous limit for long conversations
   // R6-F5: Constrain sessionId to prevent log pollution and crisis tracking abuse
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       const totalTurns = Math.ceil(messages.length / 2);
       if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
         return NextResponse.json(
-          { error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." },
+          { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
           { status: 403 }
         );
       }

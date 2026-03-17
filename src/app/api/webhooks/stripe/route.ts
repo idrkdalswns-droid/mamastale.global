@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
         // R4-C8: Prefer session metadata (set at checkout) for ticket count
         // Falls back to amount mapping for legacy sessions or coupons/discounts
         const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {
+          3920: 1,    // ₩3,920 = 1 ticket (20% discount)
           4900: 1,    // ₩4,900 = 1 ticket
           14900: 4,   // ₩14,900 = 4 tickets (bundle)
         };

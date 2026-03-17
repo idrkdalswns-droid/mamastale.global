@@ -255,7 +255,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "API request failed");
+        throw new Error(errData.message || errData.error || "API request failed");
       }
 
       const data: ChatApiResponse = await res.json();
@@ -476,6 +476,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           if (event.type === "text" && event.text) {
             assistantContent += event.text;
+            set((s) => ({
+              messages: s.messages.map((m) =>
+                m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+              ),
+            }));
+          }
+
+          // P1-4: Append warm redirect message when medical advice is detected
+          if (event.type === "safety_redirect" && event.message) {
+            assistantContent += "\n\n" + event.message;
             set((s) => ({
               messages: s.messages.map((m) =>
                 m.id === assistantMsgId ? { ...m, content: assistantContent } : m

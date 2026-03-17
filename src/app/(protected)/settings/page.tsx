@@ -67,10 +67,10 @@ export default function SettingsPage() {
     setDeleting(true);
     try {
       const res = await fetch("/api/account/delete", {
-        method: "POST",
+        method: "DELETE",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation: "탈퇴합니다" }),
+        body: JSON.stringify({ confirm: "탈퇴합니다" }),
       });
       if (!res.ok) throw new Error();
       router.push("/");

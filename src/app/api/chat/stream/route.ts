@@ -21,7 +21,7 @@ import type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";
 import { getPhasePrompt } from "@/lib/anthropic/phase-prompts";
 import type { StorySeedContext } from "@/lib/anthropic/phase-prompts";
 import { selectModel, getFallbackModel } from "@/lib/anthropic/model-router";
-import { validateOutputSafety } from "@/lib/anthropic/output-safety";
+import { validateOutputSafety, MEDICAL_REDIRECT_MESSAGE } from "@/lib/anthropic/output-safety";
 import {
   detectPhase,
   stripPhaseTag,
@@ -34,7 +34,7 @@ import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
-import { createServerClient } from "@supabase/ssr";
+import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 
 const storySeedSchema = z.object({
@@ -47,7 +47,7 @@ const chatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),
-      content: z.string().min(1).max(50000),
+      content: z.string().min(1).max(2000),
     })
   ).max(120),
   // R6-F5: Constrain sessionId to prevent log pollution
@@ -73,29 +73,23 @@ export async function POST(request: NextRequest) {
   // ─── Auth check (same as /api/chat) ───
   let userId: string | null = null;
   let isPremiumUser = false;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // P1-1: Use createApiSupabaseClient to propagate auth-refresh cookies via getCookieHeaders()
+  const sb = createApiSupabaseClient(request);
 
-  if (supabaseUrl && supabaseKey) {
+  if (sb) {
     try {
-      const supabase = createServerClient(supabaseUrl, supabaseKey, {
-        cookies: {
-          getAll() { return request.cookies.getAll(); },
-          setAll() {},
-        },
-      });
-      let user = (await supabase.auth.getUser()).data.user;
+      let user = (await sb.client.auth.getUser()).data.user;
       if (!user) {
         const authHeader = request.headers.get("Authorization");
         if (authHeader?.startsWith("Bearer ")) {
-          const { data: tokenData } = await supabase.auth.getUser(authHeader.slice(7));
+          const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
           user = tokenData.user;
         }
       }
       userId = user?.id || null;
       if (userId) {
         try {
-          const { data: profile } = await supabase
+          const { data: profile } = await sb.client
             .from("profiles")
             .select("metadata, free_stories_remaining")
             .eq("id", userId)
@@ -141,9 +135,15 @@ export async function POST(request: NextRequest) {
   // ─── Server-side turn limit (guests AND authenticated users without tickets) ───
   const userMsgCount = messages.filter((m) => m.role === "user").length;
   if (!isAuthenticated) {
+    // Quick client-side count check (fast rejection)
     const totalTurns = Math.ceil(messages.length / 2);
     if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
-      return NextResponse.json({ error: "대화 횟수를 초과했습니다. 티켓을 구매해 주세요." }, { status: 403 });
+      return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
+    }
+    // P1-2: Persistent server-side guest turn tracking (survives browser restart, prevents bypass)
+    const guestTurnAllowed = await checkRateLimitPersistent(`guest_turns:${ip}`, GUEST_TURN_LIMIT, 86400);
+    if (!guestTurnAllowed) {
+      return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
     }
   }
   // Freemium v2: Authenticated users capped at 30 turns per story
@@ -518,15 +518,20 @@ export async function POST(request: NextRequest) {
 
         // Output safety validation
         const safetyResult = validateOutputSafety(cleanText, safePhase, detectedPhase);
-        // V5-FIX #10: Block medical advice responses
-        const hasMedicalAdvice = safetyResult.violations.some(v => v.type === "medical_advice");
+        const hasMedicalRedirect = safetyResult.violations.some(v => v.type === "medical_advice" && v.severity === "redirect");
         if (!safetyResult.passed) {
           logEvent({
             eventType: "output_safety_violation",
             endpoint: "/api/chat/stream",
             userId,
-            metadata: { violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })), blocked: hasMedicalAdvice },
+            metadata: { violations: safetyResult.violations.map(v => ({ type: v.type, matched: v.matched })), redirected: hasMedicalRedirect },
           }).catch(() => {});
+        }
+        // P1-4: Send safety_redirect SSE event (appends warm message, does NOT block original)
+        if (hasMedicalRedirect) {
+          controller.enqueue(encoder.encode(
+            `data: ${JSON.stringify({ type: "safety_redirect", message: MEDICAL_REDIRECT_MESSAGE })}\n\n`
+          ));
         }
 
         // Parse scenes if story is complete
@@ -539,13 +544,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Send completion event
-        // V5-FIX #10: Include medicalBlocked flag for client-side message replacement
+        // P1-4: Include medicalRedirected flag for client-side warm redirect
         controller.enqueue(encoder.encode(
           `data: ${JSON.stringify({
             type: "done",
             phase,
             isStoryComplete: storyComplete,
-            ...(hasMedicalAdvice ? { medicalBlocked: true } : {}),
+            ...(hasMedicalRedirect ? { medicalRedirected: true } : {}),
             ...(storyComplete && scenes.length > 0 ? { scenes, storyId: `story_${Date.now()}` } : {}),
             ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
             ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
@@ -604,18 +609,23 @@ export async function POST(request: NextRequest) {
   });
 
   // R6-F6: Add security headers to raw Response (middleware headers bypass)
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-store, must-revalidate",
-      "Connection": "keep-alive",
-      "X-Accel-Buffering": "no", // Disable nginx buffering
-      "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "DENY",
-      "Referrer-Policy": "strict-origin-when-cross-origin",
-      "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-      "Content-Security-Policy": "default-src 'none'",
-    },
+  // P1-1: Propagate auth-refresh cookies via raw Set-Cookie headers (applyCookies() crashes on raw Response)
+  const responseHeaders = new Headers({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'none'",
   });
+  if (sb) {
+    for (const cookie of sb.getCookieHeaders()) {
+      responseHeaders.append("Set-Cookie", cookie);
+    }
+  }
+  return new Response(readable, { headers: responseHeaders });
 }
