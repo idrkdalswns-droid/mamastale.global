@@ -763,6 +763,14 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 | `/cleanup` | `.claude/commands/cleanup.md` | 데드코드·미사용 import·중복 로직 정리 |
 | `/db-optimize` | `.claude/commands/db-optimize.md` | Supabase 쿼리·인덱스·RLS 최적화 |
 | `/qa` | `.claude/commands/qa.md` | 체계적 QA (diff-aware·full·quick·regression 4모드) |
+| `/plan-review` | `.claude/commands/plan-review.md` | 7-Pass 직렬 플랜 검수 파이프라인 오케스트레이터 (코딩 전 계획 리뷰) |
+| `/plan-review-security` | `.claude/commands/plan-review-security.md` | 1차 보안 감사 (인증·인가·데이터 보호·위기감지) |
+| `/plan-review-backend` | `.claude/commands/plan-review-backend.md` | 2차 백엔드 감사 (API·DB·외부 서비스·Edge Runtime) |
+| `/plan-review-frontend` | `.claude/commands/plan-review-frontend.md` | 3차 프론트엔드 감사 (컴포넌트·상태·접근성·성능·반응형) |
+| `/plan-review-ux` | `.claude/commands/plan-review-ux.md` | 4차 UX 감사 (페르소나 3명·감정 디자인·인지 부하) |
+| `/plan-review-architecture` | `.claude/commands/plan-review-architecture.md` | 5차 아키텍처 감사 (정합성·확장성·기술 부채·배포) |
+| `/plan-review-business` | `.claude/commands/plan-review-business.md` | 6차 비즈니스 감사 (기회비용·ROI·우선순위·Devil's Advocate) |
+| `/plan-review-final` | `.claude/commands/plan-review-final.md` | 7차 최종 판관 (크로스 관점·판정·강점·수정된 plan.md) |
 | `/plan-ceo` | `.claude/commands/plan-ceo.md` | 파운더 모드 10-star 플랜 리뷰 (gstack 기반) |
 | `/plan-eng` | `.claude/commands/plan-eng.md` | 엔지니어링 매니저 모드 4-Pass 아키텍처 리뷰 (gstack 기반) |
 | `/retro` | `.claude/commands/retro.md` | 주간 엔지니어링 회고 — 커밋 분석·트렌드·습관 (gstack 기반) |
