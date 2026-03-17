@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 interface TeacherCodeModalProps {
   onVerified: (data: {
@@ -61,7 +62,9 @@ export function TeacherCodeModal({ onVerified }: TeacherCodeModalProps) {
       <div className="w-full max-w-sm">
         {/* 아이콘 */}
         <div className="text-center mb-6">
-          <div className="text-5xl mb-3">🔑</div>
+          <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
+            <Image src="/images/teacher/icon/key.jpeg" alt="접근 코드" fill className="object-cover" sizes="64px" />
+          </div>
           <h1 className="text-xl font-semibold text-brown">
             선생님 접근 코드
           </h1>

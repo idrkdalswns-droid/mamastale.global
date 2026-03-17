@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
@@ -106,7 +107,9 @@ export function TeacherChat({
         {/* 웰컴 메시지 (첫 메시지 없을 때) */}
         {messages.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-3xl mb-3">📚</p>
+            <div className="w-14 h-14 relative rounded-xl overflow-hidden mx-auto mb-3">
+              <Image src="/images/teacher/state/generating.jpeg" alt="동화" fill className="object-cover" sizes="56px" />
+            </div>
             <p className="text-sm text-brown font-medium break-keep">
               안녕하세요, 선생님! 함께 동화를 만들어볼까요?
             </p>

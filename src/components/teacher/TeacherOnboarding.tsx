@@ -1,7 +1,37 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import type { TeacherOnboarding as TeacherOnboardingType } from "@/lib/types/teacher";
+
+/** 온보딩 옵션 value → 일러스트 이미지 경로 매핑 */
+const ICON_IMAGES: Record<string, string> = {
+  // 연령
+  infant: "/images/teacher/onboarding/age-infant.jpeg",
+  toddler: "/images/teacher/onboarding/age-toddler.jpeg",
+  kindergarten: "/images/teacher/onboarding/age-kindergarten.jpeg",
+  mixed: "/images/teacher/onboarding/age-mixed.jpeg",
+  // 상황
+  large_group: "/images/teacher/onboarding/context-large-group.jpeg",
+  small_group: "/images/teacher/onboarding/context-small-group.jpeg",
+  free_choice: "/images/teacher/onboarding/context-free-choice.jpeg",
+  home_connection: "/images/teacher/onboarding/context-home.jpeg",
+  // 주제
+  "양치": "/images/teacher/onboarding/topic-brushing.jpeg",
+  "편식": "/images/teacher/onboarding/topic-picky-eating.jpeg",
+  "화 조절": "/images/teacher/onboarding/topic-anger.jpeg",
+  "분리불안": "/images/teacher/onboarding/topic-separation.jpeg",
+  "정리정돈": "/images/teacher/onboarding/topic-tidying.jpeg",
+  "거짓말": "/images/teacher/onboarding/topic-lying.jpeg",
+  "양보/공유": "/images/teacher/onboarding/topic-sharing.jpeg",
+  _custom: "/images/teacher/onboarding/topic-custom.jpeg",
+  // 캐릭터
+  animal: "/images/teacher/onboarding/char-animal.jpeg",
+  child: "/images/teacher/onboarding/char-child.jpeg",
+  object: "/images/teacher/onboarding/char-object.jpeg",
+  fantasy: "/images/teacher/onboarding/char-fantasy.jpeg",
+  auto: "/images/teacher/onboarding/char-auto.jpeg",
+};
 
 interface TeacherOnboardingProps {
   onComplete: (data: TeacherOnboardingType) => void;
@@ -190,7 +220,7 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                 boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
-              시작하기 ✨
+              시작하기
             </button>
           </div>
         </div>
@@ -235,7 +265,18 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                                  text-sm text-brown-light font-medium
                                  hover:bg-paper/80 active:scale-[0.98] transition-all"
                     >
-                      {opt.icon} {opt.label}
+                      {ICON_IMAGES[opt.value] ? (
+                        <Image
+                          src={ICON_IMAGES[opt.value]}
+                          alt={opt.label}
+                          width={20}
+                          height={20}
+                          className="inline-block rounded object-cover mr-1.5"
+                        />
+                      ) : (
+                        <span className="mr-1">{opt.icon}</span>
+                      )}
+                      {opt.label}
                     </button>
                   )}
                 </div>
@@ -251,7 +292,19 @@ export function TeacherOnboarding({ onComplete }: TeacherOnboardingProps) {
                            hover:border-coral/30 hover:bg-paper
                            active:scale-[0.97] transition-all"
               >
-                <span className="text-2xl">{opt.icon}</span>
+                {ICON_IMAGES[opt.value] ? (
+                  <div className="w-12 h-12 relative rounded-lg overflow-hidden">
+                    <Image
+                      src={ICON_IMAGES[opt.value]}
+                      alt={opt.label}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-2xl">{opt.icon}</span>
+                )}
                 <span className="text-sm font-medium text-brown break-keep text-center">
                   {opt.label}
                 </span>

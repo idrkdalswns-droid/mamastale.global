@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import type {
   TeacherStory,
   TeacherSpread,
   TeacherStoryMetadata,
 } from "@/lib/types/teacher";
 import { createClient } from "@/lib/supabase/client";
+
+const TAB_ICONS: Record<string, string> = {
+  spreads: "/images/teacher/tab/spreads.jpeg",
+  guide: "/images/teacher/tab/guide.jpeg",
+  nuri: "/images/teacher/tab/nuri.jpeg",
+  illust: "/images/teacher/tab/illust.jpeg",
+  review: "/images/teacher/tab/review.jpeg",
+};
 
 interface TeacherPreviewProps {
   story: TeacherStory;
@@ -182,7 +191,7 @@ export function TeacherPreview({
           onClick={onNewStory}
           className="text-sm text-coral font-medium"
         >
-          새 동화 ✨
+          새 동화
         </button>
       </div>
 
@@ -213,7 +222,13 @@ export function TeacherPreview({
                                : "bg-paper/30 text-brown-pale/50 cursor-not-allowed"
                          }`}
             >
-              <span>{tab.icon}</span>
+              <Image
+                src={TAB_ICONS[tab.id]}
+                alt={tab.label}
+                width={16}
+                height={16}
+                className="rounded object-cover"
+              />
               <span>{tab.label}</span>
             </button>
           );
@@ -239,7 +254,7 @@ export function TeacherPreview({
         {activeTab === "guide" && metadata.readingGuide && (
           <MetadataSection
             title="읽어주기 가이드"
-            icon="📋"
+            icon="/images/teacher/tab/guide.jpeg"
             content={metadata.readingGuide}
           />
         )}
@@ -247,7 +262,7 @@ export function TeacherPreview({
         {activeTab === "nuri" && metadata.nuriMapping && (
           <MetadataSection
             title="누리과정 연계 매핑"
-            icon="🎯"
+            icon="/images/teacher/tab/nuri.jpeg"
             content={metadata.nuriMapping}
           />
         )}
@@ -255,7 +270,7 @@ export function TeacherPreview({
         {activeTab === "illust" && metadata.illustPrompts && (
           <MetadataSection
             title="삽화 프롬프트"
-            icon="🎨"
+            icon="/images/teacher/tab/illust.jpeg"
             content={metadata.illustPrompts}
           />
         )}
@@ -263,7 +278,7 @@ export function TeacherPreview({
         {activeTab === "review" && metadata.devReview && (
           <MetadataSection
             title="발달 적합성 검수"
-            icon="✅"
+            icon="/images/teacher/tab/review.jpeg"
             content={metadata.devReview}
           />
         )}
@@ -296,7 +311,7 @@ export function TeacherPreview({
               <span className="animate-pulse">생성 중...</span>
             ) : (
               <>
-                <span>📄</span>
+                <Image src="/images/teacher/icon/activity.jpeg" alt="활동지" width={16} height={16} className="rounded object-cover" />
                 <span>활동지 (16p)</span>
               </>
             )}
@@ -313,7 +328,7 @@ export function TeacherPreview({
               <span className="animate-pulse text-brown-light">생성 중...</span>
             ) : (
               <>
-                <span>📋</span>
+                <Image src="/images/teacher/tab/guide.jpeg" alt="가이드" width={16} height={16} className="rounded object-cover" />
                 <span>읽기 가이드</span>
               </>
             )}
@@ -497,7 +512,7 @@ function MetadataSection({ title, icon, content }: MetadataSectionProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
+        <Image src={icon} alt={title} width={20} height={20} className="rounded object-cover" />
         <h3 className="text-sm font-semibold text-brown">{title}</h3>
       </div>
       <div className="bg-paper/60 rounded-2xl p-4">

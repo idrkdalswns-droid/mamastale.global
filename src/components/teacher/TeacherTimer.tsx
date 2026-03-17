@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 interface TeacherTimerProps {
   expiresAt: string;
@@ -64,7 +65,7 @@ export function TeacherTimer({ expiresAt, onExpired }: TeacherTimerProps) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-paper/80 border border-brown-pale/20">
-      <span className="text-[11px] text-brown-light">⏰</span>
+      <Image src="/images/teacher/icon/timer.jpeg" alt="타이머" width={14} height={14} className="rounded object-cover" />
       <div className="w-16 h-1.5 bg-brown-pale/20 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-1000"

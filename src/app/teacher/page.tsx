@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import { TeacherCodeModal } from "@/components/teacher/TeacherCodeModal";
@@ -184,7 +185,9 @@ export default function TeacherPage() {
     return (
       <div className="flex items-center justify-center min-h-[60dvh] px-6">
         <div className="text-center">
-          <p className="text-3xl mb-3">🔒</p>
+          <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
+            <Image src="/images/teacher/state/locked.jpeg" alt="준비 중" fill className="object-cover" sizes="64px" />
+          </div>
           <p className="text-sm text-brown-light break-keep">
             선생님 모드는 현재 준비 중입니다.
           </p>
@@ -231,7 +234,9 @@ export default function TeacherPage() {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
           <div className="text-center">
-            <div className="text-5xl mb-4 animate-bounce">📚</div>
+            <div className="w-20 h-20 relative rounded-xl overflow-hidden mx-auto mb-4 animate-bounce">
+              <Image src="/images/teacher/state/generating.jpeg" alt="생성 중" fill className="object-cover" sizes="80px" />
+            </div>
             <p className="text-lg font-semibold text-brown mb-2">
               동화를 만들고 있어요...
             </p>
@@ -254,7 +259,9 @@ export default function TeacherPage() {
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
           <div className="text-center">
-            <p className="text-5xl mb-4">⚠️</p>
+            <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-4">
+              <Image src="/images/teacher/state/error.jpeg" alt="오류" fill className="object-cover" sizes="64px" />
+            </div>
             <p className="text-sm text-brown-light mb-4">
               동화 데이터를 찾을 수 없습니다.
             </p>
@@ -267,7 +274,7 @@ export default function TeacherPage() {
                 boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
-              새 동화 만들기 ✨
+              새 동화 만들기
             </button>
           </div>
         </div>
@@ -277,7 +284,9 @@ export default function TeacherPage() {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
           <div className="text-center">
-            <p className="text-5xl mb-4">🎉</p>
+            <div className="w-20 h-20 relative rounded-xl overflow-hidden mx-auto mb-4">
+              <Image src="/images/teacher/state/done.jpeg" alt="완료" fill className="object-cover" sizes="80px" />
+            </div>
             <p className="text-lg font-semibold text-brown mb-4">
               오늘도 멋진 동화를 만드셨어요!
             </p>
@@ -290,7 +299,7 @@ export default function TeacherPage() {
                 boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
               }}
             >
-              새 동화 만들기 ✨
+              새 동화 만들기
             </button>
           </div>
         </div>

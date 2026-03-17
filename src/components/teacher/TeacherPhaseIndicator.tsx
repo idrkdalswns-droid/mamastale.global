@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { TEACHER_PHASES, type TeacherPhase } from "@/lib/types/teacher";
 
 interface TeacherPhaseIndicatorProps {
@@ -44,7 +45,7 @@ export function TeacherPhaseIndicator({
                     : "none",
                 }}
               >
-                {info.icon}
+                <Image src={info.icon} alt={info.name} width={16} height={16} className="rounded-full object-cover" />
               </div>
               <span
                 className="text-[9px] mt-1 font-medium whitespace-nowrap"
