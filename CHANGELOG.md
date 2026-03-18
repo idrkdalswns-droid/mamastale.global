@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.20.1] - 2026-03-18
+
+### Fixed
+- **ChatInput 연타 방지** — 800ms 타임스탬프 디바운스로 Android WebView 터치 이중 발화 차단 (Fix 1)
+- **sendInFlight 영구 락** — boolean → 카운터 기반 락 + 30초 타임아웃 자동 해제 (Fix 2)
+- **Stripe 통화 검증** — KRW/USD/JPY 허용 목록으로 해외 한국 어머니 결제 지원 (Fix 3)
+- **빈 catch 블록 로깅** — useChat.ts 18개소에 console.warn 추가 (Fix 4)
+- **MessageBubble lang** — root div에 lang="ko" 추가로 VoiceOver 한국어 발음 (Fix 5)
+- **localStorage 크래시** — useSettings 프라이빗 브라우징 모드 try-catch 래핑 (Fix 20)
+
+### Changed
+- **로딩 피드백 에스컬레이션** — 5초/15초 단계별 안내 메시지 + opacity 70% 시각 피드백 (Fix 6)
+- **게스트 체험 5→7턴** — 2단계 첫 AI 응답까지 무료 + GA 이벤트 추가 (UX-1)
+- **위기 전화번호 가독성** — 10px→12px + opacity 향상 (UX-9)
+
+### Added
+- **useChat.ts 테스트 12개** — sendMessage 락, 동시 호출 거부, 에러 복구, phase 전환
+- **ChatInput 디바운스 테스트 6개** — 800ms 윈도우 검증
+
 ## [1.20.0] - 2026-03-18
 
 ### Security
