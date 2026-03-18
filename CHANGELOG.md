@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.20.2] - 2026-03-18
+
+### Added
+- **퍼널 트래킹 10개 이벤트** — onboarding_start, chat_phase_enter, story_complete, pdf_download, payment_start/complete/abandon 등 (C1)
+- **trackPaymentAbandon** — 결제 실패/이탈 원인별 GA4 이벤트
+
+### Changed
+- **Phase 전환 속도 1.1s → 0.5s** — setTimeout 600+500 → 250+250, 애니메이션 0.4+0.5 → 0.2+0.25 (R4)
+- **전환 중 메시지 전송 차단** — isTransitioning 가드 추가 (R4)
+- **AI 첫 메시지 단축** — ~250단어 → ~60단어, 3문장으로 간결화 (R5)
+
 ## [1.20.1] - 2026-03-18
 
 ### Fixed
