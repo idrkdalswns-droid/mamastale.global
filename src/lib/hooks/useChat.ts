@@ -23,7 +23,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) { console.warn("[useChat] getAuthHeaders 실패", e); }
   return headers;
 }
 
@@ -117,8 +117,25 @@ const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
 // R3-FIX: Add timeout fallback to prevent permanent lock on network failure
 let saveInFlight = false;
 let saveInFlightTimer: ReturnType<typeof setTimeout> | null = null;
-// V5-FIX #20: Module-level lock to prevent double-click concurrent sendMessage
-let sendInFlight = false;
+// Fix 2: Counter-based lock to prevent concurrent sendMessage + 30s timeout
+let sendInFlightId = 0;
+let sendInFlightTimer: ReturnType<typeof setTimeout> | null = null;
+function armSendInFlight(): number {
+  const id = ++sendInFlightId;
+  if (sendInFlightTimer) clearTimeout(sendInFlightTimer);
+  sendInFlightTimer = setTimeout(() => {
+    if (sendInFlightId === id) {
+      sendInFlightId = 0;
+      sendInFlightTimer = null;
+      console.warn("[useChat] sendInFlight 30s 타임아웃 해제");
+    }
+  }, 30_000);
+  return id;
+}
+function disarmSendInFlight(id: number) {
+  if (sendInFlightId === id) sendInFlightId = 0;
+  if (sendInFlightTimer) { clearTimeout(sendInFlightTimer); sendInFlightTimer = null; }
+}
 
 const AGE_LABELS: Record<string, string> = {
   "0-2": "어린 아이를 돌보시느라",
@@ -143,7 +160,7 @@ function buildInitialMessage(): string {
     childAge = localStorage?.getItem("mamastale_child_age") || "";
     parentRole = localStorage?.getItem("mamastale_parent_role") || "";
     childName = localStorage?.getItem("mamastale_child_name") || "";
-  } catch {}
+  } catch { /* SSR: localStorage unavailable — expected */ }
 
   const role = ROLE_TITLES[parentRole] || ROLE_TITLES["엄마"];
 
@@ -196,9 +213,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   sendMessage: async (text: string) => {
     const state = get();
-    // V5-FIX #20: Module-level lock prevents concurrent sends (double-click, fast Enter)
-    if (!text.trim() || state.isLoading || sendInFlight) return;
-    sendInFlight = true;
+    // Fix 2: Counter-based lock prevents concurrent sends (double-click, fast Enter)
+    if (!text.trim() || state.isLoading || sendInFlightId > 0) return;
+    const reqId = armSendInFlight();
 
     const userMsg: Message = {
       id: genId("user"),
@@ -226,7 +243,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         childAge = localStorage.getItem("mamastale_child_age") || undefined;
         parentRole = localStorage.getItem("mamastale_parent_role") || undefined;
         parentAge = localStorage.getItem("mamastale_parent_age") || undefined;
-      } catch {}
+      } catch (e) { console.warn("[useChat] sendMessage localStorage 접근 실패", e); }
 
       // CTO-FIX: Include Bearer token for premium detection in WebView/mobile
       const chatHeaders = await getAuthHeaders();
@@ -307,7 +324,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // This guarantees 0% chat loss on: refresh, crash, OAuth redirect, tab close.
       // (Previously only saved when isFromDraft was true — missing fresh sessions)
       if (!data.isStoryComplete) {
-        try { get().saveDraft(); } catch { /* localStorage unavailable (private browsing) */ }
+        try { get().saveDraft(); } catch (e) { console.warn("[useChat] saveDraft 실패", e); }
       }
 
       // ─── Story complete → clear draft (no longer needed) ───
@@ -353,10 +370,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
             set({ storySaved: false, storySaveError: "save_failed" });
             get().persistToStorage();
           }
-        } catch {
+        } catch (e) {
+          console.warn("[useChat] 스토리 저장 실패", e);
           set({ storySaved: false, storySaveError: "save_failed" });
           get().persistToStorage();
-          console.warn("Failed to save story to database");
         } finally {
           saveInFlight = false; // P1-FIX(KR-3): Release module-level lock
             if (saveInFlightTimer) { clearTimeout(saveInFlightTimer); saveInFlightTimer = null; }
@@ -379,15 +396,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((s) => ({ messages: [...s.messages, errorMsg] }));
     } finally {
       set({ isLoading: false });
-      sendInFlight = false; // V5-FIX #20: Release module-level send lock
+      disarmSendInFlight(reqId); // Fix 2: Release counter-based lock
     }
   },
 
   sendMessageStreaming: async (text: string) => {
     const state = get();
-    // V5-FIX #20: Module-level lock prevents concurrent sends
-    if (!text.trim() || state.isLoading || sendInFlight) return;
-    sendInFlight = true;
+    // Fix 2: Counter-based lock prevents concurrent sends
+    if (!text.trim() || state.isLoading || sendInFlightId > 0) return;
+    const reqId = armSendInFlight();
 
     const userMsg: Message = {
       id: genId("user"),
@@ -410,7 +427,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         childAge = localStorage.getItem("mamastale_child_age") || undefined;
         parentRole = localStorage.getItem("mamastale_parent_role") || undefined;
         parentAge = localStorage.getItem("mamastale_parent_age") || undefined;
-      } catch {}
+      } catch (e) { console.warn("[useChat] sendMessageStreaming localStorage 접근 실패", e); }
 
       const chatHeaders = await getAuthHeaders();
 
@@ -472,7 +489,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           let event: ChatStreamEvent;
-          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+          try { event = JSON.parse(line.slice(6)); } catch (e) { console.warn("[useChat] SSE JSON 파싱 실패", e); continue; }
 
           if (event.type === "text" && event.text) {
             assistantContent += event.text;
@@ -531,7 +548,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             // Auto-save draft
             if (!event.isStoryComplete) {
-              try { get().saveDraft(); } catch { /* localStorage unavailable (private browsing) */ }
+              try { get().saveDraft(); } catch (e) { console.warn("[useChat] saveDraft 실패", e); }
             } else {
               try { localStorage.removeItem(DRAFT_KEY); } catch {}
               set({ isFromDraft: false });
@@ -568,7 +585,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   set({ storySaved: false, storySaveError: "save_failed" });
                   get().persistToStorage();
                 }
-              } catch {
+              } catch (e) {
+                console.warn("[useChat] 스트리밍 스토리 저장 실패", e);
                 set({ storySaved: false, storySaveError: "save_failed" });
                 get().persistToStorage();
               } finally {
@@ -605,7 +623,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((s) => ({ messages: [...s.messages, errorMsg] }));
     } finally {
       set({ isLoading: false });
-      sendInFlight = false; // V5-FIX #20: Release module-level send lock
+      disarmSendInFlight(reqId); // Fix 2: Release counter-based lock
     }
   },
 
@@ -628,8 +646,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         source: "auth",
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch {
-      // localStorage not available
+    } catch (e) {
+      console.warn("[useChat] persistToStorage 실패", e);
     }
   },
 
@@ -655,7 +673,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Auth saves are consumed (one-time use)
       localStorage.removeItem(STORAGE_KEY);
       return true;
-    } catch {
+    } catch (e) {
+      console.warn("[useChat] restoreFromStorage 실패", e);
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
       return false;
     }
@@ -677,8 +696,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         savedAt: Date.now(),
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot));
-    } catch {
-      // localStorage not available
+    } catch (e) {
+      console.warn("[useChat] saveDraft 실패", e);
     }
   },
 
@@ -703,7 +722,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ ...snapshotToState(snapshot), isFromDraft: true });
       // NOTE: We do NOT delete DRAFT_KEY here — draft persists
       return true;
-    } catch {
+    } catch (e) {
+      console.warn("[useChat] restoreDraft 실패", e);
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* */ }
       return false;
     }
@@ -746,7 +766,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         savedAt: snapshot.savedAt,
         source,
       };
-    } catch {
+    } catch (e) {
+      console.warn("[useChat] getDraftInfo 실패", e);
       return null;
     }
   },
@@ -804,7 +825,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return true;
       }
       return false;
-    } catch {
+    } catch (e) {
+      console.warn("[useChat] retrySaveStory 실패", e);
       return false;
     } finally {
       saveInFlight = false;

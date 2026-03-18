@@ -129,6 +129,13 @@ export async function POST(request: NextRequest) {
           break;
         }
 
+        // Fix 3: Currency allowlist — Korean mothers paying from overseas (USD/JPY)
+        const ALLOWED_CURRENCIES = ["krw", "usd", "jpy"];
+        if (session.currency && !ALLOWED_CURRENCIES.includes(session.currency.toLowerCase())) {
+          console.warn(`[Stripe] Unexpected currency: ${session.currency}, session: ${session.id}`);
+          break;
+        }
+
         // R4-C8: Prefer session metadata (set at checkout) for ticket count
         // Falls back to amount mapping for legacy sessions or coupons/discounts
         const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {

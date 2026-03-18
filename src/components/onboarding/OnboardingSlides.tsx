@@ -264,7 +264,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
           </div>
 
           {/* Crisis info — minimal */}
-          <p className="text-[10px] text-brown-pale/60 font-light text-center mt-3 break-keep">
+          <p className="text-[12px] text-brown-pale/70 font-light text-center mt-3 break-keep">
             힘드실 땐{" "}
             <a href="tel:1393" className="underline text-brown-pale">1393</a>(자살예방) ·{" "}
             <a href="tel:1577-0199" className="underline text-brown-pale">1577-0199</a>(정신건강)

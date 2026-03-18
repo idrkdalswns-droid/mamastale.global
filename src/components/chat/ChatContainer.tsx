@@ -16,8 +16,8 @@ import TurnFivePopup from "./TurnFivePopup";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 
-// V5-FIX #4: 3→5 free turns for better engagement before paywall
-const FREE_TURN_LIMIT = 5;
+// UX-1: 5→7 free turns (2단계 첫 AI 응답까지 무료 체험)
+const FREE_TURN_LIMIT = 7;
 
 interface ChatPageProps {
   onComplete: () => void;
@@ -163,6 +163,10 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
   useEffect(() => {
     if (freeLimitReached && !storyDone && !isLoading && !turnFiveReady) {
+      // UX-1: GA event for trial limit reached
+      if (typeof window !== "undefined" && typeof (window as { gtag?: (...args: unknown[]) => void }).gtag === "function") {
+        (window as { gtag: (...args: unknown[]) => void }).gtag("event", "guest_trial_limit_hit", { turn_count: FREE_TURN_LIMIT });
+      }
       const timer = setTimeout(() => setGuestModalReady(true), 1500);
       return () => clearTimeout(timer);
     }

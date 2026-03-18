@@ -34,14 +34,15 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   setFontSize: (size: FontSize) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(FONT_SIZE_KEY, size);
+      try { localStorage.setItem(FONT_SIZE_KEY, size); } catch { /* Fix 20: Private browsing */ }
     }
     set({ fontSize: size });
   },
 
   _hydrate: () => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(FONT_SIZE_KEY);
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(FONT_SIZE_KEY); } catch { /* Fix 20: Private browsing crash prevention */ }
     if (stored === "small" || stored === "medium" || stored === "large") {
       set({ fontSize: stored, _hydrated: true });
     } else {

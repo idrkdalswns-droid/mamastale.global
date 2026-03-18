@@ -22,6 +22,7 @@ const MessageBubble = memo(function MessageBubble({
 
   return (
     <div
+      lang="ko"
       className="flex mb-3.5 animate-fade-slide-in"
       style={{ justifyContent: isUser ? "flex-end" : "flex-start" }}
       aria-label={isUser ? "내 메시지" : "상담사 메시지"}

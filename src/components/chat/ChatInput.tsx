@@ -21,8 +21,35 @@ export default memo(function ChatInput({
   // ROUND1-FIX: Ref-based mutex to prevent duplicate sends from rapid button taps.
   // React state (isLoading) updates asynchronously, so rapid clicks can slip through.
   const sendingRef = useRef(false);
+  // Fix 1: Timestamp-based debounce to prevent Android WebView touch double-fire
+  const lastSendRef = useRef(0);
+  // Fix 6: Track loading duration for time-based escalation feedback
+  const loadingStartRef = useRef(0);
+  const [loadingHint, setLoadingHint] = useState<string | null>(null);
+
   // Release send lock when loading completes (replaces fragile 500ms timeout)
-  useEffect(() => { if (!isLoading) sendingRef.current = false; }, [isLoading]);
+  useEffect(() => {
+    if (!isLoading) {
+      sendingRef.current = false;
+      setLoadingHint(null);
+      loadingStartRef.current = 0;
+    }
+  }, [isLoading]);
+
+  // Fix 6: Time-based escalation feedback during loading
+  useEffect(() => {
+    if (!isLoading) return;
+    loadingStartRef.current = Date.now();
+
+    const t5 = setTimeout(() => setLoadingHint("AI가 생각하고 있어요..."), 5_000);
+    const t15 = setTimeout(() => setLoadingHint("응답이 지연되고 있어요."), 15_000);
+
+    return () => {
+      clearTimeout(t5);
+      clearTimeout(t15);
+    };
+  }, [isLoading]);
+
   const p = PHASES[phase];
 
   const PHASE_PLACEHOLDERS: Record<number, string> = {
@@ -42,6 +69,9 @@ export default memo(function ChatInput({
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading || disabled || sendingRef.current) return;
+    // Fix 1: 800ms timestamp debounce for Android WebView touch double-fire
+    if (Date.now() - lastSendRef.current < 800) return;
+    lastSendRef.current = Date.now();
     sendingRef.current = true;
     const text = input.trim();
     setInput("");
@@ -67,6 +97,13 @@ export default memo(function ChatInput({
   );
 
   const isDisabled = !input.trim() || isLoading || disabled;
+
+  // Fix 6: Determine placeholder during loading
+  const placeholder = disabled
+    ? "체험이 종료되었습니다"
+    : isLoading
+      ? loadingHint || "보내는 중..."
+      : PHASE_PLACEHOLDERS[phase] || "이야기를 들려주세요...";
 
   return (
     <div
@@ -99,17 +136,18 @@ export default memo(function ChatInput({
           }}
           disabled={disabled}
           aria-label="메시지 입력"
-          placeholder={disabled ? "체험이 종료되었습니다" : PHASE_PLACEHOLDERS[phase] || "이야기를 들려주세요..."}
+          placeholder={placeholder}
           rows={1}
           maxLength={2000}
           className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
           style={{
-            border: `1.5px solid ${p.accent}22`,
+            border: `1.5px solid ${isLoading ? `${p.accent}44` : `${p.accent}22`}`,
             background: "rgb(var(--surface) / 0.5)",
-            transition: "border-color 0.3s",
+            transition: "border-color 0.3s, opacity 0.3s",
             maxHeight: 110,
             WebkitAppearance: "none",
             fontSize: 16,
+            opacity: isLoading ? 0.7 : 1,
           }}
         />
         <button
