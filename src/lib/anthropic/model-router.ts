@@ -85,7 +85,7 @@ export function selectModel(params: {
       }
       return {
         model: MODEL_SONNET,
-        maxTokens: MAX_TOKENS_SONNET,
+        maxTokens: 8192,  // v1.22.0: 10장면 전체 일괄 출력에 필요
         reasoning: "phase4_standard_sonnet",
       };
 

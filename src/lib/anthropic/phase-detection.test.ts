@@ -147,4 +147,13 @@ describe("isStoryComplete", () => {
     // Our regex uses \D before the digit to avoid matching "19장" as "9장"
     expect(isStoryComplete("19장: 다른 이야기", 4)).toBe(false);
   });
+
+  // v1.22.0: [STORY_END] marker
+  it("returns true when [STORY_END] marker is present in Phase 4", () => {
+    expect(isStoryComplete("사랑은 영원해요.\n[STORY_END]\n축하합니다!", 4)).toBe(true);
+  });
+
+  it("returns false when [STORY_END] is present but not Phase 4", () => {
+    expect(isStoryComplete("[STORY_END]", 2)).toBe(false);
+  });
 });

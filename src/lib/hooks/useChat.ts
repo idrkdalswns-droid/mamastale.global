@@ -348,7 +348,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; set({ storySaved: false }); }, 30_000);
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
-          const storyTitle = "나의 마음 동화";
+          const storyTitle = data.title || "나의 마음 동화";
           const authHeaders = await getAuthHeaders();
           const saveRes = await fetch("/api/stories", {
             method: "POST",
@@ -595,7 +595,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   method: "POST",
                   headers: authHeaders,
                   body: JSON.stringify({
-                    title: "나의 마음 동화",
+                    title: event.title || "나의 마음 동화",
                     scenes: event.scenes,
                     sessionId: state.sessionId || undefined,
                   }),

@@ -30,7 +30,7 @@ describe("selectModel", () => {
     it("uses Sonnet for Phase 4 standard users", () => {
       const result = selectModel({ phase: 4, isPremiumUser: false });
       expect(result.model).toBe(MODELS.SONNET);
-      expect(result.maxTokens).toBe(4096);
+      expect(result.maxTokens).toBe(8192); // v1.22.0: 10장면 일괄 출력
     });
 
     it("uses Opus for Phase 4 premium users", () => {

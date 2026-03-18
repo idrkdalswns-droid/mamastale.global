@@ -29,7 +29,7 @@ import {
   extractTags,
   stripTagsTag,
 } from "@/lib/anthropic/phase-detection";
-import { parseStoryScenes } from "@/lib/utils/story-parser";
+import { parseStoryScenes, extractStoryTitle } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
@@ -536,11 +536,13 @@ export async function POST(request: NextRequest) {
 
         // Parse scenes if story is complete
         let scenes: ReturnType<typeof parseStoryScenes> = [];
+        let storyTitle: string | undefined;
         if (storyComplete) {
           const assistantMsgs = messages.filter((m) => m.role === "assistant");
           const phase4StartIdx = Math.max(0, assistantMsgs.length - 20);
           const allPhase4Text = assistantMsgs.slice(phase4StartIdx).map((m) => m.content).join("\n\n") + "\n\n" + cleanText;
           scenes = parseStoryScenes(allPhase4Text);
+          storyTitle = extractStoryTitle(allPhase4Text) || undefined;
         }
 
         // Send completion event
@@ -551,7 +553,7 @@ export async function POST(request: NextRequest) {
             phase,
             isStoryComplete: storyComplete,
             ...(hasMedicalRedirect ? { medicalRedirected: true } : {}),
-            ...(storyComplete && scenes.length > 0 ? { scenes, storyId: `story_${Date.now()}` } : {}),
+            ...(storyComplete && scenes.length > 0 ? { scenes, storyId: `story_${Date.now()}`, title: storyTitle } : {}),
             ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
             ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
             usage: {

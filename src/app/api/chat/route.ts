@@ -16,7 +16,7 @@ import {
   extractTags,
   stripTagsTag,
 } from "@/lib/anthropic/phase-detection";
-import { parseStoryScenes } from "@/lib/utils/story-parser";
+import { parseStoryScenes, extractStoryTitle } from "@/lib/utils/story-parser";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
 import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
@@ -520,6 +520,7 @@ export async function POST(request: NextRequest) {
 
     let storyId: string | undefined;
     let scenes: ReturnType<typeof parseStoryScenes> = [];
+    let storyTitle: string | undefined;
 
     if (storyComplete) {
       // LAUNCH-FIX R2: Only use later assistant messages for scene parsing.
@@ -531,6 +532,7 @@ export async function POST(request: NextRequest) {
         .join("\n\n") + "\n\n" + cleanText;
 
       scenes = parseStoryScenes(allPhase4Text);
+      storyTitle = extractStoryTitle(allPhase4Text) || undefined;
       if (scenes.length > 0) {
         storyId = `story_${Date.now()}`;
       }
@@ -541,7 +543,7 @@ export async function POST(request: NextRequest) {
       phase,
       isStoryComplete: storyComplete,
       storyId,
-      ...(storyComplete && scenes.length > 0 ? { scenes } : {}),
+      ...(storyComplete && scenes.length > 0 ? { scenes, title: storyTitle } : {}),
       ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
       ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
     });

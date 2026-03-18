@@ -71,8 +71,11 @@ export function isStoryComplete(text: string, phase: number | null, clientPhase?
     /(?:^|\D)10\s*장[.:\s]/m.test(text);
   const hasCelebration = text.includes("축하합니다");
 
+  // v1.22.0: [STORY_END] marker — structural story boundary
+  const hasStoryEnd = text.includes("[STORY_END]");
+
   // V5-FIX #9: "축하합니다" alone is too prone to false positives (can appear in Phase 1-3).
   // Only treat it as completion when combined with actual scene markers.
   // Standalone "축하합니다" without WISDOM/late scene markers is no longer a completion signal.
-  return hasWisdom || hasLateScene;
+  return hasWisdom || hasLateScene || hasStoryEnd;
 }

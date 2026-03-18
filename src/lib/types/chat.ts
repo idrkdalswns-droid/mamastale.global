@@ -34,6 +34,8 @@ export interface ChatApiResponse {
   isCrisisIntervention?: boolean;
   /** Sprint 2-C: AI-suggested topic tags from Phase 4 */
   suggestedTags?: string[];
+  /** v1.22.0: AI-generated story title from [TITLE: ...] marker */
+  title?: string;
 }
 
 /**
@@ -81,4 +83,6 @@ export interface ChatStreamEvent {
   isCrisisIntervention?: boolean;
   /** Whether medical advice was detected and redirected (for 'done' events) */
   medicalRedirected?: boolean;
+  /** v1.22.0: AI-generated story title from [TITLE: ...] marker */
+  title?: string;
 }

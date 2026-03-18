@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStoryScenes, cleanSceneText } from "./story-parser";
+import { parseStoryScenes, cleanSceneText, extractStoryTitle } from "./story-parser";
 
 // ────────────────────────────────────────────────────────
 // Strategy 1: English section tags (primary — matches system prompt)
@@ -579,5 +579,66 @@ describe("parseStoryScenes — Strategy 2b: Korean chapter tags (N장)", () => {
     // Title line ("평화로운 토끼 마을**") should be stripped
     expect(scenes[0].text).not.toContain("평화로운 토끼 마을");
     expect(scenes[0].text).toContain("옛날 옛적");
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// v1.22.0: [STORY_END] marker + extractStoryTitle
+// ────────────────────────────────────────────────────────
+
+describe("[STORY_END] marker handling", () => {
+  it("strips celebration text after [STORY_END]", () => {
+    const text = `[INTRO 1] 작은 마을에 토끼가 살았어요.
+[INTRO 2] 어느 날 안개가 내려왔어요.
+[CONFLICT 1] 토끼는 무서웠어요.
+[CONFLICT 2] 길을 잃었어요.
+[ATTEMPT 1] 반딧불이를 만났어요.
+[ATTEMPT 2] 용기를 냈어요.
+[RESOLUTION 1] 빛이 나타났어요.
+[RESOLUTION 2] 안개가 걷혔어요.
+[WISDOM 1] 토끼는 깨달았어요.
+[WISDOM 2] 사랑은 영원해요.
+[STORY_END]
+축하합니다! 당신의 동화가 완성되었어요.
+깊은 숨을 쉬어보세요.
+오늘 많은 감정을 꺼내주셨어요.
+[TAGS: 용기, 사랑]`;
+    const scenes = parseStoryScenes(text);
+    expect(scenes.length).toBe(10);
+    expect(scenes[9].text).toContain("사랑은 영원해요");
+    expect(scenes[9].text).not.toContain("축하합니다");
+    expect(scenes[9].text).not.toContain("깊은 숨");
+  });
+
+  it("works normally without [STORY_END] (backward compat)", () => {
+    const text = `[INTRO 1] 장면 1 텍스트.
+[INTRO 2] 장면 2 텍스트.
+[CONFLICT 1] 장면 3 텍스트.`;
+    const scenes = parseStoryScenes(text);
+    expect(scenes.length).toBe(3);
+  });
+});
+
+describe("extractStoryTitle", () => {
+  it("extracts title from [TITLE: ...] marker", () => {
+    expect(extractStoryTitle("[TITLE: 용감한 토끼 솜이의 모험]\n[INTRO 1] 작은 마을에...")).toBe("용감한 토끼 솜이의 모험");
+  });
+
+  it("returns null when no title marker", () => {
+    expect(extractStoryTitle("[INTRO 1] 작은 마을에 토끼가 살았어요.")).toBeNull();
+  });
+
+  it("handles extra spaces", () => {
+    expect(extractStoryTitle("[TITLE:   안개 숲의 작은 빛  ]")).toBe("안개 숲의 작은 빛");
+  });
+});
+
+describe("cleanSceneText — [TITLE:] and [STORY_END] removal", () => {
+  it("strips [TITLE:] line from scene text", () => {
+    expect(cleanSceneText("[TITLE: 용감한 토끼]\n작은 마을에 토끼가 살았어요.")).toBe("작은 마을에 토끼가 살았어요.");
+  });
+
+  it("strips [STORY_END] marker", () => {
+    expect(cleanSceneText("사랑은 영원해요.\n[STORY_END]")).toBe("사랑은 영원해요.");
   });
 });

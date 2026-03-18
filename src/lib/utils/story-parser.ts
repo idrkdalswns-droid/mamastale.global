@@ -1,6 +1,15 @@
 import type { Scene } from "@/lib/types/story";
 
 /**
+ * Extract AI-generated story title from [TITLE: ...] marker (v1.22.0).
+ * Returns null if no marker found — caller should fall back to default title.
+ */
+export function extractStoryTitle(text: string): string | null {
+  const match = text.match(/\[TITLE:\s*([^\]]+)\]/i);
+  return match ? match[1].trim() : null;
+}
+
+/**
  * Clean markdown artifacts and HTML entities from scene text.
  * Applied during parsing to ensure clean Korean prose in all downstream consumers
  * (StoryViewer, StoryEditor, PDF, copy/share).
@@ -36,6 +45,9 @@ export function cleanSceneText(text: string): string {
   // 1c. P1-FIX(C2): Strip AI meta-commentary lines
   cleaned = cleaned.replace(/^\[TAGS:.*\]$/gim, "");
   cleaned = cleaned.replace(/^\[Image Prompt:.*\]$/gim, "");
+  // v1.22.0: Strip [TITLE:] and [STORY_END] markers
+  cleaned = cleaned.replace(/^\[TITLE:.*\]$/gim, "");
+  cleaned = cleaned.replace(/\[STORY_END\]/gi, "");
   // Phase 4 closing celebration / grounding / self-care lines
   // (line-start anchor — won't match mid-sentence in story prose)
   cleaned = cleaned.replace(/^(축하합니다|당신은 방금|이 동화는 단순한|이건 당신의 여정|당신의 강함의|당신의 사랑의|동화가 완성되었어요|오늘 나눈 이야기는|깊은 숨을 쉬어보세요|오늘 많은 감정을|자신을 위해|당신은 충분히|지금 이 순간의|어머니의 용기에서)[^\n]*$/gm, "");
@@ -126,12 +138,16 @@ const SCENE_TITLES: Record<number, string> = {
  *   3. Numbered list:         1., 2., etc.
  */
 export function parseStoryScenes(allPhase4Text: string): Scene[] {
+  // Strip everything after [STORY_END] — celebration/grounding/self-care text (v1.22.0)
+  const storyEndIdx = allPhase4Text.indexOf("[STORY_END]");
+  const storyText = storyEndIdx >= 0 ? allPhase4Text.slice(0, storyEndIdx) : allPhase4Text;
+
   const scenes: Scene[] = [];
 
   // ─── Strategy 1: English section tags (primary — matches system prompt) ───
   // Matches: [INTRO 1], [CONFLICT 2], [ATTEMPT 1], [RESOLUTION 2], [WISDOM 1], etc.
   const englishPattern = /\[(INTRO|CONFLICT|ATTEMPT|RESOLUTION|WISDOM)\s*(\d)\]/gi;
-  const englishMatches = [...allPhase4Text.matchAll(englishPattern)];
+  const englishMatches = [...storyText.matchAll(englishPattern)];
 
   if (englishMatches.length >= 3) {
     // Found enough English tags — use this strategy
@@ -142,8 +158,8 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
       if (!sceneNum || scenes.some((s) => s.sceneNumber === sceneNum)) continue;
 
       const startIdx = match.index! + match[0].length;
-      const endIdx = i < englishMatches.length - 1 ? englishMatches[i + 1].index! : allPhase4Text.length;
-      let block = allPhase4Text.slice(startIdx, endIdx).trim();
+      const endIdx = i < englishMatches.length - 1 ? englishMatches[i + 1].index! : storyText.length;
+      let block = storyText.slice(startIdx, endIdx).trim();
 
       // Strip the "— description" part after the tag (e.g., "— 문제 상황 소개")
       // IMPORTANT: Only strip if line starts with a dash/em-dash, NOT just whitespace
@@ -174,7 +190,7 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
     scenes.length = 0; // Reset and try Korean patterns
     // Matches: [장면 1], 장면 1:, **장면 1**, 장면1., **1장.**, 1장:, 1장 , etc.
     const koreanPattern = /(?:\[장면\s*(\d+)\]|\*?\*?장면\s*(\d+)\*?\*?[:\.\s]|\*?\*?\s*(\d{1,2})\s*장[.:\s])/g;
-    const koreanMatches = [...allPhase4Text.matchAll(koreanPattern)];
+    const koreanMatches = [...storyText.matchAll(koreanPattern)];
 
     for (let i = 0; i < koreanMatches.length; i++) {
       const match = koreanMatches[i];
@@ -182,8 +198,8 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
       if (sceneNum < 1 || sceneNum > 10 || scenes.some((s) => s.sceneNumber === sceneNum)) continue;
 
       const startIdx = match.index! + match[0].length;
-      const endIdx = i < koreanMatches.length - 1 ? koreanMatches[i + 1].index! : allPhase4Text.length;
-      let block = allPhase4Text.slice(startIdx, endIdx).trim();
+      const endIdx = i < koreanMatches.length - 1 ? koreanMatches[i + 1].index! : storyText.length;
+      let block = storyText.slice(startIdx, endIdx).trim();
 
       // For "N장" format: strip the chapter title line (e.g., "평화로운 토끼 마을**")
       if (match[3]) {
@@ -212,7 +228,7 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
   if (scenes.length < 3) {
     scenes.length = 0;
     const numberedPattern = /(?:^|\n)\s*(\d{1,2})\s*[.)]\s*/g;
-    const numberedMatches = [...allPhase4Text.matchAll(numberedPattern)];
+    const numberedMatches = [...storyText.matchAll(numberedPattern)];
 
     for (let i = 0; i < numberedMatches.length; i++) {
       const match = numberedMatches[i];
@@ -220,8 +236,8 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
       if (sceneNum < 1 || sceneNum > 10 || scenes.some((s) => s.sceneNumber === sceneNum)) continue;
 
       const startIdx = match.index! + match[0].length;
-      const endIdx = i < numberedMatches.length - 1 ? numberedMatches[i + 1].index! : allPhase4Text.length;
-      let block = allPhase4Text.slice(startIdx, endIdx).trim();
+      const endIdx = i < numberedMatches.length - 1 ? numberedMatches[i + 1].index! : storyText.length;
+      let block = storyText.slice(startIdx, endIdx).trim();
 
       let imagePrompt: string | undefined;
       const imgMatch = block.match(/\[Image Prompt:\s*(.*?)\]/i);
