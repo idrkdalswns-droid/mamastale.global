@@ -63,9 +63,9 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
       trackPdfDownload(); // C1: 퍼널 트래킹
 
       if (printWindow && !printWindow.closed) {
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
+        // v1.22.2 Bug Bounty #9: Blob URL로 XSS 방지 (document.write 대체)
+        const blob = new Blob([html], { type: "text/html; charset=utf-8" });
+        printWindow.location.href = URL.createObjectURL(blob);
       } else {
         // Fallback: download as HTML file (popup was still blocked)
         const blob = new Blob([html], { type: "text/html; charset=utf-8" });

@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
   try {
     // JP-FIX(2): Reject oversized requests before parsing (DoS prevention)
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
-    if (contentLength > 1_000_000) { // 1MB max for chat requests
+    if (contentLength > 95_000) { // v1.22.2 Bug Bounty #11: CF Pages 100KB 제한에 맞춤 (95KB 마진)
       return NextResponse.json(
         { error: "요청 데이터가 너무 큽니다." },
         { status: 413 }

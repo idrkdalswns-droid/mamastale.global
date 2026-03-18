@@ -108,13 +108,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  // ─── Event ID idempotency check ───
+  // ─── Event ID idempotency check (in-memory + DB) ───
+  // In-memory Map은 보조 캐시, DB가 소스 오브 트루스 (v1.22.2 Bug Bounty #1)
   if (event.id && isEventProcessed(event.id)) {
-    console.info(`[Stripe] Duplicate event skipped: ${event.id}`);
+    console.info(`[Stripe] Duplicate event skipped (memory): ${event.id}`);
     return NextResponse.json({ received: true });
   }
 
   const supabase = createServiceRoleClient();
+
+  // DB-level deduplication — Edge 격리체 재시작 시에도 안전
+  if (supabase && event.id) {
+    const { error: dupErr } = await supabase
+      .from("stripe_processed_events")
+      .insert({ event_id: event.id });
+    if (dupErr?.code === "23505") {
+      console.info(`[Stripe] Duplicate event skipped (DB): ${event.id}`);
+      return NextResponse.json({ received: true });
+    }
+    // INSERT 성공 또는 테이블 미존재 시 계속 진행
+  }
 
   switch (event.type) {
     case "checkout.session.completed": {
@@ -136,16 +149,16 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // R4-C8: Prefer session metadata (set at checkout) for ticket count
-        // Falls back to amount mapping for legacy sessions or coupons/discounts
+        // v1.22.2 Bug Bounty #4: amount 우선, metadata는 폴백만
+        // metadata는 클라이언트 조작 가능 → Stripe 확인 금액이 소스 오브 트루스
         const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {
           3920: 1,    // ₩3,920 = 1 ticket (20% discount)
           4900: 1,    // ₩4,900 = 1 ticket
           14900: 4,   // ₩14,900 = 4 tickets (bundle)
         };
-        const metaTickets = parseInt(session.metadata?.ticket_count || "0", 10);
         const paidAmount = session.amount_total;
-        const ticketCount = (metaTickets > 0 && metaTickets <= 10) ? metaTickets : STRIPE_AMOUNT_TO_TICKETS[paidAmount];
+        const metaTickets = parseInt(session.metadata?.ticket_count || "0", 10);
+        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount] || ((metaTickets > 0 && metaTickets <= 10) ? metaTickets : undefined);
         if (!ticketCount) {
           console.error(`[Stripe] Unknown payment amount: ${paidAmount}, session: ${session.id}`);
           break; // Return 200 to stop Stripe retries, log for manual review
