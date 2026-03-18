@@ -5,6 +5,7 @@ import type { Message, ChatApiResponse, ChatStreamEvent, StorySeedState } from "
 import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
 import { nameWithParticle } from "@/lib/utils/korean";
+import { trackChatPhaseEnter, trackStoryComplete } from "@/lib/utils/analytics";
 
 // ─── Two separate storage keys ───
 // AUTH: auto-consumed after login/signup redirect (destructive restore)
@@ -173,7 +174,8 @@ function buildInitialMessage(): string {
     ? `${AGE_LABELS[childAge]} 매일 분주하시죠.\n\n`
     : "";
 
-  return `안녕하세요, ${greeting}.\n\n${ageNote}이곳은 ${role.honorific}의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든, 어떤 경험이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n처음이라 어색하실 수 있지만, 진솔하게 답변해 주실수록 아이를 위한 동화가 더 진정성 있게 완성돼요. ${role.honorific}의 이야기가 곧 동화의 이야기가 됩니다.\n\n각 단계마다 약 10번의 대화를 나눌 수 있어요. 한 메시지 한 메시지, 아이를 생각하며 진심을 담아 이야기해 주세요.\n\n오늘 ${role.honorific}의 마음은 어떠신가요?`;
+  // R5: 첫 메시지 단축 (~250단어 → ~60단어)
+  return `안녕하세요, ${greeting}.\n\n${ageNote}이곳은 ${role.honorific}의 이야기를 안전하게 나눌 수 있는 공간이에요. 어떤 감정이든 있는 그대로 이야기해 주셔도 괜찮습니다.\n\n오늘 ${role.honorific}의 마음은 어떠신가요?`;
 }
 
 const makeInitialMessages = (): Message[] => [
@@ -214,7 +216,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (text: string) => {
     const state = get();
     // Fix 2: Counter-based lock prevents concurrent sends (double-click, fast Enter)
-    if (!text.trim() || state.isLoading || sendInFlightId > 0) return;
+    // R4: Block sends during phase transition
+    if (!text.trim() || state.isLoading || state.isTransitioning || sendInFlightId > 0) return;
     const reqId = armSendInFlight();
 
     const userMsg: Message = {
@@ -282,8 +285,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // R7-FIX(A3): Guard phase before accessing to prevent undefined in visitedPhases
       const nextPhase = data.phase;
       if (nextPhase && nextPhase > currentPhaseNow) {
+        trackChatPhaseEnter(nextPhase); // C1: 퍼널 트래킹
         set({ isTransitioning: true });
-        await new Promise((r) => setTimeout(r, 600));
+        await new Promise((r) => setTimeout(r, 250));
         set((s) => ({
           currentPhase: nextPhase as 1 | 2 | 3 | 4,
           visitedPhases: s.visitedPhases.includes(nextPhase)
@@ -291,7 +295,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : [...s.visitedPhases, nextPhase],
           turnCountInCurrentPhase: 0, // Reset turn count for new phase
         }));
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 250));
         set({ isTransitioning: false });
       }
 
@@ -329,6 +333,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // ─── Story complete → clear draft (no longer needed) ───
       if (data.isStoryComplete) {
+        trackStoryComplete(); // C1: 퍼널 트래킹
         try { localStorage.removeItem(DRAFT_KEY); } catch {}
         set({ isFromDraft: false });
       }
@@ -403,7 +408,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessageStreaming: async (text: string) => {
     const state = get();
     // Fix 2: Counter-based lock prevents concurrent sends
-    if (!text.trim() || state.isLoading || sendInFlightId > 0) return;
+    // R4: Block sends during phase transition
+    if (!text.trim() || state.isLoading || state.isTransitioning || sendInFlightId > 0) return;
     const reqId = armSendInFlight();
 
     const userMsg: Message = {
@@ -516,8 +522,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             // R7-FIX(A4): Guard phase before accessing to prevent undefined in visitedPhases
             const streamNextPhase = event.phase;
             if (streamNextPhase && streamNextPhase > currentPhaseNow) {
+              trackChatPhaseEnter(streamNextPhase); // C1: 퍼널 트래킹
               set({ isTransitioning: true });
-              await new Promise((r) => setTimeout(r, 600));
+              await new Promise((r) => setTimeout(r, 250));
               set((s) => ({
                 currentPhase: streamNextPhase as 1 | 2 | 3 | 4,
                 visitedPhases: s.visitedPhases.includes(streamNextPhase)
@@ -525,7 +532,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   : [...s.visitedPhases, streamNextPhase],
                 turnCountInCurrentPhase: 0,
               }));
-              await new Promise((r) => setTimeout(r, 500));
+              await new Promise((r) => setTimeout(r, 250));
               set({ isTransitioning: false });
             }
 
@@ -550,6 +557,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (!event.isStoryComplete) {
               try { get().saveDraft(); } catch (e) { console.warn("[useChat] saveDraft 실패", e); }
             } else {
+              trackStoryComplete(); // C1: 퍼널 트래킹
               try { localStorage.removeItem(DRAFT_KEY); } catch {}
               set({ isFromDraft: false });
             }

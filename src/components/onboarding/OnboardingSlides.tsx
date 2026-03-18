@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
-import { trackOnboardingComplete } from "@/lib/utils/analytics";
+import { trackOnboardingStart, trackOnboardingComplete } from "@/lib/utils/analytics";
 import { nameWithParticle } from "@/lib/utils/korean";
 
 const PARENT_ROLE_OPTIONS = [
@@ -42,6 +42,9 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   const [parentRole, setParentRole] = useState(() => {
     try { return localStorage.getItem("mamastale_parent_role") || "엄마"; } catch { return "엄마"; }
   });
+
+  // C1: Track onboarding start
+  useEffect(() => { trackOnboardingStart(); }, []);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   const saveAndDone = () => {

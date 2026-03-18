@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { trackPdfDownload } from "@/lib/utils/analytics";
 import type { Scene } from "@/lib/types/story";
 
 interface PDFDownloadButtonProps {
@@ -58,6 +59,8 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
       if (!res.ok) throw new Error("PDF generation failed");
 
       const html = await res.text();
+
+      trackPdfDownload(); // C1: 퍼널 트래킹
 
       if (printWindow && !printWindow.closed) {
         printWindow.document.open();

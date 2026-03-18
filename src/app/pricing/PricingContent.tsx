@@ -6,7 +6,7 @@ import Image from "next/image";
 import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { trackBeginCheckout } from "@/lib/utils/analytics";
+import { trackBeginCheckout, trackPaymentStart } from "@/lib/utils/analytics";
 import { hapticMedium } from "@/lib/utils/haptic";
 // SectionTabBar and page nav tab bar removed — GlobalNav already provides page navigation
 
@@ -253,6 +253,7 @@ function PricingContent() {
 
         hapticMedium();
         trackBeginCheckout(product.name, product.amount);
+        trackPaymentStart(product.name, product.amount); // C1: 퍼널 트래킹
 
         const toss = window.TossPayments(tossClientKey);
         const payment = toss.payment({ customerKey: user.id });

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ReferralCard } from "@/components/referral/ReferralCard";
+import { trackPaymentAbandon } from "@/lib/utils/analytics";
 
 // GA4 gtag type declaration
 declare global {
@@ -61,6 +62,7 @@ function PaymentSuccessContent() {
     if (!paymentKey || !orderId || !amount) {
       setStatus("error");
       setErrorMsg("결제 정보가 올바르지 않습니다.");
+      trackPaymentAbandon("missing_params");
       return;
     }
 
@@ -101,6 +103,7 @@ function PaymentSuccessContent() {
       if (mounted && statusRef.current === "confirming") {
         setStatus("error");
         setErrorMsg("결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+        trackPaymentAbandon("timeout");
       }
     }, 15_000);
 

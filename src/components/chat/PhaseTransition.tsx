@@ -44,7 +44,7 @@ export default function PhaseTransition({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
           className="absolute inset-0 z-[200] flex items-center justify-center"
           style={{
             background: "rgba(251,245,236,0.96)",
@@ -56,7 +56,7 @@ export default function PhaseTransition({
             initial={{ opacity: 0, scale: 0.88, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.88, y: -8 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
             className="text-center px-8"
           >
             {p?.icon && (
