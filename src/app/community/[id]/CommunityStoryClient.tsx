@@ -328,6 +328,24 @@ function CommunityStoryContent() {
           />
         </div>
       )}
+
+      {/* I8: "나도 만들기" CTA — 바이럴 루프 */}
+      <div className="px-4 py-6">
+        <div
+          className="p-5 rounded-2xl text-center"
+          style={{ background: "rgb(var(--paper) / 0.8)", border: "1px solid rgb(var(--brown-pale) / 0.1)" }}
+        >
+          <p className="text-sm text-brown font-medium mb-1">영감을 받으셨나요?</p>
+          <p className="text-xs text-brown-light font-light mb-3">나만의 동화를 15분 만에 만들어 보세요</p>
+          <Link
+            href="/?action=start"
+            className="inline-block px-6 py-3 rounded-full text-sm font-medium text-white min-h-[44px]"
+            style={{ background: "linear-gradient(135deg, rgb(var(--coral)), rgb(var(--coral) / 0.85))", boxShadow: "0 4px 16px rgb(var(--coral) / 0.25)" }}
+          >
+            나도 동화 만들기 →
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

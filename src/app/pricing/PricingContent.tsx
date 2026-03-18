@@ -393,6 +393,7 @@ function PricingContent() {
             </p>
           </div>
 
+          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
           <button
             onClick={() => initiatePayment("bundle")}
             disabled={isProcessing || !sdkReady}
@@ -441,6 +442,7 @@ function PricingContent() {
             </div>
           </div>
 
+          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
           <button
             onClick={() => initiatePayment("ticket")}
             disabled={isProcessing || !sdkReady}
