@@ -36,6 +36,7 @@ export default function CommunityBrowsePage() {
   const [stories, setStories] = useState<CommunityStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [paginationError, setPaginationError] = useState(false);
   const [sort, setSort] = useState<"recent" | "popular">("recent");
   const [topic, setTopic] = useState("");
   const [search, setSearch] = useState("");
@@ -58,7 +59,12 @@ export default function CommunityBrowsePage() {
       setHasMore(data.hasMore);
       if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch {
-      if (!append) setError("동화 목록을 불러올 수 없습니다.");
+      if (append) {
+        // C2: 페이지네이션 에러 시 재시도 가능하도록 page를 되돌리지 않음
+        setPaginationError(true);
+      } else {
+        setError("동화 목록을 불러올 수 없습니다.");
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +81,7 @@ export default function CommunityBrowsePage() {
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore) return;
+    setPaginationError(false);
     const nextPage = page + 1;
     setPage(nextPage);
     fetchStories(sort, topic, nextPage, true, search);
@@ -264,6 +271,19 @@ export default function CommunityBrowsePage() {
             {hasMore && (
               <div ref={sentinelRef} className="w-full mt-4 py-3 text-center">
                 {loading && <span className="text-sm text-brown-light font-light animate-pulse">불러오는 중...</span>}
+                {/* C2: 페이지네이션 에러 재시도 */}
+                {paginationError && !loading && (
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-sm text-brown-pale font-light">불러오기에 실패했어요.</span>
+                    <button
+                      onClick={() => { setPaginationError(false); loadMore(); }}
+                      className="px-4 py-2 rounded-full text-sm font-medium text-white min-h-[44px]"
+                      style={{ background: "rgb(var(--coral))" }}
+                    >
+                      다시 시도
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>

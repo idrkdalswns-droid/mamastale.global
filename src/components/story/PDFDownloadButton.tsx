@@ -80,8 +80,14 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
       }
     } catch (err) {
       console.error("PDF download error:", err);
-      // Close the loading window on error
-      if (printWindow && !printWindow.closed) printWindow.close();
+      // C2: 빈 창에 에러 메시지 표시 (즉시 닫지 않음)
+      if (printWindow && !printWindow.closed) {
+        try {
+          printWindow.document.open();
+          printWindow.document.write(`<!DOCTYPE html><html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#FBF5EC;color:#5A3E2B"><div style="text-align:center"><p style="font-size:18px;margin-bottom:8px">PDF 생성에 실패했습니다.</p><p style="font-size:14px;color:#8B6F55">이 창을 닫고 다시 시도해 주세요.</p></div></body></html>`);
+          printWindow.document.close();
+        } catch { printWindow.close(); }
+      }
       setError(true);
       setTimeout(() => setError(false), 3000);
     } finally {
