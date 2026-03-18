@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.22.3] - 2026-03-18
+
+### Security (11개 팀 순차 검수 — 7-Pass 리뷰 반영)
+- **Stripe 웹훅 rollback 개선** — incrementTickets 실패 시 subscription DELETE → status="ticket_failed" UPDATE로 변경 (멱등성 유지, Stripe 재시도 시 ticket만 재시도)
+- **DB 마이그레이션 027** — subscriptions CHECK 제약에 'ticket_failed' 추가
+
+### Performance
+- **정규식 모듈 스코프 컴파일** — AI_COMMENT_PATTERN을 매 cleanSceneText() 호출이 아닌 모듈 로드 시 1회 컴파일
+
 ## [1.22.2] - 2026-03-18
 
 ### Security (Bug Bounty 시뮬레이션 — 7-Pass 리뷰 반영)
