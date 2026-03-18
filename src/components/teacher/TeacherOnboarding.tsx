@@ -126,6 +126,13 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
     if (currentStep.isTextInput && currentStep.key === "situation" && situation.trim()) {
       setData((prev) => ({ ...prev, situation: situation.trim() }));
     }
+    setCustomTopic(""); // 직접 입력 상태 리셋
+    // 뒤로가기 시 현재 단계의 data도 초기화 (직접 입력 비활성화 방지)
+    setData((prev) => {
+      const next = { ...prev };
+      delete (next as Record<string, unknown>)[currentStep.key];
+      return next;
+    });
     setStep(step - 1);
   };
 

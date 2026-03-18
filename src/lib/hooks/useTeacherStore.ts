@@ -55,6 +55,7 @@ interface TeacherState {
   setGeneratedStory: (story: TeacherStory | null) => void;
   restoreSession: (session: TeacherSession, messages: TeacherMessage[]) => void;
   reset: () => void;
+  addSystemGreeting: (content: string) => void;
   persistToStorage: () => void;
   restoreFromStorage: () => boolean;
   sendMessageStreaming: (text: string, forceGenerate?: boolean) => Promise<boolean>;
@@ -126,6 +127,19 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       messages,
       screenState: session.currentPhase === "DONE" ? "DONE" : "CHAT",
     }),
+
+  // v1.22.1: AI 첫 채팅 메시지로 greeting 추가 (StrictMode 중복 방지)
+  addSystemGreeting: (content: string) => {
+    if (get().messages.length > 0) return;
+    set(() => ({
+      messages: [{
+        id: `greeting-${Date.now()}`,
+        role: "assistant" as const,
+        content,
+        phase: get().currentPhase,
+      }],
+    }));
+  },
 
   reset: () => {
     currentAbort?.abort();

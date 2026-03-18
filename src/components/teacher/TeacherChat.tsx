@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useEffect, useCallback, useState } from "react";
-import Image from "next/image";
 import toast from "react-hot-toast";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import MessageBubble from "@/components/chat/MessageBubble";
@@ -30,6 +29,7 @@ export function TeacherChat({
     expiresAt,
     sendMessageStreaming,
     onboarding,
+    addSystemGreeting,
   } = useTeacherStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -73,15 +73,16 @@ export function TeacherChat({
 
   // 스마트 스크롤 — 초기 마운트 시 즉시 하단, 이후 사용자 스크롤 위치 존중
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
     if (isInitialMount.current && messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      el.scrollTop = el.scrollHeight;
       isInitialMount.current = false;
       return;
     }
-    const el = containerRef.current;
-    if (el && !userScrolledRef.current) {
-      el.scrollTop = el.scrollHeight;
-    } else if (el && userScrolledRef.current) {
+    if (!userScrolledRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    } else {
       setShowScrollDown(true);
     }
   }, [messages, isLoading]);
@@ -169,6 +170,15 @@ export function TeacherChat({
   const defaultChips = ["오늘 반에서 있었던 이야기로 시작할게요", "아이들에게 전하고 싶은 메시지가 있어요"];
   const chips = TOPIC_CHIPS[onboarding?.topic as string] || defaultChips;
 
+  // 웰컴 → AI 첫 채팅 메시지 자동 추가 (v1.22.1)
+  useEffect(() => {
+    if (messages.length === 0 && !isLoading) {
+      const greeting = `선생님, 반가워요! 🌿\n\n${topicMention}\n\n오늘 반에서 있었던 일이나 전하고 싶은 메시지를 편하게 이야기해주세요`;
+      addSystemGreeting(greeting);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicMention]);
+
   // TeacherMessage → Message 변환 (기존 MessageBubble 호환)
   const adaptedMessages: Message[] = messages.map((m) => ({
     id: m.id,
@@ -239,42 +249,13 @@ export function TeacherChat({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="relative flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        className="relative flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3"
+        style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {/* 웰컴 메시지 (첫 메시지 없을 때) */}
-        {messages.length === 0 && (
-          <div className="text-center py-8 px-4">
-            <div
-              className="w-20 h-20 relative rounded-2xl overflow-hidden mx-auto mb-4"
-              style={{ boxShadow: "0 4px 16px rgba(90,62,43,0.08)" }}
-            >
-              <Image src="/images/teacher/state/generating.jpeg" alt="동화" fill className="object-cover" sizes="80px" />
-            </div>
-            <p className="text-[15px] text-brown font-medium break-keep">
-              선생님, 반가워요! 🌿
-            </p>
-            <p className="text-sm text-brown-light mt-2 break-keep leading-relaxed">
-              {topicMention}
-            </p>
-            <p className="text-xs text-brown-pale mt-2 break-keep">
-              오늘 반에서 있었던 일이나 전하고 싶은 메시지를 편하게 이야기해주세요
-            </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {chips.map((chip, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(chip)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-paper border border-brown-pale/15
-                             text-brown-light active:scale-[0.96] transition-all"
-                >
-                  💬 {chip}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {adaptedMessages.map((msg, idx) => (
+        {/* 빈 assistant 메시지 숨기기 — isLoading 중에만 (이중 로딩 방지) */}
+        {adaptedMessages
+          .filter(msg => !(msg.role === "assistant" && !msg.content.trim() && isLoading))
+          .map((msg, idx) => (
           <MessageBubble
             key={msg.id || idx}
             message={msg}
@@ -282,12 +263,24 @@ export function TeacherChat({
           />
         ))}
 
+        {/* greeting 아래 빠른 시작 칩 버튼 */}
+        {messages.length === 1 && messages[0].id?.startsWith("greeting") && !isLoading && (
+          <div className="flex flex-wrap gap-2 px-1 mb-3">
+            {chips.map((chip, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(chip)}
+                className="text-xs px-3 py-1.5 rounded-full bg-paper border border-brown-pale/15
+                           text-brown-light active:scale-[0.96] transition-all"
+              >
+                💬 {chip}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* 타이핑 인디케이터 */}
-        {isLoading &&
-          messages.length > 0 &&
-          (messages[messages.length - 1].role === "user" ||
-           (messages[messages.length - 1].role === "assistant" &&
-            messages[messages.length - 1].content.trim() === "")) && (
+        {isLoading && messages.length > 0 && (
           <TypingIndicator phase={phaseNumber} />
         )}
 
