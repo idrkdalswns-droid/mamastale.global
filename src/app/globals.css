@@ -156,12 +156,15 @@
 }
 
 /* JP-09: CSS animation for message bubbles (replaces framer-motion) */
+/* I11: Spring-like bounce curve for message bubbles */
 @keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; transform: translateY(10px); }
+  60% { opacity: 1; transform: translateY(-2px); }
+  80% { transform: translateY(1px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-slide-in {
-  animation: fadeSlideIn 0.35s ease-out forwards;
+  animation: fadeSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* ── Bookshelf: wooden shelf plank ── */

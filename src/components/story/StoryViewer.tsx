@@ -529,6 +529,19 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             {/* Freemium v2: Hide share/PDF in locked or preview mode */}
             {!hideActions && (
             <>
+            {/* R1: 추천 공유 배너 */}
+            {!previewMode && !isLocked && (
+              <div className="p-3 rounded-xl text-center mb-1" style={{ background: "rgb(var(--coral) / 0.08)" }}>
+                <p className="text-xs font-medium" style={{ color: "rgb(var(--coral))" }}>
+                  이 이야기를 소중한 사람에게도 전해보세요
+                </p>
+                {referralCode ? (
+                  <p className="text-[10px] text-brown-pale mt-1">추천 코드: {referralCode} · 공유하면 다음 동화 무료!</p>
+                ) : (
+                  <p className="text-[10px] text-brown-pale mt-1">로그인하면 추천 코드를 받을 수 있어요</p>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={async () => {

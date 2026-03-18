@@ -356,7 +356,7 @@ function PricingContent() {
         )}
 
         {/* ════════════════════════════════════════
-            BUNDLE (₩14,900) — PRIMARY · Claymorphism
+            R2: SINGLE TICKET (₩3,920) — PRIMARY (순서 반전)
             ════════════════════════════════════════ */}
         <div
           id="pricing"
@@ -364,27 +364,76 @@ function PricingContent() {
           style={{
             background: "rgb(var(--surface) / 0.7)",
             boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-            border: "2px solid rgba(109,76,145,0.2)",
+            border: "2px solid rgba(224,122,95,0.25)",
           }}
         >
           <div
             className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] text-white font-bold tracking-wide"
             style={{
-              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
             }}
           >
-            론칭 기념 특가
+            론칭 할인 20%
           </div>
 
           <div className="text-center mb-5 pt-2">
             <h3 className="font-serif text-lg text-brown font-semibold">
+              동화 한 편 · 15분 완성
+            </h3>
+            <div className="flex items-baseline justify-center gap-2 mt-3">
+              <span className="text-sm text-brown-pale line-through">
+                ₩4,900
+              </span>
+              <span className="font-serif text-3xl font-bold text-brown">
+                ₩3,920
+              </span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
+          <button
+            onClick={() => initiatePayment("ticket")}
+            disabled={isProcessing || !sdkReady}
+            className="w-full py-4 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
+            }}
+          >
+            {isProcessing
+              ? "결제 페이지로 이동 중..."
+              : "동화 한 편 만들기"}
+          </button>
+        </div>
+
+        {/* ════════════════════════════════════════
+            R2: BUNDLE (₩14,900) — SECONDARY (더 많이 절약)
+            ════════════════════════════════════════ */}
+        <div
+          className="rounded-2xl p-5 mb-6 relative pt-6"
+          style={{
+            background: "rgb(var(--surface) / 0.6)",
+            border: "1.5px solid rgba(109,76,145,0.25)",
+          }}
+        >
+          <div
+            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] text-white font-bold"
+            style={{
+              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+            }}
+          >
+            더 많이 절약하기
+          </div>
+
+          <div className="text-center mb-4">
+            <h3 className="font-serif text-base text-brown font-semibold">
               4일 프로그램 · 동화 4편
             </h3>
             <p className="text-xs text-brown-light font-light mt-1.5 break-keep">
               4일 연속 대화하면, 마음이 한결 가벼워집니다
             </p>
-            <div className="flex items-baseline justify-center gap-1 mt-3">
-              <span className="font-serif text-3xl font-bold text-brown">
+            <div className="flex items-baseline justify-center gap-1 mt-2">
+              <span className="font-serif text-2xl font-bold text-brown">
                 ₩14,900
               </span>
             </div>
@@ -397,64 +446,15 @@ function PricingContent() {
           <button
             onClick={() => initiatePayment("bundle")}
             disabled={isProcessing || !sdkReady}
-            className="w-full py-4 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
+            className="w-full py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
-              boxShadow: "0 6px 20px rgba(109,76,145,0.3)",
+              boxShadow: "0 4px 16px rgba(109,76,145,0.25)",
             }}
           >
             {isProcessing
               ? "결제 페이지로 이동 중..."
               : "4일 프로그램 시작하기"}
-          </button>
-        </div>
-
-        {/* ════════════════════════════════════════
-            SINGLE TICKET (₩4,900) — SECONDARY
-            ════════════════════════════════════════ */}
-        <div
-          className="rounded-2xl p-5 mb-6 relative pt-6"
-          style={{
-            background: "rgb(var(--surface) / 0.6)",
-            border: "1.5px solid #E07A5F",
-          }}
-        >
-          <div
-            className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] text-white font-bold"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-            }}
-          >
-            론칭 할인 20%
-          </div>
-
-          <div className="text-center mb-4">
-            <h3 className="font-serif text-base text-brown font-semibold">
-              동화 한 편 · 15분 완성
-            </h3>
-            <div className="flex items-baseline justify-center gap-2 mt-2">
-              <span className="text-sm text-brown-pale line-through">
-                ₩4,900
-              </span>
-              <span className="font-serif text-2xl font-bold text-brown">
-                ₩3,920
-              </span>
-            </div>
-          </div>
-
-          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
-          <button
-            onClick={() => initiatePayment("ticket")}
-            disabled={isProcessing || !sdkReady}
-            className="w-full py-3 rounded-full text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
-            }}
-          >
-            {isProcessing
-              ? "결제 페이지로 이동 중..."
-              : "동화 한 편 만들기"}
           </button>
         </div>
 
@@ -871,28 +871,29 @@ function PricingContent() {
           동화 1편 15분 완성 · 영구 보관 · PDF 다운로드
         </p>
         <div className="max-w-lg mx-auto flex gap-2">
-          <button
-            onClick={() => initiatePayment("bundle")}
-            disabled={isProcessing || !sdkReady}
-            className="flex-[2] py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
-              boxShadow: "0 4px 16px rgba(109,76,145,0.3)",
-            }}
-          >
-            4일 프로그램 · ₩14,900
-          </button>
+          {/* R2: 단품 먼저 (순서 반전) */}
           <button
             onClick={() => initiatePayment("ticket")}
             disabled={isProcessing || !sdkReady}
-            className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-medium text-coral transition-all active:scale-[0.97] disabled:opacity-60"
+            className="flex-[2] py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background: "rgb(var(--surface) / 0.9)",
-              border: "1.5px solid rgba(224,122,95,0.3)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
             }}
           >
             1편 · ₩3,920
+          </button>
+          <button
+            onClick={() => initiatePayment("bundle")}
+            disabled={isProcessing || !sdkReady}
+            className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-medium text-purple transition-all active:scale-[0.97] disabled:opacity-60"
+            style={{
+              background: "rgb(var(--surface) / 0.9)",
+              border: "1.5px solid rgba(109,76,145,0.3)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+            }}
+          >
+            4편 · ₩14,900
           </button>
         </div>
       </div>
