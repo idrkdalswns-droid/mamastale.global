@@ -210,6 +210,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Rebuild initial messages to pick up latest localStorage values
       // (e.g. child age set during onboarding AFTER Zustand module-level init)
       set({ sessionId, messages: makeInitialMessages() });
+      trackChatPhaseEnter(1); // E2E: Phase 1 퍼널 트래킹
     }
   },
 
@@ -483,6 +484,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const decoder = new TextDecoder();
       let assistantContent = "";
       let buffer = "";
+      let rafId = 0; // E2E: rAF batching handle
 
       while (true) {
         const { done, value } = await reader.read();
@@ -497,17 +499,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
           let event: ChatStreamEvent;
           try { event = JSON.parse(line.slice(6)); } catch (e) { console.warn("[useChat] SSE JSON 파싱 실패", e); continue; }
 
+          // E2E: rAF batching — accumulate chunks, flush once per frame
           if (event.type === "text" && event.text) {
             assistantContent += event.text;
-            set((s) => ({
-              messages: s.messages.map((m) =>
-                m.id === assistantMsgId ? { ...m, content: assistantContent } : m
-              ),
-            }));
+            if (!rafId) {
+              rafId = requestAnimationFrame(() => {
+                rafId = 0;
+                set((s) => ({
+                  messages: s.messages.map((m) =>
+                    m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+                  ),
+                }));
+              });
+            }
           }
 
           // P1-4: Append warm redirect message when medical advice is detected
           if (event.type === "safety_redirect" && event.message) {
+            // E2E: flush pending rAF before safety message
+            if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
             assistantContent += "\n\n" + event.message;
             set((s) => ({
               messages: s.messages.map((m) =>
@@ -517,6 +527,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
 
           if (event.type === "done") {
+            // E2E: flush pending rAF before done processing (레이스 컨디션 방지)
+            if (rafId) {
+              cancelAnimationFrame(rafId);
+              rafId = 0;
+              set((s) => ({
+                messages: s.messages.map((m) =>
+                  m.id === assistantMsgId ? { ...m, content: assistantContent } : m
+                ),
+              }));
+            }
             // Handle phase transition
             const currentPhaseNow = get().currentPhase;
             // R7-FIX(A4): Guard phase before accessing to prevent undefined in visitedPhases

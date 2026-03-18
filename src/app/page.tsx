@@ -903,6 +903,32 @@ export default function Home() {
             <p className="text-[10px] text-brown-pale font-light mt-3">— 강민준, mamastale 대표</p>
           </div>
 
+          {/* ⭐ CTA 하단 반복 — 스크롤 완료 후 전환 유도 (E2E) */}
+          <div className="mt-8 mb-4">
+            <button
+              onClick={handleStartStory}
+              disabled={authLoading}
+              aria-busy={authLoading}
+              className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
+              }}
+            >
+              {authLoading ? (
+                <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                  불러오는 중...
+                </span>
+              ) : user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}
+            </button>
+            {!user && !authLoading && (
+              <p className="text-[10px] text-brown-pale/70 font-light text-center mt-2">
+                첫 체험 무료 · 동화 완성 ₩3,920 · 4일 프로그램 ₩14,900 →
+              </p>
+            )}
+          </div>
+
           {/* Medical disclaimer */}
           <div className="mt-2">
             <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center">

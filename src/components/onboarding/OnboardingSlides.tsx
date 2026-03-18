@@ -77,8 +77,8 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             {STEPS.map((step, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="flex flex-col items-center gap-0.5">
-                  <div className="w-5 h-5 rounded-full overflow-hidden relative">
-                    <Image src={step.icon} alt={step.label} fill className="object-cover" sizes="20px" />
+                  <div className="w-7 h-7 rounded-full overflow-hidden relative">
+                    <Image src={step.icon} alt={step.label} fill className="object-cover" sizes="28px" />
                   </div>
                   <span className="text-[9px] font-light" style={{ color: step.accent }}>{step.label}</span>
                 </div>
