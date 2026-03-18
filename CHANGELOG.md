@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.22.1] - 2026-03-18
+
+### Fixed
+- **선생님 채팅 인사 반복** — 대화 중간에 "반가워요" 재출력되던 프롬프트 규칙 강화
+- **선생님 온보딩 직접 입력** — 뒤로가기 후 "직접 입력" 필드 비활성화 버그 수정 (data + customTopic 리셋)
+- **선생님 채팅 이중 로딩** — 빈 assistant 버블 + TypingIndicator 동시 표시 수정
+- **선생님 채팅 스크롤** — min-h-0 + WebkitOverflowScrolling + smooth scroll 적용
+
+### Changed
+- **선생님 웰컴 화면 → AI 첫 메시지** — 정적 웰컴 UI를 AI 첫 채팅 메시지로 전환 (addSystemGreeting + 빠른 시작 칩 버튼 유지)
+
 ## [1.22.0] - 2026-03-18
 
 ### Added
