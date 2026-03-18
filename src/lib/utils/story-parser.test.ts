@@ -450,6 +450,28 @@ describe("cleanSceneText — AI meta stripping", () => {
     const result = cleanSceneText(input);
     expect(result).toBe("옛날 옛적 작은 마을에 토끼가 살았어요.\n\n토끼는 매일 아침 산책을 했어요.");
   });
+
+  // v1.21.2: AI conversational comments leaking into story text
+  it("strips AI continuation offers", () => {
+    expect(cleanSceneText("민석이는 평안히 잠들었답니다.\n계속해서 완성해드릴까요, 어머니?")).toBe(
+      "민석이는 평안히 잠들었답니다."
+    );
+  });
+
+  it("strips AI meta transformation comments", () => {
+    expect(cleanSceneText("민석이는 그 약속을 가슴에 새기고 평안히 잠들었답니다.\n\n당신의 사랑스러운 동화로 변환했습니다.\n\n이제 이 동화를 아기에게 읽어주세요.\n그리고 당신 자신에게도 읽어주세요.")).toBe(
+      "민석이는 그 약속을 가슴에 새기고 평안히 잠들었답니다."
+    );
+  });
+
+  it("preserves legitimate story text starting with '계속해서'", () => {
+    expect(cleanSceneText("민석이는 계속해서 걸어갔어요.")).toBe("민석이는 계속해서 걸어갔어요.");
+    expect(cleanSceneText("계속해서 기도했어요.")).toBe("계속해서 기도했어요.");
+  });
+
+  it("preserves story dialogue containing filtered verbs", () => {
+    expect(cleanSceneText('"읽어주세요!" 민석이가 외쳤어요.')).toBe('"읽어주세요!" 민석이가 외쳤어요.');
+  });
 });
 
 // ────────────────────────────────────────────────────────
