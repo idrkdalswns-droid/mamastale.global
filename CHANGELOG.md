@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.22.2] - 2026-03-18
+
+### Security (Bug Bounty 시뮬레이션 — 7-Pass 리뷰 반영)
+- **Stripe 웹훅 DB 중복 방지** — 인메모리 Map 보조 + DB INSERT를 소스 오브 트루스로 전환 (Edge 격리체 재시작 안전)
+- **Stripe metadata→amount 순서 변경** — 결제 금액(amount_total)을 항상 우선, metadata는 폴백만 (가격 조작 방지)
+- **프롬프트 인젝션 방지** — storySeed를 `<user_input>` XML 래핑 (Anthropic 권장 패턴)
+- **PDF XSS 방지** — document.write() → Blob URL 전환
+- **의료 조언 필터 강화** — 공백/특수문자 정규화 후 매칭 (우회 방지)
+- **요청 크기 제한** — 1MB → 95KB (Cloudflare Pages 100KB 하드 제한 정합)
+
+### Added
+- **DB 마이그레이션 026** — stripe_processed_events 테이블 (RLS) + claim_order_and_add_tickets RPC 함수
+- **서비스 전체 개요 문서** — docs/mamastale-business-overview.md (하노이/다낭 사업 제안용)
+
 ## [1.22.1] - 2026-03-18
 
 ### Fixed
