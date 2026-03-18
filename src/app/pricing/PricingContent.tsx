@@ -111,7 +111,7 @@ const GALLERY_CARD_STYLE = {
   boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
 } as const;
 const GALLERY_OVERLAY_STYLE = {
-  background: "linear-gradient(to top, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 50%, rgba(255,255,255,0) 100%)",
+  background: "linear-gradient(to top, rgb(var(--surface) / 0.96) 0%, rgb(var(--surface) / 0.92) 50%, rgba(255,255,255,0) 100%)",
 } as const;
 
 // ─── Helpers ───
@@ -362,7 +362,7 @@ function PricingContent() {
           id="pricing"
           className="rounded-3xl p-6 mb-5 relative"
           style={{
-            background: "rgba(255,255,255,0.7)",
+            background: "rgb(var(--surface) / 0.7)",
             boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
             border: "2px solid rgba(109,76,145,0.2)",
           }}
@@ -414,7 +414,7 @@ function PricingContent() {
         <div
           className="rounded-2xl p-5 mb-6 relative pt-6"
           style={{
-            background: "rgba(255,255,255,0.6)",
+            background: "rgb(var(--surface) / 0.6)",
             border: "1.5px solid #E07A5F",
           }}
         >
@@ -522,7 +522,7 @@ function PricingContent() {
                 key={i}
                 className="rounded-xl p-4 text-left"
                 style={{
-                  background: "rgba(255,255,255,0.6)",
+                  background: "rgb(var(--surface) / 0.6)",
                   border: "1px solid rgba(196,149,106,0.1)",
                 }}
               >
@@ -739,7 +739,7 @@ function PricingContent() {
         <div
           className="rounded-2xl p-5 mb-4"
           style={{
-            background: "rgba(255,255,255,0.4)",
+            background: "rgb(var(--surface) / 0.4)",
             border: "1px solid rgba(196,149,106,0.08)",
           }}
         >
@@ -788,7 +788,7 @@ function PricingContent() {
           id="faq"
           className="rounded-2xl p-5 mb-4"
           style={{
-            background: "rgba(255,255,255,0.4)",
+            background: "rgb(var(--surface) / 0.4)",
             border: "1px solid rgba(196,149,106,0.08)",
           }}
         >
@@ -885,7 +885,7 @@ function PricingContent() {
             disabled={isProcessing || !sdkReady}
             className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-medium text-coral transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background: "rgba(255,255,255,0.9)",
+              background: "rgb(var(--surface) / 0.9)",
               border: "1.5px solid rgba(224,122,95,0.3)",
               boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
             }}

@@ -435,8 +435,8 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               <div
                 className="rounded-2xl p-6 text-center"
                 style={{
-                  background: "linear-gradient(180deg, rgba(255,249,245,0.95), rgba(255,255,255,0.98))",
-                  border: "1.5px solid rgba(196,149,106,0.15)",
+                  background: "linear-gradient(180deg, rgb(var(--paper) / 0.95), rgb(var(--surface) / 0.98))",
+                  border: "1.5px solid rgb(var(--brown-pale) / 0.15)",
                   boxShadow: "0 8px 32px rgba(90,62,43,0.06)",
                 }}
                 role="region"
@@ -751,7 +751,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
         >
           <div
             className="w-full max-w-xs rounded-2xl p-6 text-center"
-            style={{ background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
+            style={{ background: "linear-gradient(180deg, rgb(var(--paper)), rgb(var(--surface)))", boxShadow: "0 16px 48px rgba(0,0,0,0.12)" }}
           >
             <h3 className="font-serif text-base font-bold text-brown mb-2">
               커뮤니티에 공유하기
