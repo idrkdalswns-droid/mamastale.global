@@ -3,6 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { incrementTickets } from "@/lib/supabase/tickets";
 import { z } from "zod";
+import { sendReceipt } from "@/lib/email/send-receipt";
 import { getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
@@ -441,6 +442,17 @@ export async function POST(request: NextRequest) {
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
       `method=${paymentMethod}, user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
     );
+
+    // I12: fire-and-forget 결제 영수증 이메일
+    if (user.email) {
+      sendReceipt({
+        email: user.email,
+        orderId: confirmData.orderId || orderId,
+        amount: confirmedAmount,
+        tickets: ticketCount,
+        paymentMethod: typeof paymentMethod === "string" ? paymentMethod : undefined,
+      }).catch(e => console.warn("[email] 영수증 발송 실패", e.message));
+    }
 
     return sb.applyCookies(NextResponse.json({
       success: true,
