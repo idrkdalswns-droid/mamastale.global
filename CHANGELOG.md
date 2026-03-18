@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.1] - 2026-03-18
+
+### Added
+- **Phase 1 퍼널 트래킹** — initSession()에 trackChatPhaseEnter(1) 추가, GA4 퍼널 정확도 개선
+- **랜딩 하단 CTA** — 스크롤 완료 후 전환 유도 반복 CTA (스피너 + aria-busy + 가격 안내)
+- **온보딩 아이콘 확대** — 4단계 플로우 아이콘 20px → 28px 시각적 인지 개선
+
+### Changed
+- **스트리밍 rAF 배칭** — per-chunk set() → requestAnimationFrame 배칭, done/safety_redirect 전 강제 flush로 레이스 컨디션 방지
+
+### Removed
+- **@react-pdf/renderer** — 미사용 의존성 제거 (55개 패키지 정리). 7-Pass 리뷰 결과 클라이언트 PDF 전환 중단 (ROI 0%, 기술 부채 증가, 기존 HTML PDF 정상 작동)
+
 ## [1.21.0] - 2026-03-18
 
 ### Added
