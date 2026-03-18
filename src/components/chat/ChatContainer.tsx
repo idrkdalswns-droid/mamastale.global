@@ -60,7 +60,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   const [showCelebration, setShowCelebration] = useState(false);
   const [showPremiumUpgrade, setShowPremiumUpgrade] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
 
   const { user, loading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -95,23 +94,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       window.removeEventListener("online", goOnline);
     };
   }, []);
-
-  // Auto-save timestamp label (updates every 30s)
-  useEffect(() => {
-    const updateLabel = () => {
-      const { getDraftInfo } = useChatStore.getState();
-      const info = getDraftInfo();
-      if (info?.savedAt) {
-        const diff = Math.round((Date.now() - info.savedAt) / 1000);
-        if (diff < 60) setLastSavedLabel("방금 저장됨");
-        else if (diff < 3600) setLastSavedLabel(`${Math.floor(diff / 60)}분 전 저장됨`);
-        else setLastSavedLabel(null);
-      }
-    };
-    updateLabel();
-    const interval = setInterval(updateLabel, 30000);
-    return () => clearInterval(interval);
-  }, [messages.length]);
 
   // ── DEFENSE LAYER 1: Auto-save chat on page unload ──
   // V5-FIX #19: Use pagehide instead of beforeunload — fires reliably on mobile tab swipe/close
@@ -237,6 +219,10 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         visitedPhases={visitedPhases}
         isTransitioning={isTransitioning}
         turnCountInPhase={turnCountInCurrentPhase}
+        freeTrialMode={freeTrialMode}
+        userMsgCount={userMsgCount}
+        freeTurnLimit={FREE_TURN_LIMIT}
+        storyDone={storyDone}
         onGoHome={() => {
           const userMsgCount = messages.filter(m => m.role === "user").length;
           if (userMsgCount > 0 && !storyDone) {
@@ -248,7 +234,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         onSaveDraft={() => {
           saveDraft();
           setShowSaveToast(true);
-          setLastSavedLabel("방금 저장됨");
           setTimeout(() => setShowSaveToast(false), 2000);
         }}
       />
@@ -257,13 +242,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       {isOffline && (
         <div className="text-center py-1.5 text-[11px] font-medium" style={{ background: "rgba(224,122,95,0.12)", color: "#C96B52" }}>
           📡 인터넷 연결을 확인해 주세요
-        </div>
-      )}
-
-      {/* Auto-save status */}
-      {lastSavedLabel && !isOffline && (
-        <div className="text-center py-0.5 text-[9px] text-brown-pale font-light">
-          💾 {lastSavedLabel}
         </div>
       )}
 
@@ -285,28 +263,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
           {isLoading && <TypingIndicator phase={currentPhase} />}
         </div>
       </div>
-
-      {/* Free trial turn counter — show remaining free messages */}
-      {freeTrialMode && !freeLimitReached && !storyDone && userMsgCount > 0 && (
-        <div className="absolute top-[70px] right-3 z-[60]">
-          <div
-            className="px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all duration-300"
-            style={{
-              background: userMsgCount >= FREE_TURN_LIMIT - 1
-                ? "rgba(224,122,95,0.25)"
-                : userMsgCount >= 2
-                  ? "rgba(224,122,95,0.12)"
-                  : "rgba(0,0,0,0.04)",
-              color: userMsgCount >= 2 ? "#E07A5F" : "#999",
-              border: userMsgCount >= FREE_TURN_LIMIT - 1 ? "1.5px solid rgba(224,122,95,0.4)" : "1px solid transparent",
-              animation: userMsgCount >= FREE_TURN_LIMIT - 1 ? "pulse 2s ease-in-out infinite" : "none",
-            }}
-          >
-            대화 {userMsgCount}/{FREE_TURN_LIMIT}회
-            {userMsgCount === FREE_TURN_LIMIT - 1 && " · 마지막 대화예요!"}
-          </div>
-        </div>
-      )}
 
       {/* Phase rule hint — hide when story is done (HIGH-4 fix) */}
       {!storyDone && !freeLimitReached && <PhaseRuleHint phase={currentPhase} />}
@@ -352,8 +308,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
               onComplete();
             }
           }}
-          onNewStory={onGoHome}
-          getHeaders={getHeaders}
         />
       )}
 

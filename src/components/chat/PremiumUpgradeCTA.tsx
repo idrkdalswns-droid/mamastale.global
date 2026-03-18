@@ -56,19 +56,6 @@ export default function PremiumUpgradeCTA({
             boxShadow: "0 20px 60px rgba(0,0,0,0.10)",
           }}
         >
-          {/* Premium badge glow */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-            style={{
-              background: "radial-gradient(circle, rgba(224,122,95,0.15) 0%, transparent 70%)",
-            }}
-          >
-            <span className="text-2xl font-serif font-bold" style={{ color: "#E07A5F" }}>P</span>
-          </motion.div>
-
           {trigger === "story_complete" ? (
             <>
               <motion.h2
@@ -114,48 +101,24 @@ export default function PremiumUpgradeCTA({
             </>
           )}
 
-          {/* Comparison: Standard vs Premium */}
+          {/* Premium benefits */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.65 }}
-            className="mb-5"
+            className="space-y-2.5 mb-5 text-left"
           >
-            <div className="grid grid-cols-2 gap-3 text-left">
-              {/* Standard tier */}
-              <div
-                className="rounded-2xl p-3.5"
-                style={{ background: "rgba(0,0,0,0.03)" }}
-              >
-                <p className="text-[10px] text-brown-pale font-medium mb-2 uppercase tracking-wider">기본</p>
-                <ul className="space-y-1.5 text-[11px] text-brown-mid font-light leading-snug">
-                  <li>· 장면당 3~4문장</li>
-                  <li>· 표준 문장 품질</li>
-                  <li>· 간단한 삽화 설명</li>
-                </ul>
+            {[
+              "장면당 5~7문장 — 2배 풍성한 이야기",
+              "문학적 표현 품질 (Opus 4 AI)",
+              "세밀한 장면 묘사 + 영구 보관",
+            ].map((text, i) => (
+              <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl"
+                style={{ background: "rgba(224,122,95,0.05)" }}>
+                <span className="text-coral text-xs mt-0.5">✦</span>
+                <span className="text-[12px] text-brown font-medium leading-snug">{text}</span>
               </div>
-              {/* Premium tier */}
-              <div
-                className="rounded-2xl p-3.5 relative"
-                style={{
-                  background: "linear-gradient(135deg, rgba(224,122,95,0.08), rgba(224,122,95,0.04))",
-                  border: "1.5px solid rgba(224,122,95,0.2)",
-                }}
-              >
-                <div
-                  className="absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-                >
-                  PREMIUM
-                </div>
-                <p className="text-[10px] text-coral font-semibold mb-2 uppercase tracking-wider">유료 결제</p>
-                <ul className="space-y-1.5 text-[11px] text-brown font-medium leading-snug">
-                  <li>· 장면당 5~7문장</li>
-                  <li>· 문학적 표현 품질</li>
-                  <li>· 세밀한 장면 묘사</li>
-                </ul>
-              </div>
-            </div>
+            ))}
           </motion.div>
 
           {/* Trust signal: AI transparency */}
@@ -185,7 +148,7 @@ export default function PremiumUpgradeCTA({
                 boxShadow: "0 8px 28px rgba(224,122,95,0.35)",
               }}
             >
-              프리미엄 동화 만들기 — ₩4,900
+              프리미엄 동화 만들기 — <span className="line-through opacity-50">₩4,900</span> ₩3,920
             </button>
             <p className="text-[10px] text-brown-pale font-light mb-4">
               커피 한 잔 값으로 아이가 매일 읽는 동화를

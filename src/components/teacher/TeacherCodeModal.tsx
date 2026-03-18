@@ -13,9 +13,10 @@ interface TeacherCodeModalProps {
     isExisting: boolean;
     teacherCode?: string;
   }) => void;
+  onBack?: () => void;
 }
 
-export function TeacherCodeModal({ onVerified }: TeacherCodeModalProps) {
+export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +60,20 @@ export function TeacherCodeModal({ onVerified }: TeacherCodeModalProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
+    <div className="flex flex-col min-h-[60dvh] px-6">
+      {/* 뒤로가기 버튼 */}
+      {onBack && (
+        <div className="pt-[env(safe-area-inset-top,12px)]">
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 text-brown-light active:scale-[0.9] transition-transform min-h-[44px]"
+            aria-label="뒤로 가기"
+          >
+            ← 뒤로
+          </button>
+        </div>
+      )}
+      <div className="flex-1 flex flex-col items-center justify-center">
       <div className="w-full max-w-sm">
         {/* 아이콘 */}
         <div className="text-center mb-6">
@@ -119,6 +133,7 @@ export function TeacherCodeModal({ onVerified }: TeacherCodeModalProps) {
         <p className="text-[11px] text-brown-pale text-center mt-6 break-keep">
           코드가 없으시다면 소속 기관 관리자에게 문의해주세요
         </p>
+      </div>
       </div>
     </div>
   );

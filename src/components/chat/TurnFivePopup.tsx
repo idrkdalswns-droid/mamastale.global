@@ -151,33 +151,16 @@ export default function TurnFivePopup({
           </p>
         </div>
 
-        {/* Loss aversion copy */}
+        {/* Simplified copy */}
         <div
           className="rounded-2xl p-4 mb-4"
           style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.12)" }}
         >
           <p className="text-[13px] text-brown font-normal leading-relaxed text-center break-keep">
-            {childName ? (
-              <>
-                {nameWithParticle(childName, "이를", "를")} 위한 소중한 이야기가
-                <br />
-                세상에 하나뿐인 <span className="text-coral font-semibold">마음 동화</span>가 됩니다.
-                <br />
-                <span className="text-brown-light text-xs font-light mt-1 block">
-                  {nameWithParticle(childName, "이에게", "에게")} 읽어줄 동화를 완성해 보세요.
-                </span>
-              </>
-            ) : (
-              <>
-                지금까지 나눈 소중한 이야기가
-                <br />
-                세상에 하나뿐인 <span className="text-coral font-semibold">마음 동화</span>가 됩니다.
-                <br />
-                <span className="text-brown-light text-xs font-light mt-1 block">
-                  이 대화를 이어서 동화를 완성해 보세요.
-                </span>
-              </>
-            )}
+            {childName
+              ? <>세상에 하나뿐인 {nameWithParticle(childName, "이를", "를")} 위한 동화를 완성해보세요</>
+              : <>세상에 하나뿐인 동화를 완성해보세요</>
+            }
           </p>
         </div>
 

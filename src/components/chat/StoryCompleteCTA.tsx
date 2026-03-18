@@ -3,23 +3,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { PushPermissionBanner } from "@/components/ui/PushPermissionBanner";
 import { incrementStoryCount } from "@/components/ui/PWAInstallBanner";
 import { hapticSuccess } from "@/lib/utils/haptic";
 import { nameWithParticle } from "@/lib/utils/korean";
 
-/** V5-FIX #6: Positive topic suggestions (avoid negative framing post-completion) */
-const TOPIC_SUGGESTIONS = [
-  "나의 꿈", "가족 사랑", "용기와 모험", "소중한 추억", "성장 이야기",
-];
-
 interface StoryCompleteCTAProps {
   onViewStory: () => void;
-  onNewStory?: () => void;
   /** Completed story ID for community share URL */
   storyId?: string;
-  /** Auth token getter for push subscription */
-  getHeaders?: (opts?: { json?: boolean }) => Promise<Record<string, string>>;
 }
 
 // Soft floating particles for celebration feel
@@ -48,9 +39,7 @@ const confettiPieces = Array.from({ length: 40 }, (_, i) => ({
 
 export default function StoryCompleteCTA({
   onViewStory,
-  onNewStory,
   storyId,
-  getHeaders,
 }: StoryCompleteCTAProps) {
   const [showConfetti, setShowConfetti] = useState(true);
 
@@ -166,29 +155,12 @@ export default function StoryCompleteCTA({
           transition={{ duration: 0.6, delay: 0.5, type: "spring", stiffness: 120 }}
           className="font-serif text-2xl font-bold text-brown mb-2 leading-tight"
         >
-          축하합니다!<br />나의 동화가 완성되었어요
+          축하합니다!<br />
+          {childName
+            ? <>{nameWithParticle(childName, "이를", "를")} 위한 세상에 단 하나뿐인 동화가 완성되었어요</>
+            : <>세상에 단 하나뿐인 동화가 완성되었어요</>
+          }
         </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="text-[13px] text-brown-light font-normal leading-relaxed mb-3 break-keep"
-        >
-          {childName ? (
-            <>
-              {nameWithParticle(childName, "이에게", "에게")} 읽어줄 수 있는<br />
-              세상에 하나뿐인 동화가 완성됐어요!<br />
-              완성된 동화는 내 서재에 저장되어 있어요.
-            </>
-          ) : (
-            <>
-              소중한 이야기가 세상에 하나뿐인<br />
-              마음 동화가 되었습니다.<br />
-              완성된 동화는 내 서재에 저장되어 있어요.
-            </>
-          )}
-        </motion.p>
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -242,47 +214,7 @@ export default function StoryCompleteCTA({
         >
           친구에게 공유하기
         </motion.button>
-
-        {/* Repurchase nudge — next story suggestion */}
-        {onNewStory && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.6 }}
-            className="mt-6 pt-5"
-            style={{ borderTop: "1px solid rgba(196,149,106,0.12)" }}
-          >
-            <p className="text-[11px] text-brown-pale font-normal mb-2 break-keep">
-              이번엔 어떤 이야기를 들려주실 건가요?
-            </p>
-            <div className="flex flex-wrap justify-center gap-1.5 mb-3">
-              {TOPIC_SUGGESTIONS.map((topic) => (
-                <span
-                  key={topic}
-                  className="px-2.5 py-1 rounded-full text-[10px] font-medium"
-                  style={{ background: "rgba(224,122,95,0.08)", color: "#C96B52" }}
-                >
-                  {topic}
-                </span>
-              ))}
-            </div>
-            {/* V5-FIX #26: Coral gradient CTA for better conversion */}
-            <button
-              onClick={onNewStory}
-              className="w-full py-3 rounded-full text-[13px] font-medium text-white transition-all active:scale-[0.97]"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
-              }}
-            >
-              + 새로운 이야기 시작하기
-            </button>
-          </motion.div>
-        )}
       </motion.div>
-
-      {/* Sprint 4-A: Push notification permission banner (shows after 3s delay) */}
-      <PushPermissionBanner delay={3000} getHeaders={getHeaders} />
     </motion.div>
   );
 }

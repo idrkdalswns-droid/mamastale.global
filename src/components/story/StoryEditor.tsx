@@ -269,19 +269,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 aria-label={`${index + 1}페이지 본문`}
               />
 
-              <div className="flex justify-between items-center mt-1.5">
-                {isModified ? (
-                  <button
-                    onClick={() => {
-                      if (confirm("이 장면의 수정 내용을 되돌릴까요?")) resetScene(index);
-                    }}
-                    className="text-[11px] text-brown-pale underline underline-offset-2 min-h-[44px] inline-flex items-center"
-                  >
-                    ↩ 원래대로
-                  </button>
-                ) : (
-                  <span />
-                )}
+              <div className="flex justify-end items-center mt-1.5">
                 <span
                   className="text-[10px] font-light transition-colors"
                   style={{

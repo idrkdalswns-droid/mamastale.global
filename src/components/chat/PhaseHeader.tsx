@@ -14,6 +14,14 @@ interface PhaseHeaderProps {
   onSaveDraft?: () => void;
   /** Current turn count in this phase (0-indexed) */
   turnCountInPhase?: number;
+  /** Free trial mode — show turn counter in subtitle */
+  freeTrialMode?: boolean;
+  /** User message count (for turn counter display) */
+  userMsgCount?: number;
+  /** Free trial turn limit */
+  freeTurnLimit?: number;
+  /** Whether story generation is complete */
+  storyDone?: boolean;
 }
 
 export default memo(function PhaseHeader({
@@ -23,6 +31,10 @@ export default memo(function PhaseHeader({
   onGoHome,
   onSaveDraft,
   turnCountInPhase = 0,
+  freeTrialMode,
+  userMsgCount = 0,
+  freeTurnLimit = 7,
+  storyDone,
 }: PhaseHeaderProps) {
   const p = PHASES[currentPhase];
 
@@ -121,7 +133,13 @@ export default memo(function PhaseHeader({
             >
               <span>{p.theory}</span>
               <span className="inline-block w-0.5 h-0.5 rounded-full bg-current opacity-40" />
-              <span>약 {remainingMin}분 남음</span>
+              {freeTrialMode && !storyDone && userMsgCount > 0 ? (
+                <span className="font-semibold" style={{ color: "#E07A5F", opacity: 1 }}>
+                  대화 {userMsgCount}/{freeTurnLimit}회
+                </span>
+              ) : (
+                <span>약 {remainingMin}분 남음</span>
+              )}
             </div>
           </div>
         </div>

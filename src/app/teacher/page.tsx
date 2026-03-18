@@ -271,7 +271,7 @@ export default function TeacherPage() {
   const renderScreen = () => {
     switch (store.screenState) {
       case "CODE_ENTRY":
-        return <TeacherCodeModal onVerified={handleCodeVerified} />;
+        return <TeacherCodeModal onVerified={handleCodeVerified} onBack={() => { window.location.href = "/"; }} />;
 
       case "HOME":
         return (
