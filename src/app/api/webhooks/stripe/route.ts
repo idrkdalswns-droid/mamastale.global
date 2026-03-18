@@ -177,7 +177,27 @@ export async function POST(request: NextRequest) {
         if (subInsertErr) {
           // Check if it's a unique violation (already processed)
           if (subInsertErr.code === "23505") {
-            console.info(`[Stripe] Session ${session.id} already processed (unique constraint), skipping`);
+            // v1.22.3: Check if previous attempt failed at ticket increment
+            const { data: existingSub } = await supabase.from("subscriptions")
+              .select("status")
+              .eq("stripe_customer_id", session.id)
+              .maybeSingle();
+            if (existingSub?.status === "ticket_failed") {
+              // Previous attempt failed — retry ticket increment only
+              console.info(`[Stripe] Retrying ticket increment for ticket_failed session: ${session.id}`);
+              try {
+                await incrementTickets(supabase, userId, ticketCount);
+                await supabase.from("subscriptions")
+                  .update({ status: "active" })
+                  .eq("stripe_customer_id", session.id);
+                console.info(`[Stripe] Ticket retry succeeded for session: ${session.id}`);
+              } catch (retryErr) {
+                console.error("[Stripe] Ticket retry also failed:", retryErr);
+                return NextResponse.json({ error: "Ticket retry failed" }, { status: 500 });
+              }
+            } else {
+              console.info(`[Stripe] Session ${session.id} already processed (status: ${existingSub?.status}), skipping`);
+            }
             break;
           }
           console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
@@ -190,8 +210,15 @@ export async function POST(request: NextRequest) {
           await incrementTickets(supabase, userId, ticketCount);
         } catch (err) {
           console.error("[Stripe] Ticket increment failed:", err);
-          // Rollback: delete the subscription record to allow retry
-          await supabase.from("subscriptions").delete().eq("stripe_customer_id", session.id);
+          // v1.22.3: Mark as ticket_failed instead of DELETE — preserves idempotency
+          // Stripe will retry → webhook sees ticket_failed → can re-attempt increment
+          try {
+            await supabase.from("subscriptions")
+              .update({ status: "ticket_failed" })
+              .eq("stripe_customer_id", session.id);
+          } catch (updateErr) {
+            console.error("[Stripe] Failed to mark ticket_failed:", updateErr);
+          }
           processedEvents.delete(event.id); // Allow in-memory retry
           return NextResponse.json({ error: "Ticket increment failed" }, { status: 500 });
         }

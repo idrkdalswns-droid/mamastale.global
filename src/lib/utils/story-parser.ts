@@ -1,5 +1,15 @@
 import type { Scene } from "@/lib/types/story";
 
+// v1.22.3 G1: Module-scope regex compilation (previously compiled per cleanSceneText() call)
+// Array-based for easy pattern addition. ⚠️ "계속해서" alone is too broad — matches story prose.
+const AI_COMMENT_STARTS = [
+  "계속해서 완성해", "계속해서 만들어",
+  "이제 이 동화", "그리고 당신", "당신의 사랑스러운",
+  "어머니의 이야기를", "이 이야기를", "마음 동화 여정",
+  "치유의 시간", "함께 해주셔서",
+];
+const AI_COMMENT_PATTERN = new RegExp(`^(${AI_COMMENT_STARTS.join("|")})[^\\n]*$`, "gm");
+
 /**
  * Extract AI-generated story title from [TITLE: ...] marker (v1.22.0).
  * Returns null if no marker found — caller should fall back to default title.
@@ -55,15 +65,8 @@ export function cleanSceneText(text: string): string {
   cleaned = cleaned.replace(/^(이 장면에서는|다음 장면으로|작가 노트|이 이야기는|이 동화가|당신의 이야기|당신의 동화|이야기를 통해|위의 동화는)[^\n]*$/gm, "");
   cleaned = cleaned.replace(/^\(해설\)[^\n]*$/gm, "");
   // AI conversational comments that leak into story text (v1.21.2)
-  // Array-based for easy pattern addition. ⚠️ "계속해서" alone is too broad — matches story prose.
-  const AI_COMMENT_STARTS = [
-    "계속해서 완성해", "계속해서 만들어",
-    "이제 이 동화", "그리고 당신", "당신의 사랑스러운",
-    "어머니의 이야기를", "이 이야기를", "마음 동화 여정",
-    "치유의 시간", "함께 해주셔서",
-  ];
-  const aiStartPattern = new RegExp(`^(${AI_COMMENT_STARTS.join("|")})[^\\n]*$`, "gm");
-  cleaned = cleaned.replace(aiStartPattern, "");
+  // v1.22.3 G1: Module-scope compiled regex (was per-call — unnecessary recompilation)
+  cleaned = cleaned.replace(AI_COMMENT_PATTERN, "");
   // AI verb patterns — only on lines NOT starting with quotes (protect story dialogue)
   cleaned = cleaned.replace(/^[^"\u201C\n]*(?:완성해드릴까요|변환했습니다|읽어주세요\.|만들어볼게요)[^\n]*$/gm, "");
 
