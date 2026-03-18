@@ -108,6 +108,8 @@ export default memo(function ChatInput({
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-[90] border-t border-black/[0.04]"
+      role="region"
+      aria-label="메시지 입력 영역"
       style={{
         background: "rgb(var(--surface) / 0.88)",
         backdropFilter: "blur(20px)",
@@ -179,6 +181,10 @@ export default memo(function ChatInput({
             <polyline points="5 12 12 5 19 12" />
           </svg>
         </button>
+      </div>
+      {/* R7: Screen reader loading announcement */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isLoading ? (loadingHint || "AI가 응답을 작성하고 있습니다") : ""}
       </div>
     </div>
   );

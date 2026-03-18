@@ -115,29 +115,13 @@ export const StoryCard = memo(function StoryCard({
           <span>{date}</span>
           <span>·</span>
           <span>{sceneCount}장면</span>
-          {/* Sprint 2-H: Social proof — hide low counts, show badges */}
-          {viewCount !== undefined && viewCount >= 5 && (
-            <>
-              <span>·</span>
-              <span>조회 {viewCount}</span>
-            </>
-          )}
-          {likeCount !== undefined && likeCount >= 5 && (
-            <>
-              <span>·</span>
-              <span>공감 {likeCount}</span>
-            </>
-          )}
+          {/* R3: 좋아요 항상 표시 */}
+          <span>·</span>
+          <span>❤️ {likeCount ?? 0}</span>
           {likeCount !== undefined && likeCount >= 10 && (
             <>
               <span>·</span>
               <span className="text-coral font-medium">인기</span>
-            </>
-          )}
-          {(viewCount === undefined || viewCount < 5) && (likeCount === undefined || likeCount < 5) && (
-            <>
-              <span>·</span>
-              <span className="text-brown-pale">최근 공유됨</span>
             </>
           )}
         </div>

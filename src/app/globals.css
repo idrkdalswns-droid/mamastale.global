@@ -72,6 +72,16 @@
     color-scheme: light;
   }
 
+  /* C5: Global focus-visible ring for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid rgb(var(--coral));
+    outline-offset: 2px;
+  }
+  /* Exclude inputs from outline-offset (looks odd on text fields) */
+  input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline-offset: 0;
+  }
+
   body {
     background: rgb(var(--cream));
     overscroll-behavior: none;
