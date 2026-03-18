@@ -652,24 +652,6 @@ export default function Home() {
           )}
           {user && <div className="mb-5" />}
 
-          {/* C4: 히어로 일러스트 카드 — CTA 아래 배치 */}
-          {!user && !authLoading && (
-            <div className="text-center mb-5">
-              <div className="w-full max-w-[340px] mx-auto rounded-2xl overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
-                <Image
-                  src="/images/sample/scene-01.jpg"
-                  alt="AI가 엄마의 이야기로 만든 동화 예시"
-                  width={340}
-                  height={255}
-                  className="w-full h-auto object-cover"
-                  loading="eager"
-                  onError={(e) => { (e.target as HTMLElement).parentElement!.style.display = "none"; }}
-                />
-              </div>
-              <p className="text-[10px] text-brown-pale/60 font-light mt-2">AI가 엄마의 이야기로 만든 동화 예시</p>
-            </div>
-          )}
-
           {/* ════════════════════════════════════════
               GALLERY — 이런 동화가 완성돼요 (B1)
               ════════════════════════════════════════ */}
