@@ -259,8 +259,8 @@ export default function TurnFivePopup({
               className="rounded-xl p-3 mb-3 text-center"
               style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}
             >
-              <p className="text-[11px] text-coral font-medium break-keep">
-                ⚠ 로그인하지 않으면 지금까지의 대화가 사라질 수 있어요
+              <p className="text-[11px] text-mint-deep font-medium break-keep">
+                ✨ 로그인하면 대화가 안전하게 보관됩니다
               </p>
             </div>
 

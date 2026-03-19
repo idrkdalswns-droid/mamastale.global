@@ -69,8 +69,8 @@ export default memo(function ChatInput({
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading || disabled || sendingRef.current) return;
-    // Fix 1: 800ms timestamp debounce for Android WebView touch double-fire
-    if (Date.now() - lastSendRef.current < 800) return;
+    // Fix 1: 350ms timestamp debounce for Android WebView touch double-fire (reduced from 800ms for snappier UX)
+    if (Date.now() - lastSendRef.current < 350) return;
     lastSendRef.current = Date.now();
     sendingRef.current = true;
     const text = input.trim();

@@ -92,12 +92,13 @@ export default function Home() {
     const id = setInterval(() => setDraftTick(t => t + 1), 60_000);
     return () => clearInterval(id);
   }, [draftInfo]);
-  // H9-FIX: Update document.title per screen for accessibility & browser tab clarity
+  // H9-FIX + UX-4: Update document.title per screen (with phase info for chat)
+  const chatPhase = useChatStore((s) => s.currentPhase);
   useEffect(() => {
     const titles: Record<ScreenState, string> = {
       landing: "mamastale — 엄마의 이야기가 아이의 동화가 되다",
       onboarding: "시작하기 — mamastale",
-      chat: "대화 중 — mamastale",
+      chat: `대화 중 (${chatPhase}단계) — mamastale`,
       edit: "동화 편집 — mamastale",
       coverPick: "표지 선택 — mamastale",
       previewNotice: "미리보기 — mamastale",
@@ -106,7 +107,7 @@ export default function Home() {
       community: "커뮤니티 — mamastale",
     };
     document.title = titles[screen];
-  }, [screen]);
+  }, [screen, chatPhase]);
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const [showStickyCta, setShowStickyCta] = useState(false);

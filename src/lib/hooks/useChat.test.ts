@@ -26,6 +26,12 @@ vi.mock("@/lib/utils/korean", () => ({
     `${name}${withBatchim}`,
 }));
 
+// Mock analytics (used by useChat for phase/story tracking)
+vi.mock("@/lib/utils/analytics", () => ({
+  trackChatPhaseEnter: vi.fn(),
+  trackStoryComplete: vi.fn(),
+}));
+
 // ─── Now import the store ───
 import { useChatStore } from "./useChat";
 
@@ -318,5 +324,61 @@ describe("useChatStore — initSession", () => {
     expect(messages.length).toBe(1);
     expect(messages[0].role).toBe("assistant");
     expect(messages[0].content).toContain("아버지");
+  });
+});
+
+// ────────────────────────────────────────────────────────
+// Test Suite: Y3 — sendMessage auth error rollback
+// ────────────────────────────────────────────────────────
+
+describe("useChatStore — sendMessage error rollback (Y3)", () => {
+  beforeEach(() => {
+    resetStore();
+    vi.restoreAllMocks();
+  });
+
+  it("should rollback user message and turn count on 401 auth error", async () => {
+    const initialMessages = useChatStore.getState().messages;
+    const initialTurnCount = useChatStore.getState().turnCountInCurrentPhase;
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "로그인이 필요합니다." }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }));
+
+    await useChatStore.getState().sendMessage("테스트 메시지");
+
+    // User message should be rolled back (only initial + error message remain)
+    const messages = useChatStore.getState().messages;
+    const userMsgs = messages.filter(m => m.role === "user");
+    expect(userMsgs.length).toBe(0); // No user messages — rolled back
+    expect(useChatStore.getState().turnCountInCurrentPhase).toBe(initialTurnCount);
+
+    // Error message should still be added
+    const errorMsgs = messages.filter(m => m.isError);
+    expect(errorMsgs.length).toBe(1);
+  });
+
+  it("should keep user message on 500 server error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: "Internal Server Error" }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+    }));
+
+    await useChatStore.getState().sendMessage("서버 에러 테스트");
+
+    // User message should be kept (not rolled back)
+    const messages = useChatStore.getState().messages;
+    const userMsgs = messages.filter(m => m.role === "user");
+    expect(userMsgs.length).toBe(1); // User message preserved
+    expect(userMsgs[0].content).toBe("서버 에러 테스트");
+
+    // Error message should also be added
+    const errorMsgs = messages.filter(m => m.isError);
+    expect(errorMsgs.length).toBe(1);
   });
 });

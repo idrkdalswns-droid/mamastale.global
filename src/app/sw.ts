@@ -84,10 +84,11 @@ const mamastaleCache: RuntimeCaching[] = [
       plugins: [
         new ExpirationPlugin({
           maxEntries: 10,
-          maxAgeSeconds: 60 * 5, // 5 minutes
+          maxAgeSeconds: 120, // 2 minutes (reduced from 5min to minimize stale ticket data)
         }),
       ],
-      networkTimeoutSeconds: 5,
+      networkTimeoutSeconds: 10, // 10s (up from 5s for slow mobile networks)
+
     }),
   },
   // ── Static images ──

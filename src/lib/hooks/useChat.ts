@@ -220,6 +220,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // R4: Block sends during phase transition
     if (!text.trim() || state.isLoading || state.isTransitioning || sendInFlightId > 0) return;
     const reqId = armSendInFlight();
+    // Y3-FIX: Track response status outside try for catch-block access
+    let resStatus = 0;
 
     const userMsg: Message = {
       id: genId("user"),
@@ -273,6 +275,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       });
 
       clearTimeout(timeoutId);
+      resStatus = res.status; // Y3-FIX: Preserve status for catch-block rollback
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -387,6 +390,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (err) {
+      // Y3-FIX: Rollback user message + turn count on auth errors (pattern matches sendMessageStreaming:460-466)
+      if (resStatus === 401 || resStatus === 403) {
+        set({ messages: state.messages, turnCountInCurrentPhase: state.turnCountInCurrentPhase });
+        get().saveDraft(); // Force-save clean state to prevent draft corruption
+      }
       // Show API error messages (Korean) as-is, but replace raw browser errors
       // (e.g. "Failed to fetch", "Load failed") with a friendly Korean message
       const errMessage =
