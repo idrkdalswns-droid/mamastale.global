@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.24.0] - 2026-03-19
+
+### Added (이수지 스타일 AI 표지 이미지 생성 파이프라인 — 7차 검토 APPROVE)
+
+- **AI 표지 생성**: 동화 완성 시 Gemini 2.5 Flash로 이수지 스타일 수채화 표지 자동 생성
+- **프롬프트 엔진**: Phase 4 imagePrompt 기반 이수지 화풍 프리픽스/서픽스 자동 조합
+- **Supabase Storage**: illustrations 버킷에 AI 생성 표지 업로드 + public URL 반환
+- **Freemium 분기**: 잠금 동화(첫 동화)는 AI 표지 skip → 기본 표지만 사용
+- **cover_image 검증**: SSRF 방지를 위한 Supabase URL 엄격 정규식 검증 (isValidCoverImage)
+- **fetch 타임아웃**: 동화 저장 fetch 35초 타임아웃 (AI 표지 생성 시간 포함)
+
+### Changed
+
+- **랜딩 CTA**: 버튼 내부에 "심리학 기반 4단계 치유 대화 엔진" 서브텍스트 추가
+- **랜딩 간소화**: "이런 동화가 완성돼요" 제목, "이렇게 만들어져요" 3단계, "엄마들의 이야기가 시작되고 있어요" 삭제
+- **DIY 문구**: "직접 동화 만들기" → "아이와 함께 만드는 DIY 동화"
+- **대표 이야기**: "mamastale 대표 강민준의 이야기" → "mamastale 대표의 이야기" (중복 이름 정리)
+- **next.config**: Supabase 이미지 remotePatterns에 pathname 추가
+- **default-cover**: resolveCover()에서 https:// URL 인식
+
 ## [1.23.0] - 2026-03-19
 
 ### Changed (Phase 1 Quick Wins — E2E 시뮬레이션 피드백 반영, 8차 검토 승인)
