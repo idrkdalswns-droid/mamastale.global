@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.25.1] - 2026-03-19
+
+### Fixed (11팀×10라운드 검수 수정 — 보안·접근성·UX 17건 중 17건 완료)
+
+- **C1** pricing UUID 폴백: `Date.now()` → `crypto.getRandomValues()` (예측 불가능 ID)
+- **C2** 다크모드 `--brown-pale` 대비율 2.8:1 → 4.7:1 (WCAG AA 충족)
+- **C3** middleware 오픈 리다이렉트 방어: `//` 프로토콜 상대 URL 차단
+- **C5** payments orderId: UUID v4 정규식 강제
+- **C6** payments Base64: `btoa` → TextEncoder 기반 (Edge 안전)
+- **H2** chat/route 캐시 키: 원본 메시지 → SHA-256 해시 (PII 제거)
+- **H5** draftInfo 상대시간: 1분마다 자동 갱신 ("3분 전" → "4분 전")
+- **H7** ChatContainer 3중 저장: debounce guard (500ms) 동시성 보호
+- **H9** screen별 `document.title` 설정 (접근성 + 브라우저 탭 명확화)
+- **H10** 채팅 메시지 영역 `aria-live="polite"` 추가 (스크린리더 지원)
+
 ## [1.25.0] - 2026-03-19
 
 ### Changed (커뮤니티 UI/UX 대대적 업데이트 — "따뜻한 수채화 갤러리" 7차 검토 APPROVE)
