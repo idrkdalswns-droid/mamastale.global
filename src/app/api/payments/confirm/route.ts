@@ -40,7 +40,7 @@ const VALID_PRICES: Record<number, number> = {
 // Official Toss sample uses separate endpoints; we use a single endpoint with mode param
 const confirmRequestSchema = z.object({
   paymentKey: z.string().min(1).max(200),
-  orderId: z.string().min(1).max(64).regex(/^order_[a-f0-9-]+$/i, "Invalid order ID format"),
+  orderId: z.string().min(1).max(64).regex(/^order_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "Invalid order ID format"),
   amount: z.number().int().positive().max(1_000_000),
   mode: z.enum(["widget", "standard"]).default("widget"),
 });
@@ -172,8 +172,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Confirm payment with Toss Payments API (10s timeout)
-    // Base64-encode for HTTP Basic Auth (actual transport encryption is via HTTPS)
-    const basicAuthCredential = btoa(`${tossSecretKey}:`);
+    // Base64-encode for HTTP Basic Auth (Edge-safe: TextEncoder handles non-ASCII gracefully)
+    const basicAuthCredential = btoa(String.fromCharCode(...new TextEncoder().encode(`${tossSecretKey}:`)));
     const tossAbort = new AbortController();
     const tossTimeout = setTimeout(() => tossAbort.abort(), 10_000);
 

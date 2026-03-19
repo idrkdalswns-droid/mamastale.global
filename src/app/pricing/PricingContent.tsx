@@ -253,7 +253,7 @@ function PricingContent() {
         // R9-FIX(B1): Fallback for Kakao/Naver in-app browsers missing crypto.randomUUID()
         const uuid = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+          : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join("");
         const orderId = `order_${uuid}`;
 
         hapticMedium();

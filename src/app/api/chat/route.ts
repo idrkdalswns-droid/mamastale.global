@@ -335,10 +335,12 @@ export async function POST(request: NextRequest) {
 
     // ─── RESPONSE CACHE CHECK (Phase 1 only) ───
     // R2-FIX(C2): Include user context in cache key to prevent cross-user personalization leaks
-    // (e.g., "아빠" user receiving cached response that addresses "어머니")
-    const cacheKey = parentRole || childAge
+    // H2-FIX: Hash cache key to strip PII from in-memory storage
+    const rawCacheKey = parentRole || childAge
       ? `${latestUserMsg?.content || ""}|role:${parentRole || ""}|age:${childAge || ""}`
       : latestUserMsg?.content || "";
+    const cacheKeyBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawCacheKey));
+    const cacheKey = Array.from(new Uint8Array(cacheKeyBuf), b => b.toString(16).padStart(2, "0")).join("");
     if (safePhase === 1 && latestUserMsg && crisisResult.severity === null) {
       const cached = await getCachedResponse(cacheKey, safePhase);
       if (cached) {

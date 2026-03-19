@@ -65,6 +65,7 @@ export async function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
+      // TODO(론칭 후): 'unsafe-inline' → nonce 기반 CSP로 전환. 현재는 GA/Toss/Kakao 인라인 스크립트 호환 필요.
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://*.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
@@ -148,8 +149,9 @@ export async function middleware(request: NextRequest) {
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
       // Strict redirect validation: only allow known local paths (prevent open redirect)
+      // Defense-in-depth: whitelist + protocol-relative URL rejection
       const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
-      if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (!pathname.startsWith("//") && ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
         loginUrl.searchParams.set("redirect", pathname);
       }
       return NextResponse.redirect(loginUrl);
@@ -165,7 +167,7 @@ export async function middleware(request: NextRequest) {
     if (isProtected) {
       const loginUrl = new URL("/login", request.url);
       const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
-      if (ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (!pathname.startsWith("//") && ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
         loginUrl.searchParams.set("redirect", pathname);
       }
       return NextResponse.redirect(loginUrl);
