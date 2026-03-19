@@ -613,21 +613,13 @@ export default function Home() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
             </Link>
           </div>
-          {/* 핵심 숫자 + 차별점 */}
-          <p className="text-[12px] text-brown-light font-light text-center mb-1 break-keep">
-            15분 AI 대화 · 10장면 동화 완성
-          </p>
-          <p className="text-[11px] text-brown-pale/80 font-light text-center mb-4 break-keep">
-            심리학 기반 4단계 치유 대화 엔진
-          </p>
-
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
           <button
             ref={mainCtaRef}
             onClick={handleStartStory}
             disabled={authLoading}
             aria-busy={authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2"
+            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2 flex flex-col items-center gap-1"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
@@ -638,7 +630,12 @@ export default function Home() {
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
                 불러오는 중...
               </span>
-            ) : user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}
+            ) : (
+              <>
+                <span>{user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}</span>
+                <span className="text-[11px] font-light text-white/70">심리학 기반 4단계 치유 대화 엔진</span>
+              </>
+            )}
           </button>
           <div className="mb-5" />
 
@@ -646,9 +643,6 @@ export default function Home() {
               GALLERY — 이런 동화가 완성돼요 (B1)
               ════════════════════════════════════════ */}
           <div className="mb-5">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
-              이런 동화가 완성돼요
-            </p>
             <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3 md:hidden">
               ← 옆으로 넘겨보세요 →
             </p>
@@ -740,34 +734,10 @@ export default function Home() {
               border: "1.5px solid rgba(196,149,106,0.2)",
             }}
           >
-            직접 동화 만들기 →
+            아이와 함께 만드는 DIY 동화
           </Link>
 
-          {/* ════════════════════════════════════════
-              HOW IT WORKS — 3-step process (B2)
-              ════════════════════════════════════════ */}
-          <div id="how" className="mb-6">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-3">
-              이렇게 만들어져요
-            </p>
-            <div className="flex flex-col gap-3">
-              {[
-                { step: "1", icon: "/images/teacher/phase/phase-a.jpeg", title: "엄마의 이야기", desc: "AI 상담사와 15분 대화하며 마음속 이야기를 나눠요" },
-                { step: "2", icon: "/images/teacher/phase/phase-c.jpeg", title: "동화로 변환", desc: "엄마의 감정이 아름다운 10장면 동화로 재탄생해요" },
-                { step: "3", icon: "/images/teacher/phase/phase-d.jpeg", title: "세상에 하나뿐인 책", desc: "완성된 동화를 PDF로 저장하고 아이에게 읽어줘요" },
-              ].map((item) => (
-                <div key={item.step} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={{ background: "rgba(127,191,176,0.06)" }}>
-                  <div className="w-11 h-11 rounded-lg overflow-hidden relative flex-shrink-0 mt-0.5">
-                    <Image src={item.icon} alt={item.title} fill className="object-cover scale-[2]" sizes="44px" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] text-brown font-medium">{item.title}</p>
-                    <p className="text-[11px] text-brown-pale font-light leading-relaxed break-keep">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* HOW IT WORKS 섹션 삭제 */}
 
           {/* ════════════════════════════════════════
               SOCIAL PROOF — Story Counter
@@ -777,11 +747,7 @@ export default function Home() {
               지금까지 <span className="text-coral font-semibold">{communityCount.toLocaleString()}편</span>의 동화가 만들어졌어요
             </p>
           )}
-          {communityCount != null && communityCount > 0 && communityCount <= 50 && (
-            <p className="text-center text-[12px] text-brown-pale font-light mb-4">
-              엄마들의 이야기가 시작되고 있어요
-            </p>
-          )}
+          {/* 소규모 카운터 삭제 */}
 
           {/* ════════════════════════════════════════
               SOCIAL PROOF — Reviews (N3)
@@ -874,7 +840,7 @@ export default function Home() {
         <div>
           {/* M2: Founder story — brand trust */}
           <div className="mt-4 mb-4 px-4 py-4 rounded-2xl" style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}>
-            <p className="font-serif text-[13px] text-brown font-semibold mb-2">mamastale 대표 강민준의 이야기</p>
+            <p className="font-serif text-[13px] text-brown font-semibold mb-2">mamastale 대표의 이야기</p>
             <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
               20대 시절, 자전거 한 대에 침낭을 싣고 3개월간 동유럽 10개국을 횡단했습니다. 그중 두 달은 인적조차 드문 낯선 노지에 작은 텐트를 치고 밤을 지새워야 했습니다. 별빛 한 점 스며들지 않는 캄캄한 텐트 안. 그 완벽한 단절 속에서 저는 인간 존재의 밑바닥에 도사린 극심한 외로움과 고독을 마주했습니다.
             </p>
@@ -890,7 +856,7 @@ export default function Home() {
             <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
               그 기적이 지금은 마마스테일로 표현되고 있습니다.
             </p>
-            <p className="text-[10px] text-brown-pale font-light mt-3">— 강민준, mamastale 대표</p>
+            {/* 서명 삭제 */}
           </div>
 
           {/* ⭐ CTA 하단 반복 — 스크롤 완료 후 전환 유도 (E2E) */}
