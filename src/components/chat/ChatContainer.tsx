@@ -95,52 +95,54 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     };
   }, []);
 
+  // H7-FIX: Debounce flag to prevent 3-layer save from racing
+  const savingRef = useRef(false);
+  const guardedSave = useCallback(() => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    const state = useChatStore.getState();
+    const userMsgs = state.messages.filter(m => m.role === "user").length;
+    if (userMsgs > 0 && !state.storyDone) {
+      state.saveDraft();
+    }
+    // Release guard after 500ms to allow next save
+    setTimeout(() => { savingRef.current = false; }, 500);
+  }, []);
+
   // ── DEFENSE LAYER 1: Auto-save chat on page unload ──
   // V5-FIX #19: Use pagehide instead of beforeunload — fires reliably on mobile tab swipe/close
   // beforeunload is unreliable on iOS Safari and some Android browsers
   useEffect(() => {
     const handlePageHide = () => {
+      guardedSave();
+      // Also save auth copy as backup
       const state = useChatStore.getState();
       const userMsgs = state.messages.filter(m => m.role === "user").length;
-      // Save if user has sent at least 1 message and story isn't done
       if (userMsgs > 0 && !state.storyDone) {
-        state.saveDraft(); // Use persistent draft (30d) instead of auth save (24h)
-        state.persistToStorage(); // Also save auth copy as backup
+        state.persistToStorage();
       }
     };
     window.addEventListener("pagehide", handlePageHide);
     return () => window.removeEventListener("pagehide", handlePageHide);
-  }, []);
+  }, [guardedSave]);
 
   // ── DEFENSE LAYER 2: Periodic auto-save every 30s ──
   // Mobile browsers don't reliably fire beforeunload (iOS kills process instantly).
   // This ensures at most 30s of progress is lost if the app is force-closed.
   useEffect(() => {
-    const interval = setInterval(() => {
-      const state = useChatStore.getState();
-      const userMsgs = state.messages.filter(m => m.role === "user").length;
-      if (userMsgs > 0 && !state.storyDone) {
-        state.saveDraft();
-      }
-    }, 30_000);
+    const interval = setInterval(guardedSave, 30_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [guardedSave]);
 
   // ── DEFENSE LAYER 3: Save when app goes to background ──
   // visibilitychange fires reliably on mobile when switching apps or locking screen
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        const state = useChatStore.getState();
-        const userMsgs = state.messages.filter(m => m.role === "user").length;
-        if (userMsgs > 0 && !state.storyDone) {
-          state.saveDraft();
-        }
-      }
+      if (document.visibilityState === "hidden") guardedSave();
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [guardedSave]);
 
   // P3-FIX(IL-4): Show guest signup modal after 1.5s delay (let user read last AI response)
   useEffect(() => {
@@ -255,7 +257,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         style={{ WebkitOverflowScrolling: "touch" }}
         onScroll={handleScroll}
       >
-        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
+        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-live="polite" aria-label="대화 메시지">
           {messages.length === 0 && (
             <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-full mx-auto w-fit mb-4"
               style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}

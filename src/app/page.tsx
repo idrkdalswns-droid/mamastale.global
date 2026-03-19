@@ -85,6 +85,28 @@ export default function Home() {
     try { return sessionStorage.getItem("mamastale_ticket_session") === "1"; } catch { return false; }
   });
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
+  // H5-FIX: Tick counter to refresh relative time display ("3분 전" → "4분 전")
+  const [, setDraftTick] = useState(0);
+  useEffect(() => {
+    if (!draftInfo) return;
+    const id = setInterval(() => setDraftTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [draftInfo]);
+  // H9-FIX: Update document.title per screen for accessibility & browser tab clarity
+  useEffect(() => {
+    const titles: Record<ScreenState, string> = {
+      landing: "mamastale — 엄마의 이야기가 아이의 동화가 되다",
+      onboarding: "시작하기 — mamastale",
+      chat: "대화 중 — mamastale",
+      edit: "동화 편집 — mamastale",
+      coverPick: "표지 선택 — mamastale",
+      previewNotice: "미리보기 — mamastale",
+      story: "내 동화 — mamastale",
+      feedback: "피드백 — mamastale",
+      community: "커뮤니티 — mamastale",
+    };
+    document.title = titles[screen];
+  }, [screen]);
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const [showStickyCta, setShowStickyCta] = useState(false);
