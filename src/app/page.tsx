@@ -661,6 +661,58 @@ export default function Home() {
           </button>
           <div className="mb-5" />
 
+          {/* Draft resume card — positioned right below CTA for immediate visibility */}
+          {draftInfo && (
+            <div
+              className="rounded-2xl p-4 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
+              style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
+                  <p className="text-[11px] text-brown-pale font-light">
+                    {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
+                    {draftInfo.savedAt > 0 && <> · {(() => {
+                      const mins = Math.floor((Date.now() - draftInfo.savedAt) / 60000);
+                      if (mins < 1) return "방금 전";
+                      if (mins < 60) return `${mins}분 전`;
+                      const hrs = Math.floor(mins / 60);
+                      if (hrs < 24) return `${hrs}시간 전`;
+                      return `${Math.floor(hrs / 24)}일 전`;
+                    })()}</>}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const restored = restoreDraft();
+                    if (restored) {
+                      setDraftInfo(null);
+                      setScreen("chat");
+                    }
+                  }}
+                  className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
+                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+                >
+                  이어서 대화하기
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
+                      clearStorage(); setDraftInfo(null);
+                    }
+                  }}
+                  className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
+                  style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                  aria-label="저장된 대화 삭제"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ════════════════════════════════════════
               GALLERY — 이런 동화가 완성돼요 (B1)
               ════════════════════════════════════════ */}
@@ -802,58 +854,6 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Draft resume card */}
-          {draftInfo && (
-            <div
-              className="rounded-2xl p-4 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
-              style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
-                  <p className="text-[11px] text-brown-pale font-light">
-                    {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
-                    {draftInfo.savedAt > 0 && <> · {(() => {
-                      const mins = Math.floor((Date.now() - draftInfo.savedAt) / 60000);
-                      if (mins < 1) return "방금 전";
-                      if (mins < 60) return `${mins}분 전`;
-                      const hrs = Math.floor(mins / 60);
-                      if (hrs < 24) return `${hrs}시간 전`;
-                      return `${Math.floor(hrs / 24)}일 전`;
-                    })()}</>}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    // Use non-destructive restoreDraft (draft stays in localStorage)
-                    const restored = restoreDraft();
-                    if (restored) {
-                      setDraftInfo(null);
-                      setScreen("chat");
-                    }
-                  }}
-                  className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
-                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-                >
-                  이어서 대화하기
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
-                      clearStorage(); setDraftInfo(null);
-                    }
-                  }}
-                  className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
-                  style={{ border: "1px solid rgba(196,149,106,0.2)" }}
-                  aria-label="저장된 대화 삭제"
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          )}
 
 
         </div>
