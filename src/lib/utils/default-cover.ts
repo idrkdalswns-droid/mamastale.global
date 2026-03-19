@@ -206,7 +206,11 @@ export function resolveCover(
   storyId: string,
   topic?: string | null,
 ): string {
-  return coverImage || getDefaultCover(storyId, topic);
+  // 정적 경로(/images/...) 또는 AI 생성 URL(https://...) 모두 유효
+  if (coverImage && (coverImage.startsWith("/") || coverImage.startsWith("https://"))) {
+    return coverImage;
+  }
+  return getDefaultCover(storyId, topic);
 }
 
 /**

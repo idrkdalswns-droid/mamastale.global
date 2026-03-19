@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, VALID_TOPICS } from "@/lib/utils/validation";
+import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
@@ -165,15 +165,9 @@ export async function PATCH(
         updates.topic = null;
       }
     }
-    // Cover image selection — whitelist to /images/covers/ and /images/diy/
-    if (typeof body.coverImage === "string") {
-      const isValidCover =
-        /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(body.coverImage) ||
-        /^\/images\/covers\/[A-Za-z0-9_]+\.(png|jpeg)$/.test(body.coverImage) ||
-        /^\/images\/diy\/[a-z0-9-]+\/[A-Za-z0-9_]+\.(jpeg|png)$/.test(body.coverImage);
-      if (isValidCover) {
-        updates.cover_image = body.coverImage;
-      }
+    // Cover image selection — shared validation (static + AI-generated Supabase URLs)
+    if (typeof body.coverImage === "string" && isValidCoverImage(body.coverImage)) {
+      updates.cover_image = body.coverImage;
     }
     if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
       const validScenes = body.scenes.every(

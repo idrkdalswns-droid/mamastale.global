@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS } from "@/lib/utils/validation";
+import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS, isValidCoverImage } from "@/lib/utils/validation";
+import { generateCoverImage } from "@/lib/illustration/generate";
+import { uploadCoverToStorage } from "@/lib/illustration/upload";
 
 export const runtime = "edge";
 
@@ -239,15 +241,9 @@ export async function POST(request: NextRequest) {
       is_unlocked: !isFirstStory,
     };
 
-    // DIY 동화: coverImage 저장 (PATCH 핸들러와 동일한 whitelist regex)
-    if (typeof coverImage === "string" && coverImage.length > 0) {
-      const isValidCover =
-        /^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(coverImage) ||
-        /^\/images\/covers\/[A-Za-z0-9_]+\.(png|jpeg)$/.test(coverImage) ||
-        /^\/images\/diy\/[a-z0-9-]+\/[A-Za-z0-9_]+\.(jpeg|png)$/.test(coverImage);
-      if (isValidCover) {
-        storyInsert.cover_image = coverImage;
-      }
+    // DIY 동화: coverImage 저장 (공통 검증 함수 사용)
+    if (typeof coverImage === "string" && coverImage.length > 0 && isValidCoverImage(coverImage)) {
+      storyInsert.cover_image = coverImage;
     }
 
     // Community columns (is_public, author_alias) require 002_community migration
@@ -288,7 +284,27 @@ export async function POST(request: NextRequest) {
       return sb.applyCookies(NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 }));
     }
 
-    return sb.applyCookies(NextResponse.json({ id: insertResult.data.id }));
+    const storyId = insertResult.data.id;
+    let coverGenerated = false;
+
+    // AI 표지 생성 후처리 (Freemium: 잠금 동화는 skip)
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey && !isFirstStory && !storyInsert.cover_image) {
+      try {
+        const result = await generateCoverImage(scenes, title || "");
+        if (result) {
+          const publicUrl = await uploadCoverToStorage(result.base64, result.mimeType, storyId);
+          if (publicUrl) {
+            await sb.client.from("stories").update({ cover_image: publicUrl }).eq("id", storyId);
+            coverGenerated = true;
+          }
+        }
+      } catch (e) {
+        console.error("[Stories] Cover generation failed (non-blocking):", e);
+      }
+    }
+
+    return sb.applyCookies(NextResponse.json({ id: storyId, coverGenerated }));
   } catch {
     return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }

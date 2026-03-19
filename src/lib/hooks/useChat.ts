@@ -358,6 +358,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               scenes: data.scenes,
               sessionId: state.sessionId || undefined,
             }),
+            signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함 30초 + 여유 5초
           });
 
           if (saveRes.ok) {
@@ -599,6 +600,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     scenes: event.scenes,
                     sessionId: state.sessionId || undefined,
                   }),
+                  signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
                 });
                 if (saveRes.ok) {
                   const saveData = await saveRes.json();
@@ -837,6 +839,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           scenes: state.completedScenes,
           sessionId: state.sessionId || undefined,
         }),
+        signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
       });
 
       if (res.ok) {

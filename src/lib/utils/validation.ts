@@ -83,3 +83,18 @@ export function getClientIP(request: Request): string {
   // R2-5: Cap length to prevent memory abuse from spoofed headers (IPv6 max ~45 chars)
   return raw.slice(0, 45);
 }
+
+// ─── Cover image URL validation (static + AI-generated) ───
+export function isValidCoverImage(url: string): boolean {
+  // 기존 정적 이미지 패턴
+  if (/^\/images\/covers\/cover_(pink|green|blue)\d{2}\.(png|jpeg)$/.test(url)) return true;
+  if (/^\/images\/covers\/[A-Za-z0-9_]+\.(png|jpeg)$/.test(url)) return true;
+  if (/^\/images\/diy\/[a-z0-9-]+\/[A-Za-z0-9_]+\.(jpeg|png)$/.test(url)) return true;
+  // AI 생성 — Supabase URL 엄격 검증 (SSRF 방지)
+  const host = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace("https://", "");
+  if (!host) return false;
+  const pattern = new RegExp(
+    `^https://${host.replace(/\./g, "\\.")}/storage/v1/object/public/illustrations/covers/[0-9a-f-]+\\.(png|jpeg|jpg)$`,
+  );
+  return pattern.test(url);
+}
