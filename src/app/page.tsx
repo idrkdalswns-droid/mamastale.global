@@ -576,8 +576,7 @@ export default function Home() {
             ) : (
               <Link
                 href="/login"
-                className="text-[11px] whitespace-nowrap text-white font-medium no-underline px-2 sm:px-2.5 py-1 rounded-full min-h-[44px] flex items-center"
-                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+                className="text-[11px] whitespace-nowrap text-brown-light font-medium no-underline min-h-[44px] flex items-center"
               >
                 로그인
               </Link>
