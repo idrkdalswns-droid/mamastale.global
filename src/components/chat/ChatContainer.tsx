@@ -413,13 +413,6 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         </div>
       )}
 
-      {/* Offline banner */}
-      {isOffline && (
-        <div className="px-4 py-2 text-center text-[11px] text-brown-pale font-light" style={{ background: "rgba(224,122,95,0.08)" }}>
-          인터넷 연결이 끊겼어요
-        </div>
-      )}
-
       {/* Guest turn counter */}
       {freeTrialMode && !storyDone && userMsgCount > 0 && userMsgCount < FREE_TURN_LIMIT && (
         <div className="px-4 py-1.5 flex items-center justify-center gap-2">

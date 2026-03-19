@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Component, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import StoryCarousel from "@/components/library/StoryCarousel";
 import EmptyLibrary from "@/components/library/EmptyLibrary";
@@ -61,6 +62,7 @@ interface StoryItem {
 }
 
 function LibraryContent() {
+  const router = useRouter();
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -97,9 +99,11 @@ function LibraryContent() {
       const data = await res.json();
       setStories(data.stories || []);
     } catch (err) {
-      setError((err as Error).message === "AUTH"
-        ? "로그인이 필요합니다. 로그인 후 다시 시도해주세요."
-        : "동화 목록을 불러올 수 없습니다.");
+      if ((err as Error).message === "AUTH") {
+        router.push("/login?redirect=/library");
+        return;
+      }
+      setError("동화 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }

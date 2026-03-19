@@ -8,6 +8,7 @@ import { CoverPicker } from "@/components/story/CoverPicker";
 import { CoverPickerModal } from "@/components/story/CoverPickerModal";
 import { PopupBookViewer } from "@/components/diy/PopupBookViewer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import { cleanSceneText } from "@/lib/utils/story-parser";
@@ -116,13 +117,15 @@ export default function LibraryStoryPage() {
   const patchCover = useCallback(async (storyId: string, coverPath: string) => {
     try {
       const headers = await getHeaders({ json: true });
-      await fetch(`/api/stories/${storyId}`, {
+      const res = await fetch(`/api/stories/${storyId}`, {
         method: "PATCH",
         headers,
         body: JSON.stringify({ coverImage: coverPath }),
       });
+      if (!res.ok) throw new Error("PATCH failed");
     } catch {
-      console.warn("[CoverPicker] Failed to persist cover_image to DB");
+      toast.error("커버 저장에 실패했어요");
+      throw new Error("cover_patch_failed");
     }
   }, [getHeaders]);
 
@@ -242,8 +245,10 @@ export default function LibraryStoryPage() {
           storyTitle={story.title || "나의 마음 동화"}
           authorName={user?.user_metadata?.name || undefined}
           onSelect={async (coverPath) => {
-            await patchCover(story.id, coverPath);
-            handleCoverChange(coverPath);
+            try {
+              await patchCover(story.id, coverPath);
+              handleCoverChange(coverPath);
+            } catch { /* toast already shown in patchCover */ }
             setShowCoverPickerAfterEdit(false);
           }}
           onSkip={() => setShowCoverPickerAfterEdit(false)}

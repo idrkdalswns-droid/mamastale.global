@@ -11,6 +11,17 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+// Safe localStorage helpers (private browsing / QuotaExceededError safe)
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* ignore */ }
+}
+function safeRemoveItem(key: string): void {
+  try { localStorage.removeItem(key); } catch { /* ignore */ }
+}
+
 /**
  * Sprint 4-B: PWA Install Prompt Banner
  *
@@ -23,18 +34,18 @@ export function PWAInstallBanner() {
 
   useEffect(() => {
     // Already installed or dismissed permanently
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = safeGetItem(STORAGE_KEY);
     if (stored === "installed" || stored === "dismissed_permanent") return;
 
     // Check dismiss expiry (30 days)
     if (stored?.startsWith("dismissed:")) {
       const ts = parseInt(stored.split(":")[1], 10);
       if (Date.now() - ts < 30 * 24 * 60 * 60 * 1000) return;
-      localStorage.removeItem(STORAGE_KEY);
+      safeRemoveItem(STORAGE_KEY);
     }
 
     // Check if user has completed at least 2 stories
-    const storyCount = parseInt(localStorage.getItem(STORY_COUNT_KEY) || "0", 10);
+    const storyCount = parseInt(safeGetItem(STORY_COUNT_KEY) || "0", 10);
     if (storyCount < 2) return;
 
     // Listen for beforeinstallprompt
@@ -49,7 +60,7 @@ export function PWAInstallBanner() {
 
     // Check if already standalone (PWA already installed)
     if (window.matchMedia("(display-mode: standalone)").matches) {
-      localStorage.setItem(STORAGE_KEY, "installed");
+      safeSetItem(STORAGE_KEY, "installed");
       return;
     }
 
@@ -64,9 +75,9 @@ export function PWAInstallBanner() {
     const choice = await prompt.userChoice;
 
     if (choice.outcome === "accepted") {
-      localStorage.setItem(STORAGE_KEY, "installed");
+      safeSetItem(STORAGE_KEY, "installed");
     } else {
-      localStorage.setItem(STORAGE_KEY, `dismissed:${Date.now()}`);
+      safeSetItem(STORAGE_KEY, `dismissed:${Date.now()}`);
     }
 
     deferredPromptRef.current = null;
@@ -75,7 +86,7 @@ export function PWAInstallBanner() {
 
   const handleDismiss = useCallback(() => {
     setVisible(false);
-    localStorage.setItem(STORAGE_KEY, `dismissed:${Date.now()}`);
+    safeSetItem(STORAGE_KEY, `dismissed:${Date.now()}`);
   }, []);
 
   return (
@@ -146,6 +157,6 @@ export function PWAInstallBanner() {
  */
 export function incrementStoryCount(): void {
   if (typeof window === "undefined") return;
-  const current = parseInt(localStorage.getItem(STORY_COUNT_KEY) || "0", 10);
-  localStorage.setItem(STORY_COUNT_KEY, String(current + 1));
+  const current = parseInt(safeGetItem(STORY_COUNT_KEY) || "0", 10);
+  safeSetItem(STORY_COUNT_KEY, String(current + 1));
 }

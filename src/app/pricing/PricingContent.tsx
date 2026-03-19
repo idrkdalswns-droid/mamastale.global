@@ -181,9 +181,13 @@ function PricingContent() {
     return () => observer.disconnect();
   }, []);
 
-  // #11 WCAG AA: Modal focus trap
+  // #11 WCAG AA: Modal focus trap + scroll lock
   useEffect(() => {
     if (!confirmModal) return;
+
+    // Lock background scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     // Save last focused element
     lastFocusedRef.current = document.activeElement as HTMLElement;
@@ -221,7 +225,8 @@ function PricingContent() {
     return () => {
       clearTimeout(timer);
       document.removeEventListener("keydown", handleTab);
-      // Restore focus on close
+      // Restore scroll + focus on close
+      document.body.style.overflow = prevOverflow;
       lastFocusedRef.current?.focus();
     };
   }, [confirmModal]);

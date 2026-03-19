@@ -8,6 +8,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "img.youtube.com" },
     ],
   },
   // R7-FIX(C13): Hide framework info from response headers

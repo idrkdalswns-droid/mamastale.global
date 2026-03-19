@@ -42,12 +42,25 @@ function PaymentSuccessContent() {
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [autoRedirectCount, setAutoRedirectCount] = useState(5);
+  const autoRedirectRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const confirmedRef = useRef(false);
   // R5-CRIT2: Track status in ref to avoid stale closure in setTimeout
   const statusRef = useRef(status);
   statusRef.current = status;
   // Store payment params for retry (URL is cleaned before fetch)
   const paymentParamsRef = useRef<{ paymentKey: string; orderId: string; amount: number; mode: string } | null>(null);
+
+  // Restore receipt info from sessionStorage on refresh (URL params already cleaned)
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem("mamastale_receipt");
+      if (cached) {
+        const { amount, orderId } = JSON.parse(cached);
+        if (amount) setReceiptAmount(amount);
+        if (orderId) setReceiptOrderId(orderId);
+      }
+    } catch { /* private browsing or parse error */ }
+  }, []);
 
   useEffect(() => {
     // Idempotency guard: prevent double-confirm on re-render or refresh
@@ -117,6 +130,10 @@ function PaymentSuccessContent() {
           const derivedTickets = params.amount >= 14900 ? 4 : 1;
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
+          // Re-set receipt amount from confirmed params (survives refresh via sessionStorage)
+          setReceiptAmount(params.amount);
+          setReceiptOrderId(params.orderId);
+          try { sessionStorage.setItem("mamastale_receipt", JSON.stringify({ amount: params.amount, orderId: params.orderId })); } catch {}
           setStatus("success");
           // GA4 purchase event for conversion tracking
           try {
@@ -215,6 +232,7 @@ function PaymentSuccessContent() {
       setAutoRedirectCount((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          autoRedirectRef.current = null;
           // Freemium v2: Primary redirect to library (where unlocked stories await)
           router.push("/library");
           return 0;
@@ -222,7 +240,8 @@ function PaymentSuccessContent() {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
+    autoRedirectRef.current = interval;
+    return () => { clearInterval(interval); autoRedirectRef.current = null; };
   }, [status, hasSavedChat, router]);
 
   if (status === "confirming") {
@@ -331,7 +350,7 @@ function PaymentSuccessContent() {
             {receiptOrderId && (
               <div className="flex justify-between">
                 <span className="text-brown-pale font-light">주문번호</span>
-                <span className="text-brown font-medium text-[11px]">{receiptOrderId.replace("order_", "").slice(0, 12)}...</span>
+                <span className="text-brown font-medium text-[11px]">{(() => { const id = receiptOrderId.replace("order_", ""); return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id; })()}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -372,6 +391,8 @@ function PaymentSuccessContent() {
 
         <button
           onClick={() => {
+            // Cancel auto-redirect when user clicks
+            if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
             // Freemium v2: GA event for first purchase unlock
             window.gtag?.("event", "freemium_unlock_success", {
               tickets_added: ticketsAdded,
@@ -388,7 +409,10 @@ function PaymentSuccessContent() {
           서재에서 동화 읽기
         </button>
         <button
-          onClick={() => router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success")}
+          onClick={() => {
+            if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
+            router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success");
+          }}
           className="w-full py-3 rounded-full text-sm font-medium text-brown-mid transition-all active:scale-[0.97] mb-2"
           style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
         >

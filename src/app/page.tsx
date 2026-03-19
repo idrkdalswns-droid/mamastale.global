@@ -88,7 +88,8 @@ export default function Home() {
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const [showStickyCta, setShowStickyCta] = useState(false);
-  const [storyCount, setStoryCount] = useState<number | null>(null);
+  const [myStoryCount, setMyStoryCount] = useState<number | null>(null);
+  const [communityCount, setCommunityCount] = useState<number | null>(null);
   const mainCtaRef = useRef<HTMLButtonElement>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearDraft, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -198,7 +199,7 @@ export default function Home() {
   // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
   useEffect(() => {
     if (!user || screen !== "landing") {
-      if (!user) { setTicketsRemaining(null); setStoryCount(null); }
+      if (!user) { setTicketsRemaining(null); setMyStoryCount(null); }
       return;
     }
     (async () => {
@@ -214,13 +215,13 @@ export default function Home() {
           const data = await res.json();
           if (data) {
             setTicketsRemaining(data.remaining ?? 0);
-            // Freemium v2: storyCount for first-story detection
-            setStoryCount(data.storyCount ?? 0);
+            // Freemium v2: myStoryCount for first-story detection
+            setMyStoryCount(data.storyCount ?? 0);
           }
         }
       } catch {
         setTicketsRemaining(0);
-        setStoryCount(0); // fallback: treat as first story (safer)
+        setMyStoryCount(0); // fallback: treat as first story (safer)
         console.warn("[Tickets] 티켓 정보 로드 실패 — 기본값 0으로 설정");
       }
     })();
@@ -250,7 +251,7 @@ export default function Home() {
     if (screen !== "landing") return;
     fetch("/api/community?limit=0")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.total != null) setStoryCount(d.total); })
+      .then(d => { if (d?.total != null) setCommunityCount(d.total); })
       .catch(() => {});
   }, [screen]);
 
@@ -335,14 +336,14 @@ export default function Home() {
       }
     }
     // Freemium v2: first story → show preview notice before viewer
-    setScreen(storyCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
-  }, [completedStoryId, storyCount, ticketUsedForSession]);
+    setScreen(myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+  }, [completedStoryId, myStoryCount, ticketUsedForSession]);
 
   const handleCoverSkip = useCallback(() => {
     setSelectedCover(null);
     // Freemium v2: first story → show preview notice before viewer
-    setScreen(storyCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
-  }, [storyCount, ticketUsedForSession]);
+    setScreen(myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+  }, [myStoryCount, ticketUsedForSession]);
 
   // ─── Browser history integration (JP-Y12) ───
   // Push state on screen changes so back button navigates within the flow
@@ -386,7 +387,7 @@ export default function Home() {
         <ChatPage
           onComplete={() => setScreen("edit")}
           onGoHome={() => { clearTicketSession(); setShow(false); setScreen("landing"); }}
-          freeTrialMode={!ticketUsedForSession && storyCount !== 0}
+          freeTrialMode={!ticketUsedForSession && myStoryCount !== 0}
           ticketsRemaining={ticketsRemaining}
           onTicketUsed={() => {
             setTicketUsedForSession(true);
@@ -460,8 +461,8 @@ export default function Home() {
   // Story viewing screen (read-only) after editing
   // feedbackDone = false: first viewing → go to feedback
   // feedbackDone = true: re-viewing from community → go back to community
-  // Freemium v2: first story (storyCount === 0 at start) → previewMode (1회 전체 열람, PDF/공유/편집 비활성)
-  const isFirstStoryPreview = storyCount === 0 && !ticketUsedForSession;
+  // Freemium v2: first story (myStoryCount === 0 at start) → previewMode (1회 전체 열람, PDF/공유/편집 비활성)
+  const isFirstStoryPreview = myStoryCount === 0 && !ticketUsedForSession;
   if (screen === "story") {
     return (
       <ErrorBoundary fullScreen>
@@ -782,12 +783,12 @@ export default function Home() {
           {/* ════════════════════════════════════════
               SOCIAL PROOF — Story Counter
               ════════════════════════════════════════ */}
-          {storyCount != null && storyCount > 10 && (
+          {communityCount != null && communityCount > 10 && (
             <p className="text-center text-[12px] text-brown-pale font-light mb-4">
-              지금까지 <span className="text-coral font-semibold">{storyCount.toLocaleString()}편</span>의 동화가 만들어졌어요
+              지금까지 <span className="text-coral font-semibold">{communityCount.toLocaleString()}편</span>의 동화가 만들어졌어요
             </p>
           )}
-          {storyCount != null && storyCount > 0 && storyCount <= 10 && (
+          {communityCount != null && communityCount > 0 && communityCount <= 10 && (
             <p className="text-center text-[12px] text-brown-pale font-light mb-4">
               엄마들의 이야기가 시작되고 있어요
             </p>

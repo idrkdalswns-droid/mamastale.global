@@ -187,7 +187,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
           </div>
           <button
             onClick={submitComment}
-            disabled={loading || !newComment.trim()}
+            disabled={loading || submittingRef.current || !newComment.trim()}
             aria-busy={loading}
             className="w-full py-2 rounded-full text-xs font-medium text-white disabled:opacity-50 min-h-[44px]"
             style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}

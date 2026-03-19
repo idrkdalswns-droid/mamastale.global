@@ -170,7 +170,7 @@ export default function CommunityBrowsePage() {
           {TOPICS.map((t) => (
             <button
               key={t.key}
-              onClick={() => setTopic(t.key)}
+              onClick={() => { setTopic(t.key); setSearch(""); setSearchInput(""); }}
               aria-pressed={topic === t.key}
               className={`shrink-0 px-3 py-2 rounded-full text-[11px] font-medium transition-all min-h-[44px] ${
                 topic === t.key
@@ -268,7 +268,7 @@ export default function CommunityBrowsePage() {
             </div>
 
             {/* Sprint 7-A: Infinite scroll sentinel */}
-            {hasMore && (
+            {hasMore ? (
               <div ref={sentinelRef} className="w-full mt-4 py-3 text-center">
                 {loading && <span className="text-sm text-brown-light font-light animate-pulse">불러오는 중...</span>}
                 {/* C2: 페이지네이션 에러 재시도 */}
@@ -285,6 +285,10 @@ export default function CommunityBrowsePage() {
                   </div>
                 )}
               </div>
+            ) : stories.length > 0 && (
+              <p className="w-full mt-4 py-3 text-center text-[12px] text-brown-pale font-light">
+                모든 동화를 불러왔어요
+              </p>
             )}
           </>
         )}
