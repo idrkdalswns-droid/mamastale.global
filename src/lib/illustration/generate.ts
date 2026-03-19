@@ -6,7 +6,7 @@
 import type { Scene } from "@/lib/types/story";
 import { buildCoverPrompt } from "./prompt-engine";
 
-const GEMINI_MODEL = "gemini-2.5-flash-preview-image-generation";
+const GEMINI_MODEL = "gemini-2.5-flash-image";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const TIMEOUT_MS = 20_000;
 const MAX_BASE64_SIZE = 5 * 1024 * 1024; // 5MB

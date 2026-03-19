@@ -124,7 +124,13 @@ export function TeacherHome({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-brown">진행 중인 대화 이어하기</p>
                 <p className="text-xs text-brown-light mt-0.5 truncate">
-                  {messages[messages.length - 1]?.content?.slice(0, 40) || "대화를 이어하세요"}
+                  {(() => {
+                    const lastUserMsg = [...messages].reverse().find(m => m.role === "user" && !m.isError);
+                    if (lastUserMsg) return lastUserMsg.content.slice(0, 40);
+                    const lastValidAI = [...messages].reverse().find(m => !m.isError);
+                    if (lastValidAI) return lastValidAI.content.slice(0, 40);
+                    return "대화를 이어하세요";
+                  })()}
                 </p>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B6F55" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

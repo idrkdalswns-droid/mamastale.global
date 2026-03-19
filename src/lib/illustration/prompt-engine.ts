@@ -7,12 +7,14 @@ import type { Scene } from "@/lib/types/story";
 
 const STYLE_PREFIX = `Children's picture book cover illustration.
 Minimalist watercolor painting with delicate black ink outlines.
-Generous white space with soft watercolor bleeding at edges.
-Soft muted pastel palette: warm ivory background, pale rose, dusty blue, sage green accents.
+Full bleed composition — artwork extends to ALL edges with NO white margins or borders.
+Soft watercolor bleeding at edges INTO the scene, not into white space.
+Soft muted pastel palette: pale rose, dusty blue, sage green, warm ivory tones.
 Dreamy, ethereal, poetic atmosphere like Korean picture book art.
 No text, no title, no words, no letters anywhere in the image.`;
 
 const STYLE_SUFFIX = `Single cohesive cover composition. Vertical 3:4 book cover format.
+IMPORTANT: The illustration must fill the entire canvas edge-to-edge with no white borders.
 Professional illustration quality. Soft natural lighting.
 Clean composition with a clear focal point.`;
 

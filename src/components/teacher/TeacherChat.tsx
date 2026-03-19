@@ -32,6 +32,10 @@ export function TeacherChat({
     addSystemGreeting,
   } = useTeacherStore();
 
+  // 에러 감지 — 리트라이 버튼 표시 여부
+  const lastMessage = messages[messages.length - 1];
+  const hasErrorMessage = lastMessage?.isError === true;
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const generateTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -276,6 +280,36 @@ export function TeacherChat({
                 💬 {chip}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* 에러 리트라이 버튼 */}
+        {hasErrorMessage && !isLoading && (
+          <div className="flex justify-center py-2">
+            <button
+              onClick={() => {
+                const state = useTeacherStore.getState();
+                const freshMessages = state.messages;
+                const lastUserMsg = [...freshMessages].reverse().find(
+                  (m) => m.role === "user" && !m.isError
+                );
+                if (lastUserMsg) {
+                  const cleaned = freshMessages
+                    .filter((m) => !m.isError)
+                    .filter((m) => m.id !== lastUserMsg.id);
+                  useTeacherStore.setState({ messages: cleaned });
+                  state.sendMessageStreaming(lastUserMsg.content);
+                }
+              }}
+              className="px-5 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white shadow-lg transition-all active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                boxShadow: "0 4px 16px rgba(224,122,95,0.3)",
+              }}
+              aria-label="메시지 다시 시도"
+            >
+              다시 시도하기
+            </button>
           </div>
         )}
 

@@ -236,8 +236,14 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        // 401 세션 만료 별도 처리
+        if (res.status === 401) {
+          throw new Error("세션이 만료되었어요. 다시 접속해주세요.");
+        }
+        const apiError = (errorData as { error?: string }).error;
+        const isKorean = apiError && /[가-힣]/.test(apiError);
         throw new Error(
-          (errorData as { error?: string }).error || `HTTP ${res.status}`
+          isKorean ? apiError : "일시적인 오류가 발생했어요. 다시 시도해 주세요."
         );
       }
 

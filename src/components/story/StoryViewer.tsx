@@ -565,7 +565,9 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                     title: storyTitle,
                     description: `${authorName || "엄마"}가 만든 세상에 하나뿐인 동화`,
                     url: shareUrl,
-                    imageUrl: coverImage ? `${siteUrl}${coverImage}` : undefined,
+                    imageUrl: coverImage
+                      ? coverImage.startsWith("https://") ? coverImage : `${siteUrl}${coverImage}`
+                      : undefined,
                   });
                   if (!ok) {
                     if (typeof navigator !== "undefined" && navigator.share) {
