@@ -20,6 +20,10 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingSession, setExistingSession] = useState<{
+    data: Parameters<typeof onVerified>[0] & { teacherCode: string };
+    kindergartenName: string;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,6 +55,14 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
         return;
       }
 
+      // 기존 세션이 있으면 선택지 표시
+      if (data.isExisting) {
+        setExistingSession({
+          data: { ...data, teacherCode: trimmed },
+          kindergartenName: data.kindergartenName,
+        });
+        return;
+      }
       onVerified({ ...data, teacherCode: trimmed });
     } catch {
       setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
@@ -58,6 +70,51 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
       setIsSubmitting(false);
     }
   };
+
+  // 기존 세션 선택지 화면
+  if (existingSession) {
+    return (
+      <div className="flex flex-col min-h-[60dvh] px-6">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-full max-w-sm text-center">
+            <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
+              <Image src="/images/teacher/icon/key.jpeg" alt="" fill className="object-cover" sizes="64px" />
+            </div>
+            <h2 className="text-lg font-semibold text-brown mb-2">
+              {existingSession.kindergartenName}
+            </h2>
+            <p className="text-sm text-brown-light mb-6 break-keep">
+              활성화된 세션이 있어요
+            </p>
+            <button
+              onClick={() => onVerified(existingSession.data)}
+              className="w-full py-3.5 rounded-full text-white text-[15px] font-medium mb-3 transition-all active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 6px 24px rgba(224,122,95,0.3)" }}
+            >
+              이어서 하기
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await fetch("/api/teacher/session", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionId: existingSession.data.sessionId }),
+                  });
+                } catch { /* ignore */ }
+                setExistingSession(null);
+                setCode("");
+              }}
+              className="w-full py-3 rounded-full text-sm font-medium text-brown-mid transition-all active:scale-[0.97]"
+              style={{ border: "1.5px solid rgba(196,149,106,0.2)" }}
+            >
+              새로 시작하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[60dvh] px-6">

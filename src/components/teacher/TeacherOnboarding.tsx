@@ -127,12 +127,6 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
       setData((prev) => ({ ...prev, situation: situation.trim() }));
     }
     setCustomTopic(""); // 직접 입력 상태 리셋
-    // 뒤로가기 시 현재 단계의 data도 초기화 (직접 입력 비활성화 방지)
-    setData((prev) => {
-      const next = { ...prev };
-      delete (next as Record<string, unknown>)[currentStep.key];
-      return next;
-    });
     setStep(step - 1);
   };
 
@@ -266,7 +260,7 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[calc(70dvh-100px)] pb-2">
+          <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[50dvh] pb-2">
             {currentStep.options.map((opt, optIdx) => {
               // 직접 입력 옵션 (주제)
               if (opt.value === "_custom") {

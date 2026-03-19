@@ -286,16 +286,17 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       }
       return true;
     } catch (err) {
-      // AbortError — 사용자에게 에러 표시 안 함, 빈 어시스턴트 메시지만 제거
+      // AbortError — 네트워크 끊김 피드백 표시
       if (err instanceof DOMException && err.name === "AbortError") {
         set((s) => {
           const msgs = [...s.messages];
-          if (
-            msgs.length > 0 &&
-            msgs[msgs.length - 1].role === "assistant" &&
-            !msgs[msgs.length - 1].content
-          ) {
-            msgs.pop();
+          const lastIdx = msgs.length - 1;
+          if (lastIdx >= 0 && msgs[lastIdx].role === "assistant") {
+            msgs[lastIdx] = {
+              ...msgs[lastIdx],
+              content: "연결이 끊겼어요. 다시 보내주세요.",
+              isError: true,
+            };
           }
           return { messages: msgs };
         });

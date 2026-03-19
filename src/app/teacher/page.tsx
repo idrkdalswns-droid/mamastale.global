@@ -54,6 +54,40 @@ export default function TeacherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user]);
 
+  // 세션 만료 사전 경고 (5분 전 토스트, 만료 시 CODE_ENTRY 전환)
+  useEffect(() => {
+    if (!store.expiresAt) return;
+    const expiresMs = new Date(store.expiresAt).getTime();
+    const now = Date.now();
+
+    // 이미 만료
+    if (expiresMs <= now) {
+      store.reset();
+      store.setScreenState("CODE_ENTRY");
+      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+      return;
+    }
+
+    const warnMs = expiresMs - now - 5 * 60 * 1000; // 5분 전
+    const expireMs = expiresMs - now;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    if (warnMs > 0) {
+      timers.push(setTimeout(() => {
+        toast("세션이 5분 후 만료됩니다. 작업을 저장해주세요.", { icon: "⏰", duration: 8000 });
+      }, warnMs));
+    }
+
+    timers.push(setTimeout(() => {
+      store.reset();
+      store.setScreenState("CODE_ENTRY");
+      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+    }, expireMs));
+
+    return () => timers.forEach(clearTimeout);
+  }, [store.expiresAt]);
+
   // 코드 검증 완료
   const handleCodeVerified = useCallback(
     (data: {

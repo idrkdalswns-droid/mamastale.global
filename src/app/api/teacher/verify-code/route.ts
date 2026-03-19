@@ -26,13 +26,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. IP 기반 레이트 리미팅 (브루트포스 방어: 5회/분)
+  // 3. 유저+IP 기반 레이트 리미팅 (브루트포스 방어: 5회/분)
+  // 학교 공유 WiFi 환경 대응: user.id + IP 조합으로 다른 선생님 차단 방지
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("cf-connecting-ip") ||
     "unknown";
   const ipWithinLimit = await checkRateLimitPersistent(
-    `verify-code:ip:${ip}`,
+    `verify-code:${user.id}:${ip}`,
     5,
     60
   );

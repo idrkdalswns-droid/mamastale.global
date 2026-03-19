@@ -52,7 +52,7 @@ export function TeacherHome({
   const [sharedLoading, setSharedLoading] = useState(false);
   const [sharedError, setSharedError] = useState(false);
 
-  const fetchSharedStories = useCallback(async () => {
+  const fetchSharedStories = useCallback(async (retryCount = 0) => {
     setSharedLoading(true);
     setSharedError(false);
     try {
@@ -61,6 +61,11 @@ export function TeacherHome({
       const data = await res.json();
       setSharedStories(data.stories || []);
     } catch {
+      if (retryCount < 2) {
+        // 자동 재시도 (1초 후)
+        await new Promise(r => setTimeout(r, 1000));
+        return fetchSharedStories(retryCount + 1);
+      }
       setSharedError(true);
     } finally {
       setSharedLoading(false);
