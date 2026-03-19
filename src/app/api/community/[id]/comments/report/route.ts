@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
+
+const reportSchema = z.object({
+  commentId: z.string().uuid(),
+});
 
 // ─── Rate limiting for comment reports (prevent spam abuse) ───
 const REPORT_RATE_WINDOW = 300_000; // 5 minutes
@@ -78,10 +83,12 @@ export async function POST(
       return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
     }
 
-    const { commentId } = body;
-    if (!commentId || !isValidUUID(commentId)) {
-      return sb.applyCookies(NextResponse.json({ error: "commentId 필요" }, { status: 400 }));
+    const parsed = reportSchema.safeParse(body);
+    if (!parsed.success) {
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
+
+    const { commentId } = parsed.data;
 
     // IL-11: Verify comment belongs to the specified story
     const { data: comment } = await sb.client

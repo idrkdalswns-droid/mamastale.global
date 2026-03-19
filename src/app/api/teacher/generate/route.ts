@@ -180,23 +180,31 @@ export async function POST(request: NextRequest) {
       situation: sanitizeUserInput(onboarding?.situation as string | undefined, 200),
     };
 
-    const extractionResult = await anthropic.messages.create({
-      model: "claude-haiku-3-5-20241022",
-      system: [
-        {
-          type: "text" as const,
-          text: getExtractionPrompt(),
-          cache_control: { type: "ephemeral" as const },
-        },
-      ],
-      messages: [
-        {
-          role: "user" as const,
-          content: `온보딩 정보:\n${JSON.stringify(safeOnboarding, null, 2)}\n\n대화 히스토리:\n${messages.map((m) => `[${m.role}]: ${m.content}`).join("\n\n")}`,
-        },
-      ],
-      max_tokens: 2048,
-    });
+    // F-003 FIX: AbortController timeout for Haiku extraction (30s)
+    const extractController = new AbortController();
+    const extractTimeout = setTimeout(() => extractController.abort(), 30_000);
+    let extractionResult;
+    try {
+      extractionResult = await anthropic.messages.create({
+        model: "claude-haiku-3-5-20241022",
+        system: [
+          {
+            type: "text" as const,
+            text: getExtractionPrompt(),
+            cache_control: { type: "ephemeral" as const },
+          },
+        ],
+        messages: [
+          {
+            role: "user" as const,
+            content: `온보딩 정보:\n${JSON.stringify(safeOnboarding, null, 2)}\n\n대화 히스토리:\n${messages.map((m) => `[${m.role}]: ${m.content}`).join("\n\n")}`,
+          },
+        ],
+        max_tokens: 2048,
+      }, { signal: extractController.signal });
+    } finally {
+      clearTimeout(extractTimeout);
+    }
 
     const extractionText =
       extractionResult.content[0].type === "text"
@@ -248,23 +256,31 @@ export async function POST(request: NextRequest) {
   try {
     const generationPrompt = getTeacherGenerationPrompt(briefContext, onboarding);
 
-    const generationResult = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      system: [
-        {
-          type: "text" as const,
-          text: generationPrompt,
-          cache_control: { type: "ephemeral" as const },
-        },
-      ],
-      messages: [
-        {
-          role: "user" as const,
-          content: "14스프레드 동화를 생성해주세요.",
-        },
-      ],
-      max_tokens: 8192,
-    });
+    // F-003 FIX: AbortController timeout for Sonnet generation (120s)
+    const genController = new AbortController();
+    const genTimeout = setTimeout(() => genController.abort(), 120_000);
+    let generationResult;
+    try {
+      generationResult = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        system: [
+          {
+            type: "text" as const,
+            text: generationPrompt,
+            cache_control: { type: "ephemeral" as const },
+          },
+        ],
+        messages: [
+          {
+            role: "user" as const,
+            content: "14스프레드 동화를 생성해주세요.",
+          },
+        ],
+        max_tokens: 8192,
+      }, { signal: genController.signal });
+    } finally {
+      clearTimeout(genTimeout);
+    }
 
     const generationText =
       generationResult.content[0].type === "text"
@@ -371,23 +387,31 @@ export async function POST(request: NextRequest) {
 
     // 즉시 1회 재시도 (Edge Runtime에서 blocking sleep 회피)
     try {
-      const retryResult = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        system: [
-          {
-            type: "text" as const,
-            text: getTeacherGenerationPrompt(briefContext, onboarding),
-            cache_control: { type: "ephemeral" as const },
-          },
-        ],
-        messages: [
-          {
-            role: "user" as const,
-            content: "14스프레드 동화를 생성해주세요.",
-          },
-        ],
-        max_tokens: 8192,
-      });
+      // F-003 FIX: AbortController timeout for retry (120s)
+      const retryController = new AbortController();
+      const retryTimeout = setTimeout(() => retryController.abort(), 120_000);
+      let retryResult;
+      try {
+        retryResult = await anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          system: [
+            {
+              type: "text" as const,
+              text: getTeacherGenerationPrompt(briefContext, onboarding),
+              cache_control: { type: "ephemeral" as const },
+            },
+          ],
+          messages: [
+            {
+              role: "user" as const,
+              content: "14스프레드 동화를 생성해주세요.",
+            },
+          ],
+          max_tokens: 8192,
+        }, { signal: retryController.signal });
+      } finally {
+        clearTimeout(retryTimeout);
+      }
 
       const retryText =
         retryResult.content[0].type === "text"
@@ -463,9 +487,13 @@ export async function POST(request: NextRequest) {
       console.error("[Teacher Generate] Retry also failed:", retryErr);
     }
 
+    // F-003 FIX: Distinguish timeout errors
+    const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"));
     return NextResponse.json(
-      { error: "동화 생성에 실패했습니다. 잠시 후 다시 시도해주세요." },
-      { status: 500 }
+      { error: isAbort
+          ? "동화 생성에 시간이 너무 오래 걸려요. 다시 시도해 주세요."
+          : "동화 생성에 실패했습니다. 잠시 후 다시 시도해주세요." },
+      { status: isAbort ? 504 : 500 }
     );
   }
 }

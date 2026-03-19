@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
 
 export const runtime = "edge";
+
+const commentSchema = z.object({
+  content: z.string().min(1).max(500),
+  authorAlias: z.string().max(50).optional().nullable(),
+});
 
 // R6-FIX: Rate limit comments GET (prevent scraping)
 const commentGetRateMap = new Map<string, { count: number; resetAt: number }>();
@@ -183,11 +189,12 @@ export async function POST(
       return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
 
-    const { content, authorAlias } = body;
-
-    if (!content?.trim()) {
-      return sb.applyCookies(NextResponse.json({ error: "댓글 내용을 입력해 주세요" }, { status: 400 }));
+    const parsed = commentSchema.safeParse(body);
+    if (!parsed.success) {
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
+
+    const { content, authorAlias } = parsed.data;
 
     // Sanitize inputs (strip HTML tags, JS protocol)
     const safeContent = sanitizeText(content.trim().slice(0, 500));

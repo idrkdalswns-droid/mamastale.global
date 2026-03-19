@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
+
+const subscribeSchema = z.object({
+  endpoint: z.string().url().max(2048),
+  keys: z.object({ p256dh: z.string().max(256), auth: z.string().max(256) }),
+});
+const unsubscribeSchema = z.object({ endpoint: z.string().url().max(2048) });
 
 /**
  * POST /api/push/subscribe — Save push subscription
@@ -32,18 +39,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { endpoint, keys } = body?.subscription || body || {};
-
-    if (
-      typeof endpoint !== "string" ||
-      !endpoint.startsWith("https://") ||
-      typeof keys?.p256dh !== "string" ||
-      typeof keys?.auth !== "string"
-    ) {
+    const raw = body?.subscription || body || {};
+    const parsed = subscribeSchema.safeParse(raw);
+    if (!parsed.success) {
       return sb.applyCookies(
-        NextResponse.json({ error: "잘못된 구독 정보입니다." }, { status: 400 })
+        NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
       );
     }
+
+    const { endpoint, keys } = parsed.data;
 
     // Upsert: if same endpoint exists, update keys
     const { error } = await sb.client
@@ -86,15 +90,24 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
+  // Rate limit: 10 unsubscribe actions per minute
+  const allowed = await checkRateLimitPersistent(`push_unsub:${user.id}`, 10, 60);
+  if (!allowed) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+    );
+  }
+
   try {
     const body = await request.json();
-    const endpoint = body?.endpoint;
-
-    if (typeof endpoint !== "string") {
+    const parsed = unsubscribeSchema.safeParse(body);
+    if (!parsed.success) {
       return sb.applyCookies(
-        NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+        NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
       );
     }
+
+    const { endpoint } = parsed.data;
 
     await sb.client
       .from("push_subscriptions")

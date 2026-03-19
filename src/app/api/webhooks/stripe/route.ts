@@ -157,8 +157,9 @@ export async function POST(request: NextRequest) {
           14900: 4,   // ₩14,900 = 4 tickets (bundle)
         };
         const paidAmount = session.amount_total;
-        const metaTickets = parseInt(session.metadata?.ticket_count || "0", 10);
-        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount] || ((metaTickets > 0 && metaTickets <= 10) ? metaTickets : undefined);
+        // F-015 FIX: Remove metadata fallback — only trust server-side amount mapping
+        // ⚠️ When adding new prices, update STRIPE_AMOUNT_TO_TICKETS above
+        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount];
         if (!ticketCount) {
           console.error(`[Stripe] Unknown payment amount: ${paidAmount}, session: ${session.id}`);
           break; // Return 200 to stop Stripe retries, log for manual review

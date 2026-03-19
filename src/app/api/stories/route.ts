@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS, isValidCoverImage } from "@/lib/utils/validation";
 import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
+
+const storyPostSchema = z.object({
+  title: z.string().max(200).optional().nullable(),
+  scenes: z.array(z.object({
+    sceneNumber: z.number(),
+    title: z.string().max(200),
+    text: z.string().max(5000),
+  })).min(1).max(20),
+  sessionId: z.string().max(100).optional().nullable(),
+  metadata: z.record(z.unknown()).optional().nullable(),
+  isPublic: z.boolean().optional(),
+  authorAlias: z.string().max(50).optional().nullable(),
+  coverImage: z.string().max(2048).optional().nullable(),
+  topic: z.string().max(50).optional().nullable(),
+});
 
 export const runtime = "edge";
 
@@ -156,10 +172,15 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const { scenes, sessionId, metadata, isPublic, coverImage } = body;
+    const parsed = storyPostSchema.safeParse(body);
+    if (!parsed.success) {
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+    }
+
+    const { scenes, sessionId, metadata, isPublic, coverImage } = parsed.data;
     // Server-side input sanitization: enforce max lengths, strip HTML
-    const title = typeof body.title === "string" ? sanitizeText(body.title.trim().slice(0, 200)) : "";
-    const authorAlias = typeof body.authorAlias === "string" ? sanitizeText(body.authorAlias.trim().slice(0, 50)) : null;
+    const title = typeof parsed.data.title === "string" ? sanitizeText(parsed.data.title.trim().slice(0, 200)) : "";
+    const authorAlias = typeof parsed.data.authorAlias === "string" ? sanitizeText(parsed.data.authorAlias.trim().slice(0, 50)) : null;
 
     // UK-2/UK-3: Profanity check on title and alias (visible in community)
     if (title && containsProfanity(title)) {
@@ -176,24 +197,6 @@ export async function POST(request: NextRequest) {
     // UK-5: Limit metadata size to prevent DB bloat
     if (metadata && JSON.stringify(metadata).length > 10_000) {
       return sb.applyCookies(NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 }));
-    }
-
-    // ─── Validate scenes BEFORE ticket deduction ───
-    if (!Array.isArray(scenes) || scenes.length === 0) {
-      return sb.applyCookies(NextResponse.json({ error: "동화 장면 데이터가 필요합니다." }, { status: 400 }));
-    }
-    if (scenes.length > 20) {
-      return sb.applyCookies(NextResponse.json({ error: "장면 수가 너무 많습니다." }, { status: 400 }));
-    }
-    const validScenes = scenes.every(
-      (s: unknown) =>
-        typeof s === "object" && s !== null &&
-        typeof (s as Record<string, unknown>).sceneNumber === "number" &&
-        typeof (s as Record<string, unknown>).title === "string" &&
-        typeof (s as Record<string, unknown>).text === "string"
-    );
-    if (!validScenes) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 동화 장면 데이터입니다." }, { status: 400 }));
     }
 
     // Sanitize scene content — use lightweight sanitizer for AI text
@@ -254,8 +257,8 @@ export async function POST(request: NextRequest) {
       storyInsert.is_public = typeof isPublic === "boolean" ? isPublic : false;
       storyInsert.author_alias = authorAlias || null;
       // R2-FIX(B1): Save topic if valid (community topic filter support)
-      if (typeof body.topic === "string" && VALID_TOPICS.includes(body.topic)) {
-        storyInsert.topic = body.topic;
+      if (typeof parsed.data.topic === "string" && VALID_TOPICS.includes(parsed.data.topic as typeof VALID_TOPICS[number])) {
+        storyInsert.topic = parsed.data.topic;
       }
     }
 

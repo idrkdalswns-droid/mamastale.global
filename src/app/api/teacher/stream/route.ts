@@ -22,6 +22,7 @@ import {
   getPhaseFromTurnCount,
   getForceGenerateSystemAddendum,
 } from "@/lib/anthropic/teacher-prompts";
+import { createStreamTimeout, finalMessageWithTimeout } from "@/lib/anthropic/stream-timeout";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
@@ -167,16 +168,38 @@ export async function POST(request: NextRequest) {
           max_tokens: 4096,
         });
 
-        stream.on("text", (text) => {
-          fullResponse += text;
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "text", text })}\n\n`
-            )
-          );
-        });
+        // F-002 FIX: 3-tier streaming timeout (shared utility)
+        const timeout = createStreamTimeout(
+          (reason) => {
+            console.warn(`[Teacher Stream] Timeout: ${reason}`);
+            stream.abort();
+          },
+          { initialMs: 30_000, idleMs: 90_000, absoluteMs: 300_000 }
+        );
 
-        const finalMessage = await stream.finalMessage();
+        try {
+          for await (const event of stream) {
+            if (request.signal.aborted) break;
+            timeout.touch();
+            if (!fullResponse) timeout.markFirstChunk();
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              fullResponse += event.delta.text;
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
+                )
+              );
+            }
+          }
+        } finally {
+          timeout.cleanup();
+        }
+
+        // F-002 FIX: finalMessage with 5s timeout
+        const finalMessage = await finalMessageWithTimeout(() => stream.finalMessage());
         inputTokens = finalMessage.usage?.input_tokens ?? 0;
         outputTokens = finalMessage.usage?.output_tokens ?? 0;
 
@@ -272,27 +295,38 @@ export async function POST(request: NextRequest) {
           }).catch(() => {});
         }
       } catch (err) {
-        console.error("[Teacher Stream] Error:", err);
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "error",
-              error: "AI 응답 생성 중 오류가 발생했습니다.",
-            })}\n\n`
-          )
-        );
-        controller.close();
+        const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"));
+        const errorMessage = isAbort
+          ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
+          : "AI 응답 생성 중 오류가 발생했습니다.";
+        console.error("[Teacher Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "error", error: errorMessage })}\n\n`
+            )
+          );
+        } catch {}
+        try { controller.close(); } catch {}
       }
     },
   });
 
-  const sseResponse = new NextResponse(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
+  // F-016 FIX: Add security headers (parity with /api/chat/stream)
+  const responseHeaders = new Headers({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'none'",
   });
-  return sb.applyCookies(sseResponse);
+  for (const cookie of sb.getCookieHeaders()) {
+    responseHeaders.append("Set-Cookie", cookie);
+  }
+  return new Response(readable, { headers: responseHeaders });
 }

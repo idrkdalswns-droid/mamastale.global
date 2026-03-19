@@ -24,6 +24,7 @@ import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/u
 import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
+import { stripControlTags } from "@/lib/utils/sanitize-chat";
 
 // ─── Story Seed schema (optional, from client state) ───
 const storySeedSchema = z.object({
@@ -447,9 +448,10 @@ export async function POST(request: NextRequest) {
       model: modelSelection.model,
       max_tokens: modelSelection.maxTokens,
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+      // F-014 FIX: Strip control tags from user messages to prevent prompt injection
       messages: messages.map((m) => ({
         role: m.role as "user" | "assistant",
-        content: m.content,
+        content: m.role === "user" ? stripControlTags(m.content) : m.content,
       })),
     });
 

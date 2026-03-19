@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.25.3] - 2026-03-19
+
+### Fixed (Nightwatch 야간 점검 — CRITICAL 4건 + HIGH 10건 보안 수정)
+
+- **F-005** order_claims RLS 활성화 + 로그 테이블 INSERT 정책 닫기 (migration 028)
+- **F-002** Teacher 스트리밍 3단계 타임아웃 (30s/90s/5min) — stream-timeout.ts 공유 유틸리티
+- **F-003** Teacher 생성 AbortController 타임아웃 (Haiku 30s, Sonnet 120s)
+- **F-004** 추천 Race Condition 방어: RPC 직접 호출로 티켓 롤백
+- **F-014** 프롬프트 인젝션 방어: sanitize-chat.ts (시스템 태그 스트리핑)
+- **F-015** Stripe 웹훅 메타데이터 폴백 제거 (서버 금액 매핑만 신뢰)
+- **F-006~F-011** Zod 검증 6개 엔드포인트 추가 (stories, push, reviews, comments, report, referral)
+- **F-009** chat/stream body size 95KB로 통일 (기존 1MB)
+- **F-016** Teacher 스트림 SSE 보안 헤더 추가
+
+### Added
+
+- `src/lib/anthropic/stream-timeout.ts` — 스트리밍 타임아웃 공유 유틸리티
+- `src/lib/utils/sanitize-chat.ts` — 프롬프트 인젝션 방어 유틸리티
+- 테스트 31개 추가 (sanitize-chat 22 + stream-timeout 9), 총 311개
+
 ## [1.25.2] - 2026-03-19
 
 ### Fixed (6차 버그바운티 수정 — UX + 안정성 5건)

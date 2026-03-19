@@ -1,8 +1,13 @@
 export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
+
+const referralSchema = z.object({
+  code: z.string().min(4).max(8).transform(s => s.trim().toUpperCase()),
+});
 
 // Rate limiting for referral endpoints
 const REFERRAL_RATE_WINDOW = 60_000;
@@ -119,17 +124,19 @@ export async function POST(request: NextRequest) {
   const user = await resolveUser(sb, request);
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
 
-  let body: { code?: string };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
-  const code = body.code?.trim().toUpperCase();
-  if (!code || code.length < 4 || code.length > 8) {
-    return NextResponse.json({ error: "유효하지 않은 추천 코드입니다." }, { status: 400 });
+  const parsed = referralSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
+
+  const code = parsed.data.code;
 
   // Check if already referred
   const { data: myProfile } = await sb.client
@@ -206,15 +213,27 @@ export async function POST(request: NextRequest) {
     .eq("id", user.id);
 
   // Step 3: Award tickets — with rollback on failure
+  // F-004 FIX: If second increment fails, rollback first via RPC direct call
+  // (JS wrapper incrementTickets() rejects count < 1, so we use RPC for -1)
   try {
-    await admin.rpc("increment_tickets", { p_user_id: referrer.id, p_count: 1 });
-    await admin.rpc("increment_tickets", { p_user_id: user.id, p_count: 1 });
+    const { error: referrerErr } = await admin.rpc("increment_tickets", { p_user_id: referrer.id, p_count: 1 });
+    if (referrerErr) throw new Error(`Referrer ticket failed: ${referrerErr.message}`);
+
+    const { error: referredErr } = await admin.rpc("increment_tickets", { p_user_id: user.id, p_count: 1 });
+    if (referredErr) {
+      // Rollback referrer's ticket via RPC direct (GREATEST(0,...) prevents negative)
+      await admin.rpc("increment_tickets", { p_user_id: referrer.id, p_count: -1 })
+        .then(({ error }) => { if (error) console.error("[Referral] Referrer rollback failed:", error.message); });
+      throw new Error(`Referred ticket failed: ${referredErr.message}`);
+    }
+
     // Mark both as rewarded
     await admin
       .from("referrals")
       .update({ referrer_rewarded: true, referred_rewarded: true })
       .eq("id", refRecord.id);
-  } catch {
+  } catch (err) {
+    console.error("[Referral] Ticket award failed:", err instanceof Error ? err.message : "Unknown");
     // ROLLBACK: delete referral record + reset referred_by so user can retry
     await admin.from("referrals").delete().eq("id", refRecord.id);
     await admin.from("profiles").update({ referred_by: null }).eq("id", user.id);

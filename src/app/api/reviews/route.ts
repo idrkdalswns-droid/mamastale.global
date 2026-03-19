@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createServerClient } from "@supabase/ssr";
 // CA-1/CA-2: Use shared utilities instead of local duplicates
 import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
@@ -6,6 +7,13 @@ import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/valida
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
 export const runtime = "edge";
+
+const reviewSchema = z.object({
+  authorAlias: z.string().min(1).max(20),
+  childInfo: z.string().max(30).optional().nullable(),
+  stars: z.number().int().min(1).max(5),
+  content: z.string().min(1).max(500),
+});
 
 // ─── Rate limiting (per-IP, per-isolate) ───
 const REVIEW_RATE_WINDOW = 300_000; // 5 minutes
@@ -122,21 +130,18 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
   }
 
-  try {
-    const { authorAlias, childInfo, stars, content } = body;
+  const parsed = reviewSchema.safeParse(body);
+  if (!parsed.success) {
+    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+  }
 
-    if (!content?.trim()) {
-      return sb.applyCookies(NextResponse.json({ error: "후기 내용을 입력해 주세요" }, { status: 400 }));
-    }
-    if (!authorAlias?.trim()) {
-      return sb.applyCookies(NextResponse.json({ error: "별명을 입력해 주세요" }, { status: 400 }));
-    }
+  try {
+    const { authorAlias, childInfo, stars, content } = parsed.data;
 
     const safeContent = sanitizeText(content.trim().slice(0, 500));
     const safeAlias = sanitizeText(authorAlias.trim().slice(0, 20));
     const safeChildInfo = childInfo ? sanitizeText(childInfo.trim().slice(0, 30)) : null;
-    const parsedStars = Number.isFinite(Number(stars)) ? Math.round(Number(stars)) : 5;
-    const safeStars = Math.min(5, Math.max(1, parsedStars));
+    const safeStars = stars;
 
     // LAUNCH-FIX: Check childInfo for profanity too (visible in community)
     if (containsProfanity(safeContent) || containsProfanity(safeAlias) || (safeChildInfo && containsProfanity(safeChildInfo))) {

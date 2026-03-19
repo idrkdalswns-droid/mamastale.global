@@ -36,6 +36,7 @@ import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
+import { stripControlTags } from "@/lib/utils/sanitize-chat";
 
 const storySeedSchema = z.object({
   coreSeed: z.string().max(200).optional(),
@@ -115,7 +116,8 @@ export async function POST(request: NextRequest) {
 
   // ─── Body size check ───
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
-  if (contentLength > 1_000_000) {
+  // F-009 FIX: Align with /api/chat body size limit (was 1MB, now 95KB)
+  if (contentLength > 95_000) {
     return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
   }
 
@@ -349,9 +351,10 @@ export async function POST(request: NextRequest) {
         // Sprint 8-A: Prompt Caching for streaming too
         const streamParams = {
           system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
+          // F-014 FIX: Strip control tags from user messages to prevent prompt injection
           messages: messages.map((m) => ({
             role: m.role as "user" | "assistant",
-            content: m.content,
+            content: m.role === "user" ? stripControlTags(m.content) : m.content,
           })),
         };
 
