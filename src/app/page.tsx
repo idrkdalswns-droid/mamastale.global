@@ -613,19 +613,13 @@ export default function Home() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
             </Link>
           </div>
-          <div className="mb-4" />
-
-          {/* C4: "15분 무료 체험" 배지 */}
-          {!user && !authLoading && (
-            <div className="text-center mb-3">
-              <span
-                className="inline-block px-3 py-1 rounded-full text-[11px] font-medium"
-                style={{ background: "rgb(var(--coral) / 0.12)", color: "rgb(var(--coral))" }}
-              >
-                15분 무료 체험
-              </span>
-            </div>
-          )}
+          {/* 핵심 숫자 + 차별점 */}
+          <p className="text-[12px] text-brown-light font-light text-center mb-1 break-keep">
+            15분 AI 대화 · 10장면 동화 완성
+          </p>
+          <p className="text-[11px] text-brown-pale/80 font-light text-center mb-4 break-keep">
+            심리학 기반 4단계 치유 대화 엔진
+          </p>
 
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
           <button
@@ -646,12 +640,7 @@ export default function Home() {
               </span>
             ) : user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}
           </button>
-          {!user && !authLoading && (
-            <Link href="/pricing" className="text-[10px] text-brown-pale/70 font-light text-center mb-5 block no-underline hover:text-coral transition-colors">
-              첫 체험 무료 · 동화 완성 ₩3,920 · 4일 프로그램 ₩14,900 →
-            </Link>
-          )}
-          {user && <div className="mb-5" />}
+          <div className="mb-5" />
 
           {/* ════════════════════════════════════════
               GALLERY — 이런 동화가 완성돼요 (B1)
@@ -660,7 +649,7 @@ export default function Home() {
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               이런 동화가 완성돼요
             </p>
-            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3">
+            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3 md:hidden">
               ← 옆으로 넘겨보세요 →
             </p>
             <GalleryScroller initialIndex={7}>
@@ -741,17 +730,17 @@ export default function Home() {
             </div>
           </div>
 
-          {/* DIY 동화 만들기 CTA */}
+          {/* DIY 동화 만들기 CTA — outline 스타일 (주 CTA와 경쟁 완화) */}
           <Link
             href="/diy/guide"
-            className="w-full py-3 rounded-full text-[13px] font-medium text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
+            className="w-full py-3 rounded-full text-[13px] font-light text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
             style={{
-              background: "linear-gradient(135deg, rgba(127,191,176,0.15), rgba(127,191,176,0.08))",
-              color: "#5A9E94",
-              border: "1.5px solid rgba(127,191,176,0.25)",
+              background: "transparent",
+              color: "rgb(var(--brown-pale))",
+              border: "1.5px solid rgba(196,149,106,0.2)",
             }}
           >
-            무료 DIY 동화 만들기 →
+            직접 동화 만들기 →
           </Link>
 
           {/* ════════════════════════════════════════
@@ -783,12 +772,12 @@ export default function Home() {
           {/* ════════════════════════════════════════
               SOCIAL PROOF — Story Counter
               ════════════════════════════════════════ */}
-          {communityCount != null && communityCount > 10 && (
+          {communityCount != null && communityCount > 50 && (
             <p className="text-center text-[12px] text-brown-pale font-light mb-4">
               지금까지 <span className="text-coral font-semibold">{communityCount.toLocaleString()}편</span>의 동화가 만들어졌어요
             </p>
           )}
-          {communityCount != null && communityCount > 0 && communityCount <= 10 && (
+          {communityCount != null && communityCount > 0 && communityCount <= 50 && (
             <p className="text-center text-[12px] text-brown-pale font-light mb-4">
               엄마들의 이야기가 시작되고 있어요
             </p>

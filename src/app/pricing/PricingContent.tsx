@@ -519,8 +519,8 @@ function PricingContent() {
                 </span>
               ))}
             </div>
-            <span className="text-sm font-bold text-brown font-serif ml-1">5.0</span>
-            <span className="sr-only">평균 만족도 5.0점 (5점 만점)</span>
+            <span className="text-sm font-bold text-brown font-serif ml-1">4.8</span>
+            <span className="sr-only">평균 만족도 4.8점 (5점 만점)</span>
           </div>
 
           <div className="space-y-3">

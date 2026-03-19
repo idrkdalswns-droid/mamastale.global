@@ -397,13 +397,17 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               return (
                 <>
                   {normalScenes.map((scene) => (
-                    <p
-                      key={scene.sceneNumber}
-                      className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
-                      style={{ fontSize }}
-                    >
-                      {cleanSceneText(scene.text)}
-                    </p>
+                    <div key={scene.sceneNumber}>
+                      <p className="text-[10px] text-brown-pale/60 font-light mb-1.5">
+                        장면 {scene.sceneNumber}
+                      </p>
+                      <p
+                        className="font-serif text-brown leading-[2.4] break-keep whitespace-pre-wrap transition-all"
+                        style={{ fontSize: Math.max(fontSize, 17) }}
+                      >
+                        {cleanSceneText(scene.text)}
+                      </p>
+                    </div>
                   ))}
                   {closingScenes.length > 0 && (
                     <div
@@ -514,6 +518,16 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   따뜻한 차 한 잔, 좋아하는 음악, 짧은 산책 등
                   <br />
                   작은 돌봄의 시간을 가져보세요.
+                </p>
+              </div>
+
+              {/* 전체 삽화 예고 */}
+              <div
+                className="rounded-xl py-3 px-4 text-center"
+                style={{ background: "rgba(139,106,175,0.06)", border: "1px solid rgba(139,106,175,0.10)" }}
+              >
+                <p className="text-[11px] text-brown-light font-light break-keep">
+                  전체 장면 삽화는 곧 추가될 예정이에요 ✨
                 </p>
               </div>
             </div>

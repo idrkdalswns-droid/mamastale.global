@@ -123,7 +123,9 @@ function LibraryContent() {
             내 서재
           </h1>
           <p className="text-[11px] text-brown-light font-light mt-0.5">
-            스와이프해서 동화를 골라보세요
+            {stories.length > 0
+              ? `${stories.length}편의 동화 · 스와이프해서 골라보세요`
+              : "스와이프해서 동화를 골라보세요"}
           </p>
         </motion.div>
 

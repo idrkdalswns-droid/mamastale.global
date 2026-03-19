@@ -44,7 +44,7 @@ export function ReviewSection() {
   const [showForm, setShowForm] = useState(false);
   const [alias, setAlias] = useState("");
   const [childInfo, setChildInfo] = useState("");
-  const [stars, setStars] = useState(5);
+  const [stars, setStars] = useState(4);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchingReviews, setFetchingReviews] = useState(true);

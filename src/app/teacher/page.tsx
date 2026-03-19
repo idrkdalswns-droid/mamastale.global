@@ -199,8 +199,16 @@ export default function TeacherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.sessionId]);
 
-  // 새 동화 만들기 — 기존 세션 강제 만료 + verify-code 재호출
+  // 새 동화 만들기 — 세션 만료 체크 + 기존 세션 강제 만료 + verify-code 재호출
   const handleNewStory = useCallback(async () => {
+    // 세션 만료 체크
+    if (store.expiresAt && new Date(store.expiresAt).getTime() <= Date.now()) {
+      store.reset();
+      store.setScreenState("CODE_ENTRY");
+      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+      return;
+    }
+
     setIsCreatingNew(true);
     const currentCode = store.teacherCode;
 

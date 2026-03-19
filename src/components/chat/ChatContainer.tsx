@@ -256,6 +256,14 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         onScroll={handleScroll}
       >
         <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-label="대화 메시지">
+          {messages.length === 0 && (
+            <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-full mx-auto w-fit mb-4"
+              style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}
+            >
+              <span className="text-[11px]" aria-hidden="true">🔒</span>
+              <span className="text-[11px] text-brown-light font-light">대화 내용은 암호화되어 안전하게 보호됩니다</span>
+            </div>
+          )}
           {messages.map((m, idx) => (
             <MessageBubble key={m.id || `msg_${m.role}_${idx}`} message={m} currentPhase={currentPhase} />
           ))}
