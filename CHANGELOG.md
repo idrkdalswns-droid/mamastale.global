@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.22.4] - 2026-03-19
+
+### Fixed (6차 검토 QA — 14건 버그 수정, 8건 허위 버그 제거)
+
+- **가격 페이지 크래시**: `next.config.mjs`에 `img.youtube.com` 호스트 추가
+- **프리뷰 게이트 우회**: `storyCount` → `myStoryCount`/`communityCount` 분리 (커뮤니티 수로 덮어씌워지는 버그)
+- **결제 성공 ₩0**: sessionStorage 캐시로 새로고침 시 금액 유지
+- **결제 자동리디렉트**: 버튼 클릭 시 카운트다운 취소 (이중 네비게이션 방지)
+- **PWA 크래시**: `PWAInstallBanner` localStorage 접근 전체 try-catch 래핑
+- **커버 DB 불일치**: `patchCover()` 에러 전파 + toast 피드백
+- **Library 401**: 세션 만료 시 로그인 페이지로 자동 리다이렉트
+- **모달 스크롤 잠금**: PricingContent 결제 확인 모달 배경 스크롤 차단
+- **댓글 더블클릭**: `submittingRef.current` disabled 반영
+- **커뮤니티 끝 메시지**: 무한스크롤 끝에 "모든 동화를 불러왔어요" 표시
+- **검색+필터 초기화**: 토픽 변경 시 검색어 자동 초기화
+- **위기 전화 fallback**: 데스크톱에서 tel: 링크 클릭 시 번호 복사
+- **오프라인 배너 이중**: ChatContainer 하단 중복 배너 제거
+- **주문번호 표시**: 앞8+뒤4 형태로 개선
+
 ## [1.22.3] - 2026-03-18
 
 ### Security (11개 팀 순차 검수 — 7-Pass 리뷰 반영)
