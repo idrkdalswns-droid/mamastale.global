@@ -10,6 +10,7 @@ import { TeacherCodeModal } from "@/components/teacher/TeacherCodeModal";
 import { TeacherOnboarding } from "@/components/teacher/TeacherOnboarding";
 import { TeacherChat } from "@/components/teacher/TeacherChat";
 import { TeacherPreview } from "@/components/teacher/TeacherPreview";
+import { TeacherCelebration } from "@/components/teacher/TeacherCelebration";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import type { TeacherOnboarding as TeacherOnboardingType, TeacherStory } from "@/lib/types/teacher";
@@ -53,6 +54,13 @@ export default function TeacherPage() {
     recoverSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user]);
+
+  // CELEBRATION 상태에서 generatedStory 없으면 HOME으로 복구
+  useEffect(() => {
+    if (store.screenState === "CELEBRATION" && !store.generatedStory) {
+      store.setScreenState("HOME");
+    }
+  }, [store.screenState, store.generatedStory]);
 
   // 세션 만료 사전 경고 (5분 전 토스트, 만료 시 CODE_ENTRY 전환)
   useEffect(() => {
@@ -184,7 +192,7 @@ export default function TeacherPage() {
 
       const data = await res.json();
       store.setGeneratedStory(data);
-      store.setScreenState("PREVIEW");
+      store.setScreenState("CELEBRATION");
     } catch (err) {
       console.error("[Teacher] Generation failed:", err);
       store.setScreenState("CHAT");
@@ -369,6 +377,21 @@ export default function TeacherPage() {
             </div>
           </div>
         </div>
+      );
+
+    case "CELEBRATION":
+      if (!store.generatedStory) {
+        // generatedStory 없이 CELEBRATION에 도달한 경우 — HOME으로 리디렉트
+        // (useEffect에서 처리)
+        return null;
+      }
+      return (
+        <TeacherCelebration
+          story={store.generatedStory}
+          sessionId={store.sessionId}
+          onViewStory={() => store.setScreenState("PREVIEW")}
+          onNewStory={() => store.setScreenState("HOME")}
+        />
       );
 
     case "PREVIEW":

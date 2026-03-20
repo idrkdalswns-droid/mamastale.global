@@ -35,6 +35,9 @@ interface TeacherState {
   // Screen
   screenState: TeacherScreenState;
 
+  // Internal flags
+  _generateReady: boolean;
+
   // Actions
   setScreenState: (state: TeacherScreenState) => void;
   setSession: (session: {
@@ -74,6 +77,7 @@ const initialState = {
   onboarding: null as TeacherOnboarding | null,
   generatedStory: null as TeacherStory | null,
   screenState: "CODE_ENTRY" as TeacherScreenState,
+  _generateReady: false,
 };
 
 // Module-level mutex to prevent concurrent sends
@@ -272,13 +276,19 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
 
             if (event.type === "text" && event.text) {
               fullText += event.text;
-              get().updateLastAssistantMessage(fullText);
+              // [GENERATE_READY] 태그는 UI에서 제거
+              const displayText = fullText.replace(/\[GENERATE_READY\]/g, "").trim();
+              get().updateLastAssistantMessage(displayText);
             } else if (event.type === "done") {
               if (event.phase) {
                 set({ currentPhase: event.phase });
               }
               if (typeof event.turnCount === "number") {
                 set({ turnCount: event.turnCount });
+              }
+              // 10턴 자동생성 플래그 저장
+              if (event.generateReady) {
+                set({ _generateReady: true });
               }
             } else if (event.type === "error") {
               throw new Error(event.message || "스트리밍 오류");

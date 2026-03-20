@@ -208,8 +208,8 @@ export async function POST(request: NextRequest) {
         const newPhase = getPhaseFromTurnCount(newTurnCount);
         const phaseChanged = newPhase !== currentPhase;
 
-        // [GENERATE_READY] 태그 감지
-        const generateReady = fullResponse.includes("[GENERATE_READY]");
+        // [GENERATE_READY] 태그 감지 또는 10턴 도달 시 자동 생성
+        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 10;
 
         // done 이벤트
         controller.enqueue(

@@ -6,9 +6,10 @@ import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ChatInput from "@/components/chat/ChatInput";
 import TypingIndicator from "@/components/chat/TypingIndicator";
-import { TeacherPhaseIndicator } from "./TeacherPhaseIndicator";
 import { TEACHER_PHASE_TO_NUMBER } from "@/lib/types/teacher";
 import type { Message } from "@/lib/types/chat";
+
+const MAX_TURNS = 10;
 
 interface TeacherChatProps {
   onSessionExpired: () => void;
@@ -30,6 +31,7 @@ export function TeacherChat({
     sendMessageStreaming,
     onboarding,
     addSystemGreeting,
+    _generateReady,
   } = useTeacherStore();
 
   // 에러 감지 — 리트라이 버튼 표시 여부
@@ -46,6 +48,14 @@ export function TeacherChat({
 
   // Cleanup generate timer on unmount
   useEffect(() => () => clearTimeout(generateTimerRef.current), []);
+
+  // 10턴 자동 생성: done.generateReady 플래그 감지
+  useEffect(() => {
+    if (_generateReady && !isLoading) {
+      useTeacherStore.setState({ _generateReady: false });
+      generateTimerRef.current = setTimeout(() => onRequestGenerate(), 500);
+    }
+  }, [_generateReady, isLoading, onRequestGenerate]);
 
   // 세션 만료 감지 (타이머 UI 제거, 감지만 유지)
   const onSessionExpiredRef = useRef(onSessionExpired);
@@ -118,11 +128,13 @@ export function TeacherChat({
   // Phase 번호 매핑 (기존 MessageBubble/ChatInput 호환)
   const phaseNumber = TEACHER_PHASE_TO_NUMBER[currentPhase] || 1;
 
+  const MIN_TURNS = 7;
+
   const handleSend = useCallback(
     async (text: string) => {
       userScrolledRef.current = false;
       setShowScrollDown(false);
-      // "생성해주세요" 등 명시적 생성 요청 감지 (오탐 방지를 위해 패턴 엄격화)
+
       const generatePatterns = [
         /동화.{0,4}(생성|만들어|시작)/,
         /생성해\s*(주|줘)/,
@@ -133,10 +145,17 @@ export function TeacherChat({
         pat.test(text)
       );
 
-      if (isGenerateRequest && turnCount >= 4) {
-        // 최소 4턴 이상이면 즉시 생성 가능
+      if (isGenerateRequest) {
+        if (turnCount < MIN_TURNS) {
+          // 7턴 미만: 서버 전송 차단 + 토스트
+          toast(`조금만 더 이야기해주시면 더 좋은 동화가 만들어져요! (현재 ${turnCount}/${MIN_TURNS}턴)`, {
+            icon: "💬",
+            duration: 4000,
+          });
+          return;
+        }
+        // 7턴 이상: forceGenerate로 전송
         const success = await sendMessageStreaming(text, true);
-        // 스트리밍 성공 시에만 생성 요청
         if (success) {
           generateTimerRef.current = setTimeout(
             () => onRequestGenerate(),
@@ -208,9 +227,13 @@ export function TeacherChat({
             </svg>
           </button>
           <div className="flex-1 flex justify-center">
-            <TeacherPhaseIndicator currentPhase={currentPhase} />
+            <span className="text-sm text-brown font-medium">
+              다은 선생님과 대화 중
+            </span>
           </div>
-          <div className="w-8" />
+          <span className="text-xs text-brown-light font-medium tabular-nums mr-1">
+            {Math.min(turnCount, MAX_TURNS)}/{MAX_TURNS}
+          </span>
         </div>
       </div>
 

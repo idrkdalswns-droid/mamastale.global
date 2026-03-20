@@ -11,6 +11,7 @@ export type TeacherScreenState =
   | "ONBOARDING"
   | "CHAT"
   | "GENERATING"
+  | "CELEBRATION"
   | "PREVIEW"
   | "DONE";
 
