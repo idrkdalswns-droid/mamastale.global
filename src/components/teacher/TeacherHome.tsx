@@ -30,6 +30,7 @@ interface StoryListItem {
   spreads?: { spreadNumber: number; text: string }[];
   metadata?: Record<string, unknown>;
   brief_context?: Record<string, unknown>;
+  cover_image?: string | null;
   session_id: string;
   is_mine?: boolean;
   author?: string;
@@ -244,26 +245,40 @@ export function TeacherHome({
                       spreads: (story.spreads || []) as TeacherStory["spreads"],
                       metadata: (story.metadata || {}) as TeacherStory["metadata"],
                       briefContext: story.brief_context as TeacherStory["briefContext"],
+                      coverImage: story.cover_image || null,
                       createdAt: story.created_at,
                     })
                   }
                   className="w-full p-4 rounded-2xl text-left border border-brown-pale/15
-                             bg-paper active:scale-[0.98] transition-all"
+                             bg-paper active:scale-[0.98] transition-all flex gap-3 items-center"
                   style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
                 >
-                  <p className="text-sm font-medium text-brown truncate">
-                    {story.title || "제목 없는 동화"}
-                  </p>
-                  <p className="text-xs text-brown-light mt-1">
-                    {new Date(story.created_at).toLocaleDateString("ko-KR", {
-                      month: "long",
-                      day: "numeric",
-                    })}{" "}
-                    · {(story.spreads || []).length}장
-                    {!story.is_mine && story.author && (
-                      <span className="text-brown-pale"> · {story.author}</span>
-                    )}
-                  </p>
+                  {story.cover_image ? (
+                    <img
+                      src={story.cover_image}
+                      alt=""
+                      className="w-12 h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-16 rounded-lg bg-paper/80 flex-shrink-0 flex items-center justify-center text-xl">
+                      📖
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-brown truncate">
+                      {story.title || "제목 없는 동화"}
+                    </p>
+                    <p className="text-xs text-brown-light mt-1">
+                      {new Date(story.created_at).toLocaleDateString("ko-KR", {
+                        month: "long",
+                        day: "numeric",
+                      })}{" "}
+                      · {(story.spreads || []).length}장
+                      {!story.is_mine && story.author && (
+                        <span className="text-brown-pale"> · {story.author}</span>
+                      )}
+                    </p>
+                  </div>
                 </button>
               ))}
             </div>

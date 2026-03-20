@@ -51,6 +51,7 @@ export interface TeacherStory {
   spreads: TeacherSpread[];
   metadata: TeacherStoryMetadata;
   briefContext?: Record<string, unknown>;
+  coverImage?: string | null;
   createdAt: string;
 }
 

@@ -237,6 +237,21 @@ export function TeacherPreview({
 
       {/* 탭 콘텐츠 */}
       <div className="flex-1 px-4 pb-4 overflow-y-auto">
+        {/* 표지 이미지 (동화 탭에서만) */}
+        {activeTab === "spreads" && story.coverImage && (
+          <div className="mb-4 rounded-2xl overflow-hidden shadow-sm">
+            <img
+              src={story.coverImage}
+              alt={`${story.title || "동화"} 표지`}
+              className="w-full h-auto object-cover"
+              style={{ maxHeight: "280px" }}
+            />
+            <p className="text-[10px] text-brown-pale text-center py-1 bg-paper/40">
+              AI 생성 표지
+            </p>
+          </div>
+        )}
+
         {activeTab === "spreads" && (
           <SpreadsView
             spreads={spreads}

@@ -24,6 +24,9 @@ import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { parseTeacherStory, extractStoryTitle } from "@/lib/utils/teacher-story-parser";
 import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
+import { generateCoverImage } from "@/lib/illustration/generate";
+import { uploadCoverToStorage } from "@/lib/illustration/upload";
+import type { Scene } from "@/lib/types/story";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -57,6 +60,47 @@ function getDefaultBrief(onboarding: Record<string, unknown>): TeacherBriefConte
 }
 
 // parseSpreads, parseMetadata → teacher-story-parser.ts로 이전됨
+
+/** teacher spreads → Scene[] 변환 + illustPrompts에서 imagePrompt 추출 */
+function buildCoverScenes(
+  spreads: Array<{ spreadNumber: number; title: string; text: string }>,
+  illustPrompts?: string,
+): Scene[] {
+  let firstPrompt: string | undefined;
+  if (illustPrompts) {
+    const match = illustPrompts.match(/\[SP\d+\]\s*([\s\S]*?)(?=\[SP\d+\]|$)/);
+    firstPrompt = match?.[1]?.trim();
+  }
+  // 폴백: illustPrompts 파싱 실패 시 첫 스프레드 텍스트 사용
+  if (!firstPrompt && spreads.length > 0) {
+    firstPrompt = spreads[0].text.slice(0, 200);
+  }
+  return spreads.map((s, i) => ({
+    sceneNumber: s.spreadNumber,
+    title: s.title,
+    text: s.text,
+    ...(i === 0 && firstPrompt ? { imagePrompt: firstPrompt } : {}),
+  }));
+}
+
+/** Gemini 표지 생성 + Storage 업로드 (fire-and-forget) */
+async function generateAndUploadCover(
+  storyId: string,
+  scenes: Scene[],
+  title: string,
+  sbClient: ReturnType<typeof createApiSupabaseClient>,
+): Promise<void> {
+  try {
+    const result = await generateCoverImage(scenes, title);
+    if (!result) return;
+    const publicUrl = await uploadCoverToStorage(result.base64, result.mimeType, storyId);
+    if (!publicUrl) return;
+    await sbClient!.client.from("teacher_stories").update({ cover_image: publicUrl }).eq("id", storyId);
+    console.log("[Teacher/Cover] Cover uploaded:", storyId);
+  } catch (e) {
+    console.error("[Teacher/Cover] Cover generation failed (non-blocking):", e);
+  }
+}
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
@@ -144,7 +188,7 @@ export async function POST(request: NextRequest) {
   // 멱등성: 이미 이 세션에서 생성된 동화가 있으면 기존 결과 반환
   const { data: existingStory } = await sb.client
     .from("teacher_stories")
-    .select("id, title, spreads, metadata, brief_context")
+    .select("id, title, spreads, metadata, brief_context, cover_image")
     .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -161,6 +205,7 @@ export async function POST(request: NextRequest) {
         spreadCount: Array.isArray(existingStory.spreads)
           ? existingStory.spreads.length
           : 0,
+        coverImage: existingStory.cover_image || null,
       })
     );
   }
@@ -357,6 +402,13 @@ export async function POST(request: NextRequest) {
         if (error) console.error("[Teacher Generate] Failed to update session:", error.message);
       });
 
+    // ─── Step 4.5: Gemini 표지 생성 (fire-and-forget) ───
+    if (story?.id) {
+      const coverScenes = buildCoverScenes(spreads, metadata.illustPrompts);
+      generateAndUploadCover(story.id, coverScenes, title || "", sb)
+        .catch(() => {});
+    }
+
     // 이벤트 로깅
     logEvent({
       eventType: "teacher_story_generated",
@@ -379,6 +431,7 @@ export async function POST(request: NextRequest) {
       metadata,
       briefContext,
       spreadCount: spreads.length,
+      coverImage: null, // fire-and-forget: 멱등성 재호출 시 URL 반환
     });
 
     return sb.applyCookies(response);
@@ -472,6 +525,13 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Step 4.5: Gemini 표지 생성 (fire-and-forget)
+        if (storyId) {
+          const coverScenes = buildCoverScenes(retryParsed.spreads, retryParsed.metadata.illustPrompts);
+          generateAndUploadCover(storyId, coverScenes, title || "", sb)
+            .catch(() => {});
+        }
+
         return sb.applyCookies(
           NextResponse.json({
             id: storyId,
@@ -480,6 +540,7 @@ export async function POST(request: NextRequest) {
             metadata: retryParsed.metadata,
             briefContext,
             spreadCount: retryParsed.spreads.length,
+            coverImage: null,
           })
         );
       }
