@@ -6,7 +6,7 @@ import Image from "next/image";
 import Script from "next/script";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { trackBeginCheckout, trackPaymentStart } from "@/lib/utils/analytics";
+import { trackBeginCheckout, trackPaymentStart, trackPricingPageView, trackPricingCtaClick, trackPricingModalOpen, trackPricingModalConfirm, trackPricingModalCancel } from "@/lib/utils/analytics";
 import { hapticMedium } from "@/lib/utils/haptic";
 // SectionTabBar and page nav tab bar removed — GlobalNav already provides page navigation
 
@@ -137,6 +137,7 @@ function PricingContent() {
   // Dynamic social proof counter
   const [storyCount, setStoryCount] = useState(0);
   useEffect(() => {
+    trackPricingPageView();
     fetch("/api/community?limit=0")
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.total) setStoryCount(d.total); })
@@ -295,16 +296,19 @@ function PricingContent() {
   );
 
   // Payment with confirmation step
-  const initiatePayment = (productType: PriceType) => {
+  const initiatePayment = (productType: PriceType, source = "card") => {
+    trackPricingCtaClick(productType, source);
     if (!user && !authLoading) {
       redirectToLogin();
       return;
     }
+    trackPricingModalOpen(productType);
     setConfirmModal(productType);
   };
 
   const confirmPayment = () => {
     if (!confirmModal) return;
+    trackPricingModalConfirm(confirmModal);
     handlePayment(confirmModal);
     setConfirmModal(null);
   };
@@ -385,6 +389,7 @@ function PricingContent() {
             <h3 className="font-serif text-lg text-brown font-semibold">
               동화 한 편 · 15분 완성
             </h3>
+            <p className="text-xs text-brown-light font-light mt-1">1회 체험에 적합</p>
             <div className="flex items-baseline justify-center gap-2 mt-3">
               <span className="text-sm text-brown-pale line-through">
                 ₩4,900
@@ -395,7 +400,7 @@ function PricingContent() {
             </div>
           </div>
 
-          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
+          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2"><Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
           <button
             onClick={() => initiatePayment("ticket")}
             disabled={isProcessing || !sdkReady}
@@ -442,12 +447,12 @@ function PricingContent() {
                 ₩14,900
               </span>
             </div>
-            <p className="text-xs text-purple font-medium mt-1">
-              1권당 ₩3,725
+            <p className="text-sm font-medium mt-1" style={{ color: "#E07A5F" }}>
+              1권당 ₩{Math.floor(PRODUCTS.bundle.amount / PRODUCTS.bundle.tickets).toLocaleString()} · ₩{(PRODUCTS.ticket.amount * PRODUCTS.bundle.tickets - PRODUCTS.bundle.amount).toLocaleString()} 절약
             </p>
           </div>
 
-          <p className="text-[10px] text-brown-pale font-light text-center mb-2">※ 동화 생성 후에는 환불이 불가합니다</p>
+          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2"><Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
           <button
             onClick={() => initiatePayment("bundle")}
             disabled={isProcessing || !sdkReady}
@@ -506,7 +511,7 @@ function PricingContent() {
         {/* ════════════════════════════════════════
             SOCIAL PROOF
             ════════════════════════════════════════ */}
-        <section id="reviews" className="text-center mb-10" aria-label="사용자 후기">
+        <section id="reviews" className="text-center mb-6" aria-label="사용자 후기">
           <div className="flex items-center justify-center gap-1 mb-5">
             <div className="flex items-center gap-0.5" aria-hidden="true">
               {Array.from({ length: 5 }, (_, j) => (
@@ -524,7 +529,7 @@ function PricingContent() {
           </div>
 
           <div className="space-y-3">
-            {FEATURED_REVIEWS.map((r, i) => (
+            {FEATURED_REVIEWS.slice(0, 1).map((r, i) => (
               <div
                 key={i}
                 className="rounded-xl p-4 text-left"
@@ -601,7 +606,11 @@ function PricingContent() {
         {/* ════════════════════════════════════════
             10-SCENE STORYBOOK GALLERY
             ════════════════════════════════════════ */}
-        <section id="gallery" className="mb-10" aria-label="동화 갤러리">
+        <details className="mb-6">
+          <summary className="text-center text-sm text-coral font-medium cursor-pointer list-none py-3 select-none">
+            동화 미리보기 ▼
+          </summary>
+        <section id="gallery" aria-label="동화 갤러리">
           <h2 className="font-serif text-lg text-brown font-semibold text-center mb-1">
             노란 텐트 속 무지개 마법
           </h2>
@@ -691,11 +700,16 @@ function PricingContent() {
             </Link>
           </p>
         </section>
+        </details>
 
         {/* ════════════════════════════════════════
             VIDEO PREVIEW
             ════════════════════════════════════════ */}
-        <section className="mb-10" aria-label="동화 영상 미리보기">
+        <details className="mb-6">
+          <summary className="text-center text-sm text-coral font-medium cursor-pointer list-none py-3 select-none">
+            영상 보기 ▼
+          </summary>
+        <section aria-label="동화 영상 미리보기">
           <div
             className="rounded-2xl overflow-hidden"
             style={{
@@ -739,6 +753,7 @@ function PricingContent() {
           </p>
           {/* #35: 줌 클래스 언급 제거 — 브랜드 혼란 방지 */}
         </section>
+        </details>
 
         {/* ════════════════════════════════════════
             WHY TICKET MODEL
@@ -878,7 +893,7 @@ function PricingContent() {
         <div className="max-w-lg mx-auto flex gap-2">
           {/* R2: 단품 먼저 (순서 반전) */}
           <button
-            onClick={() => initiatePayment("ticket")}
+            onClick={() => initiatePayment("ticket", "sticky")}
             disabled={isProcessing || !sdkReady}
             className="flex-[2] py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
@@ -889,13 +904,12 @@ function PricingContent() {
             1편 · ₩3,920
           </button>
           <button
-            onClick={() => initiatePayment("bundle")}
+            onClick={() => initiatePayment("bundle", "sticky")}
             disabled={isProcessing || !sdkReady}
-            className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-medium text-purple transition-all active:scale-[0.97] disabled:opacity-60"
+            className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
-              background: "rgb(var(--surface) / 0.9)",
-              border: "1.5px solid rgba(109,76,145,0.3)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
+              background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
+              boxShadow: "0 4px 16px rgba(109,76,145,0.25)",
             }}
           >
             4편 · ₩14,900
@@ -962,7 +976,7 @@ function PricingContent() {
               결제하기
             </button>
             <button
-              onClick={() => setConfirmModal(null)}
+              onClick={() => { if (confirmModal) trackPricingModalCancel(confirmModal); setConfirmModal(null); }}
               className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"
             >
               취소

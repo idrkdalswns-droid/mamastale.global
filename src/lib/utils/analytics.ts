@@ -99,3 +99,35 @@ export function trackPaymentAbandon(reason?: string) {
 export function trackCommunityInspireClick() {
   track("community_inspire_click");
 }
+
+// ── 결제 페이지 퍼널 ──
+
+/** 결제 페이지 진입 */
+export function trackPricingPageView() {
+  track("pricing_page_view");
+}
+
+/** 결제 CTA 클릭 (상품 카드 또는 고정바) */
+export function trackPricingCtaClick(product: string, source: string) {
+  track("pricing_cta_click", { product, source });
+}
+
+/** 결제 확인 모달 열림 */
+export function trackPricingModalOpen(product: string) {
+  track("pricing_modal_open", { product });
+}
+
+/** 결제 확인 모달에서 확정 */
+export function trackPricingModalConfirm(product: string) {
+  track("pricing_modal_confirm", { product });
+}
+
+/** 결제 확인 모달에서 취소 */
+export function trackPricingModalCancel(product: string) {
+  track("pricing_modal_cancel", { product });
+}
+
+/** 결제 완료 후 추천코드 노출 */
+export function trackReferralShownPostPayment() {
+  track("referral_shown_post_payment");
+}

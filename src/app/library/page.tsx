@@ -4,8 +4,9 @@ import { useState, useEffect, Component, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import StoryCarousel from "@/components/library/StoryCarousel";
+import StoryGrid from "@/components/library/StoryGrid";
 import EmptyLibrary from "@/components/library/EmptyLibrary";
+import TicketPrompt from "@/components/library/TicketPrompt";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
@@ -66,38 +67,61 @@ function LibraryContent() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const { getDraftInfo, clearStorage } = useChatStore();
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number } | null>(null);
 
   useEffect(() => {
-    fetchStories();
+    fetchData();
     const info = getDraftInfo();
     if (info) setDraftInfo(info);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchStories and getDraftInfo are stable (never change), safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData and getDraftInfo are stable (never change), safe to omit
   }, []);
 
-  const fetchStories = async () => {
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = {};
     try {
-      // Include auth token in headers (belt-and-suspenders for cookie issues)
-      const headers: Record<string, string> = {};
-      try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
         }
-      } catch { /* ignore */ }
+      }
+    } catch { /* ignore */ }
+    return headers;
+  };
 
-      const res = await fetch("/api/stories", { headers, credentials: "include" });
-      if (!res.ok) {
-        // R5-HIGH6: Show specific message for auth failures
-        if (res.status === 401) throw new Error("AUTH");
+  const fetchData = async () => {
+    try {
+      const headers = await getAuthHeaders();
+
+      // Promise.allSettled: stories 실패 → 에러, tickets 실패 → graceful degradation
+      const [storiesResult, ticketsResult] = await Promise.allSettled([
+        fetch("/api/stories", { headers, credentials: "include" }),
+        fetch("/api/tickets", { headers, credentials: "include" }),
+      ]);
+
+      // Handle stories
+      if (storiesResult.status === "fulfilled") {
+        const res = storiesResult.value;
+        if (!res.ok) {
+          if (res.status === 401) { router.push("/login?redirect=/library"); return; }
+          throw new Error("Failed to fetch");
+        }
+        const data = await res.json();
+        setStories(data.stories || []);
+      } else {
         throw new Error("Failed to fetch");
       }
-      const data = await res.json();
-      setStories(data.stories || []);
+
+      // Handle tickets (graceful degradation)
+      if (ticketsResult.status === "fulfilled" && ticketsResult.value.ok) {
+        const ticketData = await ticketsResult.value.json();
+        setTicketsRemaining(ticketData.remaining ?? null);
+      }
+      // tickets 실패 시 → null 유지 (TicketPrompt 숨김)
+
     } catch (err) {
       if ((err as Error).message === "AUTH") {
         router.push("/login?redirect=/library");
@@ -124,8 +148,8 @@ function LibraryContent() {
           </h1>
           <p className="text-[11px] text-brown-light font-light mt-0.5">
             {stories.length > 0
-              ? `${stories.length}편의 동화 · 스와이프해서 골라보세요`
-              : "스와이프해서 동화를 골라보세요"}
+              ? `${stories.length}편의 동화${ticketsRemaining !== null && ticketsRemaining > 0 ? ` · 이용권 ${ticketsRemaining}편 남음` : ""}`
+              : "아직 동화가 없어요"}
           </p>
         </motion.div>
 
@@ -200,9 +224,19 @@ function LibraryContent() {
           </div>
         ) : error ? (
           <div className="text-center py-20">
-            <p className="text-sm text-brown-light font-light mb-4">{error}</p>
+            {/* WiFi-off icon */}
+            <svg className="w-10 h-10 mx-auto mb-3 text-brown-pale/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+            </svg>
+            <p className="text-sm text-brown-light font-light mb-1">
+              {error.includes("fetch") || error.includes("network") || error.includes("Failed")
+                ? "인터넷 연결을 확인해 주세요"
+                : "서버에 문제가 발생했어요"}
+            </p>
+            <p className="text-[11px] text-brown-pale font-light mb-4">잠시 후 다시 시도해 주세요</p>
             <button
-              onClick={() => { setError(""); setLoading(true); fetchStories(); }}
+              onClick={() => { setError(""); setLoading(true); fetchData(); }}
               className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
               style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
             >
@@ -212,7 +246,10 @@ function LibraryContent() {
         ) : stories.length === 0 ? (
           <EmptyLibrary />
         ) : (
-          <StoryCarousel stories={stories} />
+          <>
+            {ticketsRemaining !== null && <TicketPrompt remaining={ticketsRemaining} />}
+            <StoryGrid stories={stories} />
+          </>
         )}
       </div>
     </div>

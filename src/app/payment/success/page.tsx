@@ -378,7 +378,7 @@ function PaymentSuccessContent() {
 
         {/* Freemium v2: Warm unlock message */}
         <div
-          className="rounded-xl p-4 mb-5 text-center"
+          className="rounded-xl p-4 mb-4 text-center"
           style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}
         >
           <p className="text-[13px] text-brown font-medium mb-1 break-keep">
@@ -387,6 +387,12 @@ function PaymentSuccessContent() {
           <p className="text-[11px] text-brown-light font-light break-keep">
             티켓 {ticketsAdded}장으로 새로운 동화도 만들 수 있어요.
           </p>
+        </div>
+
+        {/* Referral card — post-payment promotion (moved up from bottom) */}
+        <div className="mb-5">
+          <p className="text-sm text-brown font-medium text-center mb-2">친구에게도 동화를 선물하세요</p>
+          <ReferralCard />
         </div>
 
         <button
@@ -463,10 +469,7 @@ function PaymentSuccessContent() {
           </button>
         </div>
 
-        {/* Referral card */}
-        <div className="mt-4">
-          <ReferralCard />
-        </div>
+        {/* Referral card moved up to post-receipt position */}
       </div>
     </div>
   );
