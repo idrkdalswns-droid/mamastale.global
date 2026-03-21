@@ -307,7 +307,7 @@ export async function POST(request: NextRequest) {
     let generationResult;
     try {
       generationResult = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-opus-4-20250514",
         system: [
           {
             type: "text" as const,
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
     logLLMCall({
       sessionId,
       userId: user.id,
-      model: "claude-sonnet-4-20250514",
+      model: "claude-opus-4-20250514",
       phase: null,
       inputTokens: generationResult.usage?.input_tokens ?? 0,
       outputTokens: generationResult.usage?.output_tokens ?? 0,
@@ -446,7 +446,7 @@ export async function POST(request: NextRequest) {
       let retryResult;
       try {
         retryResult = await anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-opus-4-20250514",
           system: [
             {
               type: "text" as const,
@@ -476,7 +476,7 @@ export async function POST(request: NextRequest) {
       logLLMCall({
         sessionId,
         userId: user.id,
-        model: "claude-sonnet-4-20250514",
+        model: "claude-opus-4-20250514",
         phase: null,
         inputTokens: retryResult.usage?.input_tokens ?? 0,
         outputTokens: retryResult.usage?.output_tokens ?? 0,

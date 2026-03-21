@@ -4,15 +4,15 @@ import { selectModel, getFallbackModel, MODELS } from "./model-router";
 describe("selectModel", () => {
   // ─── Phase-based routing ───
   describe("phase routing", () => {
-    it("uses Haiku for Phase 1 (empathy)", () => {
+    it("uses Sonnet for Phase 1 (empathy — 첫인상 투자)", () => {
       const result = selectModel({ phase: 1, isPremiumUser: false });
-      expect(result.model).toBe(MODELS.HAIKU);
-      expect(result.reasoning).toBe("phase1_empathy_haiku");
+      expect(result.model).toBe(MODELS.SONNET);
+      expect(result.reasoning).toBe("phase1_empathy_sonnet");
     });
 
-    it("uses Haiku for Phase 1 even for premium users", () => {
+    it("uses Sonnet for Phase 1 even for premium users", () => {
       const result = selectModel({ phase: 1, isPremiumUser: true });
-      expect(result.model).toBe(MODELS.HAIKU);
+      expect(result.model).toBe(MODELS.SONNET);
     });
 
     it("uses Sonnet for Phase 2 (Socratic)", () => {
@@ -27,10 +27,11 @@ describe("selectModel", () => {
       expect(result.reasoning).toBe("phase3_metaphor_sonnet");
     });
 
-    it("uses Sonnet for Phase 4 standard users", () => {
+    it("uses Opus for Phase 4 standard users (퀄리티 투자)", () => {
       const result = selectModel({ phase: 4, isPremiumUser: false });
-      expect(result.model).toBe(MODELS.SONNET);
-      expect(result.maxTokens).toBe(8192); // v1.22.0: 10장면 일괄 출력
+      expect(result.model).toBe(MODELS.OPUS);
+      expect(result.maxTokens).toBe(8192);
+      expect(result.reasoning).toBe("phase4_standard_opus");
     });
 
     it("uses Opus for Phase 4 premium users", () => {

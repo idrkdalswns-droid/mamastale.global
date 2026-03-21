@@ -6,10 +6,10 @@
  * - User tier (standard vs premium)
  * - Crisis context
  *
- * Phase 1 (empathy): Haiku — simple emotional acknowledgment
+ * Phase 1 (empathy): Sonnet — 첫인상 + 감정 뉘앙스 (퀄리티 투자)
  * Phase 2 (Socratic): Sonnet — cognitive complexity
  * Phase 3 (metaphor): Sonnet — creative but structured
- * Phase 4 (story): Opus (premium) / Sonnet (standard)
+ * Phase 4 (story): Opus (all users) — 최종 산출물 품질 (퀄리티 투자)
  *
  * @module model-router
  */
@@ -51,11 +51,11 @@ export function selectModel(params: {
 
   switch (phase) {
     case 1:
-      // Phase 1: Empathy/validation — Haiku is sufficient
+      // Phase 1: Empathy/validation — Sonnet for emotional nuance (첫인상 투자)
       return {
-        model: MODEL_HAIKU,
-        maxTokens: MAX_TOKENS_HAIKU,
-        reasoning: "phase1_empathy_haiku",
+        model: MODEL_SONNET,
+        maxTokens: MAX_TOKENS_SONNET,
+        reasoning: "phase1_empathy_sonnet",
       };
 
     case 2:
@@ -75,18 +75,12 @@ export function selectModel(params: {
       };
 
     case 4:
-      // Phase 4: Story generation — premium gets Opus
-      if (isPremiumUser) {
-        return {
-          model: MODEL_OPUS,
-          maxTokens: MAX_TOKENS_OPUS,
-          reasoning: "phase4_premium_opus",
-        };
-      }
+      // Phase 4: Story generation — Opus for all users (최종 산출물 품질 투자)
+      // 현재 일반/유료 동일, 추후 분리 가능
       return {
-        model: MODEL_SONNET,
-        maxTokens: 8192,  // v1.22.0: 10장면 전체 일괄 출력에 필요
-        reasoning: "phase4_standard_sonnet",
+        model: MODEL_OPUS,
+        maxTokens: MAX_TOKENS_OPUS,
+        reasoning: isPremiumUser ? "phase4_premium_opus" : "phase4_standard_opus",
       };
 
     default:
