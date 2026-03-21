@@ -9,7 +9,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import { TEACHER_PHASE_TO_NUMBER } from "@/lib/types/teacher";
 import type { Message } from "@/lib/types/chat";
 
-const MAX_TURNS = 7;
+const MAX_TURNS = 11;
 
 interface TeacherChatProps {
   onSessionExpired: () => void;
@@ -128,7 +128,7 @@ export function TeacherChat({
   // Phase 번호 매핑 (기존 MessageBubble/ChatInput 호환)
   const phaseNumber = TEACHER_PHASE_TO_NUMBER[currentPhase] || 1;
 
-  const MIN_TURNS = 3;
+  const MIN_TURNS = 5;
 
   const handleSend = useCallback(
     async (text: string) => {

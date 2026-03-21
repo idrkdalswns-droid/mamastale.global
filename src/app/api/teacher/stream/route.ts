@@ -203,17 +203,21 @@ export async function POST(request: NextRequest) {
         inputTokens = finalMessage.usage?.input_tokens ?? 0;
         outputTokens = finalMessage.usage?.output_tokens ?? 0;
 
-        // Phase 전환 확인
+        // Phase 전환 확인 (턴 기반 OR AI [PHASE_READY] 판단)
         const newTurnCount = turnCount + 1;
-        const newPhase = getPhaseFromTurnCount(newTurnCount);
+        const phaseReady = fullResponse.includes("[PHASE_READY]");
+        const newPhase = phaseReady
+          ? getPhaseFromTurnCount(newTurnCount + 1)  // AI 판단으로 다음 Phase 강제 전환
+          : getPhaseFromTurnCount(newTurnCount);
         const phaseChanged = newPhase !== currentPhase;
 
-        // [GENERATE_READY] 태그 감지 또는 7턴 도달 시 자동 생성
-        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 7;
+        // [GENERATE_READY] 태그 감지 또는 11턴 도달 시 자동 생성
+        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 11;
 
         // ─── DB 저장 (done 이벤트 전에 await — 다음 요청의 히스토리/턴 정합성 보장) ───
         const cleanResponse = fullResponse
           .replace(/\[GENERATE_READY\]/g, "")
+          .replace(/\[PHASE_READY\]/g, "")
           .trim();
 
         const dbOps = Promise.all([

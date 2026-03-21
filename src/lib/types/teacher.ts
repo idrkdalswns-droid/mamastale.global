@@ -79,8 +79,8 @@ export interface TeacherPhaseInfo {
 export const TEACHER_PHASES: Record<string, TeacherPhaseInfo> = {
   A: {
     id: "A",
-    name: "씨앗 심기",
-    description: "어떤 이야기가 필요한지 알려주세요",
+    name: "마음 나누기",
+    description: "선생님의 마음을 먼저 들어요",
     icon: "/images/teacher/phase/phase-a.jpeg",
     bg: "#EEF6F3",
     accent: "#7FBFB0",
@@ -88,8 +88,8 @@ export const TEACHER_PHASES: Record<string, TeacherPhaseInfo> = {
   },
   B: {
     id: "B",
-    name: "뼈대 세우기",
-    description: "이야기 구조를 함께 설계해요",
+    name: "동화 설계",
+    description: "동화에 담고 싶은 것들을 정리해요",
     icon: "/images/teacher/phase/phase-b.jpeg",
     bg: "#FFF4ED",
     accent: "#E07A5F",
@@ -97,8 +97,8 @@ export const TEACHER_PHASES: Record<string, TeacherPhaseInfo> = {
   },
   C: {
     id: "C",
-    name: "캐릭터 만들기",
-    description: "등장인물과 세계관을 만들어요",
+    name: "새로운 시선",
+    description: "다른 관점에서 이야기 뼈대를 잡아요",
     icon: "/images/teacher/phase/phase-c.jpeg",
     bg: "#F3EDF7",
     accent: "#8B6AAF",
@@ -106,8 +106,8 @@ export const TEACHER_PHASES: Record<string, TeacherPhaseInfo> = {
   },
   D: {
     id: "D",
-    name: "마무리 터치",
-    description: "세부 사항을 조율해요",
+    name: "캐릭터 만들기",
+    description: "동화 속 캐릭터를 함께 만들어요",
     icon: "/images/teacher/phase/phase-d.jpeg",
     bg: "#FDF6EC",
     accent: "#C4956A",
@@ -116,7 +116,7 @@ export const TEACHER_PHASES: Record<string, TeacherPhaseInfo> = {
   E: {
     id: "E",
     name: "동화 완성",
-    description: "최종 확인 후 동화를 만들어요",
+    description: "동화가 만들어지고 있어요",
     icon: "/images/teacher/phase/phase-e.jpeg",
     bg: "#E8F4FD",
     accent: "#5B9BD5",
