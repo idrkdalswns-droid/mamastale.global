@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS teacher_codes (
   code TEXT UNIQUE NOT NULL,             -- 예: 'HANA-2024'
   kindergarten_name TEXT NOT NULL,
   is_active BOOLEAN DEFAULT true,
-  daily_session_limit INT DEFAULT 10,
+  daily_session_limit INT DEFAULT 3,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

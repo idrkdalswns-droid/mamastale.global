@@ -208,8 +208,41 @@ export async function POST(request: NextRequest) {
         const newPhase = getPhaseFromTurnCount(newTurnCount);
         const phaseChanged = newPhase !== currentPhase;
 
-        // [GENERATE_READY] 태그 감지 또는 10턴 도달 시 자동 생성
-        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 10;
+        // [GENERATE_READY] 태그 감지 또는 7턴 도달 시 자동 생성
+        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 7;
+
+        // ─── DB 저장 (done 이벤트 전에 await — 다음 요청의 히스토리/턴 정합성 보장) ───
+        const cleanResponse = fullResponse
+          .replace(/\[GENERATE_READY\]/g, "")
+          .trim();
+
+        const dbOps = Promise.all([
+          sb.client.from("teacher_messages").insert({
+            session_id: sessionId,
+            role: "user",
+            content: message,
+            phase: currentPhase,
+          }).then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to save user message:", error.message);
+          }),
+          sb.client.from("teacher_messages").insert({
+            session_id: sessionId,
+            role: "assistant",
+            content: cleanResponse,
+            phase: currentPhase,
+          }).then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
+          }),
+          sb.client.from("teacher_sessions").update({
+            turn_count: newTurnCount,
+            current_phase: newPhase,
+          }).eq("id", sessionId).then(({ error }) => {
+            if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
+          }),
+        ]);
+
+        // 5초 타임아웃 — 실패해도 done 이벤트는 반드시 전송
+        await Promise.race([dbOps, new Promise(r => setTimeout(r, 5000))]);
 
         // done 이벤트
         controller.enqueue(
@@ -225,49 +258,6 @@ export async function POST(request: NextRequest) {
         );
 
         controller.close();
-
-        // ─── Fire-and-forget: DB 저장 ───
-
-        // 사용자 메시지 저장
-        sb.client
-          .from("teacher_messages")
-          .insert({
-            session_id: sessionId,
-            role: "user",
-            content: message,
-            phase: currentPhase,
-          })
-          .then(({ error }) => {
-            if (error) console.error("[Teacher Stream] Failed to save user message:", error.message);
-          });
-
-        // AI 응답 저장 ([GENERATE_READY] 태그 제거)
-        const cleanResponse = fullResponse
-          .replace(/\[GENERATE_READY\]/g, "")
-          .trim();
-        sb.client
-          .from("teacher_messages")
-          .insert({
-            session_id: sessionId,
-            role: "assistant",
-            content: cleanResponse,
-            phase: currentPhase,
-          })
-          .then(({ error }) => {
-            if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
-          });
-
-        // 세션 업데이트 (턴 카운트 + Phase)
-        sb.client
-          .from("teacher_sessions")
-          .update({
-            turn_count: newTurnCount,
-            current_phase: newPhase,
-          })
-          .eq("id", sessionId)
-          .then(({ error }) => {
-            if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
-          });
 
         // LLM 로깅
         logLLMCall({

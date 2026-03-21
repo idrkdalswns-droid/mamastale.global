@@ -9,7 +9,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import { TEACHER_PHASE_TO_NUMBER } from "@/lib/types/teacher";
 import type { Message } from "@/lib/types/chat";
 
-const MAX_TURNS = 10;
+const MAX_TURNS = 7;
 
 interface TeacherChatProps {
   onSessionExpired: () => void;
@@ -128,7 +128,7 @@ export function TeacherChat({
   // Phase 번호 매핑 (기존 MessageBubble/ChatInput 호환)
   const phaseNumber = TEACHER_PHASE_TO_NUMBER[currentPhase] || 1;
 
-  const MIN_TURNS = 7;
+  const MIN_TURNS = 3;
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -136,10 +136,11 @@ export function TeacherChat({
       setShowScrollDown(false);
 
       const generatePatterns = [
-        /동화.{0,4}(생성|만들어|시작)/,
-        /생성해\s*(주|줘)/,
-        /빨리.{0,4}(만들|생성)/,
-        /이제.{0,4}(만들|생성|시작)/,
+        /동화.{0,6}(생성|만들|시작|부탁)/,
+        /(생성|만들어|시작해)\s*(주|줘|주세요|줘요)/,
+        /빨리.{0,6}(만들|생성)/,
+        /이제.{0,6}(만들|생성|시작)/,
+        /(다\s*됐|충분|이제\s*됐)/,
       ];
       const isGenerateRequest = generatePatterns.some((pat) =>
         pat.test(text)
@@ -147,14 +148,12 @@ export function TeacherChat({
 
       if (isGenerateRequest) {
         if (turnCount < MIN_TURNS) {
-          // 7턴 미만: 서버 전송 차단 + 토스트
           toast(`조금만 더 이야기해주시면 더 좋은 동화가 만들어져요! (현재 ${turnCount}/${MIN_TURNS}턴)`, {
             icon: "💬",
             duration: 4000,
           });
           return;
         }
-        // 7턴 이상: forceGenerate로 전송
         const success = await sendMessageStreaming(text, true);
         if (success) {
           generateTimerRef.current = setTimeout(
@@ -276,7 +275,7 @@ export function TeacherChat({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="relative flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3"
+        className="relative flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-[150px] space-y-3"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {/* 빈 assistant 메시지 숨기기 — isLoading 중에만 (이중 로딩 방지) */}
