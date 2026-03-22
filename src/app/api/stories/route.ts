@@ -284,6 +284,14 @@ export async function POST(request: NextRequest) {
 
     if (insertResult.error || !insertResult.data) {
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
+      // Security: 티켓은 /api/tickets/use에서 이미 차감됨 → 저장 실패 시 복원
+      try {
+        const { incrementTickets } = await import("@/lib/supabase/tickets");
+        await incrementTickets(sb.client, user.id, 1);
+        console.log("[Stories] 티켓 롤백 성공 (저장 실패 복구)");
+      } catch (rollbackErr) {
+        console.error("[Stories] 티켓 롤백 실패:", rollbackErr);
+      }
       return sb.applyCookies(NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 }));
     }
 

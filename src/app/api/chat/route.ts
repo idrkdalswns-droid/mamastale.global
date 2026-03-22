@@ -325,8 +325,12 @@ export async function POST(request: NextRequest) {
     const MAX_TURNS_PER_PHASE: Record<number, number> = { 1: 7, 2: 10, 3: 10, 4: 999 };
     const MIN_TURNS_PER_PHASE: Record<number, number> = { 1: 3, 2: 3, 3: 3, 4: 0 };
     const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
-    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4 ? clientPhase : 1;
-    const safePhase = messages.length >= (MIN_MSGS_PER_PHASE[rawPhase] || 0) ? rawPhase : Math.max(1, rawPhase - 1) as 1 | 2 | 3 | 4;
+    // Security: 서버가 메시지 수 기반으로 최대 허용 Phase 결정 (클라이언트 값은 UX 힌트)
+    const serverMaxPhase = ([4, 3, 2, 1] as const).find(p => messages.length >= (MIN_MSGS_PER_PHASE[p] || 0)) || 1;
+    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4
+      ? Math.min(clientPhase, serverMaxPhase) as 1 | 2 | 3 | 4
+      : 1;
+    const safePhase = rawPhase;
     const safeTurnCount = turnCountInCurrentPhase ?? 0;
 
     // ─── POST-CRISIS MODE CHECK (decrement turns if in post-crisis) ───

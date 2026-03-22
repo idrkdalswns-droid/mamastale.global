@@ -116,8 +116,11 @@ export async function POST(request: NextRequest) {
     content: m.content,
   }));
 
-  // 현재 메시지 추가
-  history.push({ role: "user" as const, content: message });
+  // 현재 메시지 추가 (Security: 사용자 입력에서 제어 태그 strip)
+  const sanitizedMessage = message
+    .replace(/\[GENERATE_READY\]/gi, "")
+    .replace(/\[PHASE_READY\]/gi, "");
+  history.push({ role: "user" as const, content: sanitizedMessage });
 
   // 8. 시스템 프롬프트 조립
   let systemPrompt = assembleTeacherSystemPrompt(
@@ -237,12 +240,27 @@ export async function POST(request: NextRequest) {
           }).then(({ error }) => {
             if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
           }),
-          sb.client.from("teacher_sessions").update({
-            turn_count: newTurnCount,
-            current_phase: newPhase,
-          }).eq("id", sessionId).then(({ error }) => {
-            if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
-          }),
+          // Atomic turn increment (RPC) + phase update
+          (async () => {
+            // Try atomic RPC first, fallback to direct update
+            const { error: rpcErr } = await sb.client.rpc("increment_teacher_turn", {
+              p_session_id: sessionId,
+            });
+            if (rpcErr) {
+              // RPC not available — fallback to direct update
+              const { error } = await sb.client.from("teacher_sessions").update({
+                turn_count: newTurnCount,
+                current_phase: newPhase,
+              }).eq("id", sessionId);
+              if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
+            } else {
+              // RPC succeeded for turn_count, update phase separately
+              const { error } = await sb.client.from("teacher_sessions").update({
+                current_phase: newPhase,
+              }).eq("id", sessionId);
+              if (error) console.error("[Teacher Stream] Failed to update phase:", error.message);
+            }
+          })(),
         ]);
 
         // 5초 타임아웃 — 실패해도 done 이벤트는 반드시 전송

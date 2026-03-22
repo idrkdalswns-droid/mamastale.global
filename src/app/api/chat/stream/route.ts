@@ -336,6 +336,7 @@ export async function POST(request: NextRequest) {
   const readable = new ReadableStream({
     async start(controller) {
       let closed = false;
+      let timeoutCheckRef: ReturnType<typeof setInterval> | null = null;
       try {
         // Send initial metadata
         controller.enqueue(encoder.encode(
@@ -404,6 +405,7 @@ export async function POST(request: NextRequest) {
             stream.abort();
           }
         }, 5_000);
+        timeoutCheckRef = timeoutCheck;
 
         let fullText = "";
         let streamFailed = false;
@@ -434,6 +436,7 @@ export async function POST(request: NextRequest) {
               activeMaxTokens = fallback.maxTokens;
               wasFallback = true;
               clearInterval(timeoutCheck);
+              lastChunkTime = Date.now(); // Security: 폴백 시작 시 타임아웃 기준 리셋
 
               const fallbackStream = anthropic.messages.stream({
                 model: activeModel,
@@ -567,7 +570,7 @@ export async function POST(request: NextRequest) {
         ));
 
         // V5-FIX #14: Atomic close with try-catch to prevent double-close crash
-        if (!closed) { closed = true; try { controller.close(); } catch {} }
+        if (!closed) { closed = true; clearInterval(timeoutCheck); try { controller.close(); } catch {} }
 
         // Fire-and-forget logging
         logLLMCall({
@@ -591,6 +594,7 @@ export async function POST(request: NextRequest) {
         console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
         // V5-FIX #14: Atomic close in error handler
         if (!closed) {
+          if (timeoutCheckRef) clearInterval(timeoutCheckRef);
           try {
             controller.enqueue(encoder.encode(
               `data: ${JSON.stringify({
