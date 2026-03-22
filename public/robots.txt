@@ -5,5 +5,8 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /payment/
 Disallow: /access/
+Disallow: /library
+Disallow: /settings
+Disallow: /dashboard
 
-Sitemap: https://mamastale-global.pages.dev/sitemap.xml
+Sitemap: https://mamastale.com/sitemap.xml

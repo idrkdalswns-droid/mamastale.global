@@ -183,7 +183,7 @@ export default memo(function PhaseHeader({
         {showSettings && (
           <div
             ref={popupRef}
-            role="menu"
+            role="group" aria-label="글씨 크기 선택"
             className="absolute right-2 top-full mt-1 bg-white rounded-xl shadow-lg border border-black/5 p-2 flex gap-1.5 z-[110]"
             style={{ minWidth: 140 }}
           >
@@ -195,7 +195,7 @@ export default memo(function PhaseHeader({
                   setShowSettings(false);
                 }}
                 className="flex-1 py-1.5 min-h-[44px] rounded-lg text-center transition-all flex items-center justify-center"
-                role="menuitem"
+                role="radio"
                 style={{
                   fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,
                   background: fontSize === s ? p.accent : "transparent",

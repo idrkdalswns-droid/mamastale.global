@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     .from("stories")
     // R7-F1: Include cover_image, topic, metadata (for source detection)
     // Freemium v2: include is_unlocked for lock badge
-    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
+    .select("id, title, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false })

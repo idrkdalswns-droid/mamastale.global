@@ -386,7 +386,7 @@ export async function POST(request: NextRequest) {
 
         // V5-FIX #12: Faster initial timeout (30s) for first chunk, then 90s idle
         // R8-FIX(C1): Absolute timeout to prevent slow-drip resource exhaustion
-        const STREAM_INITIAL_TIMEOUT_MS = 30_000; // 30s for first chunk
+        const STREAM_INITIAL_TIMEOUT_MS = 45_000; // 45s for first chunk (Anthropic API 지연 대응)
         const STREAM_TIMEOUT_MS = 90_000; // 90s idle between chunks
         const STREAM_ABSOLUTE_TIMEOUT_MS = 300_000; // 5 minutes absolute max
         const streamStartTime = Date.now();

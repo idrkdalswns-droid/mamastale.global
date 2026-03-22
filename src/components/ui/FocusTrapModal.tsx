@@ -36,7 +36,7 @@ export function FocusTrapModal({ isOpen, onClose, children, label, className }: 
       if (!modal) return;
 
       const focusable = modal.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]'
       );
       if (focusable.length === 0) return;
 

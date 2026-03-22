@@ -129,6 +129,7 @@ function PricingContent() {
   const [sdkError, setSdkError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false); // ref 기반 즉시 더블클릭 방지
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   // Simplify: store only the type; derive amount/name via resolveProduct()
@@ -235,7 +236,8 @@ function PricingContent() {
   // ─── Direct Redirect Payment ───
   const handlePayment = useCallback(
     async (productType: PriceType) => {
-      if (isProcessing) return;
+      if (isProcessing || processingRef.current) return;
+      processingRef.current = true;
 
       // handlePayment is only called from confirmPayment, which requires auth.
       // Login redirect is handled in initiatePayment (the entry point).
@@ -290,6 +292,7 @@ function PricingContent() {
         }
       } finally {
         setIsProcessing(false);
+        processingRef.current = false;
       }
     },
     [isProcessing, user, tossClientKey]

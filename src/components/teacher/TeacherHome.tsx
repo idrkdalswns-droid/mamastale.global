@@ -256,7 +256,7 @@ export function TeacherHome({
                   {story.cover_image ? (
                     <img
                       src={story.cover_image}
-                      alt=""
+                      alt="장식 이미지"
                       className="w-12 h-16 rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (

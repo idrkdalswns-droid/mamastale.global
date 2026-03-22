@@ -248,3 +248,19 @@
     transform: none !important;
   }
 }
+
+/* backdrop-filter 미지원 브라우저 폴백 (구형 Android/Firefox) */
+@supports not (backdrop-filter: blur(1px)) {
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl {
+    background-color: rgba(var(--cream), 0.95) !important;
+  }
+  .dark .backdrop-blur-sm,
+  .dark .backdrop-blur-md,
+  .dark .backdrop-blur-lg,
+  .dark .backdrop-blur-xl {
+    background-color: rgba(var(--surface), 0.95) !important;
+  }
+}

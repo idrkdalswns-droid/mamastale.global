@@ -78,7 +78,7 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="w-full max-w-sm text-center">
             <div className="w-16 h-16 relative rounded-xl overflow-hidden mx-auto mb-3">
-              <Image src="/images/teacher/icon/key.jpeg" alt="" fill className="object-cover" sizes="64px" />
+              <Image src="/images/teacher/icon/key.jpeg" alt="인증 코드 아이콘" fill className="object-cover" sizes="64px" />
             </div>
             <h2 className="text-lg font-semibold text-brown mb-2">
               {existingSession.kindergartenName}

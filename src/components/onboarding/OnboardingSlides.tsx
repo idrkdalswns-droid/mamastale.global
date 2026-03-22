@@ -69,6 +69,19 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
+        {/* 닫기 버튼 */}
+        {onGoHome && (
+          <button
+            onClick={onGoHome}
+            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-brown-light/60 hover:text-brown active:scale-90 transition-all"
+            aria-label="온보딩 닫기"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+
         {/* Scrollable content area */}
         <div className="flex-1 flex flex-col items-center justify-center px-8 overflow-y-auto">
 

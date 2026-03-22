@@ -311,7 +311,7 @@ export function PopupBookViewer({
               >
                 <Image
                   src={images[idx]}
-                  alt=""
+                  alt="동화 장면"
                   fill
                   className="object-cover"
                   sizes="44px"
