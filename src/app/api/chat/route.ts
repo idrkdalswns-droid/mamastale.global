@@ -286,6 +286,18 @@ export async function POST(request: NextRequest) {
           reasoning: crisisResult.reasoning,
         }).catch(() => {});
 
+        // Slack Crisis Alert (fire-and-forget)
+        const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+        if (slackUrl) {
+          fetch(slackUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: `🚨 HIGH Crisis Detected\nCSSRS Level: ${crisisResult.cssrsLevel}\nKeywords: ${crisisResult.detectedKeywords.slice(0, 3).join(", ")}`,
+            }),
+          }).catch(() => {});
+        }
+
         return NextResponse.json({
           content: crisisResult.response!,
           phase: clientPhase || 1,

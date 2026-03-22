@@ -13,6 +13,7 @@ import PhaseRuleHint from "./PhaseRuleHint";
 import StoryCompleteCTA from "./StoryCompleteCTA";
 import PremiumUpgradeCTA from "./PremiumUpgradeCTA";
 import TurnFivePopup from "./TurnFivePopup";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 
@@ -301,13 +302,15 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
 
       {/* Turn-3 conversion popup — shown after 1.5s delay when free trial limit reached */}
       {turnFiveReady && freeLimitReached && !storyDone && (
-        <TurnFivePopup
-          isLoggedIn={!!user}
-          ticketsRemaining={ticketsRemaining}
-          onPersistChat={() => { persistToStorage(); saveDraft(); }}
-          onGoHome={onGoHome}
-          onTicketUsed={onTicketUsed}
-        />
+        <FocusTrapModal isOpen={true} onClose={onGoHome} label="무료 체험 안내">
+          <TurnFivePopup
+            isLoggedIn={!!user}
+            ticketsRemaining={ticketsRemaining}
+            onPersistChat={() => { persistToStorage(); saveDraft(); }}
+            onGoHome={onGoHome}
+            onTicketUsed={onTicketUsed}
+          />
+        </FocusTrapModal>
       )}
 
       {/* "다음" button — shown after story is done, before celebration */}
@@ -469,7 +472,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
           onSend={handleSend}
           isLoading={isLoading}
           phase={currentPhase}
-          disabled={freeLimitReached}
+          disabled={freeLimitReached || isOffline}
         />
       )}
 

@@ -96,13 +96,15 @@ export async function GET(
   }
 
   // R10-5: Fetch limit+1 to detect hasMore without separate count query
-  const COMMENT_LIMIT = 50;
+  const COMMENT_LIMIT = 20;
+  const page = Math.max(1, parseInt(new URL(request.url).searchParams.get("page") || "1"));
+  const offset = (page - 1) * COMMENT_LIMIT;
   const { data: comments } = await supabase
     .from("comments")
     .select("id, content, author_alias, created_at")
     .eq("story_id", storyId)
     .order("created_at", { ascending: true })
-    .limit(COMMENT_LIMIT + 1);
+    .range(offset, offset + COMMENT_LIMIT);
 
   const results = comments || [];
   const hasMore = results.length > COMMENT_LIMIT;
