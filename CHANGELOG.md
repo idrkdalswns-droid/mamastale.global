@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.28.4] - 2026-03-22
+
+### Fixed
+- 온보딩 스와이프 시 브라우저 뒤로가기 제스처 충돌 방지
+- TypingIndicator elapsed 무한 증가 → 50초 캡핑
+- 모바일 가상 키보드 올라올 때 채팅 스크롤 자동 재계산 (visualViewport API)
+- ChatContainer→PhaseHeader useCallback 최적화 (불필요 리렌더링 제거)
+- 색상 대비 WCAG AA 준수 (brown-pale/50 → brown-light/70, 7개 파일)
+- stories POST 비속어 필터 적용 (제목 + 장면 텍스트)
+- DB: 커뮤니티 쿼리 인덱스 추가 (is_public+created_at, like_count)
+- DB: crisis_events.detected_keywords NOT NULL 제약
+- DB: teacher_sessions FK ON DELETE RESTRICT
+
 ## [1.28.3] - 2026-03-22
 
 ### Security
