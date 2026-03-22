@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.28.6] - 2026-03-22
+
+### Fixed
+- 결제 성공 자동 리다이렉트 5초 → 15초 (사용자 읽기 시간)
+- 다크모드 brown-pale 밝기 상향 (가독성 개선)
+- 오프라인 상태에서 ChatInput 비활성화
+- TurnFivePopup 키보드 접근성 (FocusTrapModal)
+- 댓글 API 페이지네이션 (limit 20, page param)
+- HIGH Crisis Alert → Slack webhook 자동 알림
+
 ## [1.28.5] - 2026-03-22
 
 ### Fixed
