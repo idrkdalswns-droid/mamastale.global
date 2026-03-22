@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.28.3] - 2026-03-22
+
+### Security
+- Phase 시스템 서버 신뢰: 클라이언트가 Phase 4 강제 진입 불가
+- 선생님 모드 [GENERATE_READY]/[PHASE_READY] 태그 주입 방어
+- crisis_sessions RLS: 사용자 자신의 위기 세션만 조회 가능 (Supabase)
+
+### Fixed
+- SSE 폴백 타임아웃 리셋 (폴백 즉시 abort 방지)
+- SSE 스트림 인터벌 cleanup 보장 (리소스 누수 방지)
+- 스토리 저장 실패 시 티켓 자동 롤백
+- Teacher 턴 카운트 원자적 증가 (RPC + fallback)
+
 ## [1.28.2] - 2026-03-22
 
 ### Fixed
