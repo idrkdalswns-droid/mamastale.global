@@ -111,27 +111,27 @@ export default memo(function PhaseHeader({
 
         {/* Phase info */}
         <div
-          className="flex items-center justify-center gap-2 transition-opacity duration-300"
+          className="flex items-center justify-center gap-2 transition-opacity duration-300 px-14 min-w-0"
           style={{ opacity: isTransitioning ? 0 : 1 }}
         >
           <span
-            className="w-6 h-6 rounded-full overflow-hidden relative inline-block"
+            className="w-6 h-6 flex-shrink-0 rounded-full overflow-hidden relative inline-block"
             style={{ border: `1.5px solid ${p.accent}` }}
           >
             <Image src={p.icon} alt={p.name} fill className="object-cover" sizes="24px" />
           </span>
-          <div>
+          <div className="min-w-0">
             <div
-              className="text-xs font-semibold leading-tight"
+              className="text-xs font-semibold leading-tight truncate"
               style={{ color: p.text }}
             >
               {p.id}단계 · {p.name}
             </div>
             <div
-              className="text-[10px] font-light opacity-50 flex items-center gap-1.5"
+              className="text-[10px] font-light opacity-50 flex items-center gap-1.5 truncate"
               style={{ color: p.text }}
             >
-              <span>{p.theory}</span>
+              <span className="truncate">{p.theory}</span>
               <span className="inline-block w-0.5 h-0.5 rounded-full bg-current opacity-40" />
               {freeTrialMode && !storyDone && userMsgCount > 0 ? (
                 <span className="font-semibold" style={{ color: "#E07A5F", opacity: 1 }}>

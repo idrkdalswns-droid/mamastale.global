@@ -7,7 +7,8 @@ const KAKAO_CHANNEL_URL = "https://open.kakao.com/o/gSSkFmii";
 
 export function Footer() {
   const pathname = usePathname();
-  if (pathname.startsWith("/teacher")) return null;
+  // Hide on home SPA (chat lives here) and teacher mode
+  if (pathname === "/" || pathname.startsWith("/teacher")) return null;
 
   return (
     <footer className="w-full border-t border-brown-pale/10 mt-12 pt-6 pb-8 px-6">
