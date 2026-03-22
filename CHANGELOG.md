@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.28.5] - 2026-03-22
+
+### Fixed
+- 11팀 검수 CRITICAL 9건 수정
+  - 결제 더블클릭 방지 (ref 기반 즉시 guard)
+  - 온보딩 닫기 버튼 추가
+  - robots.txt sitemap URL + 보호 라우트 Disallow
+  - PhaseHeader ARIA role 수정 (menu → group)
+  - FocusTrapModal 포커스 순서 정리
+  - 빈 alt 이미지 3곳 수정
+  - backdrop-filter @supports 폴백
+  - 스트리밍 첫 청크 타임아웃 30s → 45s
+  - stories GET 응답에서 scenes 제외 (90% 경량화)
+
 ## [1.28.4] - 2026-03-22
 
 ### Fixed
