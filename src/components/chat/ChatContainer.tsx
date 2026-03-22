@@ -166,6 +166,24 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     }
   }, [messages, isLoading]);
 
+  // 가상 키보드 올라올 때 스크롤 재계산 (모바일)
+  useEffect(() => {
+    const onResize = () => {
+      const el = scrollRef.current;
+      if (el && !userScrolledRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+    };
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (vv) {
+      vv.addEventListener("resize", onResize);
+      return () => vv.removeEventListener("resize", onResize);
+    }
+    // Fallback: iOS 15.3 이하
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // When story is done, scroll to bottom so farewell message is visible,
   // then auto-show celebration after 5 seconds
   useEffect(() => {
@@ -208,6 +226,21 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     [sendMessage]
   );
 
+  const handleGoHome = useCallback(() => {
+    const count = messages.filter(m => m.role === "user").length;
+    if (count > 0 && !storyDone) {
+      setShowHomeConfirm(true);
+    } else {
+      onGoHome();
+    }
+  }, [messages, storyDone, onGoHome]);
+
+  const handleSaveDraft = useCallback(() => {
+    saveDraft();
+    setShowSaveToast(true);
+    setTimeout(() => setShowSaveToast(false), 2000);
+  }, [saveDraft]);
+
   const p = PHASES[currentPhase];
 
   return (
@@ -225,19 +258,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         userMsgCount={userMsgCount}
         freeTurnLimit={FREE_TURN_LIMIT}
         storyDone={storyDone}
-        onGoHome={() => {
-          const userMsgCount = messages.filter(m => m.role === "user").length;
-          if (userMsgCount > 0 && !storyDone) {
-            setShowHomeConfirm(true);
-          } else {
-            onGoHome();
-          }
-        }}
-        onSaveDraft={() => {
-          saveDraft();
-          setShowSaveToast(true);
-          setTimeout(() => setShowSaveToast(false), 2000);
-        }}
+        onGoHome={handleGoHome}
+        onSaveDraft={handleSaveDraft}
       />
 
       {/* Offline banner */}

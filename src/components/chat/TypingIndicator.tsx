@@ -14,7 +14,7 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
+    const interval = setInterval(() => setElapsed((s) => Math.min(s + 1, 50)), 1000);
     return () => clearInterval(interval);
   }, []);
 

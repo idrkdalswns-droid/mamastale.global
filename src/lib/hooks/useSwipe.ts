@@ -23,6 +23,7 @@ export function useSwipe({ onSwipeLeft, onSwipeRight, threshold = 50 }: UseSwipe
       // Only trigger if horizontal swipe is dominant
       if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) return;
 
+      e.preventDefault(); // 브라우저 뒤로가기 제스처 방지
       if (dx < 0) onSwipeLeft?.();
       else onSwipeRight?.();
     },

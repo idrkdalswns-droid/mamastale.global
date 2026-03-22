@@ -219,7 +219,7 @@ export function TeacherPreview({
                              ? "bg-coral text-white"
                              : hasContent
                                ? "bg-paper/60 text-brown-light hover:bg-paper"
-                               : "bg-paper/30 text-brown-pale/50 cursor-not-allowed"
+                               : "bg-paper/30 text-brown-light/70 cursor-not-allowed"
                          }`}
             >
               <Image

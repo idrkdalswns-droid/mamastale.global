@@ -83,7 +83,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   <span className="text-[9px] font-light" style={{ color: step.accent }}>{step.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <span className="text-[10px] text-brown-pale/40 -mt-2.5">→</span>
+                  <span className="text-[10px] text-brown-light/60 -mt-2.5">→</span>
                 )}
               </div>
             ))}
@@ -180,7 +180,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                 {selectedAgeOption.desc}
               </p>
             ) : (
-              <p className="text-[11px] text-brown-pale/50 font-light text-center">
+              <p className="text-[11px] text-brown-light/70 font-light text-center">
                 선택하지 않아도 시작할 수 있어요
               </p>
             )}

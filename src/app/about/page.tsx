@@ -165,7 +165,7 @@ export default function AboutPage() {
                 <span className="text-[8px] text-brown-pale font-light whitespace-nowrap">{item.sub}</span>
               </div>
               {i < 3 && (
-                <span className="text-[10px] text-brown-pale/40 -mt-5 mx-0.5" aria-hidden="true">→</span>
+                <span className="text-[10px] text-brown-light/60 -mt-5 mx-0.5" aria-hidden="true">→</span>
               )}
             </div>
           ))}

@@ -310,7 +310,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
             );
           })}
         </div>
-        <p className="text-[10px] text-brown-pale/50 font-light text-center mt-1.5">
+        <p className="text-[10px] text-brown-light/70 font-light text-center mt-1.5">
           ← 스와이프해서 더 보기 →
         </p>
       </motion.div>
