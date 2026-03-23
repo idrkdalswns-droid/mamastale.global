@@ -7,7 +7,7 @@
  * @module teacher/worksheet/WorksheetWizard
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { getQuestionsForActivity } from "@/lib/worksheet/types";
@@ -88,7 +88,17 @@ export function WorksheetWizard() {
   } = useWorksheetStore();
 
   const [hydrated, setHydrated] = useState(false);
+  const [worksheetTickets, setWorksheetTickets] = useState<number | null>(null);
   useEffect(() => setHydrated(true), []);
+
+  // Fetch worksheet ticket count
+  const fetchTickets = useCallback(() => {
+    fetch("/api/tickets")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setWorksheetTickets(d.worksheet_tickets_remaining ?? 0); })
+      .catch(() => {});
+  }, []);
+  useEffect(() => { if (isOpen) fetchTickets(); }, [isOpen, fetchTickets]);
 
   // Build step list dynamically based on activity type
   const steps = useMemo(() => buildStepList(activityType), [activityType]);
@@ -124,6 +134,16 @@ export function WorksheetWizard() {
             닫기
           </button>
         </div>
+
+        {/* Ticket Status */}
+        {worksheetTickets !== null && currentStep < resultStepIndex && (
+          <div className="px-4 py-1.5 border-b border-brown-pale/10 flex justify-between items-center text-[11px]">
+            <span className="text-brown-light">🎟️ 활동지 티켓 {worksheetTickets}장</span>
+            <a href="/pricing?tab=worksheet&returnTo=teacher" className="text-brown-pale underline underline-offset-2">
+              충전
+            </a>
+          </div>
+        )}
 
         {/* Progress Bar */}
         {showProgress && (

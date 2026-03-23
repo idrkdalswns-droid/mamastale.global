@@ -189,6 +189,15 @@ export function TeacherHome({
           )}
         </button>
 
+        {/* 활동지 티켓 안내 */}
+        <a
+          href="/pricing?tab=worksheet&returnTo=teacher"
+          className="block mt-3 px-4 py-2.5 rounded-xl text-center text-[13px] text-brown-light transition-all active:scale-[0.98]"
+          style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.2)" }}
+        >
+          🎟️ 활동지 티켓 구매 · <span className="font-medium text-brown">1건 ₩1,900</span>
+        </a>
+
         {/* 우리 유치원 서재 */}
         <div className="mt-8">
           <h3 className="text-sm font-medium text-brown mb-3">우리 유치원 서재</h3>
