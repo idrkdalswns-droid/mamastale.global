@@ -444,8 +444,8 @@ export async function POST(request: NextRequest) {
                 ...streamParams,
               });
 
-              // R4-FIX: Fallback stream must also have absolute timeout (parity with primary)
-              const fbStartTime = Date.now();
+              // R4-FIX: Fallback stream shares absolute timeout with primary (H-3: prevents 9.5min total)
+              const fbStartTime = streamStartTime; // Use primary start time, not Date.now()
               const fbTimeoutCheck = setInterval(() => {
                 const now = Date.now();
                 if (now - lastChunkTime > STREAM_TIMEOUT_MS) {

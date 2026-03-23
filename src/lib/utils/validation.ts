@@ -59,8 +59,10 @@ const PROFANITY_LIST = [
  * Strips whitespace AND special characters to prevent bypass via "시.발", "병_신" etc.
  */
 export function containsProfanity(text: string): boolean {
+  // H-4: NFD→NFC 재합성으로 혼합 자모 우회 방지 (예: "시ㅂ발")
   const normalized = text
-    .normalize("NFC")
+    .normalize("NFD")  // 완전 분해
+    .normalize("NFC")  // 재합성 (합성 가능한 자모 조합이 합성됨)
     .replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "") // zero-width & invisible chars
     .replace(/[\s\.\,\!\?\-\_\*\#\@\/\\~`'"(){}[\]:;<>|+=%^&]/g, "")
     .toLowerCase();

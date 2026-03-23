@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.30.3] - 2026-03-23
+
+### Fixed
+- 위기 응답 6개 언어 지원 (ko/en/ja/zh/ar/fr) — 감지 키워드 언어별 긴급 전화번호 표시
+- 온보딩 역할 선택 버튼 터치 타겟 44px 미만 → min-h-[44px] 추가
+- ErrorBoundary 에러 리포트 fetch 5초 타임아웃 추가
+- 계정 삭제 확인 문자열 trim 미적용 수정
+- ChatInput 디바운스 중 시각적 피드백 (opacity-50) 추가
+- StoryViewer 잠긴 페이지 스크린리더 aria-label 개선
+- ChatContainer aria-live 이중 선언 제거
+- 커뮤니티 검색 LIKE 패턴 특수문자 이스케이프
+- Stripe 웹훅 에러 메시지에서 DB 정보 제거
+- TurnFivePopup 긴 이름 truncate 처리
+- 토스트 알림 노치 safe-area-inset-top 적용
+- prefers-reduced-motion 필수 애니메이션 보존
+- overflow-x: hidden → clip (포커스 인디케이터 보존)
+- payment/success 자동 리다이렉트 interval clearInterval 누락 수정
+
+## [1.30.2] - 2026-03-23
+
+### Fixed
+- /api/chat 게스트 턴 영속적 제한 추가 (stream 엔드포인트와 동일한 persistent rate limit)
+- sessionId Zod 검증 빈 문자열 허용 → min(1) + regex `+` 로 차단
+- ChatContainer savingRef setTimeout 기반 → Promise.finally 기반 (데드락 방지)
+- TurnFivePopup 첫 CTA 버튼 autoFocus 추가 (접근성)
+- 선생님 코드 인증 user 단위 rate limit 추가 (IP rotation 우회 방지)
+- 나머지 11개 API 라우트 인라인 rate limit Map → createInMemoryLimiter 통합
+
+## [1.30.1] - 2026-03-23
+
+### Refactored
+- 10개 API 라우트의 인라인 rate limiting을 createInMemoryLimiter 팩토리 함수로 통합
+- RATE_KEYS 상수 객체로 key prefix 중앙화 (오타 방지)
+- CLAUDE.md Rate Limiting 패턴 섹션 업데이트
+
 ## [1.30.0] - 2026-03-23
 
 ### Changed

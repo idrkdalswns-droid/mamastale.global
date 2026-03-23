@@ -9,4 +9,4 @@ Disallow: /library
 Disallow: /settings
 Disallow: /dashboard
 
-Sitemap: https://mamastale.com/sitemap.xml
+Sitemap: https://mamastale-global.pages.dev/sitemap.xml
