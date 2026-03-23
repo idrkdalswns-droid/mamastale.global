@@ -99,12 +99,21 @@ export function TeacherHome({
               {kindergartenName || "선생님 모드"}
             </p>
           </div>
-          <button
-            onClick={() => signOut()}
-            className="text-xs text-brown-pale active:scale-[0.95] transition-transform"
-          >
-            로그아웃
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/pricing?tab=worksheet&returnTo=teacher"
+              className="text-xs text-brown-light p-2 active:scale-[0.95] transition-transform"
+            >
+              티켓
+            </a>
+            <span className="text-brown-pale/30">·</span>
+            <button
+              onClick={() => signOut()}
+              className="text-xs text-brown-pale p-2 active:scale-[0.95] transition-transform"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
 
@@ -188,15 +197,6 @@ export function TeacherHome({
             "새 동화 만들기"
           )}
         </button>
-
-        {/* 활동지 티켓 안내 */}
-        <a
-          href="/pricing?tab=worksheet&returnTo=teacher"
-          className="block mt-3 px-4 py-2.5 rounded-xl text-center text-[13px] text-brown-light transition-all active:scale-[0.98]"
-          style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.2)" }}
-        >
-          🎟️ 활동지 티켓 구매 · <span className="font-medium text-brown">1건 ₩1,900</span>
-        </a>
 
         {/* 우리 유치원 서재 */}
         <div className="mt-8">

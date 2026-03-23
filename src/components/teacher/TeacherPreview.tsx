@@ -184,7 +184,7 @@ export function TeacherPreview({
             onClick={onBack}
             className="text-sm text-brown-light"
           >
-            ← 돌아가기
+            ← 서재로
           </button>
         )}
         <h1 className="text-base font-semibold text-brown truncate flex-1 text-center">

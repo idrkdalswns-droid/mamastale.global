@@ -402,6 +402,7 @@ export default function TeacherPage() {
         <TeacherPreview
           story={store.generatedStory}
           onNewStory={() => store.setScreenState("HOME")}
+          onBack={() => store.setScreenState("HOME")}
         />
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
