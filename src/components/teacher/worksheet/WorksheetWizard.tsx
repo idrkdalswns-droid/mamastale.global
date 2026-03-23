@@ -7,7 +7,7 @@
  * @module teacher/worksheet/WorksheetWizard
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { getQuestionsForActivity } from "@/lib/worksheet/types";
@@ -89,7 +89,15 @@ export function WorksheetWizard() {
 
   const [hydrated, setHydrated] = useState(false);
   const [worksheetTickets, setWorksheetTickets] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => setHydrated(true), []);
+
+  // Reset scroll position when step changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [currentStep]);
 
   // Fetch worksheet ticket count
   const fetchTickets = useCallback(() => {
@@ -149,12 +157,12 @@ export function WorksheetWizard() {
         {showProgress && (
           <DynamicProgressBar
             current={currentStep}
-            total={confirmStepIndex}
+            total={confirmStepIndex + 1}
           />
         )}
 
         {/* Step Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 relative">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 relative">
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={currentStep}
