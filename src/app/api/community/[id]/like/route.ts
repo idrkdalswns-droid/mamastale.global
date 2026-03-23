@@ -3,92 +3,16 @@ import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 // FI-5: Static import instead of dynamic import in hot path
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// ─── Guest like rate limiting (per-IP, per-isolate) ───
-// HIGH #3 FIX: Tightened from 5/min to 2/5min per IP + daily cap
-const GUEST_LIKE_WINDOW = 300_000; // 5 minutes
-const GUEST_LIKE_LIMIT = 2; // max 2 guest likes per 5 minutes per IP
-const guestLikeMap = new Map<string, { count: number; resetAt: number }>();
-
-// HIGH #3 FIX: Daily cap to limit total guest likes per IP per day (per-isolate)
-const GUEST_DAILY_LIMIT = 10; // max 10 guest likes per day per IP
-const guestDailyMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkGuestLikeLimit(ip: string): boolean {
-  const now = Date.now();
-  // Lazy cleanup
-  if (guestLikeMap.size > 300) {
-    for (const [k, v] of guestLikeMap) {
-      if (now > v.resetAt) guestLikeMap.delete(k);
-    }
-  }
-  if (guestDailyMap.size > 300) {
-    for (const [k, v] of guestDailyMap) {
-      if (now > v.resetAt) guestDailyMap.delete(k);
-    }
-  }
-
-  // Check daily cap first
-  const daily = guestDailyMap.get(ip);
-  if (daily && now < daily.resetAt && daily.count >= GUEST_DAILY_LIMIT) return false;
-
-  // Check burst rate
-  const entry = guestLikeMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    guestLikeMap.set(ip, { count: 1, resetAt: now + GUEST_LIKE_WINDOW });
-  } else {
-    if (entry.count >= GUEST_LIKE_LIMIT) return false;
-    entry.count++;
-  }
-
-  // Increment daily counter
-  if (!daily || now > daily.resetAt) {
-    guestDailyMap.set(ip, { count: 1, resetAt: now + 86_400_000 }); // 24h
-  } else {
-    daily.count++;
-  }
-
-  return true;
-}
-
-// R2-1: Authenticated like rate limiting (per-userId, per-isolate)
-const authLikeRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkAuthLikeRate(userId: string): boolean {
-  const now = Date.now();
-  if (authLikeRateMap.size > 300) {
-    for (const [k, v] of authLikeRateMap) { if (now > v.resetAt) authLikeRateMap.delete(k); }
-  }
-  const entry = authLikeRateMap.get(userId);
-  if (!entry || now > entry.resetAt) {
-    authLikeRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 15) return false; // 15 toggles/min per user
-  entry.count++;
-  return true;
-}
-
-// CTO-FIX: IP+story deduplication to prevent guest like inflation
-// Same IP can only like the same story once per 24h window (per-isolate)
-const GUEST_DEDUP_TTL = 86_400_000; // 24 hours
-const guestDedupMap = new Map<string, number>(); // key: "ip:storyId" → expiresAt
-
-function isGuestDuplicate(ip: string, storyId: string): boolean {
-  const now = Date.now();
-  // Lazy cleanup when map grows too large
-  if (guestDedupMap.size > 2000) {
-    for (const [k, v] of guestDedupMap) {
-      if (now > v) guestDedupMap.delete(k);
-    }
-  }
-  const key = `${ip}:${storyId}`;
-  const expiresAt = guestDedupMap.get(key);
-  if (expiresAt && now < expiresAt) return true; // already liked
-  guestDedupMap.set(key, now + GUEST_DEDUP_TTL);
-  return false;
-}
+// ─── Rate limiters (each has its own isolated Map) ───
+const guestBurstLimiter = createInMemoryLimiter(RATE_KEYS.LIKE_GUEST_BURST);
+const guestDailyLimiter = createInMemoryLimiter(RATE_KEYS.LIKE_GUEST_DAILY);
+const dedupLimiter = createInMemoryLimiter(RATE_KEYS.LIKE_DEDUP, { maxEntries: 2000 });
+const authLimiter = createInMemoryLimiter(RATE_KEYS.LIKE_AUTH);
+const checkLimiter = createInMemoryLimiter(RATE_KEYS.LIKE_CHECK);
 
 // POST: Toggle like (authenticated) or guest like (no auth, rate-limited)
 export async function POST(
@@ -118,8 +42,8 @@ export async function POST(
     }
   }
 
-  // R2-1: Rate limit authenticated like toggles
-  if (user && !checkAuthLikeRate(user.id)) {
+  // R2-1: Rate limit authenticated like toggles (15/min per user)
+  if (user && !authLimiter.check(user.id, 15, 60_000)) {
     return sb.applyCookies(NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }
@@ -129,7 +53,8 @@ export async function POST(
   // Guest like — rate-limited + dedup, increment counter only
   if (!user) {
     const ip = getClientIP(request);
-    if (!checkGuestLikeLimit(ip)) {
+    // Guest burst rate (2 per 5min) + daily cap (10 per 24h)
+    if (!guestBurstLimiter.check(ip, 2, 300_000) || !guestDailyLimiter.check(ip, 10, 86_400_000)) {
       return sb.applyCookies(NextResponse.json(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
         { status: 429 }
@@ -137,7 +62,8 @@ export async function POST(
     }
 
     // CTO-FIX: Prevent same IP liking the same story repeatedly
-    if (isGuestDuplicate(ip, storyId)) {
+    // dedupLimiter.check returns true=allowed (first time), false=duplicate
+    if (!dedupLimiter.check(`${ip}:${storyId}`, 1, 86_400_000)) {
       return sb.applyCookies(NextResponse.json({ liked: true, guest: true, duplicate: true }));
     }
 
@@ -163,7 +89,7 @@ export async function POST(
       // R2-2: Roll back dedup on RPC failure so user can retry
       if (rpcError) {
         console.error("[Like] Guest increment failed:", rpcError.code);
-        guestDedupMap.delete(`${ip}:${storyId}`);
+        dedupLimiter.reset(`${ip}:${storyId}`);
         return sb.applyCookies(NextResponse.json(
           { error: "좋아요 처리에 실패했습니다." },
           { status: 500 }
@@ -232,23 +158,6 @@ export async function POST(
   }
 }
 
-// R2-FIX: Rate limit like status GET (prevent enumeration)
-const likeCheckRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkLikeCheckRate(ip: string): boolean {
-  const now = Date.now();
-  if (likeCheckRateMap.size > 300) {
-    for (const [k, v] of likeCheckRateMap) { if (now > v.resetAt) likeCheckRateMap.delete(k); }
-  }
-  const entry = likeCheckRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    likeCheckRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count++;
-  return true;
-}
-
 // GET: Check if current user liked this story
 export async function GET(
   request: NextRequest,
@@ -258,7 +167,7 @@ export async function GET(
 
   // R2-FIX: Rate limit like check (30/min per IP)
   const ip = getClientIP(request);
-  if (!checkLikeCheckRate(ip)) {
+  if (!checkLimiter.check(ip, 30, 60_000)) {
     return NextResponse.json({ liked: false });
   }
 

@@ -517,19 +517,14 @@ async function resolveUser(sb, request: NextRequest) {
 ### Rate Limiting 패턴
 
 ```typescript
-const rateMap = new Map<string, { count: number; reset: number }>();
+// 비-LLM 라우트: createInMemoryLimiter (namespace별 독립 Map)
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+const limiter = createInMemoryLimiter(RATE_KEYS.YOUR_ENDPOINT);
+// 사용: if (!limiter.check(key, limit, windowMs)) return 429;
 
-function checkRate(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  const entry = rateMap.get(key);
-  if (!entry || now > entry.reset) {
-    rateMap.set(key, { count: 1, reset: now + windowMs });
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
-}
+// LLM 라우트 (chat, stream): checkRateLimitPersistent (Supabase-backed)
+import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+const withinLimit = await checkRateLimitPersistent(key, limit, windowSeconds);
 ```
 
 ---

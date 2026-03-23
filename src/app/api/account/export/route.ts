@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// JP-05: Rate limiting for export endpoint
-const exportRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkExportRateLimit(userId: string): boolean {
-  const now = Date.now();
-  if (exportRateMap.size > 100) {
-    for (const [k, v] of exportRateMap) { if (now > v.resetAt) exportRateMap.delete(k); }
-  }
-  const entry = exportRateMap.get(userId);
-  if (!entry || now > entry.resetAt) {
-    exportRateMap.set(userId, { count: 1, resetAt: now + 3_600_000 }); // 1 hour window
-    return true;
-  }
-  if (entry.count >= 3) return false; // 3 exports per hour
-  entry.count++;
-  return true;
-}
+const exportLimiter = createInMemoryLimiter(RATE_KEYS.ACCOUNT_EXPORT, { maxEntries: 100 });
 
 // GDPR Art. 20: Right to Data Portability
 export async function GET(request: NextRequest) {
@@ -40,8 +26,8 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
-  // JP-05: Rate limit exports
-  if (!checkExportRateLimit(user.id)) {
+  // JP-05: Rate limit exports (3 per hour per user)
+  if (!exportLimiter.check(user.id, 3, 3_600_000)) {
     return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429 }));
   }
 

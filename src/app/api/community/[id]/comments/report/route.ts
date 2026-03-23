@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
@@ -9,27 +10,7 @@ const reportSchema = z.object({
   commentId: z.string().uuid(),
 });
 
-// ─── Rate limiting for comment reports (prevent spam abuse) ───
-const REPORT_RATE_WINDOW = 300_000; // 5 minutes
-const REPORT_RATE_LIMIT = 10; // max 10 reports per 5 min per IP
-const reportRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkReportRate(key: string): boolean {
-  const now = Date.now();
-  if (reportRateMap.size > 300) {
-    for (const [k, v] of reportRateMap) {
-      if (now > v.resetAt) reportRateMap.delete(k);
-    }
-  }
-  const entry = reportRateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    reportRateMap.set(key, { count: 1, resetAt: now + REPORT_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= REPORT_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+const reportLimiter = createInMemoryLimiter(RATE_KEYS.COMMENT_REPORT);
 
 export async function POST(
   request: NextRequest,
@@ -37,9 +18,9 @@ export async function POST(
 ) {
   const { id: storyId } = await params;
 
-  // Rate limit by IP
+  // Rate limit by IP (10 per 5min)
   const ip = getClientIP(request);
-  if (!checkReportRate(ip)) {
+  if (!reportLimiter.check(ip, 10, 300_000)) {
     return NextResponse.json(
       { error: "신고 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

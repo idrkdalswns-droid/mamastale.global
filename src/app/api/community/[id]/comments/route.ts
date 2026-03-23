@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
@@ -12,44 +13,8 @@ const commentSchema = z.object({
   authorAlias: z.string().max(50).optional().nullable(),
 });
 
-// R6-FIX: Rate limit comments GET (prevent scraping)
-const commentGetRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkCommentGetRate(ip: string): boolean {
-  const now = Date.now();
-  if (commentGetRateMap.size > 300) {
-    for (const [k, v] of commentGetRateMap) { if (now > v.resetAt) commentGetRateMap.delete(k); }
-  }
-  const entry = commentGetRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    commentGetRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false; // 30/min per IP
-  entry.count++;
-  return true;
-}
-
-// P1-FIX: Rate limiting for comment POST (prevent spam)
-const COMMENT_RATE_WINDOW = 60_000; // 1 minute
-const COMMENT_RATE_LIMIT = 5; // max 5 comments per minute per IP
-const commentRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkCommentRate(key: string): boolean {
-  const now = Date.now();
-  if (commentRateMap.size > 300) {
-    for (const [k, v] of commentRateMap) {
-      if (now > v.resetAt) commentRateMap.delete(k);
-    }
-  }
-  const entry = commentRateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    commentRateMap.set(key, { count: 1, resetAt: now + COMMENT_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= COMMENT_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+const commentGetLimiter = createInMemoryLimiter(RATE_KEYS.COMMENT_GET);
+const commentPostLimiter = createInMemoryLimiter(RATE_KEYS.COMMENT_POST);
 
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
@@ -68,7 +33,7 @@ export async function GET(
 ) {
   // R6-FIX: Rate limit comment reads (30/min per IP)
   const readIp = getClientIP(request);
-  if (!checkCommentGetRate(readIp)) {
+  if (!commentGetLimiter.check(readIp, 30, 60_000)) {
     return NextResponse.json({ comments: [] });
   }
 
@@ -120,9 +85,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // P1-FIX: Rate limit comment submissions
+  // P1-FIX: Rate limit comment submissions (5/min per IP)
   const ip = getClientIP(request);
-  if (!checkCommentRate(ip)) {
+  if (!commentPostLimiter.check(ip, 5, 60_000)) {
     return NextResponse.json(
       { error: "댓글은 1분에 5개까지 등록 가능합니다." },
       { status: 429 }
@@ -155,7 +120,7 @@ export async function POST(
   }
 
   // R2-3: Rate limit by userId (prevents IP rotation bypass)
-  if (!checkCommentRate(`user:${user.id}`)) {
+  if (!commentPostLimiter.check(`user:${user.id}`, 5, 60_000)) {
     return sb.applyCookies(NextResponse.json(
       { error: "댓글은 1분에 5개까지 등록 가능합니다." },
       { status: 429 }

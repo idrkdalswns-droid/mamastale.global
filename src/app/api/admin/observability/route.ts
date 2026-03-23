@@ -15,30 +15,16 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 // Admin user IDs (hardcoded for now — move to env/DB later)
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
 
-// R8-FIX: Rate limit admin endpoint (10 requests/min per IP)
-const adminRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkAdminRate(ip: string): boolean {
-  const now = Date.now();
-  if (adminRateMap.size > 50) {
-    for (const [k, v] of adminRateMap) { if (now > v.resetAt) adminRateMap.delete(k); }
-  }
-  const entry = adminRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    adminRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
+const adminLimiter = createInMemoryLimiter(RATE_KEYS.ADMIN, { maxEntries: 50 });
 
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkAdminRate(ip)) {
+  if (!adminLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
   // ─── Auth check ───

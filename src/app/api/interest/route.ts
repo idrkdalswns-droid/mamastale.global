@@ -2,30 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 import { getClientIP, isValidUUID } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// ─── Rate limiting (5 per 5min per IP) ───
-const RATE_WINDOW = 300_000;
-const RATE_LIMIT = 5;
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRate(ip: string): boolean {
-  const now = Date.now();
-  if (rateMap.size > 300) {
-    for (const [k, v] of rateMap) {
-      if (now > v.resetAt) rateMap.delete(k);
-    }
-  }
-  const entry = rateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+const interestLimiter = createInMemoryLimiter(RATE_KEYS.INTEREST);
 
 const interestSchema = z.object({
   feature_type: z.enum(["illustration", "video_story"]),
@@ -35,7 +16,7 @@ const interestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkRate(ip)) {
+  if (!interestLimiter.check(ip, 5, 300_000)) {
     return NextResponse.json(
       { error: "잠시 후 다시 시도해 주세요." },
       { status: 429 }

@@ -3,30 +3,11 @@ import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 // CA-7: Import shared isValidUUID instead of inline regex
 import { getClientIP, isValidUUID, sanitizeText } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// ─── Rate limiting (per-IP, per-isolate) ───
-const FEEDBACK_RATE_WINDOW = 300_000; // 5 minutes
-const FEEDBACK_RATE_LIMIT = 5; // max 5 feedback submissions per 5 min
-const feedbackRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkFeedbackRateLimit(ip: string): boolean {
-  const now = Date.now();
-  if (feedbackRateMap.size > 300) {
-    for (const [k, v] of feedbackRateMap) {
-      if (now > v.resetAt) feedbackRateMap.delete(k);
-    }
-  }
-  const entry = feedbackRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    feedbackRateMap.set(ip, { count: 1, resetAt: now + FEEDBACK_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= FEEDBACK_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+const feedbackLimiter = createInMemoryLimiter(RATE_KEYS.FEEDBACK);
 
 // R8-1: Require at least one rating or free-text to prevent empty feedback spam
 const feedbackSchema = z.object({
@@ -43,9 +24,9 @@ const feedbackSchema = z.object({
 );
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  // Rate limiting (5 per 5min per IP)
   const ip = getClientIP(request);
-  if (!checkFeedbackRateLimit(ip)) {
+  if (!feedbackLimiter.check(ip, 5, 300_000)) {
     return NextResponse.json(
       { error: "피드백은 5분에 5건까지 등록 가능합니다." },
       { status: 429 }

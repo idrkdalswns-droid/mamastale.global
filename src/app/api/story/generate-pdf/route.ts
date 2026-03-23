@@ -2,25 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// Rate limiting for PDF generation
-const pdfRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkPdfRateLimit(ip: string): boolean {
-  const now = Date.now();
-  if (pdfRateMap.size > 300) {
-    for (const [k, v] of pdfRateMap) { if (now > v.resetAt) pdfRateMap.delete(k); }
-  }
-  const entry = pdfRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    pdfRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false; // 10 per minute
-  entry.count++;
-  return true;
-}
+const pdfLimiter = createInMemoryLimiter(RATE_KEYS.PDF);
 
 /** Decode pre-encoded HTML entities — loops to handle multi-level encoding */
 function decodeHtmlEntities(text: string): string {
@@ -88,9 +74,9 @@ const pdfRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  // Rate limiting (10 per minute per IP)
   const ip = getClientIP(request);
-  if (!checkPdfRateLimit(ip)) {
+  if (!pdfLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 

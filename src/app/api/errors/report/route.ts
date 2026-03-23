@@ -13,31 +13,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseClientErrorReport } from "@/lib/utils/error-tracker";
 import { logEvent } from "@/lib/utils/llm-logger";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
-// Simple in-memory rate limit for error reports
-const reportMap = new Map<string, { count: number; reset: number }>();
-
-function checkReportLimit(ip: string): boolean {
-  const now = Date.now();
-  // P1-FIX: Lazy cleanup to prevent unbounded memory growth
-  if (reportMap.size > 300) {
-    for (const [k, v] of reportMap) {
-      if (now > v.reset) reportMap.delete(k);
-    }
-  }
-  const entry = reportMap.get(ip);
-  if (!entry || now > entry.reset) {
-    reportMap.set(ip, { count: 1, reset: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
+const errorReportLimiter = createInMemoryLimiter(RATE_KEYS.ERROR_REPORT);
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkReportLimit(ip)) {
+  if (!errorReportLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json({ error: "too many reports" }, { status: 429 });
   }
 
