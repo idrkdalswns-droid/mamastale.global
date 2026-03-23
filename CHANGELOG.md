@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.29.0] - 2026-03-23
+
+### Added
+- 선생님 모드 9종 활동지 시스템 (색칠놀이, 스토리맵, 캐릭터카드, 감정, 낱말탐험, 나라면?, 말풍선, 역할놀이, 독후활동)
+- 활동지 결제 연동 (₩1,900/건, ₩7,600/5건, 론칭 할인 20%)
+- 활동지 티켓 별도 관리 (worksheet_tickets_remaining)
+- 첫 활동지 1건 무료 정책
+- Claude Haiku 4.5/Sonnet 4.5 모델 라우팅
+- 9종 HTML 렌더링 템플릿 + A4 인쇄 최적화
+- 5레이어 모듈형 프롬프트 시스템 (Base+Activity+Age+Character+ContentFocus)
+- Zustand 위자드 상태 관리 + Framer Motion 전환
+- worksheet_outputs DB 테이블 + RLS + 원자적 티켓 차감 RPC
+
+### Fixed
+- 활동지 생성 전 티켓 잔여 사전 검증 (AI 비용 낭비 방지)
+- adminClient null assertion → 안전한 null 체크
+- 생성 중 beforeunload 이탈 방지
+- Toss 결제 확인 시 동화/활동지 상품 타입 분기 (resolveTicketType)
+
 ## [1.28.6] - 2026-03-22
 
 ### Fixed
