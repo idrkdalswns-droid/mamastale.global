@@ -25,6 +25,10 @@ const MODEL_HAIKU = "claude-haiku-3-5-20241022";
 const MODEL_SONNET = "claude-sonnet-4-20250514";
 const MODEL_OPUS = "claude-opus-4-20250514";
 
+// Worksheet-specific models (구조화 출력 지원)
+const MODEL_HAIKU_45 = "claude-haiku-4-5-20251001";
+const MODEL_SONNET_45 = "claude-sonnet-4-5-20250514";
+
 const MAX_TOKENS_HAIKU = 4096;
 const MAX_TOKENS_SONNET = 4096;
 const MAX_TOKENS_OPUS = 8192;
@@ -127,9 +131,32 @@ export function getFallbackModel(currentModel: string): ModelSelection | null {
   }
 }
 
+/**
+ * Select the optimal model for worksheet generation.
+ * Creative types (what_if, speech_bubble, roleplay_script) use Sonnet 4.5.
+ * Standard types use Haiku 4.5 (구조화 출력 지원, 3x cheaper).
+ */
+export function selectWorksheetModel(activityType: string): ModelSelection {
+  const CREATIVE_TYPES = ["what_if", "speech_bubble", "roleplay_script"];
+  if (CREATIVE_TYPES.includes(activityType)) {
+    return {
+      model: MODEL_SONNET,
+      maxTokens: 4096,
+      reasoning: "worksheet_creative_sonnet",
+    };
+  }
+  return {
+    model: MODEL_HAIKU_45,
+    maxTokens: 4096,
+    reasoning: "worksheet_standard_haiku45",
+  };
+}
+
 /** Export model constants for use in other modules */
 export const MODELS = {
   HAIKU: MODEL_HAIKU,
   SONNET: MODEL_SONNET,
   OPUS: MODEL_OPUS,
+  HAIKU_45: MODEL_HAIKU_45,
+  SONNET_45: MODEL_SONNET_45,
 } as const;

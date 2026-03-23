@@ -13,6 +13,7 @@ import { TeacherPreview } from "@/components/teacher/TeacherPreview";
 import { TeacherCelebration } from "@/components/teacher/TeacherCelebration";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { WorksheetWizard } from "@/components/teacher/worksheet/WorksheetWizard";
 import type { TeacherOnboarding as TeacherOnboardingType, TeacherStory } from "@/lib/types/teacher";
 
 export default function TeacherPage() {
@@ -28,6 +29,11 @@ export default function TeacherPage() {
   // 세션 복구 (페이지 마운트 시)
   useEffect(() => {
     if (authLoading || !user) return;
+    // 이미 HOME이면 복구 불필요 (handleCodeVerified에서 이미 처리됨)
+    if (store.screenState === "HOME" || store.sessionId) {
+      setIsRecovering(false);
+      return;
+    }
 
     const recoverSession = async () => {
       try {
@@ -39,8 +45,16 @@ export default function TeacherPage() {
 
         const data = await res.json();
         if (data.session) {
-          store.restoreSession(data.session, data.messages || []);
-          store.setScreenState("HOME");
+          // restoreSession + screenState를 원자적으로 세팅
+          useTeacherStore.setState({
+            sessionId: data.session.id,
+            expiresAt: data.session.expiresAt,
+            currentPhase: data.session.currentPhase,
+            turnCount: data.session.turnCount,
+            onboarding: data.session.onboarding,
+            messages: data.messages || [],
+            screenState: "HOME",
+          });
         } else {
           store.setScreenState("CODE_ENTRY");
         }
@@ -62,39 +76,28 @@ export default function TeacherPage() {
     }
   }, [store.screenState, store.generatedStory]);
 
-  // 세션 만료 사전 경고 (5분 전 토스트, 만료 시 CODE_ENTRY 전환)
+  // 세션 만료 폴링 (60초마다 체크 — useEffect 의존성 race condition 방지)
   useEffect(() => {
-    if (!store.expiresAt) return;
-    const expiresMs = new Date(store.expiresAt).getTime();
-    const now = Date.now();
+    const interval = setInterval(() => {
+      const { expiresAt, sessionId, screenState } = useTeacherStore.getState();
+      if (!sessionId || !expiresAt || screenState === "CODE_ENTRY") return;
 
-    // 이미 만료
-    if (expiresMs <= now) {
-      store.reset();
-      store.setScreenState("CODE_ENTRY");
-      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
-      return;
-    }
+      const expiresMs = new Date(expiresAt).getTime();
+      const now = Date.now();
+      const remainMs = expiresMs - now;
 
-    const warnMs = expiresMs - now - 5 * 60 * 1000; // 5분 전
-    const expireMs = expiresMs - now;
-
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    if (warnMs > 0) {
-      timers.push(setTimeout(() => {
+      if (remainMs <= 0) {
+        useTeacherStore.getState().reset();
+        useTeacherStore.getState().setScreenState("CODE_ENTRY");
+        toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+      } else if (remainMs <= 5 * 60 * 1000 && remainMs > 4.5 * 60 * 1000) {
+        // 5분 전 경고 (60초 폴링 범위 내에서 1회)
         toast("세션이 5분 후 만료됩니다. 작업을 저장해주세요.", { icon: "⏰", duration: 8000 });
-      }, warnMs));
-    }
+      }
+    }, 60_000);
 
-    timers.push(setTimeout(() => {
-      store.reset();
-      store.setScreenState("CODE_ENTRY");
-      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
-    }, expireMs));
-
-    return () => timers.forEach(clearTimeout);
-  }, [store.expiresAt]);
+    return () => clearInterval(interval);
+  }, []);
 
   // 코드 검증 완료
   const handleCodeVerified = useCallback(
@@ -107,13 +110,15 @@ export default function TeacherPage() {
       isExisting: boolean;
       teacherCode?: string;
     }) => {
-      store.setSession({
+      // 세션 + 화면 상태를 한 번에 세팅 (race condition 방지)
+      useTeacherStore.setState({
         sessionId: data.sessionId,
         expiresAt: data.expiresAt,
         kindergartenName: data.kindergartenName,
         currentPhase: (data.currentPhase as "A" | "B" | "C" | "D" | "E") || "A",
         turnCount: data.turnCount || 0,
-        teacherCode: data.teacherCode,
+        ...(data.teacherCode ? { teacherCode: data.teacherCode } : {}),
+        screenState: "HOME",
       });
 
       if (data.isExisting && data.turnCount > 0) {
@@ -127,8 +132,6 @@ export default function TeacherPage() {
             store.setScreenState("HOME");
           })
           .catch(() => store.setScreenState("HOME"));
-      } else {
-        store.setScreenState("HOME");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,5 +457,10 @@ export default function TeacherPage() {
     }
   };
 
-  return <ErrorBoundary>{renderScreen()}</ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      {renderScreen()}
+      <WorksheetWizard />
+    </ErrorBoundary>
+  );
 }

@@ -14,13 +14,14 @@
 
 import { cleanSceneText } from "./story-parser";
 
-export interface TeacherSpread {
+/** 파서 전용 TeacherSpread (title 필수, lib/types/teacher.ts와 별개) */
+interface TeacherSpread {
   spreadNumber: number;
   title: string;
   text: string;
 }
 
-export interface TeacherMetadata {
+interface TeacherMetadata {
   readingGuide?: string;
   illustPrompts?: string;
   nuriMapping?: string;

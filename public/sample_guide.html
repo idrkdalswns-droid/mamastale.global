@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>용감한 토끼 솜이의 양치 대모험 — 읽어주기 가이드</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    @page { size: A4 portrait; margin: 15mm 18mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+      color: #3C1E1E; background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      font-size: 13px; line-height: 1.6;
+    }
+
+    .page { page-break-after: always; min-height: 100vh; padding: 36px; }
+    .page:last-child { page-break-after: auto; }
+    .page-header { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #E07A5F; }
+    .page-header h2 { font-size: 1.2rem; font-weight: 700; color: #3C1E1E; }
+    .page-icon { font-size: 1.2rem; }
+
+    /* ── 표지 ── */
+    .cover-page { display: flex; flex-direction: column; }
+    .cover-top { text-align: center; padding: 40px 20px 30px; }
+    .cover-badge { display: inline-block; padding: 5px 16px; border-radius: 16px; background: #E07A5F; color: #fff; font-size: 0.8rem; font-weight: 500; margin-bottom: 20px; }
+    .cover-title { font-size: 1.6rem; font-weight: 700; color: #3C1E1E; margin-bottom: 12px; word-break: keep-all; }
+    .cover-meta { font-size: 0.85rem; color: #8B6F55; }
+    .cover-meta .dot { margin: 0 6px; color: #C4956A; }
+    .cover-overview { flex: 1; padding: 20px 0; }
+    .cover-overview h2 { font-size: 1rem; font-weight: 600; color: #5A3E2B; margin-bottom: 12px; }
+    .structure-bar { display: flex; gap: 2px; height: 36px; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+    .bar-section { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; }
+    .bar-section span { font-weight: 600; }
+    .bar-section small { font-size: 0.65rem; opacity: 0.8; }
+    .bar-section.intro { background: #7FBFB0; }
+    .bar-section.develop { background: #E07A5F; }
+    .bar-section.ending { background: #8B6AAF; }
+    .spread-list-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+    .mini-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; padding: 3px 0; }
+    .mini-num { font-weight: 600; font-size: 0.75rem; flex-shrink: 0; }
+    .mini-title { color: #5A3E2B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cover-footer { text-align: center; font-size: 0.75rem; color: #C4956A; padding-top: 16px; border-top: 1px solid #E8E0D4; }
+
+    /* ── 가이드 ── */
+    .guide-block { margin-bottom: 24px; }
+    .guide-text { font-size: 0.88rem; color: #44403c; line-height: 1.8; white-space: pre-line; word-break: keep-all; background: #FAFAF8; padding: 16px; border-radius: 12px; border-left: 3px solid #E07A5F; }
+    .guide-tips h3 { font-size: 0.95rem; font-weight: 600; color: #5A3E2B; margin-bottom: 12px; }
+    .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tip-card { display: flex; gap: 10px; padding: 12px; background: #F8F6F2; border-radius: 10px; }
+    .tip-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .tip-content strong { font-size: 0.85rem; color: #5A3E2B; display: block; margin-bottom: 3px; }
+    .tip-content p { font-size: 0.8rem; color: #8B6F55; line-height: 1.5; word-break: keep-all; }
+
+    /* ── 동화 전문 ── */
+    .story-spreads { display: flex; flex-direction: column; gap: 12px; }
+    .story-spread { page-break-inside: avoid; }
+    .story-spread-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .story-spread-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; color: #fff; font-size: 0.7rem; font-weight: 500; }
+    .story-spread-num { font-size: 0.7rem; color: #C4956A; }
+    .story-spread-title { font-size: 0.85rem; font-weight: 600; color: #5A3E2B; }
+    .story-spread-text { font-size: 0.85rem; color: #44403c; line-height: 1.8; white-space: pre-line; word-break: keep-all; padding-left: 12px; border-left: 2px solid #E8E0D4; }
+    .story-spread:nth-child(8) { page-break-before: always; }
+
+    /* ── 검수 ── */
+    .review-section { margin-bottom: 28px; }
+    .review-content { font-size: 0.88rem; color: #44403c; line-height: 1.8; white-space: pre-line; word-break: keep-all; background: #FAFAF8; padding: 16px; border-radius: 12px; }
+
+    @media print {
+      .page { min-height: auto; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="page cover-page">
+    <div class="cover-top">
+      <div class="cover-badge">읽어주기 가이드</div>
+      <h1 class="cover-title">용감한 토끼 솜이의 양치 대모험</h1>
+      <div class="cover-meta">
+        <span>하나유치원</span><span class="dot">·</span>
+        <span>유아반 (3-4세)</span>
+        <span class="dot">·</span>
+        <span>14스프레드</span>
+      </div>
+    </div>
+    <div class="cover-overview">
+      <h2>📖 동화 구조</h2>
+      <div class="structure-bar">
+        <div class="bar-section intro" style="flex: 4">
+          <span>도입</span>
+          <small>SP01-04</small>
+        </div>
+        <div class="bar-section develop" style="flex: 7">
+          <span>전개</span>
+          <small>SP05-11</small>
+        </div>
+        <div class="bar-section ending" style="flex: 3">
+          <span>결말</span>
+          <small>SP12-14</small>
+        </div>
+      </div>
+      <div class="spread-list-mini">
+        <div class="mini-item"><span class="mini-num" style="color: #7FBFB0">SP01</span> <span class="mini-title">솜이의 아침</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #7FBFB0">SP02</span> <span class="mini-title">양치 시간이야!</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #7FBFB0">SP03</span> <span class="mini-title">까만 설탕 요괴 등장</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #7FBFB0">SP04</span> <span class="mini-title">이빨이 아파요</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP05</span> <span class="mini-title">첫 번째 도전</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP06</span> <span class="mini-title">친구의 도움</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP07</span> <span class="mini-title">용기를 내볼까?</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP08</span> <span class="mini-title">반짝이 칫솔 용사</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP09</span> <span class="mini-title">요괴와의 대결</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP10</span> <span class="mini-title">깨달음의 순간</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #E07A5F">SP11</span> <span class="mini-title">함께하는 양치</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #8B6AAF">SP12</span> <span class="mini-title">깨끗한 이빨 세상</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #8B6AAF">SP13</span> <span class="mini-title">새로운 습관</span></div>
+        <div class="mini-item"><span class="mini-num" style="color: #8B6AAF">SP14</span> <span class="mini-title">솜이의 미소</span></div>
+      </div>
+    </div>
+    <div class="cover-footer">2026. 3. 21. · mamastale</div>
+  </div>
+  
+  <div class="page guide-page">
+    <div class="page-header">
+      <span class="page-icon">📋</span>
+      <h2>읽어주기 가이드</h2>
+    </div>
+    
+    <div class="guide-block">
+      <div class="guide-text">## 읽어주기 가이드\n- **교육 목표**: 양치 습관 형성, 자기관리 능력 향상, 협동심 기르기\n- **읽기 전 활동**: &quot;오늘 양치했나요? 양치할 때 기분이 어때요?&quot; 아이들과 이야기 나누기\n- **읽기 중 포인트**:\n  - SP03: 까만 요괴가 나올 때 무서운 목소리로 (하지만 너무 무섭지 않게!)\n  - SP08: 반짝이 칫솔이 빛날 때 신비로운 목소리로\n  - SP09: 치카치카 소리를 아이들과 함께!\n- **읽기 후 활동**: 함께 양치 노래 만들기, 치카치카 율동, 이빨 그리기\n- **읽어주기 팁**: 의성어는 크고 재미있게, 요괴 목소리는 익살스럽게</div>
+    </div>
+    <div class="guide-tips">
+      <h3>💡 일반 읽어주기 팁</h3>
+      <div class="tips-grid">
+        <div class="tip-card">
+          <div class="tip-icon">🎭</div>
+          <div class="tip-content">
+            <strong>목소리 연기</strong>
+            <p>등장인물마다 다른 목소리를 사용하세요. 아이들의 집중도가 높아집니다.</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">⏸️</div>
+          <div class="tip-content">
+            <strong>멈춤의 기술</strong>
+            <p>중요한 장면 전에 잠깐 멈추세요. "다음에 무슨 일이 일어날까?"</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">👆</div>
+          <div class="tip-content">
+            <strong>참여 유도</strong>
+            <p>반복되는 문구가 나오면 아이들이 함께 말하도록 유도하세요.</p>
+          </div>
+        </div>
+        <div class="tip-card">
+          <div class="tip-icon">🤔</div>
+          <div class="tip-content">
+            <strong>열린 질문</strong>
+            <p>읽기 후 "왜 그랬을까?" "어떤 기분이었을까?" 질문을 던지세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="page story-page">
+    <div class="page-header">
+      <span class="page-icon">📖</span>
+      <h2>동화 전문</h2>
+    </div>
+    <div class="story-spreads">
+      
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #7FBFB0">도입</span>
+          <span class="story-spread-num">SP01</span>
+          <span class="story-spread-title">솜이의 아침</span>
+        </div>
+        <p class="story-spread-text">숲속 마을에 작은 토끼 솜이가 살았어요. 솜이는 뛰어노는 걸 좋아하고, 당근 케이크를 세상에서 제일 좋아했어요.</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #7FBFB0">도입</span>
+          <span class="story-spread-num">SP02</span>
+          <span class="story-spread-title">양치 시간이야!</span>
+        </div>
+        <p class="story-spread-text">&quot;솜아, 양치 시간이야!&quot; 엄마 토끼가 불렀어요. 솜이는 고개를 절래절래 흔들었어요. &quot;싫어요! 양치는 재미없어요!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #7FBFB0">도입</span>
+          <span class="story-spread-num">SP03</span>
+          <span class="story-spread-title">까만 설탕 요괴 등장</span>
+        </div>
+        <p class="story-spread-text">그날 밤, 솜이의 입 안에서 까만 설탕 요괴가 나타났어요! &quot;히히히, 양치를 안 하면 내가 점점 커진다구!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #7FBFB0">도입</span>
+          <span class="story-spread-num">SP04</span>
+          <span class="story-spread-title">이빨이 아파요</span>
+        </div>
+        <p class="story-spread-text">아침에 일어난 솜이는 이빨이 콕콕 아팠어요. &quot;아야... 왜 이렇게 아프지?&quot; 거울을 보니 이빨 사이에 까만 점이!</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP05</span>
+          <span class="story-spread-title">첫 번째 도전</span>
+        </div>
+        <p class="story-spread-text">솜이는 용기를 내서 칫솔을 들었어요. 하지만 요괴가 소리쳤어요. &quot;쓸데없는 짓이야! 난 안 없어져!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP06</span>
+          <span class="story-spread-title">친구의 도움</span>
+        </div>
+        <p class="story-spread-text">친구 다람쥐 또리가 다가왔어요. &quot;솜아, 나도 처음엔 무서웠어. 근데 비밀이 있어. 함께하면 용기가 생겨!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP07</span>
+          <span class="story-spread-title">용기를 내볼까?</span>
+        </div>
+        <p class="story-spread-text">또리가 반짝이 칫솔을 건네주었어요. &quot;이건 특별한 칫솔이야. 요괴가 제일 무서워하는 거래!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP08</span>
+          <span class="story-spread-title">반짝이 칫솔 용사</span>
+        </div>
+        <p class="story-spread-text">솜이가 반짝이 칫솔을 들자, 칫솔에서 무지개빛이 반짝였어요! &quot;와! 진짜 빛이 나!&quot;</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP09</span>
+          <span class="story-spread-title">요괴와의 대결</span>
+        </div>
+        <p class="story-spread-text">쓱쓱쓱! 치카치카! 솜이가 이를 닦자 까만 요괴가 &quot;으아아! 싫어! 빛이 너무 밝아!&quot; 하며 점점 작아졌어요.</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP10</span>
+          <span class="story-spread-title">깨달음의 순간</span>
+        </div>
+        <p class="story-spread-text">솜이는 깨달았어요. &quot;내가 매일 양치하면, 요괴는 다시 못 오는 거구나!&quot; 이빨이 반짝반짝 빛났어요.</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #E07A5F">전개</span>
+          <span class="story-spread-num">SP11</span>
+          <span class="story-spread-title">함께하는 양치</span>
+        </div>
+        <p class="story-spread-text">다음 날부터 솜이는 친구들과 함께 양치했어요. &quot;치카치카 폼폼! 치카치카 폼폼!&quot; 노래를 부르며요.</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #8B6AAF">결말</span>
+          <span class="story-spread-num">SP12</span>
+          <span class="story-spread-title">깨끗한 이빨 세상</span>
+        </div>
+        <p class="story-spread-text">숲속 마을의 모든 동물 친구들 이빨이 하얗게 빛났어요. 까만 요괴는 어디에도 없었어요!</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #8B6AAF">결말</span>
+          <span class="story-spread-num">SP13</span>
+          <span class="story-spread-title">새로운 습관</span>
+        </div>
+        <p class="story-spread-text">이제 솜이는 양치 시간이 기다려져요. 반짝이 칫솔로 쓱쓱 닦으면, 입 안이 개운하고 기분이 좋거든요!</p>
+      </div>
+
+      <div class="story-spread">
+        <div class="story-spread-header">
+          <span class="story-spread-badge" style="background: #8B6AAF">결말</span>
+          <span class="story-spread-num">SP14</span>
+          <span class="story-spread-title">솜이의 미소</span>
+        </div>
+        <p class="story-spread-text">솜이가 살짝 웃었어요. 하얀 이빨이 반짝반짝. &quot;오늘도 치카치카, 내일도 치카치카!&quot; 숲에 노래가 울려 퍼졌답니다.</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="page review-page">
+    
+    <div class="review-section">
+      <div class="page-header">
+        <span class="page-icon">🎯</span>
+        <h2>누리과정 연계 매핑</h2>
+      </div>
+      <div class="review-content">신체운동·건강: 건강하게 생활하기 - 자신의 몸을 깨끗이 하기\n사회관계: 더불어 생활하기 - 친구와 함께하기\n의사소통: 듣기와 말하기 - 자신의 경험을 말하기</div>
+    </div>
+    
+    <div class="review-section">
+      <div class="page-header">
+        <span class="page-icon">✅</span>
+        <h2>발달 적합성 검수</h2>
+      </div>
+      <div class="review-content">### 발달 적합성 평가\n- 발달 적합성: 4.5/5 (유아반 3-4세 적합)\n- 누리과정 연계: 4.0/5\n- 캐릭터 일관성: 4.5/5\n- 안전성: 5.0/5\n- 총점: 4.5/5 — PASS</div>
+    </div>
+    
+  </div>
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>

@@ -266,3 +266,48 @@ export function parseStoryScenes(allPhase4Text: string): Scene[] {
   return scenes;
 }
 
+/**
+ * Character metadata extracted from [CHARACTERS]...[/CHARACTERS] block.
+ * Added for worksheet service — activities need structured character data.
+ */
+export interface StoryCharacter {
+  name: string;
+  role: string; // "protagonist" | "helper" | "antagonist"
+  traits: string[];
+  emotion: string;
+}
+
+/**
+ * Parse character metadata from AI response.
+ * Looks for [CHARACTERS]...[/CHARACTERS] block after [STORY_END].
+ * Returns empty array if no block found (graceful degradation).
+ */
+export function parseStoryCharacters(fullText: string): StoryCharacter[] {
+  const match = fullText.match(/\[CHARACTERS\]([\s\S]*?)\[\/CHARACTERS\]/i);
+  if (!match) return [];
+
+  const block = match[1].trim();
+  const characters: StoryCharacter[] = [];
+
+  for (const line of block.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || !trimmed.startsWith("-")) continue;
+
+    const nameMatch = trimmed.match(/이름:\s*([^|]+)/);
+    const roleMatch = trimmed.match(/역할:\s*([^|]+)/);
+    const traitsMatch = trimmed.match(/특성:\s*([^|]+)/);
+    const emotionMatch = trimmed.match(/감정여정:\s*(.+)/);
+
+    if (nameMatch) {
+      characters.push({
+        name: nameMatch[1].trim(),
+        role: roleMatch?.[1]?.trim() || "protagonist",
+        traits: traitsMatch?.[1]?.trim().split(/[,，、]\s*/).filter(Boolean) || [],
+        emotion: emotionMatch?.[1]?.trim() || "",
+      });
+    }
+  }
+
+  return characters;
+}
+

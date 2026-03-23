@@ -2,12 +2,15 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import type {
   TeacherStory,
   TeacherSpread,
   TeacherStoryMetadata,
 } from "@/lib/types/teacher";
 import { createClient } from "@/lib/supabase/client";
+import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
+import { WorksheetHistory } from "@/components/teacher/worksheet/WorksheetHistory";
 
 const TAB_ICONS: Record<string, string> = {
   spreads: "/images/teacher/tab/spreads.jpeg",
@@ -298,6 +301,41 @@ export function TeacherPreview({
           />
         )}
       </div>
+
+      {/* ─── AI 맞춤 활동지 CTA ─── */}
+      {story.id && (
+        <div className="px-4 pt-3">
+          <button
+            onClick={async () => {
+              // 티켓 잔여량 확인
+              try {
+                const res = await fetch("/api/tickets");
+                if (res.ok) {
+                  const data = await res.json();
+                  const tickets = data.worksheet_tickets_remaining ?? data.free_stories_remaining ?? 0;
+                  if (tickets <= 0) {
+                    toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
+                    return;
+                  }
+                }
+              } catch {
+                // 티켓 확인 실패 시 일단 진행 (API에서 최종 차단)
+              }
+              useWorksheetStore.getState().open(story.id!, story.title || "동화");
+            }}
+            className="w-full py-3 rounded-xl text-[14px] font-medium text-white transition-all active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #8B6AAF, #7A5BA0)",
+              boxShadow: "0 4px 16px rgba(139,106,175,0.25)",
+            }}
+          >
+            ✨ AI 맞춤 활동지 만들기
+          </button>
+        </div>
+      )}
+
+      {/* ─── 활동지 히스토리 ─── */}
+      {story.id && <WorksheetHistory storyId={story.id} />}
 
       {/* ─── PDF 다운로드 ─── */}
       <div className="px-4 pb-4 pt-2 border-t border-brown-pale/20 space-y-2

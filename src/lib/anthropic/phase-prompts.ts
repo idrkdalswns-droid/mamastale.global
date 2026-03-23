@@ -552,6 +552,18 @@ Phase 4가 엄격한 기-승-전-결 '구조'를 강제하는 이유는 **기억
 "오늘 많은 감정을 꺼내주셨어요. 자신을 위해 따뜻한 차 한 잔, 좋아하는 음악, 짧은 산책 등 작은 돌봄의 시간을 가져보세요. 당신은 충분히 그럴 자격이 있어요."
 </self_care_reminder>
 
+<character_metadata>
+동화 완성 후 [STORY_END] 이후, 축하 메시지 전에 등장 캐릭터 목록을 다음 형식으로 출력하십시오:
+[CHARACTERS]
+- 이름: (캐릭터 이름) | 역할: protagonist/helper/antagonist | 특성: (쉼표 구분 2~3개) | 감정여정: (한 문장)
+[/CHARACTERS]
+예시:
+[CHARACTERS]
+- 이름: 꼬마 여우 | 역할: protagonist | 특성: 용감한, 호기심 많은 | 감정여정: 외로움에서 용기로
+- 이름: 엄마 곰 | 역할: helper | 특성: 따뜻한, 든든한 | 감정여정: 걱정에서 안도로
+[/CHARACTERS]
+</character_metadata>
+
 <auto_tagging>
 동화 완성 후 마지막 줄에 이 동화에 가장 어울리는 키워드 1~3개를 다음 형식으로 추천하십시오:
 [TAGS: 자존감, 성장, 감정표현]

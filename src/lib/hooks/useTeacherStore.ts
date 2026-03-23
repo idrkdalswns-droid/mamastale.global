@@ -129,7 +129,7 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       turnCount: session.turnCount,
       onboarding: session.onboarding,
       messages,
-      screenState: session.currentPhase === "DONE" ? "DONE" : "CHAT",
+      // screenState는 호출자가 명시적으로 설정 (경쟁 조건 방지)
     }),
 
   // v1.22.1: AI 첫 채팅 메시지로 greeting 추가 (StrictMode 중복 방지)
