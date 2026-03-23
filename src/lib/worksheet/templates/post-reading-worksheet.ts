@@ -1,13 +1,11 @@
 /**
  * Post-reading worksheet HTML template.
- * Renders Claude's structured output into printable A4 HTML.
- *
  * @module worksheet/templates/post-reading-worksheet
  */
 
 import type { PostReadingWorksheetOutput } from "../schemas";
 import type { DerivedParams } from "../types";
-import { worksheetBaseHtml } from "./worksheet-base";
+import { worksheetBaseHtml, escapeHtml } from "./worksheet-base";
 
 export function renderPostReadingWorksheet(
   data: PostReadingWorksheetOutput,
@@ -29,12 +27,11 @@ export function renderPostReadingWorksheet(
     .join("");
 
   const drawingHeight = Math.round(250 * params.drawing_space_ratio);
-  const writingHeight = Math.round(250 * (1 - params.drawing_space_ratio));
 
   const creativeHtml = data.creative_extension
     ? `
-    <div class="activity-block" style="border-color: #B8E0D2;">
-      <h3 style="margin: 0 0 8px 0; color: #3D6B5E;">★ 더 생각해볼까요?</h3>
+    <div class="activity-block">
+      <h3 class="ws-section-title">더 생각해볼까요?</h3>
       <div class="activity-instruction">${escapeHtml(data.creative_extension)}</div>
       <div class="writing-lines">
         ${Array.from({ length: 3 }, () => '<div class="line"></div>').join("")}
@@ -48,20 +45,20 @@ export function renderPostReadingWorksheet(
     </div>
 
     <div class="activity-block">
-      <h3 style="margin: 0 0 12px 0; color: #E07A5F;">📖 이야기를 떠올려봐요</h3>
+      <h3 class="ws-section-title">이야기를 떠올려봐요</h3>
       ${questionsHtml}
     </div>
 
     <div class="activity-block">
-      <h3 style="margin: 0 0 12px 0; color: #E07A5F;">🖍️ ${escapeHtml(data.drawing_prompt)}</h3>
-      <div class="drawing-area" style="min-height: ${drawingHeight}px;">
-        자유롭게 그려보세요!
-      </div>
+      <h3 class="ws-section-title">그려보세요</h3>
+      <div class="drawing-area-label">${escapeHtml(data.drawing_prompt)}</div>
+      <div class="drawing-area" style="min-height: ${drawingHeight}px;"></div>
     </div>
 
     <div class="activity-block">
-      <h3 style="margin: 0 0 12px 0; color: #E07A5F;">✏️ ${escapeHtml(data.writing_prompt)}</h3>
-      <div class="writing-lines" style="min-height: ${writingHeight}px;">
+      <h3 class="ws-section-title">써보세요</h3>
+      <div class="drawing-area-label">${escapeHtml(data.writing_prompt)}</div>
+      <div class="writing-lines">
         ${Array.from(
           { length: params.writing_ratio > 0.3 ? 6 : 3 },
           () => '<div class="line"></div>'
@@ -77,12 +74,4 @@ export function renderPostReadingWorksheet(
     subtitle: data.subtitle,
     nuri_domain: data.nuri_domain,
   });
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

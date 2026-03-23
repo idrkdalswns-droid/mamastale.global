@@ -17,14 +17,14 @@ export const EmotionWorksheetSchema = z.object({
   emotion_scenes: z
     .array(
       z.object({
-        scene_summary: z.string().max(200),
+        scene_summary: z.string().max(120),
         emotion: z.string().max(30),
         character: z.string().max(50),
         question: z.string().max(150),
       })
     )
     .min(1)
-    .max(10),
+    .max(5),
   emotion_icons: z
     .array(
       z.object({
@@ -33,7 +33,7 @@ export const EmotionWorksheetSchema = z.object({
       })
     )
     .min(3)
-    .max(10),
+    .max(6),
   body_mapping_prompt: z.string().max(200).optional(),
 });
 
@@ -46,14 +46,14 @@ export const PostReadingWorksheetSchema = z.object({
   comprehension_questions: z
     .array(
       z.object({
-        question: z.string().max(200),
+        question: z.string().max(150),
         type: z.enum(["recall", "inference", "opinion"]),
       })
     )
     .min(2)
-    .max(8),
-  drawing_prompt: z.string().max(200),
-  writing_prompt: z.string().max(200),
+    .max(4),
+  drawing_prompt: z.string().max(100),
+  writing_prompt: z.string().max(150),
   creative_extension: z.string().max(200).optional(),
 });
 
@@ -66,15 +66,15 @@ export const ColoringWorksheetSchema = z.object({
   coloring_scenes: z
     .array(
       z.object({
-        scene_description: z.string().max(300),
-        elements: z.array(z.string().max(80)).min(1).max(8),
+        scene_description: z.string().max(150),
+        elements: z.array(z.string().max(50)).min(1).max(8),
         mood: z.string().max(50),
       })
     )
     .min(1)
-    .max(3),
-  color_suggestion: z.string().max(300).optional(),
-  free_drawing_prompt: z.string().max(300),
+    .max(2),
+  color_suggestion: z.string().max(200).optional(),
+  free_drawing_prompt: z.string().max(150),
 });
 
 // ─── Vocabulary Worksheet Schema ───
@@ -87,8 +87,8 @@ export const VocabularyWorksheetSchema = z.object({
     .array(
       z.object({
         word: z.string().max(30),
-        meaning: z.string().max(150),
-        example_sentence: z.string().max(200),
+        meaning: z.string().max(80),
+        example_sentence: z.string().max(100),
         category: z.enum([
           "emotion_word",
           "action_word",
@@ -96,11 +96,11 @@ export const VocabularyWorksheetSchema = z.object({
           "adjective",
           "onomatopoeia",
         ]),
-        drawing_hint: z.string().max(150),
+        drawing_hint: z.string().max(80),
       })
     )
     .min(3)
-    .max(8),
+    .max(5),
   word_puzzle: z
     .object({
       type: z.enum(["matching", "fill_blank", "initial_sound"]),
@@ -122,17 +122,17 @@ export const CharacterCardWorksheetSchema = z.object({
       z.object({
         name: z.string().max(80),
         role: z.string().max(50),
-        appearance: z.string().max(200),
+        appearance: z.string().max(100),
         personality: z.array(z.string().max(50)).min(1).max(4),
-        favorite_thing: z.string().max(150),
+        favorite_thing: z.string().max(100),
         emotion_keyword: z.string().max(50),
-        relationship: z.string().max(150).optional(),
-        drawing_prompt: z.string().max(200),
+        relationship: z.string().max(100).optional(),
+        drawing_prompt: z.string().max(100),
       })
     )
     .min(1)
-    .max(4),
-  comparison_question: z.string().max(300).optional(),
+    .max(3),
+  comparison_question: z.string().max(200).optional(),
 });
 
 // ─── Story Map Worksheet Schema ───
@@ -145,9 +145,9 @@ export const StoryMapWorksheetSchema = z.object({
     .array(
       z.object({
         phase_name: z.string().max(50),
-        summary: z.string().max(300),
+        summary: z.string().max(150),
         characters_involved: z.array(z.string().max(80)),
-        drawing_prompt: z.string().max(200),
+        drawing_prompt: z.string().max(100),
         emotion_tone: z.string().max(50),
       })
     )
@@ -163,21 +163,21 @@ export const WhatIfWorksheetSchema = z.object({
   instructions: z.string().max(400),
   nuri_domain: z.literal("사회관계"),
   scenario: z.object({
-    scene_summary: z.string().max(300),
+    scene_summary: z.string().max(150),
     character: z.string().max(50),
-    dilemma: z.string().max(300),
+    dilemma: z.string().max(150),
   }),
   perspective_questions: z
     .array(
       z.object({
-        question: z.string().max(300),
+        question: z.string().max(150),
         type: z.enum(["feeling", "action", "empathy", "creative"]),
       })
     )
     .min(2)
-    .max(5),
-  drawing_prompt: z.string().max(300),
-  my_story_prompt: z.string().max(300).optional(),
+    .max(4),
+  drawing_prompt: z.string().max(150),
+  my_story_prompt: z.string().max(150).optional(),
 });
 
 // ─── Speech Bubble Worksheet Schema ───
@@ -190,7 +190,7 @@ export const SpeechBubbleWorksheetSchema = z.object({
     .array(
       z.object({
         character: z.string().max(50),
-        line: z.string().max(300),
+        line: z.string().max(120),
         is_empty: z.boolean(),
         bubble_type: z.enum(["speech", "thought", "shout"]),
         emotion: z.string().max(30),
@@ -198,8 +198,8 @@ export const SpeechBubbleWorksheetSchema = z.object({
       })
     )
     .min(3)
-    .max(8),
-  free_dialogue_prompt: z.string().max(300).optional(),
+    .max(6),
+  free_dialogue_prompt: z.string().max(200).optional(),
 });
 
 // ─── Roleplay Script Worksheet Schema ───
@@ -212,8 +212,8 @@ export const RoleplayScriptWorksheetSchema = z.object({
     .array(
       z.object({
         name: z.string().max(50),
-        role_description: z.string().max(200),
-        costume_hint: z.string().max(200),
+        role_description: z.string().max(150),
+        costume_hint: z.string().max(100),
       })
     )
     .min(2)
@@ -222,22 +222,22 @@ export const RoleplayScriptWorksheetSchema = z.object({
     .array(
       z.object({
         scene_title: z.string().max(80),
-        narrator_line: z.string().max(300),
+        narrator_line: z.string().max(150),
         lines: z
           .array(
             z.object({
               speaker: z.string().max(50),
-              line: z.string().max(300),
-              stage_direction: z.string().max(200).optional(),
+              line: z.string().max(150),
+              stage_direction: z.string().max(100).optional(),
               emotion_cue: z.string().max(50).optional(),
             })
           )
           .min(1)
-          .max(6),
+          .max(4),
       })
     )
     .min(2)
-    .max(4),
+    .max(3),
   props_list: z.array(z.string().max(80)).max(5),
   discussion_after: z.string().max(300).optional(),
 });

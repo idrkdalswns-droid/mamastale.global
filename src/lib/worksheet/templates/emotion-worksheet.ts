@@ -7,7 +7,7 @@
 
 import type { EmotionWorksheetOutput } from "../schemas";
 import type { DerivedParams } from "../types";
-import { worksheetBaseHtml } from "./worksheet-base";
+import { worksheetBaseHtml, escapeHtml } from "./worksheet-base";
 
 export function renderEmotionWorksheet(
   data: EmotionWorksheetOutput,
@@ -17,27 +17,30 @@ export function renderEmotionWorksheet(
     .map(
       (icon) => `
     <div class="emotion-icon-item">
-      <div style="font-size: 28pt; margin-bottom: 4px;">${getEmotionEmoji(icon.emotion)}</div>
-      <div>${escapeHtml(icon.label)}</div>
+      <div class="ws-badge">${escapeHtml(icon.label)}</div>
     </div>`
     )
     .join("");
+
+  const drawingHeight = data.emotion_scenes.length <= 3
+    ? Math.round(180 * params.drawing_space_ratio)
+    : Math.round(120 * params.drawing_space_ratio);
 
   const scenesHtml = data.emotion_scenes
     .map(
       (scene, i) => `
     <div class="activity-block">
-      <div class="question-item">
-        <div class="question-text">${i + 1}. ${escapeHtml(scene.question)}</div>
-        <div style="font-size: ${Math.round(params.font_size_body_pt * 0.8)}pt; color: #8B6B57; margin-bottom: 8px;">
-          (${escapeHtml(scene.character)}의 장면: ${escapeHtml(scene.scene_summary)})
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <div class="question-text">${i + 1}. ${escapeHtml(scene.question)}</div>
+          <div style="font-size: ${Math.round(params.font_size_body_pt * 0.8)}pt; color: #8B6B57;">
+            (${escapeHtml(scene.character)}: ${escapeHtml(scene.scene_summary)})
+          </div>
         </div>
-      </div>
-      <div class="drawing-area" style="min-height: ${Math.round(150 * params.drawing_space_ratio)}px;">
-        🖍️ ${params.instruction_complexity === "icon_only" ? "그려요!" : "감정 얼굴을 그려보세요"}
+        <div style="flex-shrink: 0; width: ${drawingHeight}px; height: ${drawingHeight}px; border: 1px solid #D0D0D0; border-radius: 50%;"></div>
       </div>
       ${params.writing_ratio > 0.2 ? `
-      <div class="writing-lines">
+      <div class="writing-lines" style="margin-top: 8px;">
         ${Array.from({ length: 2 }, () => '<div class="line"></div>').join("")}
       </div>` : ""}
     </div>`
@@ -47,10 +50,19 @@ export function renderEmotionWorksheet(
   const bodyMappingHtml = data.body_mapping_prompt
     ? `
     <div class="activity-block">
+      <h3 class="ws-section-title">몸으로 느끼는 감정</h3>
       <div class="activity-instruction">${escapeHtml(data.body_mapping_prompt)}</div>
-      <div class="drawing-area" style="min-height: 200px;">
-        🧒 몸에서 감정이 느껴지는 곳에 색칠해보세요
-      </div>
+      <div class="drawing-area" style="min-height: 180px;"></div>
+    </div>`
+    : "";
+
+  // Add free drawing section for sparse content (age 3)
+  const freeDrawingHtml = data.emotion_scenes.length <= 2
+    ? `
+    <div class="activity-block">
+      <h3 class="ws-section-title">자유롭게 그려보세요</h3>
+      <div class="drawing-area-label">오늘 내 기분을 그림으로 표현해 보세요.</div>
+      <div class="drawing-area" style="min-height: ${Math.round(250 * params.drawing_space_ratio)}px;"></div>
     </div>`
     : "";
 
@@ -60,7 +72,7 @@ export function renderEmotionWorksheet(
     </div>
 
     <div class="activity-block">
-      <h3 style="margin: 0 0 12px 0; color: #E07A5F;">감정 아이콘</h3>
+      <h3 class="ws-section-title">감정 아이콘</h3>
       <div class="emotion-icon-grid">
         ${emotionIconsHtml}
       </div>
@@ -68,6 +80,7 @@ export function renderEmotionWorksheet(
 
     ${scenesHtml}
     ${bodyMappingHtml}
+    ${freeDrawingHtml}
   `;
 
   return worksheetBaseHtml(content, params, {
@@ -75,28 +88,4 @@ export function renderEmotionWorksheet(
     subtitle: data.subtitle,
     nuri_domain: data.nuri_domain,
   });
-}
-
-function getEmotionEmoji(emotion: string): string {
-  const map: Record<string, string> = {
-    기쁨: "😊", 행복: "😊", 즐거움: "😄",
-    슬픔: "😢", 우울: "😢",
-    화남: "😠", 분노: "😠",
-    무서움: "😨", 공포: "😨", 두려움: "😨",
-    놀람: "😲", 깜짝: "😲",
-    부끄러움: "😳",
-    걱정: "😟", 불안: "😟",
-    외로움: "🥺",
-    자랑스러움: "🤩", 뿌듯함: "🤩",
-    감사: "🥰", 사랑: "🥰",
-  };
-  return map[emotion] || "💭";
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

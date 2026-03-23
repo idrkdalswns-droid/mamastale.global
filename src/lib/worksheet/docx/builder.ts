@@ -402,9 +402,11 @@ function renderEmotionDocx(
               children: icon
                 ? [
                     new TextRun({
-                      text: getEmotionEmoji(icon.emotion),
+                      text: getEmotionLabel(icon.emotion),
                       font: DOCX_FONTS.primary,
-                      size: pt(22),
+                      size: pt(Math.round(params.font_size_body_pt * 0.9)),
+                      bold: true,
+                      color: DOCX_COLORS.coral,
                     }),
                   ]
                 : [],
@@ -582,22 +584,10 @@ function renderPostReadingDocx(
   return children;
 }
 
-// ─── Emotion Emoji Mapper ───
+// ─── Emotion Label (no emoji) ───
 
-function getEmotionEmoji(emotion: string): string {
-  const map: Record<string, string> = {
-    기쁨: "\u{1F60A}", 행복: "\u{1F60A}", 즐거움: "\u{1F604}",
-    슬픔: "\u{1F622}", 우울: "\u{1F622}",
-    화남: "\u{1F620}", 분노: "\u{1F620}",
-    무서움: "\u{1F628}", 공포: "\u{1F628}", 두려움: "\u{1F628}",
-    놀람: "\u{1F632}", 깜짝: "\u{1F632}",
-    부끄러움: "\u{1F633}",
-    걱정: "\u{1F61F}", 불안: "\u{1F61F}",
-    외로움: "\u{1F97A}",
-    자랑스러움: "\u{1F929}", 뿌듯함: "\u{1F929}",
-    감사: "\u{1F970}", 사랑: "\u{1F970}",
-  };
-  return map[emotion] || "\u{1F4AD}";
+function getEmotionLabel(emotion: string): string {
+  return emotion;
 }
 
 // ─── Coloring Renderer ───
@@ -612,7 +602,7 @@ function renderColoringDocx(
   for (let i = 0; i < data.coloring_scenes.length; i++) {
     const scene = data.coloring_scenes[i];
     if (i > 0) children.push(sectionDivider());
-    children.push(sectionHeading(`🎨 장면 ${i + 1}`, params));
+    children.push(sectionHeading(`장면 ${i + 1}`, params));
     children.push(
       new Paragraph({
         spacing: { after: 120 },
@@ -670,16 +660,16 @@ function renderColoringDocx(
     );
 
     // Drawing area
-    children.push(drawingAreaParagraph("🖍️ 자유롭게 색칠해보세요", Math.round(80 * params.drawing_space_ratio)));
+    children.push(drawingAreaParagraph("자유롭게 색칠해보세요", Math.round(80 * params.drawing_space_ratio)));
   }
 
   if (data.color_suggestion) {
     children.push(sectionDivider());
-    children.push(instructionParagraph(`🎨 색칠 팁: ${data.color_suggestion}`, params));
+    children.push(instructionParagraph(`색칠 팁: ${data.color_suggestion}`, params));
   }
 
   children.push(sectionDivider());
-  children.push(sectionHeading("✏️ 자유 그리기", params));
+  children.push(sectionHeading("자유 그리기", params));
   children.push(instructionParagraph(data.free_drawing_prompt, params));
   children.push(drawingAreaParagraph("자유롭게 그려보세요!", Math.round(70 * params.drawing_space_ratio)));
 
@@ -707,7 +697,7 @@ function renderVocabularyDocx(
     const word = data.words[i];
     if (i > 0) children.push(sectionDivider());
 
-    children.push(sectionHeading(`📚 ${word.word}`, params));
+    children.push(sectionHeading(word.word, params));
     children.push(
       new Paragraph({
         spacing: { after: 60 },
@@ -740,7 +730,7 @@ function renderVocabularyDocx(
   // Word puzzle
   if (data.word_puzzle) {
     children.push(sectionDivider());
-    children.push(sectionHeading("🧩 낱말 퍼즐", params));
+    children.push(sectionHeading("낱말 퍼즐", params));
     children.push(instructionParagraph(data.word_puzzle.question, params));
 
     if (data.word_puzzle.type === "matching") {
@@ -781,7 +771,7 @@ function renderVocabularyDocx(
   // Writing practice
   if (data.writing_practice_word) {
     children.push(sectionDivider());
-    children.push(sectionHeading("✍️ 따라 써봐요", params));
+    children.push(sectionHeading("따라 써봐요", params));
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -810,7 +800,7 @@ function renderCharacterCardDocx(
     const char = data.characters[i];
     if (i > 0) children.push(sectionDivider());
 
-    children.push(sectionHeading(`⭐ ${char.name} (${char.role})`, params));
+    children.push(sectionHeading(`${char.name} (${char.role})`, params));
     children.push(drawingAreaParagraph(char.drawing_prompt, Math.round(60 * params.drawing_space_ratio)));
 
     // Info table
@@ -874,7 +864,7 @@ function renderStoryMapDocx(
           spacing: { before: 100, after: 100 },
           children: [
             new TextRun({
-              text: label ? `⬇️ ${label}` : "⬇️",
+              text: label ? `▼ ${label}` : "▼",
               font: DOCX_FONTS.primary,
               size: pt(Math.round(params.font_size_body_pt * 0.9)),
               color: DOCX_COLORS.coral,
@@ -931,7 +921,7 @@ function renderWhatIfDocx(
   children.push(instructionParagraph(data.instructions, params));
 
   // Scenario block
-  children.push(sectionHeading(`🤔 만약에... (${data.scenario.character})`, params));
+  children.push(sectionHeading(`만약에... (${data.scenario.character})`, params));
   children.push(instructionParagraph(data.scenario.scene_summary, params));
   children.push(
     new Paragraph({
@@ -944,10 +934,10 @@ function renderWhatIfDocx(
 
   // Perspective questions
   const typeLabels: Record<string, string> = {
-    feeling: "💗 감정",
-    action: "🏃 행동",
-    empathy: "🤝 공감",
-    creative: "✨ 상상",
+    feeling: "감정",
+    action: "행동",
+    empathy: "공감",
+    creative: "상상",
   };
 
   for (let i = 0; i < data.perspective_questions.length; i++) {
@@ -963,14 +953,14 @@ function renderWhatIfDocx(
 
   // Drawing
   children.push(sectionDivider());
-  children.push(sectionHeading("🖍️ 그려볼까요?", params));
+  children.push(sectionHeading("그려볼까요?", params));
   children.push(instructionParagraph(data.drawing_prompt, params));
   children.push(drawingAreaParagraph("자유롭게 그려보세요!", Math.round(60 * params.drawing_space_ratio)));
 
   // My story
   if (data.my_story_prompt) {
     children.push(sectionDivider());
-    children.push(sectionHeading("📝 나의 이야기", params));
+    children.push(sectionHeading("나의 이야기", params));
     children.push(instructionParagraph(data.my_story_prompt, params));
     children.push(...writingLines(4, params));
   }
@@ -991,24 +981,16 @@ function getBubbleBorder(bubbleType: string) {
   }
 }
 
-function getBubbleTypeEmoji(bubbleType: string): string {
+function getBubbleTypeLabel(bubbleType: string): string {
   switch (bubbleType) {
-    case "thought": return "💭";
-    case "shout": return "📢";
-    default: return "💬";
+    case "thought": return "(생각)";
+    case "shout": return "(외침)";
+    default: return "";
   }
 }
 
-function getCharacterEmoji(name: string): string {
-  const map: Record<string, string> = {
-    엄마: "👩", 아빠: "👨", 할머니: "👵", 할아버지: "👴",
-    토끼: "🐰", 곰: "🐻", 여우: "🦊", 양: "🐑", 새: "🐦",
-    고양이: "🐱", 강아지: "🐶", 사자: "🦁", 요정: "🧚",
-  };
-  for (const [key, emoji] of Object.entries(map)) {
-    if (name.includes(key)) return emoji;
-  }
-  return "🧒";
+function getCharacterLabel(name: string): string {
+  return `[${name[0]}]`;
 }
 
 function renderSpeechBubbleDocx(
@@ -1020,8 +1002,8 @@ function renderSpeechBubbleDocx(
 
   for (const pair of data.dialogue_pairs) {
     const border = getBubbleBorder(pair.bubble_type);
-    const charEmoji = getCharacterEmoji(pair.character);
-    const typeEmoji = getBubbleTypeEmoji(pair.bubble_type);
+    const charLabel = getCharacterLabel(pair.character);
+    const typeLabel = getBubbleTypeLabel(pair.bubble_type);
 
     const charCell = new TableCell({
       width: { size: 20, type: WidthType.PERCENTAGE },
@@ -1031,7 +1013,7 @@ function renderSpeechBubbleDocx(
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { before: 60, after: 20 },
-          children: [new TextRun({ text: charEmoji, font: DOCX_FONTS.primary, size: pt(18) })],
+          children: [new TextRun({ text: charLabel, font: DOCX_FONTS.primary, size: pt(Math.round(params.font_size_body_pt * 0.9)), bold: true, color: DOCX_COLORS.brown })],
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
@@ -1042,8 +1024,8 @@ function renderSpeechBubbleDocx(
     });
 
     const bubbleContent = pair.is_empty
-      ? `${typeEmoji} 여기에 대사를 써보세요!`
-      : `${typeEmoji} ${pair.line}`;
+      ? `${typeLabel ? typeLabel + " " : ""}여기에 대사를 써보세요!`
+      : `${typeLabel ? typeLabel + " " : ""}${pair.line}`;
 
     const bubbleBorder = pair.is_empty
       ? { style: BorderStyle.DASHED, size: 6, color: DOCX_COLORS.brownPale }
@@ -1097,10 +1079,10 @@ function renderSpeechBubbleDocx(
 
   if (data.free_dialogue_prompt) {
     children.push(sectionDivider());
-    children.push(sectionHeading("✏️ 나만의 대화 만들기", params));
+    children.push(sectionHeading("나만의 대화 만들기", params));
     children.push(instructionParagraph(data.free_dialogue_prompt, params));
-    children.push(drawingAreaParagraph("💬 첫 번째 대사를 써보세요", 30));
-    children.push(drawingAreaParagraph("💬 두 번째 대사를 써보세요", 30));
+    children.push(drawingAreaParagraph("첫 번째 대사를 써보세요", 30));
+    children.push(drawingAreaParagraph("두 번째 대사를 써보세요", 30));
   }
 
   return children;
@@ -1118,13 +1100,13 @@ function renderRoleplayScriptDocx(
   children.push(instructionParagraph(data.instructions, params));
 
   // Cast table
-  children.push(sectionHeading("🎭 등장인물", params));
+  children.push(sectionHeading("등장인물", params));
   const castBorder = { style: BorderStyle.SINGLE, size: 4, color: DOCX_COLORS.lineGray };
   const castHeaderRow = new TableRow({
     children: [
       new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, borders: { top: castBorder, bottom: castBorder, left: castBorder, right: castBorder }, shading: { type: ShadingType.CLEAR, color: "auto", fill: DOCX_COLORS.creamDark }, children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "이름", font: DOCX_FONTS.primary, size: pt(Math.round(params.font_size_body_pt * 0.85)), bold: true, color: DOCX_COLORS.brown })] })] }),
       new TableCell({ width: { size: 45, type: WidthType.PERCENTAGE }, borders: { top: castBorder, bottom: castBorder, left: castBorder, right: castBorder }, shading: { type: ShadingType.CLEAR, color: "auto", fill: DOCX_COLORS.creamDark }, children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "역할", font: DOCX_FONTS.primary, size: pt(Math.round(params.font_size_body_pt * 0.85)), bold: true, color: DOCX_COLORS.brown })] })] }),
-      new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, borders: { top: castBorder, bottom: castBorder, left: castBorder, right: castBorder }, shading: { type: ShadingType.CLEAR, color: "auto", fill: DOCX_COLORS.creamDark }, children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "👗 의상", font: DOCX_FONTS.primary, size: pt(Math.round(params.font_size_body_pt * 0.85)), bold: true, color: DOCX_COLORS.brown })] })] }),
+      new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, borders: { top: castBorder, bottom: castBorder, left: castBorder, right: castBorder }, shading: { type: ShadingType.CLEAR, color: "auto", fill: DOCX_COLORS.creamDark }, children: [new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: "의상", font: DOCX_FONTS.primary, size: pt(Math.round(params.font_size_body_pt * 0.85)), bold: true, color: DOCX_COLORS.brown })] })] }),
     ],
   });
   const castDataRows = data.characters_list.map(
@@ -1141,7 +1123,7 @@ function renderRoleplayScriptDocx(
 
   // Props
   if (data.props_list.length > 0) {
-    children.push(sectionHeading("📦 준비물", params));
+    children.push(sectionHeading("준비물 체크리스트", params));
     for (const prop of data.props_list) {
       children.push(
         new Paragraph({
@@ -1156,7 +1138,7 @@ function renderRoleplayScriptDocx(
   for (let i = 0; i < data.scenes.length; i++) {
     const scene = data.scenes[i];
     children.push(sectionDivider());
-    children.push(sectionHeading(`🎬 ${scene.scene_title}`, params));
+    children.push(sectionHeading(scene.scene_title, params));
 
     // Narrator
     children.push(
@@ -1202,7 +1184,7 @@ function renderRoleplayScriptDocx(
   // Discussion
   if (data.discussion_after) {
     children.push(sectionDivider());
-    children.push(sectionHeading("💬 이야기 나누기", params));
+    children.push(sectionHeading("공연 후 이야기 나누기", params));
     children.push(instructionParagraph(data.discussion_after, params));
     children.push(...writingLines(3, params));
   }

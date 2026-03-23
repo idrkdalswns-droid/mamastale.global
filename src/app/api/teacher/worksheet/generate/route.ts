@@ -299,45 +299,45 @@ export async function POST(request: NextRequest) {
 
   // Defensive: truncate oversized arrays before validation
   const wd = worksheetData as Record<string, unknown>;
-  if (Array.isArray(wd.emotion_scenes) && wd.emotion_scenes.length > 10) {
-    wd.emotion_scenes = wd.emotion_scenes.slice(0, 10);
+  if (Array.isArray(wd.emotion_scenes) && wd.emotion_scenes.length > 5) {
+    wd.emotion_scenes = wd.emotion_scenes.slice(0, 5);
   }
-  if (Array.isArray(wd.emotion_icons) && wd.emotion_icons.length > 10) {
-    wd.emotion_icons = wd.emotion_icons.slice(0, 10);
+  if (Array.isArray(wd.emotion_icons) && wd.emotion_icons.length > 6) {
+    wd.emotion_icons = wd.emotion_icons.slice(0, 6);
   }
-  if (Array.isArray(wd.comprehension_questions) && wd.comprehension_questions.length > 8) {
-    wd.comprehension_questions = wd.comprehension_questions.slice(0, 8);
+  if (Array.isArray(wd.comprehension_questions) && wd.comprehension_questions.length > 4) {
+    wd.comprehension_questions = wd.comprehension_questions.slice(0, 4);
   }
   // Coloring
-  if (Array.isArray(wd.coloring_scenes) && wd.coloring_scenes.length > 3) {
-    wd.coloring_scenes = wd.coloring_scenes.slice(0, 3);
+  if (Array.isArray(wd.coloring_scenes) && wd.coloring_scenes.length > 2) {
+    wd.coloring_scenes = wd.coloring_scenes.slice(0, 2);
   }
   // Vocabulary
-  if (Array.isArray(wd.words) && wd.words.length > 8) {
-    wd.words = wd.words.slice(0, 8);
+  if (Array.isArray(wd.words) && wd.words.length > 5) {
+    wd.words = wd.words.slice(0, 5);
   }
   // Character Card
-  if (Array.isArray(wd.characters) && wd.characters.length > 4) {
-    wd.characters = wd.characters.slice(0, 4);
+  if (Array.isArray(wd.characters) && wd.characters.length > 3) {
+    wd.characters = wd.characters.slice(0, 3);
   }
   // Story Map
   if (Array.isArray(wd.phases) && wd.phases.length > 5) {
     wd.phases = wd.phases.slice(0, 5);
   }
   // What-If
-  if (Array.isArray(wd.perspective_questions) && wd.perspective_questions.length > 5) {
-    wd.perspective_questions = wd.perspective_questions.slice(0, 5);
+  if (Array.isArray(wd.perspective_questions) && wd.perspective_questions.length > 4) {
+    wd.perspective_questions = wd.perspective_questions.slice(0, 4);
   }
   // Speech Bubble
-  if (Array.isArray(wd.dialogue_pairs) && wd.dialogue_pairs.length > 8) {
-    wd.dialogue_pairs = wd.dialogue_pairs.slice(0, 8);
+  if (Array.isArray(wd.dialogue_pairs) && wd.dialogue_pairs.length > 6) {
+    wd.dialogue_pairs = wd.dialogue_pairs.slice(0, 6);
   }
   // Roleplay Script
   if (Array.isArray(wd.characters_list) && wd.characters_list.length > 4) {
     wd.characters_list = wd.characters_list.slice(0, 4);
   }
-  if (Array.isArray(wd.scenes) && wd.scenes.length > 4) {
-    wd.scenes = wd.scenes.slice(0, 4);
+  if (Array.isArray(wd.scenes) && wd.scenes.length > 3) {
+    wd.scenes = wd.scenes.slice(0, 3);
   }
   if (Array.isArray(wd.props_list) && wd.props_list.length > 5) {
     wd.props_list = wd.props_list.slice(0, 5);
