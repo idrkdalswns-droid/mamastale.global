@@ -228,13 +228,19 @@ function PaymentSuccessContent() {
     // Set flag so page.tsx auto-starts onboarding
     try { sessionStorage.setItem("mamastale_post_payment", "start"); } catch { /* ignore */ }
 
+    // returnTo=teacher → 선생님 모드로 복귀
+    const returnTo = searchParams.get("returnTo");
+
     const interval = setInterval(() => {
       setAutoRedirectCount((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           autoRedirectRef.current = null;
-          // Freemium v2: Primary redirect to library (where unlocked stories await)
-          router.push("/library");
+          if (returnTo === "teacher") {
+            router.push("/teacher");
+          } else {
+            router.push("/library");
+          }
           return 0;
         }
         return prev - 1;

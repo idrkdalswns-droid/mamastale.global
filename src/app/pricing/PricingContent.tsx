@@ -29,7 +29,7 @@ declare global {
 }
 
 // ─── Product Configuration ───
-type PriceType = "ticket" | "bundle";
+type PriceType = "ticket" | "bundle" | "worksheet_single" | "worksheet_bundle";
 
 type PricingProduct = { name: string; amount: number; tickets: number };
 
@@ -43,6 +43,16 @@ const PRODUCTS: Record<PriceType, PricingProduct> = {
     name: "4일 연속 대화 프로그램 (4편)",
     amount: 14900,
     tickets: 4,
+  },
+  worksheet_single: {
+    name: "활동지 1건",
+    amount: 1900,
+    tickets: 1,
+  },
+  worksheet_bundle: {
+    name: "활동지 5건 묶음",
+    amount: 7600,
+    tickets: 5,
   },
 };
 
@@ -129,6 +139,7 @@ function PricingContent() {
   const [sdkError, setSdkError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWorksheetMode, setIsWorksheetMode] = useState(false);
   const processingRef = useRef(false); // ref 기반 즉시 더블클릭 방지
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -138,6 +149,10 @@ function PricingContent() {
   // Dynamic social proof counter
   const [storyCount, setStoryCount] = useState(0);
   useEffect(() => {
+    // ?tab=worksheet → 선생님 전용 활동지 구매 모드
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "worksheet") setIsWorksheetMode(true);
+
     trackPricingPageView();
     fetch("/api/community?limit=0")
       .then(r => r.ok ? r.json() : null)
@@ -266,13 +281,18 @@ function PricingContent() {
         const toss = window.TossPayments(tossClientKey);
         const payment = toss.payment({ customerKey: user.id });
 
+        // 활동지 결제 시 returnTo=teacher 파라미터 추가
+        const isWorksheet = productType.startsWith("worksheet_");
+        const returnToParam = isWorksheet ? "&returnTo=teacher" : "";
+        const tabParam = isWorksheet ? "&tab=worksheet" : "";
+
         await payment.requestPayment({
           method: "CARD",  // Toss SDK v2: "CARD"는 카드 결제 화면에서 간편결제(카카오/네이버/토스페이)도 선택 가능
           amount: { currency: "KRW", value: product.amount },
           orderId,
           orderName: product.name,
-          successUrl: `${window.location.origin}/payment/success?mode=standard`,
-          failUrl: `${window.location.origin}/payment/fail`,
+          successUrl: `${window.location.origin}/payment/success?mode=standard${returnToParam}`,
+          failUrl: `${window.location.origin}/payment/fail${tabParam}`,
         });
       } catch (err: unknown) {
         console.error("[TossPayments] requestPayment error:", err);
@@ -470,6 +490,65 @@ function PricingContent() {
               : "4일 프로그램 시작하기"}
           </button>
         </div>
+
+        {/* ════════════════════════════════════════
+            WORKSHEET SECTION (선생님 모드에서만 노출)
+            ════════════════════════════════════════ */}
+        {isWorksheetMode && (
+          <div id="worksheet" className="mb-6 pt-4">
+            <h3 className="font-serif text-center text-lg text-brown font-semibold mb-1">선생님을 위한 활동지</h3>
+            <p className="text-center text-xs text-brown-light font-light mb-4">AI가 동화 내용에 맞춰 활동지를 자동 생성합니다</p>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* 활동지 1건 */}
+              <div className="rounded-2xl p-4" style={{ background: "rgb(var(--surface) / 0.6)", border: "1.5px solid rgba(127,191,176,0.3)" }}>
+                <div className="text-center">
+                  <div className="inline-block px-2 py-0.5 rounded-full text-[10px] text-white font-bold mb-2" style={{ background: "linear-gradient(135deg, #7FBFB0, #6AAF9E)" }}>론칭 할인 20%</div>
+                  <p className="text-xs text-brown-light font-light">활동지 1건</p>
+                  <div className="flex items-baseline justify-center gap-1.5 mt-1">
+                    <span className="text-[11px] text-brown-pale line-through">₩2,400</span>
+                    <span className="font-serif text-xl font-bold text-brown">₩1,900</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => initiatePayment("worksheet_single")}
+                  disabled={isProcessing || !sdkReady}
+                  className="w-full mt-3 py-2.5 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, #7FBFB0, #6AAF9E)" }}
+                >
+                  {isProcessing ? "이동 중..." : "1건 구매하기"}
+                </button>
+              </div>
+
+              {/* 활동지 5건 */}
+              <div className="rounded-2xl p-4 relative" style={{ background: "rgb(var(--surface) / 0.6)", border: "1.5px solid rgba(127,191,176,0.4)" }}>
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] text-white font-bold" style={{ background: "linear-gradient(135deg, #7FBFB0, #6AAF9E)" }}>
+                  론칭 할인 20%
+                </div>
+                <div className="text-center pt-1">
+                  <p className="text-xs text-brown-light font-light">활동지 5건</p>
+                  <div className="flex items-baseline justify-center gap-1.5 mt-1">
+                    <span className="text-[11px] text-brown-pale line-through">₩9,500</span>
+                    <span className="font-serif text-xl font-bold text-brown">₩7,600</span>
+                  </div>
+                  <p className="text-[10px] font-medium mt-0.5" style={{ color: "#7FBFB0" }}>건당 ₩1,520</p>
+                </div>
+                <button
+                  onClick={() => initiatePayment("worksheet_bundle")}
+                  disabled={isProcessing || !sdkReady}
+                  className="w-full mt-3 py-2.5 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, #7FBFB0, #6AAF9E)" }}
+                >
+                  {isProcessing ? "이동 중..." : "5건 묶음 구매"}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-brown-pale/60 font-light text-center mt-2">
+              첫 활동지 1건은 무료! · 9종 활동지 지원 · 영구 보관
+            </p>
+          </div>
+        )}
 
         {/* ════════════════════════════════════════
             TRUST BADGES (통합)

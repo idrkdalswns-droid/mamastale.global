@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
   const { data: profile, error } = await sb.client
     .from("profiles")
-    .select("free_stories_remaining")
+    .select("free_stories_remaining, worksheet_tickets_remaining")
     .eq("id", user.id)
     .single();
 
@@ -131,5 +131,8 @@ export async function GET(request: NextRequest) {
     storyCount = 0;
   }
 
-  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase, storyCount }));
+  // 활동지 티켓 잔여량
+  const worksheetTickets = profile?.worksheet_tickets_remaining ?? 0;
+
+  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase, storyCount, worksheet_tickets_remaining: worksheetTickets }));
 }

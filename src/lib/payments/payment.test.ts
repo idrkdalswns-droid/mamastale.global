@@ -8,11 +8,24 @@ import { z } from "zod";
 // ════════════════════════════════════════════════════════════
 
 // ─── Extracted from /api/payments/confirm/route.ts ───
-const VALID_PRICES: Record<number, number> = {
+const STORY_PRICES: Record<number, number> = {
   3920: 1,
   4900: 1,
   14900: 4,
 };
+
+const WORKSHEET_PRICES: Record<number, number> = {
+  1900: 1,
+  7600: 5,
+};
+
+const VALID_PRICES: Record<number, number> = { ...STORY_PRICES, ...WORKSHEET_PRICES };
+
+function resolveTicketType(amount: number): { type: "story" | "worksheet"; tickets: number } | null {
+  if (STORY_PRICES[amount]) return { type: "story", tickets: STORY_PRICES[amount] };
+  if (WORKSHEET_PRICES[amount]) return { type: "worksheet", tickets: WORKSHEET_PRICES[amount] };
+  return null;
+}
 
 // mode: "widget" uses gsk_ key, "standard" uses sk_ key (per official Toss sample)
 const confirmRequestSchema = z.object({
@@ -115,6 +128,45 @@ describe("VALID_PRICES", () => {
     const singlePricePerTicket = PRODUCTS.ticket.amount / PRODUCTS.ticket.tickets;
     const bundlePricePerTicket = PRODUCTS.bundle.amount / PRODUCTS.bundle.tickets;
     expect(bundlePricePerTicket).toBeLessThan(singlePricePerTicket);
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// Worksheet Ticket Prices
+// ════════════════════════════════════════════════════════════
+
+describe("WORKSHEET_PRICES", () => {
+  it("maps ₩1,900 to 1 worksheet ticket", () => {
+    expect(WORKSHEET_PRICES[1900]).toBe(1);
+  });
+
+  it("maps ₩7,600 to 5 worksheet tickets", () => {
+    expect(WORKSHEET_PRICES[7600]).toBe(5);
+  });
+
+  it("worksheet bundle is cheaper per ticket", () => {
+    const singlePrice = 1900 / WORKSHEET_PRICES[1900];
+    const bundlePrice = 7600 / WORKSHEET_PRICES[7600];
+    expect(bundlePrice).toBeLessThan(singlePrice);
+  });
+});
+
+describe("resolveTicketType", () => {
+  it("resolves story prices correctly", () => {
+    expect(resolveTicketType(3920)).toEqual({ type: "story", tickets: 1 });
+    expect(resolveTicketType(4900)).toEqual({ type: "story", tickets: 1 });
+    expect(resolveTicketType(14900)).toEqual({ type: "story", tickets: 4 });
+  });
+
+  it("resolves worksheet prices correctly", () => {
+    expect(resolveTicketType(1900)).toEqual({ type: "worksheet", tickets: 1 });
+    expect(resolveTicketType(7600)).toEqual({ type: "worksheet", tickets: 5 });
+  });
+
+  it("returns null for unknown amounts", () => {
+    expect(resolveTicketType(0)).toBeNull();
+    expect(resolveTicketType(1000)).toBeNull();
+    expect(resolveTicketType(5000)).toBeNull();
   });
 });
 

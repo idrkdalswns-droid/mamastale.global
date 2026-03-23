@@ -76,3 +76,37 @@ export async function incrementTickets(
   // All retries failed — throw error instead of silently returning stale count
   throw new Error(`CAS ticket increment failed after ${MAX_CAS_RETRIES} retries for user ${userId}`);
 }
+
+/**
+ * Atomic worksheet ticket increment.
+ * Uses `refund_worksheet_ticket` RPC (030_worksheet_system.sql) for atomic add.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function incrementWorksheetTickets(
+  supabase: any,
+  userId: string,
+  count: number
+): Promise<number> {
+  if (!Number.isInteger(count) || count < 1 || count > 20) {
+    throw new Error(`Invalid worksheet ticket count: ${count}`);
+  }
+
+  // Use refund_worksheet_ticket RPC (adds tickets atomically)
+  const { error: rpcErr } = await supabase.rpc("refund_worksheet_ticket", {
+    p_user_id: userId,
+    p_count: count,
+  });
+
+  if (rpcErr) {
+    throw new Error(`RPC refund_worksheet_ticket failed: ${rpcErr.code} ${rpcErr.message}`);
+  }
+
+  // Read new balance
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("worksheet_tickets_remaining")
+    .eq("id", userId)
+    .single();
+
+  return profile?.worksheet_tickets_remaining ?? 0;
+}

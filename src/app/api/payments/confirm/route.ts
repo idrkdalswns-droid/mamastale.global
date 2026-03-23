@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { incrementTickets } from "@/lib/supabase/tickets";
+import { incrementTickets, incrementWorksheetTickets } from "@/lib/supabase/tickets";
 import { z } from "zod";
 import { sendReceipt } from "@/lib/email/send-receipt";
 import { getClientIP } from "@/lib/utils/validation";
@@ -29,11 +29,25 @@ function checkPaymentRate(ip: string): boolean {
 }
 
 // ─── Valid prices (server-side source of truth) ───
-const VALID_PRICES: Record<number, number> = {
+const STORY_PRICES: Record<number, number> = {
   3920: 1,   // ₩3,920 = 1 ticket (론칭 할인)
   4900: 1,   // ₩4,900 = 1 ticket
   14900: 4,  // ₩14,900 = 4 tickets (4일 프로그램)
 };
+
+const WORKSHEET_PRICES: Record<number, number> = {
+  1900: 1,   // ₩1,900 = 활동지 1건 (론칭 할인 20%)
+  7600: 5,   // ₩7,600 = 활동지 5건 (론칭 할인 20%, 건당 ₩1,520)
+};
+
+// Combined lookup for validation (backward compat)
+const VALID_PRICES: Record<number, number> = { ...STORY_PRICES, ...WORKSHEET_PRICES };
+
+function resolveTicketType(amount: number): { type: "story" | "worksheet"; tickets: number } | null {
+  if (STORY_PRICES[amount]) return { type: "story", tickets: STORY_PRICES[amount] };
+  if (WORKSHEET_PRICES[amount]) return { type: "worksheet", tickets: WORKSHEET_PRICES[amount] };
+  return null;
+}
 
 // ─── Zod schema for payment confirmation request ───
 // mode: "widget" uses TOSS_WIDGET_SECRET_KEY (gsk_), "standard" uses TOSS_SECRET_KEY (sk_)
@@ -249,15 +263,17 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    const ticketCount = VALID_PRICES[confirmedAmount];
+    const resolved = resolveTicketType(confirmedAmount);
 
-    if (!ticketCount) {
+    if (!resolved) {
       console.error("[Toss] Unexpected confirmed amount:", confirmedAmount);
       return sb.applyCookies(NextResponse.json(
         { error: "결제 금액이 유효하지 않습니다." },
         { status: 400 }
       ));
     }
+    const ticketCount = resolved.tickets;
+    const ticketType = resolved.type;
 
     // ─── T-1: order_claims PRIMARY dedup (strongest, cross-isolate) ───
     // Promoted to FIRST check. UNIQUE(user_id, order_id) guarantees at-most-once.
@@ -369,10 +385,14 @@ export async function POST(request: NextRequest) {
       console.warn("[Toss] metadata pre-claim failed — order_claims already protects");
     }
 
-    // ─── Atomic ticket increment ───
+    // ─── Atomic ticket increment (story or worksheet) ───
     let newTotal: number;
     try {
-      newTotal = await incrementTickets(sb.client, user.id, ticketCount);
+      if (ticketType === "worksheet") {
+        newTotal = await incrementWorksheetTickets(sb.client, user.id, ticketCount);
+      } else {
+        newTotal = await incrementTickets(sb.client, user.id, ticketCount);
+      }
     } catch (ticketErr) {
       console.error(`[CRITICAL] Payment ${orderId} confirmed but ticket increment failed for user ${user.id.slice(0, 8)}...`, ticketErr);
       // HIGH #2 FIX: Rollback metadata claim to allow retry
@@ -440,7 +460,7 @@ export async function POST(request: NextRequest) {
     const paymentMethod = confirmData.easyPay?.provider || confirmData.method || "unknown";
     console.info(
       `[Toss] Payment confirmed: ${confirmData.orderId}, ` +
-      `method=${paymentMethod}, user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
+      `method=${paymentMethod}, type=${ticketType}, user=${maskedUserId}, tickets +${ticketCount}, total=${newTotal}`
     );
 
     // I12: fire-and-forget 결제 영수증 이메일
