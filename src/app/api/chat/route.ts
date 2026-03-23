@@ -41,7 +41,7 @@ const chatRequestSchema = z.object({
     })
   ).max(120),  // Generous limit for long conversations
   // R6-F5: Constrain sessionId to prevent log pollution and crisis tracking abuse
-  sessionId: z.string().max(100).regex(/^[a-zA-Z0-9_-]*$/).optional(),
+  sessionId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).optional(),
   childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
@@ -230,6 +230,14 @@ export async function POST(request: NextRequest) {
     if (!isAuthenticated) {
       const totalTurns = Math.ceil(messages.length / 2);
       if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
+        return NextResponse.json(
+          { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
+          { status: 403 }
+        );
+      }
+      // Bug Bounty: Persistent server-side guest turn tracking (parity with /api/chat/stream)
+      const guestTurnAllowed = await checkRateLimitPersistent(`guest_turns:${ip}`, GUEST_TURN_LIMIT, 86400);
+      if (!guestTurnAllowed) {
         return NextResponse.json(
           { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
           { status: 403 }

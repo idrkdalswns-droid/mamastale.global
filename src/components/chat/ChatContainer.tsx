@@ -104,10 +104,11 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     const state = useChatStore.getState();
     const userMsgs = state.messages.filter(m => m.role === "user").length;
     if (userMsgs > 0 && !state.storyDone) {
-      state.saveDraft();
+      // Bug Bounty: Promise-based guard prevents concurrent saves regardless of network latency
+      Promise.resolve(state.saveDraft()).catch(() => {}).finally(() => { savingRef.current = false; });
+    } else {
+      savingRef.current = false;
     }
-    // Release guard after 500ms to allow next save
-    setTimeout(() => { savingRef.current = false; }, 500);
   }, []);
 
   // ── DEFENSE LAYER 1: Auto-save chat on page unload ──

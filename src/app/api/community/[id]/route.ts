@@ -2,44 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// R2-FIX: Rate limit community detail GET (prevent enumeration/scraping)
-const communityDetailRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkCommunityDetailRate(ip: string): boolean {
-  const now = Date.now();
-  if (communityDetailRateMap.size > 300) {
-    for (const [k, v] of communityDetailRateMap) { if (now > v.resetAt) communityDetailRateMap.delete(k); }
-  }
-  const entry = communityDetailRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    communityDetailRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count++;
-  return true;
-}
-
-// ─── View count deduplication (per-IP per-story, per-isolate) ───
-const VIEW_DEDUP_WINDOW = 300_000; // 5 minutes
-const viewDedupMap = new Map<string, number>();
-
-function shouldCountView(ip: string, storyId: string): boolean {
-  const now = Date.now();
-  // Lazy cleanup
-  if (viewDedupMap.size > 500) {
-    for (const [k, ts] of viewDedupMap) {
-      if (now - ts > VIEW_DEDUP_WINDOW) viewDedupMap.delete(k);
-    }
-  }
-  const key = `${ip}:${storyId}`;
-  const lastView = viewDedupMap.get(key);
-  if (lastView && now - lastView < VIEW_DEDUP_WINDOW) return false;
-  viewDedupMap.set(key, now);
-  return true;
-}
+// ─── Rate limiters (each has its own isolated Map) ───
+const communityDetailLimiter = createInMemoryLimiter(RATE_KEYS.COMMUNITY_DETAIL, { maxEntries: 300 });
+// View count deduplication: limit=1, window=5min (same as like dedup pattern)
+const viewDedupLimiter = createInMemoryLimiter(RATE_KEYS.COMMUNITY_VIEW_DEDUP, { maxEntries: 500 });
 
 /** Anon-key client for public reads — RLS enforced */
 function createAnonClient() {
@@ -60,7 +30,7 @@ export async function GET(
 
   // R2-FIX: Rate limit detail GET (30/min per IP)
   const ip = getClientIP(request);
-  if (!checkCommunityDetailRate(ip)) {
+  if (!communityDetailLimiter.check(ip, 30, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
   }
 
@@ -85,7 +55,9 @@ export async function GET(
   }
 
   // Atomic view count increment — deduplicated per IP per story (5min window)
-  if (shouldCountView(ip, id)) {
+  if (!viewDedupLimiter.check(`${ip}:${id}`, 1, 300_000)) {
+    // Already counted view within 5min window — skip
+  } else {
     const serviceClient = createServiceRoleClient();
     if (serviceClient) {
       const { error: rpcError } = await serviceClient.rpc("increment_story_counter", {

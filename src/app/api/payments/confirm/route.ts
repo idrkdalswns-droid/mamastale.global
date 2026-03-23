@@ -5,28 +5,12 @@ import { incrementTickets, incrementWorksheetTickets } from "@/lib/supabase/tick
 import { z } from "zod";
 import { sendReceipt } from "@/lib/email/send-receipt";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// LAUNCH-FIX: Rate limiting for payment confirmations (prevent abuse)
-const PAYMENT_RATE_WINDOW = 60_000; // 1 minute
-const PAYMENT_RATE_LIMIT = 10; // 10 confirm attempts per minute per IP
-const paymentRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkPaymentRate(ip: string): boolean {
-  const now = Date.now();
-  if (paymentRateMap.size > 300) {
-    for (const [k, v] of paymentRateMap) { if (now > v.resetAt) paymentRateMap.delete(k); }
-  }
-  const entry = paymentRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    paymentRateMap.set(ip, { count: 1, resetAt: now + PAYMENT_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= PAYMENT_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter (payment rate only; processedOrders dedup Map is separate) ───
+const paymentLimiter = createInMemoryLimiter(RATE_KEYS.PAYMENT_CONFIRM, { maxEntries: 300 });
 
 // ─── Valid prices (server-side source of truth) ───
 const STORY_PRICES: Record<number, number> = {
@@ -84,7 +68,7 @@ function markOrderProcessed(orderId: string): void {
 export async function POST(request: NextRequest) {
   // LAUNCH-FIX: Rate limit payment confirmations
   const ip = getClientIP(request);
-  if (!checkPaymentRate(ip)) {
+  if (!paymentLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

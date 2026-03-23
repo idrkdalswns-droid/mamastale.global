@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 /**
  * POST /api/push/send
@@ -14,24 +15,8 @@ import { getClientIP } from "@/lib/utils/validation";
  * Security: Protected by internal API key check (not user-facing)
  */
 
-// Rate limiting
-const PUSH_RATE_WINDOW = 60_000;
-const pushRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkPushRate(ip: string, limit: number): boolean {
-  const now = Date.now();
-  if (pushRateMap.size > 200) {
-    for (const [k, v] of pushRateMap) { if (now > v.resetAt) pushRateMap.delete(k); }
-  }
-  const entry = pushRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    pushRateMap.set(ip, { count: 1, resetAt: now + PUSH_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter ───
+const pushLimiter = createInMemoryLimiter(RATE_KEYS.PUSH_SEND, { maxEntries: 200 });
 
 // Constant-time string comparison to prevent timing attacks on API key
 function timingSafeEqual(a: string, b: string): boolean {
@@ -74,7 +59,7 @@ async function sendWebPush(
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkPushRate(ip, 100)) {
+  if (!pushLimiter.check(ip, 100, 60_000)) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

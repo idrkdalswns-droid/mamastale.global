@@ -45,6 +45,16 @@ export async function POST(request: NextRequest) {
       )
     );
   }
+  // Bug Bounty: user-only rate limit (prevents IP rotation bypass)
+  const userWithinLimit = await checkRateLimitPersistent(`verify-code:user:${user.id}`, 10, 300);
+  if (!userWithinLimit) {
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: "인증 시도가 너무 많습니다. 5분 후 다시 시도해주세요." },
+        { status: 429 }
+      )
+    );
+  }
 
   // 4. 요청 본문 파싱
   let body: { code?: string };

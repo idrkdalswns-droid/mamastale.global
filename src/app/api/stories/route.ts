@@ -4,6 +4,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS, isValidCoverImage } from "@/lib/utils/validation";
 import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -23,46 +24,11 @@ const storyPostSchema = z.object({
 export const runtime = "edge";
 
 // P1-FIX(KR-1): Rate limit + size limits for story save endpoint
-const STORY_SAVE_RATE_WINDOW_MS = 60_000;
-const STORY_SAVE_RATE_LIMIT = 5; // Max 5 saves per minute per user
 const MAX_BODY_SIZE = 512_000; // 512KB max request body
 
-const storySaveRateMap = new Map<string, { count: number; resetAt: number }>();
-
-// R4-FIX: Rate limit GET /api/stories (prevent enumeration)
-const storyListRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkStoryListRate(userId: string): boolean {
-  const now = Date.now();
-  if (storyListRateMap.size > 200) {
-    for (const [k, v] of storyListRateMap) { if (now > v.resetAt) storyListRateMap.delete(k); }
-  }
-  const entry = storyListRateMap.get(userId);
-  if (!entry || now > entry.resetAt) {
-    storyListRateMap.set(userId, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 15) return false;
-  entry.count++;
-  return true;
-}
-
-function checkStorySaveRate(userId: string): boolean {
-  const now = Date.now();
-  // Lazy cleanup
-  if (storySaveRateMap.size > 200) {
-    for (const [k, v] of storySaveRateMap) {
-      if (now > v.resetAt) storySaveRateMap.delete(k);
-    }
-  }
-  const entry = storySaveRateMap.get(userId);
-  if (!entry || now > entry.resetAt) {
-    storySaveRateMap.set(userId, { count: 1, resetAt: now + STORY_SAVE_RATE_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= STORY_SAVE_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiters (each has its own isolated Map) ───
+const storySaveLimiter = createInMemoryLimiter(RATE_KEYS.STORY_SAVE, { maxEntries: 200 });
+const storyListLimiter = createInMemoryLimiter(RATE_KEYS.STORY_LIST, { maxEntries: 200 });
 
 /** Try cookie auth first, then fallback to Authorization bearer token */
 async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
@@ -96,7 +62,7 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
-  if (!checkStoryListRate(user.id)) {
+  if (!storyListLimiter.check(user.id, 15, 60_000)) {
     return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
   }
 
@@ -138,7 +104,7 @@ export async function POST(request: NextRequest) {
   }
 
   // P1-FIX(KR-1): Rate limit per user
-  if (!checkStorySaveRate(user.id)) {
+  if (!storySaveLimiter.check(user.id, 5, 60_000)) {
     return sb.applyCookies(NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

@@ -1,30 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// P0-FIX: Rate limiting for ticket use endpoint (prevent DoS / rapid deduction abuse)
-const TICKET_USE_RATE_WINDOW = 60_000; // 1 minute
-const TICKET_USE_RATE_LIMIT = 5; // max 5 ticket use attempts per minute per IP
-const ticketUseRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkTicketUseRate(key: string): boolean {
-  const now = Date.now();
-  if (ticketUseRateMap.size > 300) {
-    for (const [k, v] of ticketUseRateMap) {
-      if (now > v.resetAt) ticketUseRateMap.delete(k);
-    }
-  }
-  const entry = ticketUseRateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    ticketUseRateMap.set(key, { count: 1, resetAt: now + TICKET_USE_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= TICKET_USE_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter ───
+const ticketUseLimiter = createInMemoryLimiter(RATE_KEYS.TICKET_USE, { maxEntries: 300 });
 
 /**
  * POST /api/tickets/use
@@ -38,7 +20,7 @@ function checkTicketUseRate(key: string): boolean {
 export async function POST(request: NextRequest) {
   // P0-FIX: Rate limit ticket use to prevent abuse
   const ip = getClientIP(request);
-  if (!checkTicketUseRate(ip)) {
+  if (!ticketUseLimiter.check(ip, 5, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

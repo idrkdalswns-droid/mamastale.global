@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
 // HIGH #4 FIX: Use authenticated client to require login for review submission
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
@@ -15,44 +16,9 @@ const reviewSchema = z.object({
   content: z.string().min(1).max(500),
 });
 
-// ─── Rate limiting (per-IP, per-isolate) ───
-const REVIEW_RATE_WINDOW = 300_000; // 5 minutes
-const REVIEW_RATE_LIMIT = 3; // max 3 reviews per 5 minutes per IP
-const reviewRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkReviewRateLimit(ip: string): boolean {
-  const now = Date.now();
-  if (reviewRateMap.size > 300) {
-    for (const [k, v] of reviewRateMap) {
-      if (now > v.resetAt) reviewRateMap.delete(k);
-    }
-  }
-  const entry = reviewRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    reviewRateMap.set(ip, { count: 1, resetAt: now + REVIEW_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= REVIEW_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
-
-// R8-FIX: Rate limit review reads (30/min per IP — DDoS protection)
-const reviewGetRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkReviewGetRate(ip: string): boolean {
-  const now = Date.now();
-  if (reviewGetRateMap.size > 300) {
-    for (const [k, v] of reviewGetRateMap) { if (now > v.resetAt) reviewGetRateMap.delete(k); }
-  }
-  const entry = reviewGetRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    reviewGetRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiters (each has its own isolated Map) ───
+const reviewPostLimiter = createInMemoryLimiter(RATE_KEYS.REVIEW_POST, { maxEntries: 300 });
+const reviewGetLimiter = createInMemoryLimiter(RATE_KEYS.REVIEW_GET, { maxEntries: 300 });
 
 function createAnonClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -66,7 +32,7 @@ function createAnonClient() {
 // GET: List reviews (R8-FIX: rate limited)
 export async function GET(request: NextRequest) {
   const readIp = getClientIP(request);
-  if (!checkReviewGetRate(readIp)) {
+  if (!reviewGetLimiter.check(readIp, 30, 60_000)) {
     return NextResponse.json({ reviews: [] });
   }
 
@@ -89,7 +55,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // Rate limiting (kept as secondary defense even with auth)
   const ip = getClientIP(request);
-  if (!checkReviewRateLimit(ip)) {
+  if (!reviewPostLimiter.check(ip, 3, 300_000)) {
     return NextResponse.json(
       { error: "후기는 5분에 3건까지 등록 가능합니다." },
       { status: 429 }

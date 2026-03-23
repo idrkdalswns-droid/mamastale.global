@@ -52,7 +52,7 @@ const chatRequestSchema = z.object({
     })
   ).max(120),
   // R6-F5: Constrain sessionId to prevent log pollution
-  sessionId: z.string().max(100).regex(/^[a-zA-Z0-9_-]*$/).optional(),
+  sessionId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).optional(),
   childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
   parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
   parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),

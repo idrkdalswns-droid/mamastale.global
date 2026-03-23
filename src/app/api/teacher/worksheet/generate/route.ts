@@ -26,6 +26,7 @@ import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { getAnthropicClient } from "@/lib/anthropic/client";
 import { selectWorksheetModel } from "@/lib/anthropic/model-router";
 import { buildWorksheetPrompt } from "@/lib/worksheet/prompts/builder";
@@ -56,22 +57,8 @@ import type {
 
 export const runtime = "edge";
 
-// ─── Rate Limiting ───
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-function checkRate(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now();
-  if (rateMap.size > 200) {
-    for (const [k, v] of rateMap) { if (now > v.resetAt) rateMap.delete(k); }
-  }
-  const entry = rateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate Limiter ───
+const worksheetLimiter = createInMemoryLimiter(RATE_KEYS.TEACHER_WORKSHEET, { maxEntries: 200 });
 
 // ─── Renderer Map ───
 const RENDERERS: Record<string, (data: unknown, params: DerivedParams) => string> = {
@@ -125,7 +112,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Rate limiting (20 per hour per user)
-  if (!checkRate(`ws:${user.id}`, 20, 3600_000)) {
+  if (!worksheetLimiter.check(`ws:${user.id}`, 20, 3600_000)) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },

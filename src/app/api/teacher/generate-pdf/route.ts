@@ -20,26 +20,10 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { generateActivitySheetHtml } from "@/lib/pdf/teacher-activity-sheet";
 import { generateReadingGuideHtml } from "@/lib/pdf/teacher-reading-guide";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
-// ─── Rate Limiting ───
-
-const pdfRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkPdfRateLimit(ip: string): boolean {
-  const now = Date.now();
-  if (pdfRateMap.size > 300) {
-    for (const [k, v] of pdfRateMap) {
-      if (now > v.resetAt) pdfRateMap.delete(k);
-    }
-  }
-  const entry = pdfRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    pdfRateMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate Limiter ───
+const pdfLimiter = createInMemoryLimiter(RATE_KEYS.TEACHER_PDF, { maxEntries: 300 });
 
 // ─── 스키마 ───
 
@@ -75,7 +59,7 @@ const MAX_BODY_SIZE = 512_000;
 export async function POST(request: NextRequest) {
   // 1. Rate limiting
   const ip = getClientIP(request);
-  if (!checkPdfRateLimit(ip)) {
+  if (!pdfLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다." },
       { status: 429 }

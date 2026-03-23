@@ -1,36 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// R2-FIX: Rate limiting for ticket balance check (prevent API abuse from Pricing page)
-const TICKET_CHECK_RATE_WINDOW = 60_000; // 1 minute
-const TICKET_CHECK_RATE_LIMIT = 15; // max 15 checks per minute per IP
-const ticketCheckRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkTicketCheckRate(key: string): boolean {
-  const now = Date.now();
-  if (ticketCheckRateMap.size > 300) {
-    for (const [k, v] of ticketCheckRateMap) {
-      if (now > v.resetAt) ticketCheckRateMap.delete(k);
-    }
-  }
-  const entry = ticketCheckRateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    ticketCheckRateMap.set(key, { count: 1, resetAt: now + TICKET_CHECK_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= TICKET_CHECK_RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter ───
+const ticketCheckLimiter = createInMemoryLimiter(RATE_KEYS.TICKET_CHECK, { maxEntries: 300 });
 
 // GET: Check remaining tickets + first purchase eligibility
 export async function GET(request: NextRequest) {
   // R2-FIX: Rate limit ticket balance checks
   const ip = getClientIP(request);
-  if (!checkTicketCheckRate(ip)) {
+  if (!ticketCheckLimiter.check(ip, 15, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

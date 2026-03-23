@@ -4,30 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 const referralSchema = z.object({
   code: z.string().min(4).max(8).transform(s => s.trim().toUpperCase()),
 });
 
-// Rate limiting for referral endpoints
-const REFERRAL_RATE_WINDOW = 60_000;
-const referralRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkReferralRate(ip: string, limit: number): boolean {
-  const now = Date.now();
-  if (referralRateMap.size > 200) {
-    for (const [k, v] of referralRateMap) { if (now > v.resetAt) referralRateMap.delete(k); }
-  }
-  const key = `${ip}`;
-  const entry = referralRateMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    referralRateMap.set(key, { count: 1, resetAt: now + REFERRAL_RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= limit) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter ───
+const referralLimiter = createInMemoryLimiter(RATE_KEYS.REFERRAL, { maxEntries: 200 });
 
 // Resolve user from cookie or bearer token
 async function resolveUser(
@@ -57,7 +41,7 @@ function generateCode(): string {
 // GET: Retrieve or generate referral code + stats
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkReferralRate(ip, 15)) {
+  if (!referralLimiter.check(ip, 15, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 
@@ -114,7 +98,7 @@ export async function GET(request: NextRequest) {
 // POST: Claim a referral code (called during/after signup)
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkReferralRate(ip, 5)) {
+  if (!referralLimiter.check(ip, 5, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 

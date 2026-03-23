@@ -2,30 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
 
-// ─── Rate limiting (10 per 60s per IP) ───
-const RATE_WINDOW = 60_000;
-const RATE_LIMIT = 10;
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRate(ip: string): boolean {
-  const now = Date.now();
-  if (rateMap.size > 500) {
-    for (const [k, v] of rateMap) {
-      if (now > v.resetAt) rateMap.delete(k);
-    }
-  }
-  const entry = rateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
+// ─── Rate limiter ───
+const presenceLimiter = createInMemoryLimiter(RATE_KEYS.PRESENCE, { maxEntries: 500 });
 
 const presenceSchema = z.object({
   anonymous_id: z.string().min(10).max(64),
@@ -34,7 +16,7 @@ const presenceSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!checkRate(ip)) {
+  if (!presenceLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 

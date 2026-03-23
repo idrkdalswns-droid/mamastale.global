@@ -187,6 +187,7 @@ export default function TurnFivePopup({
               )}
 
               <button
+                autoFocus
                 onClick={handleUseTicket}
                 disabled={isUsingTicket}
                 className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-all active:scale-[0.97] disabled:opacity-60 mb-3"
