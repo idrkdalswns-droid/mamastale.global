@@ -493,6 +493,70 @@ function generateCrisisReasoning(severity: CrisisSeverity, keywords: string[], c
   }
 }
 
+/** Localized crisis responses for HIGH severity (CSSRS 4-5). Bug Bounty C-1. */
+const CRISIS_RESPONSES: Record<string, string> = {
+  ko: `지금 많이 힘드시군요. 어머니의 고통이 느껴집니다.
+
+지금 이 순간, 어머니의 안전이 가장 중요합니다.
+
+혼자 감당하지 않으셔도 됩니다. 지금 바로 전문 상담사와 이야기해 주세요:
+
+📞 **자살예방상담전화: 1393** (24시간, 무료)
+📞 **정신건강위기상담전화: 1577-0199** (24시간)
+📞 **응급: 119**
+
+이 서비스는 전문 상담을 대체할 수 없어요. 전문가의 도움을 받으시는 것이 가장 중요합니다. 지금 바로 전화해 주세요.`,
+
+  en: `I can feel how much pain you're in right now. Your safety matters most.
+
+You don't have to face this alone. Please reach out to a crisis counselor now:
+
+📞 **National Suicide Prevention Lifeline: 988** (24/7, free)
+📞 **Crisis Text Line: Text HOME to 741741**
+📞 **Emergency: 911**
+
+This service cannot replace professional help. Please call now — someone is ready to listen.`,
+
+  ja: `今、とてもお辛い状況にいらっしゃるのですね。あなたの安全が最も大切です。
+
+一人で抱え込まないでください。今すぐ専門の相談員に話してください：
+
+📞 **いのちの電話: 0120-783-556**（毎日16時〜21時、無料）
+📞 **よりそいホットライン: 0120-279-338**（24時間、無料）
+📞 **緊急: 119**
+
+このサービスは専門的な相談の代わりにはなりません。今すぐお電話ください。`,
+
+  zh: `我能感受到您现在承受着很大的痛苦。您的安全是最重要的。
+
+您不必独自面对。请立即联系专业心理咨询师：
+
+📞 **全国心理援助热线: 400-161-9995**
+📞 **北京心理危机研究与干预中心: 010-82951332**
+📞 **急救: 120**
+
+本服务无法替代专业帮助。请立即拨打电话，会有人倾听您的声音。`,
+
+  ar: `أشعر بمدى الألم الذي تمرين به الآن. سلامتك هي الأهم.
+
+لا يجب أن تواجهي هذا بمفردك. يرجى التواصل مع مستشار أزمات الآن:
+
+📞 **خط مساندة: 920033360**
+📞 **الطوارئ: 911**
+
+هذه الخدمة لا يمكن أن تحل محل المساعدة المتخصصة. يرجى الاتصال الآن.`,
+
+  fr: `Je ressens combien vous souffrez en ce moment. Votre sécurité est la priorité.
+
+Vous n'avez pas à affronter cela seule. Contactez un conseiller de crise maintenant :
+
+📞 **SOS Amitié : 09 72 39 40 50** (24h/24)
+📞 **3114 — Numéro national de prévention du suicide** (24h/24)
+📞 **Urgences : 15 ou 112**
+
+Ce service ne remplace pas l'aide professionnelle. Appelez maintenant, quelqu'un est prêt à vous écouter.`,
+};
+
 /**
  * Multi-tier crisis keyword pre-screening (v3.0).
  * CSSRS-aligned 5-level classification with false positive filtering.
@@ -531,22 +595,20 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
     const cssrsLevel = determineCSSRSLevel("HIGH", detected);
     const reasoning = generateCrisisReasoning("HIGH", detected, cssrsLevel);
 
+    // Bug Bounty C-1: Detect language from which keyword set matched, return localized crisis response
+    const detectedLang: string =
+      highAllJa.length > 0 ? "ja" :
+      highAllZh.length > 0 ? "zh" :
+      highAllAr.length > 0 ? "ar" :
+      highAllFr.length > 0 ? "fr" :
+      highAllEn.length > 0 ? "en" : "ko";
+
     return {
       severity: "HIGH",
       detectedKeywords: detected,
       cssrsLevel,
       reasoning,
-      response: `지금 많이 힘드시군요. 어머니의 고통이 느껴집니다.
-
-지금 이 순간, 어머니의 안전이 가장 중요합니다.
-
-혼자 감당하지 않으셔도 됩니다. 지금 바로 전문 상담사와 이야기해 주세요:
-
-📞 **자살예방상담전화: 1393** (24시간, 무료)
-📞 **정신건강위기상담전화: 1577-0199** (24시간)
-📞 **응급: 119**
-
-이 서비스는 전문 상담을 대체할 수 없어요. 전문가의 도움을 받으시는 것이 가장 중요합니다. 지금 바로 전화해 주세요.`,
+      response: CRISIS_RESPONSES[detectedLang] || CRISIS_RESPONSES.ko,
     };
   }
 

@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
           }
           console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
           // Non-unique error → allow Stripe to retry
-          return NextResponse.json({ error: "DB insert failed" }, { status: 500 });
+          return NextResponse.json({ error: "처리에 실패했습니다" }, { status: 500 });
         }
 
         // ─── Atomic ticket increment (only reached if INSERT succeeded) ───

@@ -158,7 +158,7 @@ export default function TurnFivePopup({
         >
           <p className="text-[13px] text-brown font-normal leading-relaxed text-center break-keep">
             {childName
-              ? <>세상에 하나뿐인 {nameWithParticle(childName, "이를", "를")} 위한 동화를 완성해보세요</>
+              ? <>세상에 하나뿐인 <span className="truncate max-w-[200px] inline-block align-bottom">{nameWithParticle(childName, "이를", "를")}</span> 위한 동화를 완성해보세요</>
               : <>세상에 하나뿐인 동화를 완성해보세요</>
             }
           </p>

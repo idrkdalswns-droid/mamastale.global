@@ -29,7 +29,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error.message, info.componentStack);
     // Report to server
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     fetch("/api/errors/report", {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -38,7 +41,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         component: info.componentStack?.slice(0, 500),
         url: typeof window !== "undefined" ? window.location.href : "",
       }),
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => clearTimeout(timeout));
   }
 
   render() {

@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
   // Sprint 2-F: Enhanced search — match title, author_alias, or topic
   const safeSearch = sanitizeSearchQuery(search);
   if (safeSearch) {
-    query = query.or(`title.ilike.%${safeSearch}%,author_alias.ilike.%${safeSearch}%,topic.ilike.%${safeSearch}%`);
+    const likeEscaped = safeSearch.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    query = query.or(`title.ilike.%${likeEscaped}%,author_alias.ilike.%${likeEscaped}%,topic.ilike.%${likeEscaped}%`);
   }
 
   if (sort === "popular") {

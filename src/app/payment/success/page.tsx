@@ -436,7 +436,10 @@ function PaymentSuccessContent() {
           </p>
         )}
         <button
-          onClick={() => router.push("/")}
+          onClick={() => {
+            if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
+            router.push("/");
+          }}
           className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
         >
           홈으로 돌아가기

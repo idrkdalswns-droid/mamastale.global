@@ -63,7 +63,7 @@ export default function SettingsPage() {
   };
 
   const handleDelete = async () => {
-    if (deleteConfirm !== "탈퇴합니다") return;
+    if (deleteConfirm.trim() !== "탈퇴합니다") return;
     setDeleting(true);
     try {
       const res = await fetch("/api/account/delete", {
@@ -220,7 +220,7 @@ export default function SettingsPage() {
           />
           <button
             onClick={handleDelete}
-            disabled={deleteConfirm !== "탈퇴합니다" || deleting}
+            disabled={deleteConfirm.trim() !== "탈퇴합니다" || deleting}
             className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all active:scale-[0.97] disabled:opacity-30"
             style={{ background: "#E07A5F" }}
           >

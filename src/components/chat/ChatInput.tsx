@@ -97,6 +97,7 @@ export default memo(function ChatInput({
   );
 
   const isDisabled = !input.trim() || isLoading || disabled;
+  const isDebouncing = Date.now() - lastSendRef.current < 350;
 
   // Fix 6: Determine placeholder during loading
   const placeholder = disabled
@@ -156,7 +157,7 @@ export default memo(function ChatInput({
           onClick={handleSend}
           disabled={isDisabled}
           aria-label="메시지 보내기"
-          className="w-[46px] h-[46px] rounded-full border-none flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer"
+          className={`w-[46px] h-[46px] rounded-full border-none flex items-center justify-center shrink-0 transition-all duration-200 cursor-pointer${isDebouncing ? " opacity-50" : ""}`}
           style={{
             background: isDisabled
               ? "rgb(var(--brown-pale) / 0.3)"

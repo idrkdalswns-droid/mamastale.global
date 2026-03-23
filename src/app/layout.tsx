@@ -143,6 +143,7 @@ export default async function RootLayout({
         <PWAInstallBanner />
         <Toaster
           position="top-center"
+          containerStyle={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           toastOptions={{
             style: {
               fontFamily: "'Noto Sans KR', sans-serif",

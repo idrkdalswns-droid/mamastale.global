@@ -345,7 +345,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   key={i}
                   onClick={() => !isLockedPage && setCurrentPage(i)}
                   className={`flex-1 min-h-[44px] flex items-center ${isLockedPage ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
-                  aria-label={isLockedPage ? `${i + 1}페이지 (잠김)` : `${i + 1}페이지로 이동`}
+                  aria-label={isLockedPage ? "잠금된 페이지" : `${i + 1}페이지로 이동`}
                   disabled={isLockedPage}
                 >
                   <div
@@ -666,7 +666,9 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 className="mt-1 pt-3"
                 style={{ borderTop: "1px solid rgba(196,149,106,0.1)" }}
               >
-                {ticketsRemaining !== null && ticketsRemaining !== undefined && (
+                {ticketsRemaining === null || ticketsRemaining === undefined ? (
+                  <p className="text-[11px] text-brown-pale font-normal text-center mb-1.5">남은 횟수: ...</p>
+                ) : (
                   <p className="text-[11px] text-brown-pale font-normal text-center mb-1.5">
                     남은 횟수: <span className={ticketsRemaining > 0 ? "text-brown-mid font-medium" : "text-coral font-medium"}>{ticketsRemaining}회</span>
                   </p>

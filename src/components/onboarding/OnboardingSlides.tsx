@@ -241,7 +241,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                 <button
                   type="button"
                   onClick={() => { setParentRole("엄마"); setShowRoleSelector(false); hapticLight(); }}
-                  className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
+                  className="px-3 py-1.5 min-h-[44px] rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
                   style={{
                     background: parentRole === "엄마" ? "linear-gradient(135deg, #E07A5F, #C96B52)" : "rgba(255,255,255,0.7)",
                     color: parentRole === "엄마" ? "#FFF" : "#5A3E2B",
@@ -256,7 +256,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                     key={o.value}
                     type="button"
                     onClick={() => { setParentRole(o.value); setShowRoleSelector(false); hapticLight(); }}
-                    className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
+                    className="px-3 py-1.5 min-h-[44px] rounded-full text-[11px] font-medium transition-all active:scale-[0.96]"
                     style={{
                       background: parentRole === o.value ? "linear-gradient(135deg, #E07A5F, #C96B52)" : "rgba(255,255,255,0.7)",
                       color: parentRole === o.value ? "#FFF" : "#5A3E2B",

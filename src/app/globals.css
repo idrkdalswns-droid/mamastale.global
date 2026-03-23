@@ -85,7 +85,7 @@
   body {
     background: rgb(var(--cream));
     overscroll-behavior: none;
-    overflow-x: hidden;
+    overflow-x: clip;
     font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   }
 
@@ -243,7 +243,8 @@
   .animate-pulse,
   .animate-spin,
   .animate-in {
-    animation: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     opacity: 1 !important;
     transform: none !important;
   }
