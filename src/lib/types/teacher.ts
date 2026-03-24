@@ -13,6 +13,7 @@ export type TeacherScreenState =
   | "GENERATING"
   | "CELEBRATION"
   | "PREVIEW"
+  | "WRITING"
   | "DONE";
 
 export interface TeacherOnboarding {
@@ -53,6 +54,7 @@ export interface TeacherStory {
   metadata: TeacherStoryMetadata;
   briefContext?: Record<string, unknown>;
   coverImage?: string | null;
+  source?: "ai" | "manual";
   createdAt: string;
 }
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.36.0] - 2026-03-24
+
+### Added
+- 선생님 모드: 서재 2열 비주얼 그리드 (커버이미지 3:4 비율, next/image 최적화)
+- 선생님 모드: 동화 삭제 기능 (soft-delete, 확인 모달, 옵티미스틱 UI)
+- 선생님 모드: 추천 활동지 태그 (키워드 기반 자동 추천, 탭→위저드 연동)
+- 선생님 모드: 직접 동화 작성 기능 (TeacherStoryWriter)
+  - 3종 템플릿 + 자유 형식 + 전체 붙여넣기 → 자동 분할
+  - 분할 프리뷰 확인 화면
+  - 탭/스크롤 전체 보기 토글
+  - localStorage 30초 자동저장 + 드래프트 복구
+- 타입 확장: TeacherScreenState에 WRITING 추가, TeacherStory에 source 추가
+
+### Changed
+- TeacherHome: 리스트 → 2열 그리드, 스켈레톤 로딩, 빈 상태 개선
+- TeacherHome: 이모지 아이콘 → SVG 아이콘 (진행 중 대화, 온보딩)
+- CTA 분리: "AI로 새 동화 만들기" + "직접 동화 작성하기"
+
 ## [1.35.0] - 2026-03-24
 
 ### Added

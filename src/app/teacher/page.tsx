@@ -12,6 +12,7 @@ import { TeacherChat } from "@/components/teacher/TeacherChat";
 import { TeacherPreview } from "@/components/teacher/TeacherPreview";
 import { TeacherCelebration } from "@/components/teacher/TeacherCelebration";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
+import { TeacherStoryWriter } from "@/components/teacher/TeacherStoryWriter";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { WorksheetWizard } from "@/components/teacher/worksheet/WorksheetWizard";
 import type { TeacherOnboarding as TeacherOnboardingType, TeacherStory } from "@/lib/types/teacher";
@@ -347,6 +348,7 @@ export default function TeacherPage() {
               store.setGeneratedStory(story);
               store.setScreenState("PREVIEW");
             }}
+            onWriteStory={() => store.setScreenState("WRITING")}
             onExit={() => router.push("/")}
             messages={store.messages}
             onboarding={store.onboarding}
@@ -404,6 +406,17 @@ export default function TeacherPage() {
           sessionId={store.sessionId}
           onViewStory={() => store.setScreenState("PREVIEW")}
           onNewStory={() => store.setScreenState("HOME")}
+        />
+      );
+
+    case "WRITING":
+      return (
+        <TeacherStoryWriter
+          onSave={(story: TeacherStory) => {
+            store.setGeneratedStory(story);
+            store.setScreenState("PREVIEW");
+          }}
+          onBack={() => store.setScreenState("HOME")}
         />
       );
 
