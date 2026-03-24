@@ -159,13 +159,11 @@ export function renderSpeechBubbleWorksheet(
       <div class="drawing-area-label">${escapeHtml(data.free_dialogue_prompt)}</div>
       <div style="display: flex; gap: 14px; margin-top: 10px;">
         <div style="flex: 1;">
-          <div class="bubble-speech bubble-empty" style="min-height: 50px; border: 1px dashed #B0A090; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #B0A090; padding: 10px;">
-            첫 번째 대사
+          <div class="bubble-speech bubble-empty" style="min-height: 50px; border: 1px dashed #B0A090; border-radius: 14px; padding: 10px;">
           </div>
         </div>
         <div style="flex: 1;">
-          <div class="bubble-speech bubble-empty" style="min-height: 50px; border: 1px dashed #B0A090; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #B0A090; padding: 10px;">
-            두 번째 대사
+          <div class="bubble-speech bubble-empty" style="min-height: 50px; border: 1px dashed #B0A090; border-radius: 14px; padding: 10px;">
           </div>
         </div>
       </div>

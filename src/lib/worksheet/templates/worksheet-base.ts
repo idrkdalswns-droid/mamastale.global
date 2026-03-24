@@ -245,7 +245,6 @@ export function worksheetBaseHtml(
 </head>
 <body>
   <div class="worksheet-header">
-    <div style="font-size: ${Math.round(params.font_size_body_pt * 0.6)}pt; color: #B0A090; margin-bottom: 4px;">마마스테일 활동지</div>
     <h1 class="worksheet-title">${escapeHtml(meta.title)}</h1>
     <p class="worksheet-subtitle">${escapeHtml(meta.subtitle)}</p>
     <span class="nuri-badge">누리과정: ${escapeHtml(meta.nuri_domain)}</span>
@@ -257,9 +256,6 @@ export function worksheetBaseHtml(
 
   ${content}
 
-  <div class="worksheet-footer">
-    마마스테일 · 엄마엄마동화 · mamastale.com
-  </div>
 </body>
 </html>`;
 }
