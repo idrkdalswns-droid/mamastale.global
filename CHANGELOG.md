@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.38.0] - 2026-03-24
+
+### Fixed
+- 프롬프트 인젝션 방어: 사용자 입력 XML 이스케이프 처리
+- 위기감지 FP 개선: "힘들어죽겠" 등 관용 표현 오탐 방지 (2단계 검증)
+- 티켓 차감 경쟁조건: CAS → FOR UPDATE 행 잠금 RPC 전환
+- chat/stream API Phase 통일: stream 라우트 Phase 3-4 누락 수정
+- stories POST: 티켓 잔여량 사전 검증 추가
+
+### Added
+- chat-shared.ts: chat/stream 공통 로직 모듈 추출
+- 033_atomic_ticket_decrement.sql: Supabase RPC 마이그레이션
+
 ## [1.37.0] - 2026-03-24
 
 ### Changed
