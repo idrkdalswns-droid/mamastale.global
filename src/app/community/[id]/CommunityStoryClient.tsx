@@ -7,7 +7,6 @@ import { StoryViewer } from "@/components/story/StoryViewer";
 import { PopupBookViewer } from "@/components/diy/PopupBookViewer";
 import { LikeButton } from "@/components/community/LikeButton";
 import { CommentSection } from "@/components/community/CommentSection";
-import { OfflineClassCTA } from "@/components/community/OfflineClassCTA";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import type { Scene } from "@/lib/types/story";
@@ -195,10 +194,6 @@ function CommunityStoryContent() {
                 storyTitle={story.title}
               />
             </div>
-            {/* 마지막 페이지 도달 시 CTA 표시 */}
-            {diyPage >= (story.illustration_urls!.length - 1) && (
-              <OfflineClassCTA />
-            )}
           </div>
         ) : isDIY ? (
           <div className="h-full min-h-[60dvh]">

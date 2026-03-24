@@ -632,7 +632,7 @@ export default function Home() {
             mamastale
           </h1>
 
-          <div className="flex items-center justify-between mb-0.5">
+          <div className="flex items-center justify-between mb-3">
             <p className="font-serif text-[15px] text-brown-light font-normal leading-relaxed">
               엄마의 삶이 아이의 동화가 되다
             </p>
@@ -650,7 +650,7 @@ export default function Home() {
             onClick={handleStartStory}
             disabled={authLoading}
             aria-busy={authLoading}
-            className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2 flex flex-col items-center gap-1"
+            className="w-full py-3.5 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2 flex flex-col items-center gap-1"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
               boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
@@ -663,8 +663,8 @@ export default function Home() {
               </span>
             ) : (
               <>
-                <span>{user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}</span>
-                <span className="text-[11px] font-light text-white/70">심리학 기반 4단계 치유 대화 엔진</span>
+                <span className="text-[15px]">{user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}</span>
+                <span className="text-[10px] font-light text-white/60">심리학 기반 4단계 치유 대화 엔진</span>
               </>
             )}
           </button>
@@ -896,7 +896,7 @@ export default function Home() {
               onClick={handleStartStory}
               disabled={authLoading}
               aria-busy={authLoading}
-              className="w-full py-4 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
+              className="w-full py-3.5 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
               style={{
                 background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 boxShadow: "0 8px 28px rgba(224,122,95,0.3)",

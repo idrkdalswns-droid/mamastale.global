@@ -7,6 +7,7 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { StoryCard } from "@/components/story/StoryCard";
 import { trackCommunityView } from "@/lib/utils/analytics";
 import type { Scene } from "@/lib/types/story";
+import { OfflineClassCTA } from "@/components/community/OfflineClassCTA";
 
 const PAGE_SIZE = 4; // 한 페이지당 4개
 
@@ -31,7 +32,7 @@ export default function CommunityBrowsePage() {
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"" | "showcase">(""); // "" = all, "showcase" = showcase only
+  const [typeFilter, setTypeFilter] = useState<"" | "showcase" | "class">(""); // "" = all, "showcase" = showcase only, "class" = 오프라인 클래스 소개
 
   // API는 12개/page 고정. 클라이언트에서 4개씩 슬라이스
   const [allStories, setAllStories] = useState<CommunityStory[]>([]);
@@ -69,7 +70,9 @@ export default function CommunityBrowsePage() {
   }, []);
 
   useEffect(() => {
-    fetchAllStories(search, typeFilter);
+    if (typeFilter !== "class") {
+      fetchAllStories(search, typeFilter);
+    }
     setPage(1);
   }, [search, typeFilter]);
 
@@ -151,17 +154,17 @@ export default function CommunityBrowsePage() {
 
           {/* 타입 필터 탭 */}
           <div className="flex gap-2 mt-3">
-            {(["", "showcase"] as const).map((t) => (
+            {(["", "showcase", "class"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => { setTypeFilter(t); setPage(1); }}
-                className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all min-h-[32px]"
+                className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all min-h-[32px] whitespace-nowrap"
                 style={{
                   background: typeFilter === t ? "rgb(var(--brown))" : "rgba(196,149,106,0.1)",
                   color: typeFilter === t ? "rgb(var(--cream))" : "rgb(var(--brown-light))",
                 }}
               >
-                {t === "" ? "전체" : "클래스 완성작"}
+                {t === "" ? "전체" : t === "showcase" ? "클래스 완성작" : "오프라인 클래스"}
               </button>
             ))}
           </div>
@@ -176,9 +179,11 @@ export default function CommunityBrowsePage() {
         </Link>
       </div>
 
-      {/* ═══════════ 스토리 카드 ═══════════ */}
+      {/* ═══════════ 스토리 카드 또는 클래스 소개 ═══════════ */}
       <div className="relative z-[1] max-w-2xl mx-auto px-4 pt-4">
-        {loading && displayStories.length === 0 ? (
+        {typeFilter === "class" ? (
+          <OfflineClassCTA />
+        ) : loading && displayStories.length === 0 ? (
           /* 로딩: 2열 스켈레톤 */
           <div className="flex gap-3">
             {[0, 1].map(col => (

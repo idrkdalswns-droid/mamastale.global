@@ -79,7 +79,7 @@ export const StoryCard = memo(function StoryCard({
           src={imgErr ? fallbackCover : resolvedCover}
           alt={`${title || "동화"} 표지`}
           fill
-          className={`object-cover object-center transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+          className={`object-cover object-top transition-opacity duration-500 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           sizes={compact ? "(max-width: 430px) 50vw, 215px" : "(max-width: 430px) 100vw, 430px"}
           loading="lazy"
           placeholder="blur"
