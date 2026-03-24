@@ -161,7 +161,7 @@ export default function CommunityBrowsePage() {
                   color: typeFilter === t ? "rgb(var(--cream))" : "rgb(var(--brown-light))",
                 }}
               >
-                {t === "" ? "전체" : "오프 클래스 완성작 ✨"}
+                {t === "" ? "전체" : "클래스 완성작"}
               </button>
             ))}
           </div>
