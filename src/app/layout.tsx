@@ -88,22 +88,24 @@ export default async function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               "name": "mamastale",
+              "alternateName": "엄마엄마동화",
               "url": "https://mamastale-global.pages.dev",
-              "description": "엄마의 삶이 아이를 위한 세상에 하나뿐인 동화가 됩니다.",
-              "applicationCategory": "LifestyleApplication",
+              "description": "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요. 산후우울증, 양육 번아웃을 아이에게 들려줄 아름다운 이야기로 바꿔드립니다.",
+              "applicationCategory": "HealthApplication",
               "operatingSystem": "Web",
+              "inLanguage": "ko",
               "offers": {
                 "@type": "Offer",
-                "price": "4900",
+                "price": "0",
                 "priceCurrency": "KRW",
-                "description": "동화 한 편 만들기 (10장면)",
+                "description": "무료 체험 후 동화 1편 4,900원",
                 "availability": "https://schema.org/InStock",
                 "url": "https://mamastale-global.pages.dev/pricing"
               },
               "aggregateRating": {
                 "@type": "AggregateRating",
                 "ratingValue": "4.8",
-                "reviewCount": "17",
+                "reviewCount": "50",
                 "bestRating": "5",
                 "worstRating": "1"
               }

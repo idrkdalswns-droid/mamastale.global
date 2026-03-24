@@ -3,6 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
 
@@ -37,15 +38,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "'탈퇴합니다'를 입력해 주세요." }, { status: 400 });
   }
 
-  // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
-  let user = (await sb.client.auth.getUser()).data.user;
-  if (!user) {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
-      user = tokenData.user;
-    }
-  }
+  const user = await resolveUser(sb.client, request, "Account/Delete");
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }

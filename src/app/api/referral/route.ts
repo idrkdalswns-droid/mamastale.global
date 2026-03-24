@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 const referralSchema = z.object({
   code: z.string().min(4).max(8).transform(s => s.trim().toUpperCase()),
@@ -12,22 +13,6 @@ const referralSchema = z.object({
 
 // ─── Rate limiter ───
 const referralLimiter = createInMemoryLimiter(RATE_KEYS.REFERRAL, { maxEntries: 200 });
-
-// Resolve user from cookie or bearer token
-async function resolveUser(
-  sb: ReturnType<typeof createApiSupabaseClient>,
-  request: NextRequest
-) {
-  if (!sb) return null;
-  const { data } = await sb.client.auth.getUser();
-  if (data.user) return data.user;
-  const authHeader = request.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const { data: tokenData } = await sb.client.auth.getUser(authHeader.slice(7));
-    if (tokenData.user) return tokenData.user;
-  }
-  return null;
-}
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 for readability
@@ -48,7 +33,7 @@ export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb!.client, request, "Referral");
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
 
   // Get or create referral code
@@ -105,7 +90,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb!.client, request, "Referral");
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
 
   let body: unknown;

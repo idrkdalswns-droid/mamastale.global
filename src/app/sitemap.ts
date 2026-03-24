@@ -62,6 +62,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.3,
     },
+    {
+      url: `${base}/teacher`,
+      lastModified: new Date("2026-03-24"),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
   ];
 
   // ── Dynamic community story pages ──

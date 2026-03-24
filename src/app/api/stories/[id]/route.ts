@@ -2,23 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
-
-/** Try cookie auth first, then fallback to Authorization bearer token */
-async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
-  const { data, error } = await sb.client.auth.getUser();
-  if (data.user) return data.user;
-
-  const authHeader = request.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const { data: tokenData } = await sb.client.auth.getUser(token);
-    if (tokenData.user) return tokenData.user;
-  }
-
-  return null;
-}
 
 export async function GET(
   request: NextRequest,
@@ -35,7 +21,7 @@ export async function GET(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
@@ -96,7 +82,7 @@ export async function PATCH(
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }

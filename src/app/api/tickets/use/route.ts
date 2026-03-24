@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
 
@@ -30,19 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  // P2-FIX(DE-3): Consistent auth with Bearer token fallback (same as /api/stories)
-  let user = (await sb.client.auth.getUser()).data.user;
-  if (!user) {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      const { data: tokenData } = await sb.client.auth.getUser(token);
-      if (tokenData.user) {
-        console.warn("[Tickets/Use] Auth resolved via Bearer token fallback");
-        user = tokenData.user;
-      }
-    }
-  }
+  const user = await resolveUser(sb.client, request, "Tickets/Use");
   if (!user) {
     // CRITICAL: Apply cookies even on auth failure — Supabase may have started
     // a session refresh during getUser(), and dropping those cookies breaks

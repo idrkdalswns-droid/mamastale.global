@@ -5,6 +5,7 @@ import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS, isVal
 import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
 import { createInMemoryLimiter, RATE_KEYS, checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -30,26 +31,6 @@ const MAX_BODY_SIZE = 512_000; // 512KB max request body
 const storySaveLimiter = createInMemoryLimiter(RATE_KEYS.STORY_SAVE, { maxEntries: 200 });
 const storyListLimiter = createInMemoryLimiter(RATE_KEYS.STORY_LIST, { maxEntries: 200 });
 
-/** Try cookie auth first, then fallback to Authorization bearer token */
-async function resolveUser(sb: NonNullable<ReturnType<typeof createApiSupabaseClient>>, request: NextRequest) {
-  const { data, error } = await sb.client.auth.getUser();
-  if (data.user) return data.user;
-
-  // Fallback: Authorization header (handles edge cookie issues)
-  const authHeader = request.headers.get("Authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const { data: tokenData } = await sb.client.auth.getUser(token);
-    if (tokenData.user) {
-      console.warn("[Stories] Auth resolved via Bearer token fallback (cookie auth failed)");
-      return tokenData.user;
-    }
-  }
-
-  console.error("[Stories] Auth failed: cookie error=", error?.message, "| cookies count=", request.cookies.getAll().length);
-  return null;
-}
-
 // GET: List user's stories
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
@@ -57,7 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
@@ -98,7 +79,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  const user = await resolveUser(sb, request);
+  const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }

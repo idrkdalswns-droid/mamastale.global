@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
 
@@ -24,16 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "DB not configured" }, { status: 503 });
   }
 
-  // CTO-FIX: Try cookie auth first, then Bearer token fallback
-  let user = (await sb.client.auth.getUser()).data.user;
-  if (!user) {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      const { data: tokenData } = await sb.client.auth.getUser(token);
-      user = tokenData.user;
-    }
-  }
+  const user = await resolveUser(sb.client, request, "Tickets");
   if (!user) {
     // CTO-FIX: applyCookies was missing on 401 response
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
