@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.35.0] - 2026-03-24
+
+### Added
+- 선생님 모드: 개별 동화 API (GET/PATCH/DELETE) — soft-delete 지원
+- 선생님 모드: 수동 동화 생성 POST API — 직접 작성 기능 백엔드
+- DB 마이그레이션: source 컬럼, deleted_at 컬럼, RLS 정책 분리 (CRUD별)
+- 인라인 편집 → DB 자동 저장 (디바운스 1초)
+
+### Changed
+- TeacherPreview: SP01/SP02 레이블 → "n장"으로 변경
+- TeacherPreview: 모든 이모지 → inline SVG 아이콘 교체 (6개)
+- GET /api/teacher/stories: soft-delete 필터 + source/cover_image 반환 추가
+
 ## [1.34.1] - 2026-03-24
 
 ### Fixed

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import type {
@@ -52,14 +52,45 @@ export function TeacherPreview({
     setEditingSpread(index);
   }, []);
 
+  const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [saveStatus, setSaveStatus] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+
   const handleSaveEdit = useCallback((index: number, newText: string) => {
     setEditedSpreads((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], text: newText };
+
+      // 디바운스 1초 후 PATCH API로 DB 저장
+      if (story.id && saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (story.id) {
+        saveTimeoutRef.current = setTimeout(async () => {
+          setSaveStatus("saving");
+          try {
+            const res = await fetch(`/api/teacher/stories/${story.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ spreads: updated }),
+            });
+            if (res.ok) {
+              setSaveStatus("saved");
+              setTimeout(() => setSaveStatus("idle"), 1500);
+            } else {
+              setSaveStatus("error");
+              toast.error("저장에 실패했습니다.");
+            }
+          } catch {
+            setSaveStatus("error");
+            toast.error("저장에 실패했습니다.");
+          }
+        }, 1000);
+      }
+
       return updated;
     });
     setEditingSpread(null);
-  }, []);
+  }, [story.id]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingSpread(null);
@@ -221,7 +252,7 @@ export function TeacherPreview({
             {metadata.readingGuide && (
               <details className="rounded-xl border border-brown-pale/20 overflow-hidden">
                 <summary className="px-4 py-3 text-sm font-medium text-brown cursor-pointer select-none bg-paper/40 hover:bg-paper/60 transition-colors">
-                  📖 읽어주기 가이드
+                  <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>읽어주기 가이드
                 </summary>
                 <div className="px-4 py-3 text-sm text-brown leading-relaxed whitespace-pre-line break-keep bg-paper/20">
                   {metadata.readingGuide}
@@ -231,7 +262,7 @@ export function TeacherPreview({
             {metadata.nuriMapping && (
               <details className="rounded-xl border border-brown-pale/20 overflow-hidden">
                 <summary className="px-4 py-3 text-sm font-medium text-brown cursor-pointer select-none bg-paper/40 hover:bg-paper/60 transition-colors">
-                  🎯 누리과정 연계
+                  <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>누리과정 연계
                 </summary>
                 <div className="px-4 py-3 text-sm text-brown leading-relaxed whitespace-pre-line break-keep bg-paper/20">
                   {metadata.nuriMapping}
@@ -268,7 +299,7 @@ export function TeacherPreview({
               boxShadow: "0 4px 16px rgba(139,106,175,0.25)",
             }}
           >
-            ✨ AI 맞춤 활동지 만들기
+            <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>AI 맞춤 활동지 만들기
           </button>
         </div>
       )}
@@ -291,7 +322,7 @@ export function TeacherPreview({
           {pdfLoading?.startsWith("activity") ? (
             <span className="animate-pulse">생성 중...</span>
           ) : (
-            "🖨️ 동화 인쇄"
+            <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.4 42.4 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 12h.008v.008h-.008V12zm-3 0h.008v.008h-.008V12z" /></svg>동화 인쇄</>
           )}
         </button>
 
@@ -320,7 +351,7 @@ export function TeacherPreview({
               {pdfLoading === "free-activity-html" ? (
                 <span className="animate-pulse">생성 중...</span>
               ) : (
-                <>📄 PDF</>
+                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>PDF</>
               )}
             </button>
             <button
@@ -334,7 +365,7 @@ export function TeacherPreview({
               {pdfLoading === "free-activity-doc" ? (
                 <span className="animate-pulse text-brown-light">생성 중...</span>
               ) : (
-                <>📝 DOC (편집 가능)</>
+                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>DOCX (편집 가능)</>
               )}
             </button>
           </div>
@@ -498,7 +529,7 @@ function SpreadCard({
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-brown-light/60">
-          SP{String(spread.spreadNumber).padStart(2, "0")}
+          {index + 1}장
         </span>
         <span className="text-[10px] text-brown-pale">
           {index + 1} / {total}

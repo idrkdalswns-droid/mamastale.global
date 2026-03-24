@@ -1,8 +1,9 @@
 /**
- * Teacher Mode — 내 동화 목록/공유 서재 API
+ * Teacher Mode — 내 동화 목록/공유 서재 API + 수동 동화 생성
  *
- * GET: 인증 사용자의 teacher_stories 목록 반환 (최신순)
+ * GET:  인증 사용자의 teacher_stories 목록 반환 (최신순)
  * GET ?scope=shared: 같은 teacher_code 그룹의 전체 동화 반환
+ * POST: 수동 동화 생성 (직접 작성)
  *
  * @module teacher-stories
  */
@@ -13,6 +14,10 @@ export const runtime = "edge";
 
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { containsProfanity, sanitizeSceneText } from "@/lib/utils/validation";
+
+const limiter = createInMemoryLimiter("teacher_stories");
 
 export async function GET(request: NextRequest) {
   // 1. Supabase 클라이언트
@@ -66,11 +71,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // 4-B. 기본: 내 동화만 (기존 동작, 하위호환)
+  // 4-B. 기본: 내 동화만 (기존 동작, 하위호환 + soft-delete 필터)
   const { data: stories, error } = await sb.client
     .from("teacher_stories")
-    .select("id, session_id, title, spreads, metadata, brief_context, created_at, updated_at")
+    .select("id, session_id, title, spreads, metadata, brief_context, cover_image, source, created_at, updated_at")
     .eq("teacher_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -90,8 +96,134 @@ export async function GET(request: NextRequest) {
         spreads: s.spreads,
         metadata: s.metadata,
         brief_context: s.brief_context,
+        cover_image: s.cover_image || null,
+        source: s.source || "ai",
         created_at: s.created_at,
       })),
     })
+  );
+}
+
+// ─── POST: 수동 동화 생성 ───
+
+export async function POST(request: NextRequest) {
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  const user = await resolveUser(sb.client, request);
+  if (!user) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+    );
+  }
+
+  if (!limiter.check(`post:${user.id}`, 10, 60_000)) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+    );
+  }
+
+  // Body size limit
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > 512_000) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 })
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return sb.applyCookies(
+      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+    );
+  }
+
+  // Validate title
+  const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+  if (!title) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "제목을 입력해주세요." }, { status: 400 })
+    );
+  }
+  if (containsProfanity(title)) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 })
+    );
+  }
+
+  // Validate spreads
+  if (!Array.isArray(body.spreads) || body.spreads.length === 0 || body.spreads.length > 20) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "장면은 1~20개 사이여야 합니다." }, { status: 400 })
+    );
+  }
+
+  const sanitizedSpreads = [];
+  for (let i = 0; i < body.spreads.length; i++) {
+    const s = body.spreads[i] as Record<string, unknown>;
+    if (typeof s !== "object" || s === null || typeof s.text !== "string") {
+      return sb.applyCookies(
+        NextResponse.json({ error: `장면 ${i + 1}의 형식이 잘못되었습니다.` }, { status: 400 })
+      );
+    }
+    const text = sanitizeSceneText((s.text as string).slice(0, 5000));
+    if (containsProfanity(text)) {
+      return sb.applyCookies(
+        NextResponse.json({ error: `장면 ${i + 1}에 부적절한 표현이 포함되어 있습니다.` }, { status: 400 })
+      );
+    }
+    sanitizedSpreads.push({
+      spreadNumber: typeof s.spreadNumber === "number" ? s.spreadNumber : i + 1,
+      title: typeof s.title === "string" ? sanitizeSceneText(s.title.slice(0, 200)) : undefined,
+      text,
+    });
+  }
+
+  // 교사의 최신 활성 세션 찾기
+  const { data: latestSession } = await sb.client
+    .from("teacher_sessions")
+    .select("id, code")
+    .eq("teacher_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestSession) {
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: "선생님 세션이 필요합니다. 선생님 모드에서 코드를 먼저 입력해주세요." },
+        { status: 400 }
+      )
+    );
+  }
+
+  // Insert
+  const { data: story, error } = await sb.client
+    .from("teacher_stories")
+    .insert({
+      session_id: latestSession.id,
+      teacher_id: user.id,
+      title,
+      spreads: sanitizedSpreads,
+      metadata: {},
+      brief_context: {},
+      source: "manual",
+    })
+    .select("id, title")
+    .single();
+
+  if (error) {
+    console.error("[Teacher Story POST] Insert error:", error.code, error.message);
+    return sb.applyCookies(
+      NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 })
+    );
+  }
+
+  return sb.applyCookies(
+    NextResponse.json({ id: story.id, title: story.title }, { status: 201 })
   );
 }
