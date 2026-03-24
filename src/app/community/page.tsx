@@ -20,6 +20,8 @@ interface CommunityStory {
   view_count: number;
   like_count: number;
   created_at: string;
+  story_type?: string | null;
+  illustration_urls?: string[] | null;
 }
 
 export default function CommunityBrowsePage() {
@@ -29,18 +31,21 @@ export default function CommunityBrowsePage() {
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"" | "showcase">(""); // "" = all, "showcase" = showcase only
 
   // API는 12개/page 고정. 클라이언트에서 4개씩 슬라이스
   const [allStories, setAllStories] = useState<CommunityStory[]>([]);
   const totalPages = allStories.length > 0 ? Math.ceil(allStories.length / PAGE_SIZE) : 1;
 
-  const fetchAllStories = async (searchQuery = "") => {
+  const fetchAllStories = async (searchQuery = "", type = "") => {
     try {
       setLoading(true);
       setError("");
       // 충분한 데이터를 한 번에 로드 (API는 12개/page)
       const params = new URLSearchParams({ sort: "recent", page: "1" });
       if (searchQuery) params.set("search", searchQuery);
+      if (type === "showcase") params.set("type", "showcase");
+      else params.set("type", "all"); // 전체 탭: showcase 포함
       const res = await fetch(`/api/community?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -64,9 +69,9 @@ export default function CommunityBrowsePage() {
   }, []);
 
   useEffect(() => {
-    fetchAllStories(search);
+    fetchAllStories(search, typeFilter);
     setPage(1);
-  }, [search]);
+  }, [search, typeFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +148,23 @@ export default function CommunityBrowsePage() {
               )}
             </div>
           </form>
+
+          {/* 타입 필터 탭 */}
+          <div className="flex gap-2 mt-3">
+            {(["", "showcase"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setTypeFilter(t); setPage(1); }}
+                className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all min-h-[32px]"
+                style={{
+                  background: typeFilter === t ? "rgb(var(--brown))" : "rgba(196,149,106,0.1)",
+                  color: typeFilter === t ? "rgb(var(--cream))" : "rgb(var(--brown-light))",
+                }}
+              >
+                {t === "" ? "전체" : "오프 클래스 완성작 ✨"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 내 서재 링크 */}
@@ -224,6 +246,7 @@ export default function CommunityBrowsePage() {
                       coverImage={story.cover_image || undefined}
                       aspectRatio="3/4"
                       compact
+                      storyType={story.story_type || undefined}
                     />
                   </motion.div>
                 ))}
@@ -243,6 +266,7 @@ export default function CommunityBrowsePage() {
                       coverImage={story.cover_image || undefined}
                       aspectRatio="3/4"
                       compact
+                      storyType={story.story_type || undefined}
                     />
                   </motion.div>
                 ))}

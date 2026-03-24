@@ -25,6 +25,8 @@ interface StoryCardProps {
   aspectRatio?: string;
   /** 2열 모드 — 메타 축소, 텍스트 최소화 */
   compact?: boolean;
+  /** 동화 타입: 'showcase'이면 완성작 배지 표시 */
+  storyType?: string;
 }
 
 // FI-2: Memoize to prevent unnecessary re-renders in list contexts
@@ -40,6 +42,7 @@ export const StoryCard = memo(function StoryCard({
   coverImage,
   aspectRatio = "16/9",
   compact = false,
+  storyType,
 }: StoryCardProps) {
   const [imgErr, setImgErr] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -85,7 +88,12 @@ export const StoryCard = memo(function StoryCard({
           onError={() => setImgErr(true)}
         />
 
-        {/* 토픽 태그 배지 삭제됨 */}
+        {/* Showcase 배지 */}
+        {storyType === "showcase" && (
+          <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[9px] font-medium text-white" style={{ background: "linear-gradient(135deg, #8B6AAF, #6A4F8A)" }}>
+            ✨ 완성작
+          </span>
+        )}
 
         {/* Bottom gradient */}
         <div

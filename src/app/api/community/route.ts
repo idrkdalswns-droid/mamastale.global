@@ -34,13 +34,24 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "recent";
   const topic = searchParams.get("topic") || "";
   const search = searchParams.get("search") || "";
+  const type = searchParams.get("type") || ""; // 'showcase' | 'all' | '' (default: user only)
   const { page, limit, offset } = parsePagination(searchParams.get("page"));
 
   let query = supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, topic, cover_image, view_count, like_count, created_at", { count: "exact" })
+    .select("id, title, scenes, author_alias, topic, cover_image, view_count, like_count, created_at, story_type, illustration_urls", { count: "exact" })
     .eq("is_public", true)
     .eq("status", "completed");
+
+  // story_type 필터: 기본은 user 동화만, type=showcase면 showcase만, type=all이면 전부
+  if (type === "showcase") {
+    query = query.eq("story_type", "showcase");
+  } else if (type === "all") {
+    // 전부 표시 — 필터 없음
+  } else {
+    // 기본: showcase 제외 (기존 동화만)
+    query = query.or("story_type.is.null,story_type.eq.user");
+  }
 
   if (topic && topic.length <= 50) {
     query = query.eq("topic", topic);

@@ -20,6 +20,10 @@ export interface Story {
   pdfUrl?: string;
   /** Selected cover image path (e.g. /images/covers/cover_pink01.png) */
   coverImage?: string;
+  /** 'user' (기존 엄마 동화) | 'showcase' (완성 동화) */
+  storyType?: "user" | "showcase";
+  /** 완성 동화 장면별 이미지 URL 배열 */
+  illustrationUrls?: string[];
   createdAt: string;
   updatedAt: string;
 }

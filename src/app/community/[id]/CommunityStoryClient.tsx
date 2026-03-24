@@ -7,6 +7,7 @@ import { StoryViewer } from "@/components/story/StoryViewer";
 import { PopupBookViewer } from "@/components/diy/PopupBookViewer";
 import { LikeButton } from "@/components/community/LikeButton";
 import { CommentSection } from "@/components/community/CommentSection";
+import { OfflineClassCTA } from "@/components/community/OfflineClassCTA";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import type { Scene } from "@/lib/types/story";
@@ -60,6 +61,8 @@ interface CommunityStoryData {
   comment_count: number;
   created_at: string;
   source?: string;
+  story_type?: string | null;
+  illustration_urls?: string[] | null;
 }
 
 /** Author testimonials — matched by author_alias from sample stories */
@@ -142,15 +145,19 @@ function CommunityStoryContent() {
 
   const testimonial = story.author_alias ? AUTHOR_TESTIMONIALS[story.author_alias] : null;
 
+  // Showcase (완성 동화): illustration_urls 기반 뷰어
+  const isShowcase = !!(story.illustration_urls && story.illustration_urls.length > 0);
+
   // Sprint 2-G: Non-member preview — show only first 2 scenes, blur the rest
+  // Showcase는 마케팅 콘텐츠이므로 게스트도 전체 공개
   const isGuest = !authLoading && !user;
-  const previewScenes = isGuest && story.scenes.length > PREVIEW_SCENE_COUNT
+  const previewScenes = isGuest && !isShowcase && story.scenes.length > PREVIEW_SCENE_COUNT
     ? story.scenes.slice(0, PREVIEW_SCENE_COUNT)
     : story.scenes;
-  const hasHiddenScenes = isGuest && story.scenes.length > PREVIEW_SCENE_COUNT;
+  const hasHiddenScenes = isGuest && !isShowcase && story.scenes.length > PREVIEW_SCENE_COUNT;
 
   // DIY story: prepare PopupBookViewer props
-  const isDIY = story.source === "diy";
+  const isDIY = !isShowcase && story.source === "diy";
   const diyImages = isDIY
     ? story.scenes.map(s => s.imagePrompt).filter((v): v is string => !!v)
     : [];
@@ -172,9 +179,26 @@ function CommunityStoryContent() {
         </div>
       </div>
 
-      {/* Story — DIY uses PopupBookViewer, AI uses StoryViewer */}
+      {/* Story — Showcase/DIY uses PopupBookViewer, AI uses StoryViewer */}
       <div className="flex-1 relative">
-        {isDIY ? (
+        {isShowcase ? (
+          <div className="h-full min-h-[60dvh]">
+            <PopupBookViewer
+              images={story.illustration_urls!}
+              imageOrder={story.illustration_urls!.map((_, i) => i)}
+              texts={{}}
+              currentPage={diyPage}
+              onPageChange={setDiyPage}
+              accent="#8B6AAF"
+              editable={false}
+              storyTitle={story.title}
+            />
+            {/* 마지막 페이지 도달 시 CTA 표시 */}
+            {diyPage >= (story.illustration_urls!.length - 1) && (
+              <OfflineClassCTA />
+            )}
+          </div>
+        ) : isDIY ? (
           <div className="h-full min-h-[60dvh]">
             <PopupBookViewer
               images={diyImages}

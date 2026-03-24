@@ -45,7 +45,7 @@ export async function GET(
 
   const { data: story, error } = await supabase
     .from("stories")
-    .select("id, title, scenes, author_alias, cover_image, view_count, like_count, comment_count, metadata, created_at")
+    .select("id, title, scenes, author_alias, cover_image, view_count, like_count, comment_count, metadata, created_at, story_type, illustration_urls")
     .eq("id", id)
     .eq("is_public", true)
     .single();
@@ -75,7 +75,7 @@ export async function GET(
   const { metadata, ...storyFields } = story;
   const safeStory = {
     ...storyFields,
-    source: (metadata as Record<string, unknown> | null)?.source || "ai",
+    source: storyFields.story_type === "showcase" ? "showcase" : ((metadata as Record<string, unknown> | null)?.source || "ai"),
   };
 
   return NextResponse.json({ story: safeStory });
