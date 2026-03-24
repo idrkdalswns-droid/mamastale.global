@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.39.0] - 2026-03-24
+
+### Fixed
+- ScreenState 전이 가드 추가 — 비정상 화면 전이(chat→story 직접) 차단
+- myStoryCount null 레이스 — previewNotice 건너뜀 방지
+- 이중 세션 만료 체크 통합 — 선생님 모드 toast/reset 중복 제거
+- ErrorBoundary 미적용 확대 — OnboardingSlides, TeacherStoryWriter 래핑
+- story/edit/coverPick 화면 PTR(풀투리프레시) 차단
+- stories PATCH profanity 검증 추가
+- TeacherStoryWriter 자동저장 interval 의존성 수정
+
+### Changed
+- tickets/use, stories POST rate limiter → persistent (Edge multi-instance 대응)
+- ChatContainer 대화 기록 aria-label 동적 단계 정보 포함
+- StoryViewer 폰트 크기 → useSettingsStore 통합 (localStorage 키 마이그레이션)
+- 선생님 모드 TeacherChat/Preview/Writer/Worksheet dynamic import (번들 최적화)
+- resolveUser 공통 유틸에 로그 namespace 파라미터 추가
+
 ## [1.38.0] - 2026-03-24
 
 ### Fixed
