@@ -10,6 +10,7 @@ import { cleanSceneText } from "@/lib/utils/story-parser";
 import { shareToKakao } from "@/lib/share/kakao";
 import { trackStoryShare } from "@/lib/utils/analytics";
 import { hapticLight } from "@/lib/utils/haptic";
+import { useSettingsStore, FONT_SIZE_MAP } from "@/lib/hooks/useSettings";
 
 /**
  * B-2: Detect AI-generated closing/celebration text patterns.
@@ -132,17 +133,16 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
     }
   }, [currentPage, pageStorageKey]);
 
-  // Font size control (13/15/17/19/21px)
-  const [fontSize, setFontSize] = useState(() => {
-    try { return parseInt(localStorage.getItem("mamastale_font_size") || "15", 10); } catch { return 15; }
-  });
+  // P1-1: Font size — useSettingsStore로 통합 (구 localStorage 키 마이그레이션 완료)
+  const settingsFontSize = useSettingsStore((s) => s.fontSize);
+  const setSettingsFontSize = useSettingsStore((s) => s.setFontSize);
+  const fontSize = FONT_SIZE_MAP[settingsFontSize];
   const adjustFont = useCallback((delta: number) => {
-    setFontSize((prev) => {
-      const next = Math.max(13, Math.min(21, prev + delta));
-      try { localStorage.setItem("mamastale_font_size", String(next)); } catch {}
-      return next;
-    });
-  }, []);
+    const sizes: Array<import("@/lib/hooks/useSettings").FontSize> = ["small", "medium", "large"];
+    const currentIdx = sizes.indexOf(settingsFontSize);
+    const nextIdx = Math.max(0, Math.min(sizes.length - 1, currentIdx + (delta > 0 ? 1 : -1)));
+    setSettingsFontSize(sizes[nextIdx]);
+  }, [settingsFontSize, setSettingsFontSize]);
 
   // Mother message (last page only)
   const motherMsgKey = storyId ? `mamastale_mother_msg_${storyId}` : title ? `mamastale_mother_msg_${title.slice(0, 40)}` : "mamastale_mother_message";

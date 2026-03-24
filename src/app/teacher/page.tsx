@@ -8,13 +8,27 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useTeacherStore } from "@/lib/hooks/useTeacherStore";
 import { TeacherCodeModal } from "@/components/teacher/TeacherCodeModal";
 import { TeacherOnboarding } from "@/components/teacher/TeacherOnboarding";
-import { TeacherChat } from "@/components/teacher/TeacherChat";
-import { TeacherPreview } from "@/components/teacher/TeacherPreview";
 import { TeacherCelebration } from "@/components/teacher/TeacherCelebration";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
-import { TeacherStoryWriter } from "@/components/teacher/TeacherStoryWriter";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import { WorksheetWizard } from "@/components/teacher/worksheet/WorksheetWizard";
+import dynamic from "next/dynamic";
+
+// P1-9: Dynamic imports for heavy components (reduce initial bundle)
+const TeacherChat = dynamic(() => import("@/components/teacher/TeacherChat").then(m => ({ default: m.TeacherChat })), {
+  ssr: false,
+  loading: () => <div className="flex-1 flex items-center justify-center"><span className="text-brown-light text-sm">로딩 중...</span></div>,
+});
+const TeacherPreview = dynamic(() => import("@/components/teacher/TeacherPreview").then(m => ({ default: m.TeacherPreview })), {
+  ssr: false,
+  loading: () => <div className="flex-1 flex items-center justify-center"><span className="text-brown-light text-sm">로딩 중...</span></div>,
+});
+const TeacherStoryWriter = dynamic(() => import("@/components/teacher/TeacherStoryWriter").then(m => ({ default: m.TeacherStoryWriter })), {
+  ssr: false,
+  loading: () => <div className="flex-1 flex items-center justify-center"><span className="text-brown-light text-sm">로딩 중...</span></div>,
+});
+const WorksheetWizard = dynamic(() => import("@/components/teacher/worksheet/WorksheetWizard").then(m => ({ default: m.WorksheetWizard })), {
+  ssr: false,
+});
 import type { TeacherOnboarding as TeacherOnboardingType, TeacherStory } from "@/lib/types/teacher";
 
 export default function TeacherPage() {
@@ -88,7 +102,7 @@ export default function TeacherPage() {
     return () => document.body.classList.remove("no-pull-refresh");
   }, [store.screenState]);
 
-  // 세션 만료 폴링 (60초마다 체크 — useEffect 의존성 race condition 방지)
+  // P0-7: 세션 만료 통합 폴링 (30초, TeacherChat의 중복 체크 제거됨)
   useEffect(() => {
     const interval = setInterval(() => {
       const { expiresAt, sessionId, screenState } = useTeacherStore.getState();
@@ -102,11 +116,12 @@ export default function TeacherPage() {
         useTeacherStore.getState().reset();
         useTeacherStore.getState().setScreenState("CODE_ENTRY");
         toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+      } else if (remainMs <= 10 * 60 * 1000 && remainMs > 9.5 * 60 * 1000) {
+        toast("세션이 10분 후 만료됩니다. 작업을 저장해주세요.", { icon: "⏰", duration: 8000 });
       } else if (remainMs <= 5 * 60 * 1000 && remainMs > 4.5 * 60 * 1000) {
-        // 5분 전 경고 (60초 폴링 범위 내에서 1회)
-        toast("세션이 5분 후 만료됩니다. 작업을 저장해주세요.", { icon: "⏰", duration: 8000 });
+        toast("세션이 5분 후 만료됩니다!", { icon: "⏰", duration: 8000 });
       }
-    }, 60_000);
+    }, 30_000);
 
     return () => clearInterval(interval);
   }, []);
@@ -412,18 +427,20 @@ export default function TeacherPage() {
 
     case "WRITING":
       return (
-        <TeacherStoryWriter
-          onSave={(story: TeacherStory) => {
-            setEditStory(null);
-            store.setGeneratedStory(story);
-            store.setScreenState("PREVIEW");
-          }}
-          onBack={() => {
-            setEditStory(null);
-            store.setScreenState("HOME");
-          }}
-          editMode={editStory || undefined}
-        />
+        <ErrorBoundary fullScreen>
+          <TeacherStoryWriter
+            onSave={(story: TeacherStory) => {
+              setEditStory(null);
+              store.setGeneratedStory(story);
+              store.setScreenState("PREVIEW");
+            }}
+            onBack={() => {
+              setEditStory(null);
+              store.setScreenState("HOME");
+            }}
+            editMode={editStory || undefined}
+          />
+        </ErrorBoundary>
       );
 
     case "PREVIEW":

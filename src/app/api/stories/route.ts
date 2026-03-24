@@ -4,7 +4,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { containsProfanity, sanitizeText, sanitizeSceneText, VALID_TOPICS, isValidCoverImage } from "@/lib/utils/validation";
 import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
-import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { createInMemoryLimiter, RATE_KEYS, checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -103,8 +103,9 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
-  // P1-FIX(KR-1): Rate limit per user
-  if (!storySaveLimiter.check(user.id, 5, 60_000)) {
+  // P0-5: Persistent rate limit (survives Edge multi-instance)
+  const allowed = await checkRateLimitPersistent(`story_save:${user.id}`, 5, 60);
+  if (!allowed) {
     return sb.applyCookies(NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

@@ -14,10 +14,12 @@ import { SupabaseClient, User } from "@supabase/supabase-js";
 
 export async function resolveUser(
   supabase: SupabaseClient,
-  request: Request
+  request: Request,
+  /** Log namespace for debugging auth failures (e.g. "Stories", "Tickets") */
+  namespace = "API"
 ): Promise<User | null> {
   // 1차: Cookie 기반 인증 (기본)
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
   if (data.user) return data.user;
 
   // 2차: Authorization: Bearer 토큰 fallback
@@ -26,8 +28,14 @@ export async function resolveUser(
     const { data: tokenData } = await supabase.auth.getUser(
       authHeader.slice(7)
     );
-    if (tokenData.user) return tokenData.user;
+    if (tokenData.user) {
+      console.warn(`[${namespace}] Auth resolved via Bearer token fallback`);
+      return tokenData.user;
+    }
   }
 
+  if (error) {
+    console.error(`[${namespace}] Auth failed:`, error.message);
+  }
   return null;
 }

@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
-import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
-
-// ─── Rate limiter ───
-const ticketUseLimiter = createInMemoryLimiter(RATE_KEYS.TICKET_USE, { maxEntries: 300 });
 
 /**
  * POST /api/tickets/use
@@ -18,9 +15,10 @@ const ticketUseLimiter = createInMemoryLimiter(RATE_KEYS.TICKET_USE, { maxEntrie
  * Returns updated remaining count + premium status.
  */
 export async function POST(request: NextRequest) {
-  // P0-FIX: Rate limit ticket use to prevent abuse
+  // P0-5: Persistent rate limit (survives Edge multi-instance)
   const ip = getClientIP(request);
-  if (!ticketUseLimiter.check(ip, 5, 60_000)) {
+  const allowed = await checkRateLimitPersistent(`ticket_use:${ip}`, 5, 60);
+  if (!allowed) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429 }

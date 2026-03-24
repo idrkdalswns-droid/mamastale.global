@@ -73,8 +73,40 @@ const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage"
 
 type ScreenState = "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "previewNotice" | "story" | "feedback" | "community";
 
+// P0-4: 허용 전이 맵 — 비정상 전이(chat→story 직접 등) 차단
+const ALLOWED_TRANSITIONS: Record<ScreenState, ScreenState[]> = {
+  landing: ["onboarding", "chat"], // chat: 드래프트 복원
+  onboarding: ["chat", "landing"],
+  chat: ["edit", "landing"],
+  edit: ["coverPick", "landing"],
+  coverPick: ["previewNotice", "story"],
+  previewNotice: ["story"],
+  story: ["feedback", "landing"],
+  feedback: ["community", "landing"],
+  community: ["landing"],
+};
+
 export default function Home() {
-  const [screen, setScreen] = useState<ScreenState>("landing");
+  const [screen, setScreenRaw] = useState<ScreenState>("landing");
+  const screenRef = useRef<ScreenState>("landing");
+  const isPopstateRef = useRef(false);
+
+  // P0-4: 전이 가드 래퍼 — popstate(뒤로가기)는 항상 허용
+  const setScreen = useCallback((next: ScreenState) => {
+    if (isPopstateRef.current) {
+      isPopstateRef.current = false;
+      screenRef.current = next;
+      setScreenRaw(next);
+      return;
+    }
+    const current = screenRef.current;
+    if (current !== next && !ALLOWED_TRANSITIONS[current]?.includes(next)) {
+      console.warn(`[Nav] 차단된 전이: ${current} → ${next}`);
+      return;
+    }
+    screenRef.current = next;
+    setScreenRaw(next);
+  }, []);
   const [show, setShow] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
@@ -110,7 +142,7 @@ export default function Home() {
   }, [screen, chatPhase]);
   // Disable pull-to-refresh during chat/onboarding to prevent conversation loss
   useEffect(() => {
-    if (screen === "chat" || screen === "onboarding") {
+    if (["chat", "onboarding", "story", "edit", "coverPick"].includes(screen)) {
       document.body.classList.add("no-pull-refresh");
     } else {
       document.body.classList.remove("no-pull-refresh");
@@ -368,13 +400,13 @@ export default function Home() {
       }
     }
     // Freemium v2: first story → show preview notice before viewer
-    setScreen(myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+    setScreen(myStoryCount !== null && myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
   }, [completedStoryId, myStoryCount, ticketUsedForSession]);
 
   const handleCoverSkip = useCallback(() => {
     setSelectedCover(null);
     // Freemium v2: first story → show preview notice before viewer
-    setScreen(myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
+    setScreen(myStoryCount !== null && myStoryCount === 0 && !ticketUsedForSession ? "previewNotice" : "story");
   }, [myStoryCount, ticketUsedForSession]);
 
   // ─── Browser history integration (JP-Y12) ───
@@ -387,6 +419,7 @@ export default function Home() {
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      isPopstateRef.current = true; // P0-4: 뒤로가기는 전이 가드 비적용
       const prev = e.state?.screen as ScreenState | undefined;
       if (prev) {
         setScreen(prev);
@@ -398,7 +431,7 @@ export default function Home() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [setScreen]);
 
   // Trigger landing fade-in (HIGH-2 fix: moved to useEffect)
   useEffect(() => {
@@ -408,7 +441,11 @@ export default function Home() {
   }, [screen]);
 
   if (screen === "onboarding") {
-    return <OnboardingSlides onDone={() => setScreen("chat")} onGoHome={() => { setShow(false); setScreen("landing"); }} />;
+    return (
+      <ErrorBoundary fullScreen>
+        <OnboardingSlides onDone={() => setScreen("chat")} onGoHome={() => { setShow(false); setScreen("landing"); }} />
+      </ErrorBoundary>
+    );
   }
 
   // CRITICAL-2 fix: chat completes → editor (then story viewer)
@@ -494,7 +531,7 @@ export default function Home() {
   // feedbackDone = false: first viewing → go to feedback
   // feedbackDone = true: re-viewing from community → go back to community
   // Freemium v2: first story (myStoryCount === 0 at start) → previewMode (1회 전체 열람, PDF/공유/편집 비활성)
-  const isFirstStoryPreview = myStoryCount === 0 && !ticketUsedForSession;
+  const isFirstStoryPreview = myStoryCount !== null && myStoryCount === 0 && !ticketUsedForSession;
   if (screen === "story") {
     return (
       <ErrorBoundary fullScreen>

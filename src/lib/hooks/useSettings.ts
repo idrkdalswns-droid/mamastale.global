@@ -41,6 +41,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   _hydrate: () => {
     if (typeof window === "undefined") return;
+    // P1-1: 구 키(mamastale_font_size, 숫자) → 신 키(mamastale-font-size, 문자열) 마이그레이션
+    try {
+      const oldKey = "mamastale_font_size";
+      const oldVal = localStorage.getItem(oldKey);
+      if (oldVal && !localStorage.getItem(FONT_SIZE_KEY)) {
+        const num = parseInt(oldVal, 10);
+        const migrated: FontSize = num <= 13 ? "small" : num >= 17 ? "large" : "medium";
+        localStorage.setItem(FONT_SIZE_KEY, migrated);
+        localStorage.removeItem(oldKey);
+      }
+    } catch { /* ignore */ }
+
     let stored: string | null = null;
     try { stored = localStorage.getItem(FONT_SIZE_KEY); } catch { /* Fix 20: Private browsing crash prevention */ }
     if (stored === "small" || stored === "medium" || stored === "large") {

@@ -55,13 +55,19 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
     } catch { /* ignore */ }
   }, []);
 
-  // 30초마다 자동 저장
+  // P1-13: 30초 자동 저장 — ref로 최신값 참조 (interval 재생성 방지)
+  const titleRef = useRef(title);
+  const spreadsRef = useRef(spreads);
+  useEffect(() => { titleRef.current = title; }, [title]);
+  useEffect(() => { spreadsRef.current = spreads; }, [spreads]);
+
   useEffect(() => {
-    if (mode !== "edit" || spreads.length === 0) return;
+    if (mode !== "edit") return;
 
     saveTimerRef.current = setInterval(() => {
+      if (spreadsRef.current.length === 0) return;
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, spreads }));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: titleRef.current, spreads: spreadsRef.current }));
       } catch (e) {
         if (e instanceof DOMException && e.name === "QuotaExceededError") {
           toast.error("임시저장 공간이 부족합니다.");
@@ -72,7 +78,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
     return () => {
       if (saveTimerRef.current) clearInterval(saveTimerRef.current);
     };
-  }, [mode, title, spreads]);
+  }, [mode]);
 
   // 템플릿 선택
   const handleSelectTemplate = useCallback((count: number) => {

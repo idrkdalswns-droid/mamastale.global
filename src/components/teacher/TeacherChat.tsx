@@ -57,33 +57,8 @@ export function TeacherChat({
     }
   }, [_generateReady, isLoading, onRequestGenerate]);
 
-  // 세션 만료 감지 (타이머 UI 제거, 감지만 유지)
-  const onSessionExpiredRef = useRef(onSessionExpired);
-  useEffect(() => { onSessionExpiredRef.current = onSessionExpired; }, [onSessionExpired]);
-
-  useEffect(() => {
-    if (!expiresAt) return;
-    let warned = false;
-    let fired = false;
-
-    const check = () => {
-      if (fired) return;
-      const diff = new Date(expiresAt).getTime() - Date.now();
-      if (diff <= 0) {
-        fired = true;
-        onSessionExpiredRef.current();
-        return;
-      }
-      if (diff < 10 * 60 * 1000 && !warned) {
-        warned = true;
-        toast("세션이 10분 후 만료됩니다", { icon: "⏰" });
-      }
-    };
-
-    check();
-    const id = setInterval(check, 10_000);
-    return () => clearInterval(id);
-  }, [expiresAt]);
+  // 세션 만료 감지는 teacher/page.tsx에서 30초 폴링으로 통합 관리 (P0-7)
+  // TeacherChat은 onSessionExpired 콜백에만 의존
 
   // 스마트 스크롤 — 초기 마운트 시 즉시 하단, 이후 사용자 스크롤 위치 존중
   useEffect(() => {

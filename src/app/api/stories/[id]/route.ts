@@ -183,6 +183,11 @@ export async function PATCH(
           s.title = sanitizeSceneText(s.title.slice(0, 200));
           s.text = sanitizeSceneText(s.text.slice(0, 5000));
         }
+        // P1-5: Profanity check on scene text (matches POST behavior)
+        const hasProfanity = (body.scenes as Array<{ text: string }>).some(s => containsProfanity(s.text));
+        if (hasProfanity) {
+          return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 내용입니다." }, { status: 400 }));
+        }
         updates.scenes = body.scenes;
       }
     }
