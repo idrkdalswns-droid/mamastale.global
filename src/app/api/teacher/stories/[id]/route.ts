@@ -158,7 +158,7 @@ export async function PATCH(
         );
       }
       sanitizedSpreads.push({
-        spreadNumber: s.spreadNumber,
+        spreadNumber: sanitizedSpreads.length + 1, // M5: 순차 번호 강제 할당
         title: s.title ? sanitizeSceneText(s.title.slice(0, 200)) : undefined,
         text: cleanText,
       });

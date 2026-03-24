@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
   if (scope === "shared") {
     const { data: stories, error } = await sb.client
       .from("teacher_stories")
-      .select("id, session_id, title, spreads, metadata, brief_context, cover_image, created_at, teacher_id")
+      .select("id, session_id, title, spreads, metadata, brief_context, cover_image, source, created_at, teacher_id")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
           metadata: s.metadata,
           brief_context: s.brief_context,
           cover_image: s.cover_image || null,
+          source: s.source || "ai",
           created_at: s.created_at,
           is_mine: s.teacher_id === user.id,
           author: s.teacher_id === user.id ? "나" : "다른 선생님",

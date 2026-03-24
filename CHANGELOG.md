@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.36.1] - 2026-03-24
+
+### Fixed
+- 공유 서재 GET에 deleted_at 이중 방어 필터 + source 필드 추가
+- Windows 줄바꿈(\r\n) 처리 추가 (붙여넣기 자동 분할)
+- localStorage 용량 초과 시 토스트 에러 표시
+- 붙여넣기 textarea maxLength 100,000자 제한
+- 삭제 중 카드 클릭 차단 (opacity + pointer-events)
+- 추천 활동지를 fetch 시점 1회 계산 (렌더 성능 개선)
+- 삭제 모달 body scroll lock + cleanup 복원
+- 장면 수 카운트에서 빈 장면 제외
+- 삭제 버튼 aria-busy 접근성 추가
+- PATCH spreadNumber 순차 강제 할당
+
 ## [1.36.0] - 2026-03-24
 
 ### Added

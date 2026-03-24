@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -40,6 +40,7 @@ interface StoryListItem {
   session_id: string;
   is_mine?: boolean;
   author?: string;
+  _recommended?: string;
 }
 
 export function TeacherHome({
@@ -62,6 +63,16 @@ export function TeacherHome({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // H4: 삭제 모달 scroll lock + cleanup 복원
+  useEffect(() => {
+    if (confirmDeleteId) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [confirmDeleteId]);
+
   const fetchSharedStories = useCallback(async (retryCount = 0) => {
     setSharedLoading(true);
     setSharedError(false);
@@ -69,7 +80,12 @@ export function TeacherHome({
       const res = await fetch("/api/teacher/stories?scope=shared");
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
-      setSharedStories(data.stories || []);
+      // H2: 추천 활동지를 fetch 시점에 1회 계산 (렌더 시 재계산 방지)
+      const storiesWithRecommend = (data.stories || []).map((s: StoryListItem) => ({
+        ...s,
+        _recommended: getRecommendedActivity(s.spreads || []),
+      }));
+      setSharedStories(storiesWithRecommend);
     } catch {
       if (retryCount < 2) {
         await new Promise(r => setTimeout(r, 1000));
@@ -301,20 +317,24 @@ export function TeacherHome({
           {!sharedLoading && !sharedError && sharedStories && sharedStories.length > 0 && (
             <div className="grid grid-cols-2 gap-3" role="list">
               {sharedStories.map((story) => {
-                const recommended = getRecommendedActivity(story.spreads || []);
-                const recommendedLabel = getActivityLabel(recommended);
+                const recommendedLabel = getActivityLabel(
+                  (story._recommended as Parameters<typeof getActivityLabel>[0]) || "post_reading"
+                );
+                const isDeleting = deletingId === story.id;
 
                 return (
                   <div
                     key={story.id}
                     role="listitem"
-                    className="rounded-2xl overflow-hidden bg-paper border border-brown-pale/10
-                               active:scale-[0.97] transition-all relative"
+                    className={`rounded-2xl overflow-hidden bg-paper border border-brown-pale/10
+                               active:scale-[0.97] transition-all relative
+                               ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
                     style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
                   >
                     {/* 커버이미지 */}
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        if (isDeleting) return; // H1: 삭제 중 클릭 차단
                         onViewStory({
                           id: story.id,
                           sessionId: story.session_id,
@@ -325,8 +345,9 @@ export function TeacherHome({
                           coverImage: story.cover_image || null,
                           source: (story.source as "ai" | "manual") || "ai",
                           createdAt: story.created_at,
-                        })
-                      }
+                        });
+                      }}
+                      disabled={isDeleting}
                       className="w-full text-left"
                       aria-label={`${story.title || "제목 없는 동화"} 열기`}
                     >
@@ -350,7 +371,7 @@ export function TeacherHome({
                             month: "long",
                             day: "numeric",
                           })}{" "}
-                          · {(story.spreads || []).length}장면
+                          · {(story.spreads || []).filter((s: { text?: string }) => s.text?.trim()).length}장면
                           {!story.is_mine && story.author && (
                             <span className="text-brown-pale"> · {story.author}</span>
                           )}
@@ -381,11 +402,12 @@ export function TeacherHome({
                           e.stopPropagation();
                           setConfirmDeleteId(story.id);
                         }}
-                        disabled={deletingId === story.id}
+                        disabled={isDeleting}
                         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm
                                    flex items-center justify-center text-white/80
                                    active:scale-[0.9] transition-all"
-                        aria-label="삭제"
+                        aria-label={isDeleting ? "삭제 중" : "삭제"}
+                        aria-busy={isDeleting}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>

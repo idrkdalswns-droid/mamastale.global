@@ -61,7 +61,11 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
     saveTimerRef.current = setInterval(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, spreads }));
-      } catch { /* ignore */ }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "QuotaExceededError") {
+          toast.error("임시저장 공간이 부족합니다.");
+        }
+      }
     }, 30_000);
 
     return () => {
@@ -89,8 +93,9 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
       return;
     }
 
-    // 더블 줄바꿈 기준 분할
-    const parts = pasteText
+    // Windows \r\n → \n 정규화 후 더블 줄바꿈 기준 분할
+    const normalized = pasteText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const parts = normalized
       .split(/\n\s*\n/)
       .map(p => p.trim())
       .filter(p => p.length > 0);
@@ -221,7 +226,7 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
     if (mode === "edit" && spreads.some(s => s.text.trim())) {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify({ title, spreads }));
-      } catch { /* ignore */ }
+      } catch { /* 용량 부족 시 무시 — 뒤로가기는 차단하지 않음 */ }
     }
     onBack();
   }, [mode, title, spreads, onBack]);
@@ -340,6 +345,7 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
               placeholder="여기에 동화 전체 내용을 붙여넣으세요..."
+              maxLength={100000}
               className="w-full min-h-[40dvh] p-4 rounded-2xl border border-brown-pale/20 bg-paper
                          text-sm text-brown leading-relaxed resize-none focus:outline-none
                          focus:border-coral/40 placeholder:text-brown-pale"
