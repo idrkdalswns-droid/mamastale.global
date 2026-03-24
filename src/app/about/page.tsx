@@ -118,7 +118,7 @@ export default function AboutPage() {
           ════════════════════════════════════════ */}
       <section className="mb-10">
         <div
-          className="rounded-2xl p-5 border bg-white/60 dark:bg-[#3C322A]/90 border-[rgba(196,149,106,0.12)] dark:border-[rgba(196,149,106,0.25)] backdrop-blur-sm"
+          className="rounded-2xl p-5 border bg-white/60 border-[rgba(196,149,106,0.12)] backdrop-blur-sm"
         >
           <h2 className="font-serif text-lg font-bold text-brown mb-3 leading-snug">
             엄마의 경험이 아이에게 읽어줄

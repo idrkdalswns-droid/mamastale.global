@@ -55,7 +55,7 @@ export default function DIYGuidePage() {
           PURPOSE — 취지 카드
           ════════════════════════════════════════ */}
       <section className="mb-10">
-        <div className="rounded-2xl p-5 border bg-white/60 dark:bg-[#3C322A]/90 border-[rgba(127,191,176,0.15)] dark:border-[rgba(127,191,176,0.25)] backdrop-blur-sm">
+        <div className="rounded-2xl p-5 border bg-white/60 border-[rgba(127,191,176,0.15)] backdrop-blur-sm">
           <div className="space-y-3 text-[13px] text-brown-light font-light leading-7 break-keep">
             <p>
               마마스테일 DIY 동화는 엄마와 아이가{" "}

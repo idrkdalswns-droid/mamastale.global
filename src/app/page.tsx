@@ -9,7 +9,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
 import toast from "react-hot-toast";
@@ -623,7 +623,7 @@ export default function Home() {
             <Link href="/" className="font-serif text-base font-bold text-brown no-underline">
               mamastale
             </Link>
-            <ThemeToggle />
+
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3">
             {(user ? NAV_ITEMS_AUTH : NAV_ITEMS_PUBLIC).map((item) => (

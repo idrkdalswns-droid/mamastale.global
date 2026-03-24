@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.41.0] - 2026-03-25
+
+### Removed
+- 다크모드 전면 삭제: ThemeToggle 컴포넌트, .dark CSS 변수/오버라이드, dark: Tailwind 클래스, darkMode config
+- i18n(next-intl) 전면 삭제: NextIntlClientProvider, 6개 언어 메시지 파일, i18n 설정, npm 패키지
+- 글로벌 론칭 시 재구현 예정
+
 ## [1.40.0] - 2026-03-25
 
 ### Changed

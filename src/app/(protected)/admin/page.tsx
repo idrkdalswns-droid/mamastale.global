@@ -70,9 +70,9 @@ function formatNumber(n: number): string {
 
 function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
     </div>
   );
@@ -80,9 +80,9 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
 
 function EventBadge({ type }: { type: string }) {
   const styles: Record<string, string> = {
-    error: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    crisis_detection: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-    output_safety_violation: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    error: "bg-red-100 text-red-700",
+    crisis_detection: "bg-orange-100 text-orange-700",
+    output_safety_violation: "bg-yellow-100 text-yellow-700",
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[type] || "bg-gray-100 text-gray-600"}`}>
@@ -120,11 +120,11 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-dvh bg-cream dark:bg-gray-900 flex items-center justify-center px-6">
+      <div className="min-h-dvh bg-cream flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-4xl mb-4 font-serif font-bold text-brown">X</p>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">접근 불가</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">{error}</p>
+          <h1 className="text-xl font-bold text-gray-800 mb-2">접근 불가</h1>
+          <p className="text-gray-500 text-sm">{error}</p>
         </div>
       </div>
     );
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
 
   if (loading || !data) {
     return (
-      <div className="min-h-dvh bg-cream dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-cream flex items-center justify-center">
         <div className="animate-pulse text-gray-400">로딩 중...</div>
       </div>
     );
@@ -144,12 +144,12 @@ export default function AdminDashboard() {
   const sortedDays = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="min-h-dvh bg-cream dark:bg-gray-900 px-4 py-6 pb-24">
+    <div className="min-h-dvh bg-cream px-4 py-6 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">📊 LLM 대시보드</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">mamastale 옵저버빌리티</p>
+          <h1 className="text-xl font-bold text-gray-900">📊 LLM 대시보드</h1>
+          <p className="text-xs text-gray-500 mt-1">mamastale 옵저버빌리티</p>
         </div>
         <div className="flex gap-1">
           {["24h", "7d", "30d"].map((p) => (
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
               className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
                 period === p
                   ? "bg-coral text-white"
-                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+                  : "bg-white text-gray-600 border border-gray-200"
               }`}
             >
               {p}
@@ -179,17 +179,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Model Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">모델별 분포</h2>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <h2 className="text-sm font-bold text-gray-900 mb-3">모델별 분포</h2>
         <div className="space-y-2">
           {Object.entries(byModel).map(([model, info]) => (
             <div key={model} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-xs font-medium text-gray-700">
                   {MODEL_SHORT[model] || model.split("-").slice(1, 3).join(" ")}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-4 text-xs text-gray-500">
                 <span>{info.calls}회</span>
                 <span>${info.cost.toFixed(3)}</span>
                 <span>{formatNumber(info.tokens)}tok</span>
@@ -200,17 +200,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Phase Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Phase별 분포</h2>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <h2 className="text-sm font-bold text-gray-900 mb-3">Phase별 분포</h2>
         <div className="space-y-2">
           {Object.entries(byPhase)
             .sort(([a], [b]) => Number(a) - Number(b))
             .map(([phase, info]) => (
               <div key={phase} className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                <span className="text-xs font-medium text-gray-700">
                   {PHASE_NAMES[phase] || `Phase ${phase}`}
                 </span>
-                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-4 text-xs text-gray-500">
                   <span>{info.calls}회</span>
                   <span>${info.cost.toFixed(3)}</span>
                   <span>{info.avgLatency}ms</span>
@@ -221,8 +221,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Daily Trend */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">일별 추이</h2>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <h2 className="text-sm font-bold text-gray-900 mb-3">일별 추이</h2>
         {sortedDays.length === 0 ? (
           <p className="text-xs text-gray-400">데이터 없음</p>
         ) : (
@@ -250,8 +250,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Events */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">최근 이벤트</h2>
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <h2 className="text-sm font-bold text-gray-900 mb-3">최근 이벤트</h2>
         {recentEvents.length === 0 ? (
           <p className="text-xs text-gray-400">이벤트 없음</p>
         ) : (
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
               <div key={i} className="flex items-start gap-2 text-xs">
                 <EventBadge type={evt.event_type} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-gray-700 dark:text-gray-300 truncate">
+                  <p className="text-gray-700 truncate">
                     {evt.endpoint || "—"}
                     {evt.metadata && typeof evt.metadata === "object" && "severity" in evt.metadata
                       ? ` · ${String(evt.metadata.severity)}`

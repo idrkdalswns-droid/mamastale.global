@@ -32,7 +32,7 @@ export function StoryGallery3D() {
               damping: 20,
             }}
             whileTap={{ scale: 0.96 }}
-            className="relative rounded-2xl overflow-hidden dark:brightness-[0.85]"
+            className="relative rounded-2xl overflow-hidden"
             style={{
               perspective: "800px",
               transformStyle: "preserve-3d",

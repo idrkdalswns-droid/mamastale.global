@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 
 /**
@@ -32,7 +32,7 @@ export function GlobalNav() {
           >
             mamastale
           </Link>
-          <ThemeToggle />
+
         </div>
 
         {/* Right: Nav links + auth */}

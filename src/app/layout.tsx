@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "react-hot-toast";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
 import { Footer } from "@/components/layout/Footer";
@@ -74,11 +72,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
+    <html lang="ko">
       <head>
         {/* Schema.org structured data */}
         <script
@@ -125,16 +120,10 @@ export default async function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap"
         />
-        {/* FR-010: Prevent dark mode flash */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("mamastale_theme");var d=t==="dark"||(t==null&&matchMedia("(prefers-color-scheme:dark)").matches);if(d)document.documentElement.classList.add("dark")}catch(e){}})()`,
-          }}
-        />
+        {/* Dark mode removed in v1.41.0 — will be re-added for global launch */}
         {/* GR-4/GR-5: GA/AdSense moved to ConsentGatedScripts — loaded only after cookie consent */}
       </head>
       <body className="bg-cream antialiased">
-        <NextIntlClientProvider messages={messages}>
         <MotionProvider>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-coral focus:text-white focus:rounded-lg focus:text-sm">
           본문으로 건너뛰기
@@ -161,7 +150,6 @@ export default async function RootLayout({
           }}
         />
         </MotionProvider>
-        </NextIntlClientProvider>
       </body>
     </html>
   );

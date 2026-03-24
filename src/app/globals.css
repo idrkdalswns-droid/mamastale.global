@@ -42,34 +42,10 @@
     --surface: 255 255 255;
   }
 
-  .dark {
-    color-scheme: dark;
-    --cream: 28 24 20;
-    --paper: 35 30 25;
-    --warm-ivory: 32 27 22;
-    --peach: 210 150 115;
-    --coral: 232 154 130;
-    --mint: 140 200 188;
-    --mint-deep: 90 165 150;
-    --lavender: 180 165 200;
-    --purple: 150 120 185;
-    --brown: 232 213 192;
-    --brown-light: 192 168 136;
-    --brown-mid: 176 149 117;
-    --brown-pale: 200 180 155;
-    --kakao: 254 229 0;
-    --kakao-brown: 60 30 30;
-    --surface: 42 36 30;
-  }
-
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  html:not(.dark) {
-    color-scheme: light;
   }
 
   /* C5: Global focus-visible ring for keyboard navigation */
@@ -120,43 +96,11 @@
   textarea::placeholder {
     color: #bbb;
   }
-  .dark textarea::placeholder {
-    color: #665;
-  }
 
   @media screen and (max-width: 768px) {
     input, textarea, select {
       font-size: 16px !important;
     }
-  }
-
-  /* ── Dark mode: override white-based backgrounds ── */
-  .dark .bg-white { background-color: rgb(var(--surface)) !important; }
-  .dark .bg-white\/50 { background-color: rgb(var(--surface) / 0.5) !important; }
-  .dark .bg-white\/60 { background-color: rgb(var(--surface) / 0.6) !important; }
-  .dark .bg-white\/70 { background-color: rgb(var(--surface) / 0.7) !important; }
-  .dark .bg-white\/80 { background-color: rgb(var(--surface) / 0.8) !important; }
-  .dark .bg-white\/90 { background-color: rgb(var(--surface) / 0.9) !important; }
-  .dark .bg-white\/95 { background-color: rgb(var(--surface) / 0.95) !important; }
-  .dark .bg-white\/30 { background-color: rgb(var(--surface) / 0.3) !important; }
-  .dark .bg-white\/40 { background-color: rgb(var(--surface) / 0.4) !important; }
-  .dark .text-white { color: rgb(240 235 228) !important; }
-
-  /* Dark mode: override scene-specific arbitrary bg colors */
-  .dark .bg-\[\#EEF6F3\] { background-color: #1E2825 !important; }
-  .dark .bg-\[\#FEF7ED\] { background-color: #2A2219 !important; }
-  .dark .bg-\[\#F4EEF8\] { background-color: #231E28 !important; }
-  .dark .bg-\[\#FFF6EE\] { background-color: #2A221A !important; }
-  .dark .bg-\[\#FBF5EC\] { background-color: #1C1814 !important; }
-
-  /* Dark mode: borders */
-  .dark .border-black\/\[0\.04\] { border-color: rgba(255,255,255,0.08) !important; }
-
-  /* Dark mode: inline-style glass backgrounds */
-  .dark input,
-  .dark textarea,
-  .dark select {
-    color: rgb(var(--brown)) !important;
   }
 }
 
@@ -199,17 +143,6 @@
     transparent 4px
   );
 }
-.dark .shelf-plank {
-  background: linear-gradient(
-    180deg,
-    rgba(120, 95, 70, 0.4) 0%,
-    rgba(90, 70, 50, 0.5) 40%,
-    rgba(60, 42, 28, 0.35) 100%
-  );
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
 
 /* Bookshelf: staggered book entry animation */
 @keyframes bookEntry {
@@ -223,14 +156,6 @@
 /* ── 3D Library Room: CSS 3D utilities ── */
 .preserve-3d {
   transform-style: preserve-3d;
-}
-
-/* 3D Room: back wall dark mode */
-.dark .room-back-wall {
-  background: linear-gradient(180deg, rgb(var(--cream)) 0%, rgb(var(--paper)) 100%) !important;
-}
-.dark .room-floor {
-  background: linear-gradient(180deg, rgba(60,42,28,0.4) 0%, rgba(40,28,18,0.6) 100%) !important;
 }
 
 /* ── Accessibility: prefers-reduced-motion ── */
@@ -262,11 +187,5 @@
   .backdrop-blur-lg,
   .backdrop-blur-xl {
     background-color: rgba(var(--cream), 0.95) !important;
-  }
-  .dark .backdrop-blur-sm,
-  .dark .backdrop-blur-md,
-  .dark .backdrop-blur-lg,
-  .dark .backdrop-blur-xl {
-    background-color: rgba(var(--surface), 0.95) !important;
   }
 }
