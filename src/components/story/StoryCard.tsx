@@ -90,8 +90,8 @@ export const StoryCard = memo(function StoryCard({
 
         {/* Showcase 배지 */}
         {storyType === "showcase" && (
-          <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[9px] font-medium text-white" style={{ background: "linear-gradient(135deg, #8B6AAF, #6A4F8A)" }}>
-            ✨ 완성작
+          <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full text-[9px] font-medium text-white" style={{ background: "linear-gradient(135deg, #C4956A, #A67B5B)" }}>
+            클래스 완성작
           </span>
         )}
 

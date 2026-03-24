@@ -182,17 +182,19 @@ function CommunityStoryContent() {
       {/* Story — Showcase/DIY uses PopupBookViewer, AI uses StoryViewer */}
       <div className="flex-1 relative">
         {isShowcase ? (
-          <div className="h-full min-h-[60dvh]">
-            <PopupBookViewer
-              images={story.illustration_urls!}
-              imageOrder={story.illustration_urls!.map((_, i) => i)}
-              texts={{}}
-              currentPage={diyPage}
-              onPageChange={setDiyPage}
-              accent="#8B6AAF"
-              editable={false}
-              storyTitle={story.title}
-            />
+          <div className="flex flex-col">
+            <div className="h-[75dvh]">
+              <PopupBookViewer
+                images={story.illustration_urls!}
+                imageOrder={story.illustration_urls!.map((_, i) => i)}
+                texts={{}}
+                currentPage={diyPage}
+                onPageChange={setDiyPage}
+                accent="#C4956A"
+                editable={false}
+                storyTitle={story.title}
+              />
+            </div>
             {/* 마지막 페이지 도달 시 CTA 표시 */}
             {diyPage >= (story.illustration_urls!.length - 1) && (
               <OfflineClassCTA />
