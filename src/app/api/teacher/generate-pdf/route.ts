@@ -20,6 +20,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { generateActivitySheetHtml } from "@/lib/pdf/teacher-activity-sheet";
 import { generateReadingGuideHtml } from "@/lib/pdf/teacher-reading-guide";
+import { generateFreeActivityHtml } from "@/lib/pdf/teacher-free-activity";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 // ─── Rate Limiter ───
@@ -41,7 +42,8 @@ const metadataSchema = z.object({
 });
 
 const requestSchema = z.object({
-  type: z.enum(["activity", "guide"]),
+  type: z.enum(["activity", "guide", "free-activity"]),
+  format: z.enum(["html", "doc"]).default("html"),
   storyId: z.string().uuid().optional(),
   story: z
     .object({
@@ -171,46 +173,46 @@ export async function POST(request: NextRequest) {
     // 6. Generate HTML
     let html: string;
 
-    if (body.type === "activity") {
-      html = generateActivitySheetHtml({
-        title,
-        spreads: spreads.map((s) => ({
-          spreadNumber: s.spreadNumber,
-          title: s.title,
-          text: s.text,
-        })),
-        metadata: {
-          readingGuide: metadata.readingGuide,
-          illustPrompts: metadata.illustPrompts,
-          nuriMapping: metadata.nuriMapping,
-          devReview: metadata.devReview,
-        },
-        ageGroup,
-        kindergartenName: body.kindergartenName,
-      });
+    const spreadData = spreads.map((s) => ({
+      spreadNumber: s.spreadNumber,
+      title: s.title,
+      text: s.text,
+    }));
+    const metaData = {
+      readingGuide: metadata.readingGuide,
+      illustPrompts: metadata.illustPrompts,
+      nuriMapping: metadata.nuriMapping,
+      devReview: metadata.devReview,
+    };
+    const commonParams = { title, spreads: spreadData, metadata: metaData, ageGroup, kindergartenName: body.kindergartenName };
+
+    if (body.type === "free-activity") {
+      html = generateFreeActivityHtml(commonParams);
+    } else if (body.type === "activity") {
+      html = generateActivitySheetHtml(commonParams);
     } else {
-      html = generateReadingGuideHtml({
-        title,
-        spreads: spreads.map((s) => ({
-          spreadNumber: s.spreadNumber,
-          title: s.title,
-          text: s.text,
-        })),
-        metadata: {
-          readingGuide: metadata.readingGuide,
-          illustPrompts: metadata.illustPrompts,
-          nuriMapping: metadata.nuriMapping,
-          devReview: metadata.devReview,
-        },
-        ageGroup,
-        kindergartenName: body.kindergartenName,
-      });
+      html = generateReadingGuideHtml(commonParams);
     }
 
-    // 7. Return HTML
+    // 7. Return HTML or DOC
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://mamastale-global.pages.dev";
+
+    if (body.format === "doc") {
+      // .doc format: same HTML with MS Word mime type
+      const safeFilename = encodeURIComponent(title.slice(0, 50) || "활동지");
+      return sb.applyCookies(
+        new NextResponse(html, {
+          headers: {
+            "Content-Type": "application/msword",
+            "Content-Disposition": `attachment; filename="${safeFilename}.doc"; filename*=UTF-8''${safeFilename}.doc`,
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+          },
+        })
+      );
+    }
 
     return sb.applyCookies(
       new NextResponse(html, {
