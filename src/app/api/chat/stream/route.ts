@@ -314,8 +314,9 @@ export async function POST(request: NextRequest) {
   };
   systemPrompt += getPhasePrompt(safePhase as 1 | 2 | 3 | 4, seedContext);
 
+  // defense-in-depth: length cap on crisis injection
   if (crisisResult.severity === "MEDIUM" && crisisResult.promptInjection) {
-    systemPrompt += crisisResult.promptInjection;
+    systemPrompt += crisisResult.promptInjection.slice(0, 800);
   }
   if (isPremiumUser && safePhase === 4) {
     systemPrompt += getPremiumPhase4Supplement();

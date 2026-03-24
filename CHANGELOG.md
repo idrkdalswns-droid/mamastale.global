@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.1] - 2026-03-24
+
+### Fixed
+- crisis promptInjection에 `.slice(0, 800)` 길이 제한 추가 (defense-in-depth)
+
+### Added
+- 가격 페이지 히어로 섹션에 "가입하면 첫 동화 1편 무료" 배지 추가
+
 ## [1.33.0] - 2026-03-24
 
 ### Added

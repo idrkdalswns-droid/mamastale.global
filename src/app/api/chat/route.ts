@@ -449,9 +449,9 @@ export async function POST(request: NextRequest) {
     };
     systemPrompt += getPhasePrompt(safePhase as 1 | 2 | 3 | 4, seedContext);
 
-    // ─── MEDIUM crisis context injection ───
+    // ─── MEDIUM crisis context injection (defense-in-depth: length cap) ───
     if (crisisResult.severity === "MEDIUM" && crisisResult.promptInjection) {
-      systemPrompt += crisisResult.promptInjection;
+      systemPrompt += crisisResult.promptInjection.slice(0, 800);
     }
 
     // ─── INTELLIGENT MODEL ROUTING (litellm-inspired) ───

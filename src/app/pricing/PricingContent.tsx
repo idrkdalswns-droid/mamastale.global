@@ -376,6 +376,10 @@ function PricingContent() {
             <br />
             세상에 단 하나뿐인 10장면 동화 스토리가 됩니다
           </p>
+          <div className="inline-flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full text-xs font-medium" style={{ background: "rgba(127,191,176,0.12)", color: "#5A9E8F" }}>
+            <span>✨</span>
+            <span>가입하면 첫 동화 1편 무료</span>
+          </div>
         </section>
 
         {/* #17: Dynamic social proof counter */}
