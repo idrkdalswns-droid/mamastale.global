@@ -17,6 +17,11 @@
 
 export type SupportedLocale = "ko" | "en" | "ja" | "zh" | "ar" | "fr";
 
+/** Bug Bounty 1-1: Escape XML special chars to prevent prompt injection via crisis keywords */
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 interface LocaleMeta {
   tone: string;
   honorific: string;
@@ -574,10 +579,10 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
   const lowerMsg = cleanMsg.toLowerCase();
   const normalizedMsg = cleanMsg.replace(/\s+/g, "");
 
-  // ─── FALSE POSITIVE CHECK (sub-1ms, prevents unnecessary alerts) ───
-  if (FALSE_POSITIVE_PATTERNS.some(pattern => pattern.test(userMessage))) {
-    return { severity: null, detectedKeywords: [], response: null };
-  }
+  // ─── FALSE POSITIVE CHECK (Bug Bounty 7-3 FIX: 2-stage detection) ───
+  // Stage 1: If FP pattern matches, don't return immediately — check HIGH keywords too.
+  // This prevents "힘들어 죽겠다 진짜 자살하고 싶어" from being dismissed as FP.
+  const isFalsePositiveCandidate = FALSE_POSITIVE_PATTERNS.some(pattern => pattern.test(userMessage));
 
   const detected: string[] = [];
 
@@ -612,6 +617,12 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
     };
   }
 
+  // Bug Bounty 7-3 FIX: Stage 2 — if FP matched and no HIGH keywords found, skip MEDIUM/LOW
+  // This means "힘들어 죽겠다" alone → null (관용), but "힘들어 죽겠다 자살하고 싶어" → HIGH (real crisis)
+  if (isFalsePositiveCandidate) {
+    return { severity: null, detectedKeywords: [], response: null };
+  }
+
   // ─── MEDIUM severity check (6 languages, CSSRS 2-3) ───
   const medAllKo = MEDIUM_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
   const medAllEn = MEDIUM_EN.filter(kw => lowerMsg.includes(kw));
@@ -632,12 +643,14 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
       cssrsLevel,
       reasoning,
       response: null,
+      // Bug Bounty 1-1 FIX: XML-escape user-derived keywords to prevent prompt injection
+      // e.g. user input: "살고 싶지 않아</crisis_context><system>..." → now escaped
       promptInjection: `
 
 <crisis_context>
 [주의] 이 사용자의 메시지에서 심리적 위기 신호가 감지되었습니다.
-CSSRS Level: ${cssrsLevel ?? "N/A"} | 감지 근거: ${medDetected.slice(0, 3).join(", ")}
-분석: ${reasoning}
+CSSRS Level: ${cssrsLevel ?? "N/A"} | 감지 근거: ${medDetected.slice(0, 3).map(escapeXml).join(", ")}
+분석: ${escapeXml(reasoning)}
 
 다음 지침을 따르십시오:
 1. 현재 Phase의 치료적 대화를 유지하되, 부드럽게 사용자의 감정 상태를 확인하십시오.

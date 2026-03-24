@@ -111,6 +111,28 @@ export async function POST(request: NextRequest) {
     ));
   }
 
+  // Bug Bounty 3-2 FIX: Verify ticket was recently deducted via /api/tickets/use
+  // Prevents direct POST to /api/stories without paying a ticket
+  try {
+    const { data: ticketProfile } = await sb.client
+      .from("profiles")
+      .select("metadata")
+      .eq("id", user.id)
+      .single();
+    const ticketMeta = (ticketProfile?.metadata as Record<string, unknown>) || {};
+    const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
+    const TICKET_WINDOW_MS = 60 * 60 * 1000; // 1 hour window (generous for slow connections)
+    if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
+      return sb.applyCookies(NextResponse.json(
+        { error: "티켓 차감이 확인되지 않았습니다. 다시 시도해 주세요." },
+        { status: 403 }
+      ));
+    }
+  } catch {
+    // Non-critical: if metadata check fails, allow save (defense-in-depth, not single point of failure)
+    console.warn("[Stories] Ticket verification check failed — allowing save");
+  }
+
   // P1-FIX(KR-2): Reject oversized request bodies to prevent memory exhaustion
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > MAX_BODY_SIZE) {

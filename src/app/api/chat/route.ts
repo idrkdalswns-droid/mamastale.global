@@ -2,60 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "edge";
-import { getAnthropicClient } from "@/lib/anthropic/client";
-import { getSystemPrompt, getPremiumPhase4Supplement, screenForCrisis } from "@/lib/anthropic/system-prompt";
-import type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";
-import { getPhasePrompt } from "@/lib/anthropic/phase-prompts";
-import type { StorySeedContext } from "@/lib/anthropic/phase-prompts";
-import { selectModel, getFallbackModel } from "@/lib/anthropic/model-router";
-import { validateOutputSafety } from "@/lib/anthropic/output-safety";
+
+// Bug Bounty v1.38.0: Shared module prevents chat/stream divergence
 import {
-  detectPhase,
-  stripPhaseTag,
-  isStoryComplete,
-  extractTags,
-  stripTagsTag,
-} from "@/lib/anthropic/phase-detection";
-import { parseStoryScenes, extractStoryTitle } from "@/lib/utils/story-parser";
-import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
-import { recordCrisisEvent, decrementPostCrisisTurn } from "@/lib/utils/crisis-tracker";
-import { checkRateLimitPersistent, maybeCleanupRateLimits } from "@/lib/utils/rate-limiter";
-import { getCachedResponse, setCachedResponse, maybeCleanupCache } from "@/lib/utils/response-cache";
-import { z } from "zod";
+  chatRequestSchema,
+  GUEST_RATE_LIMIT,
+  AUTH_RATE_LIMIT,
+  GUEST_TURN_LIMIT,
+  AUTH_TURN_LIMIT,
+  AGE_LABELS,
+  calculateSafePhase,
+  buildSystemPrompt,
+  postProcessResponse,
+  prepareMessages,
+  screenForCrisis,
+  type CrisisScreenResult,
+  selectModel,
+  getFallbackModel,
+  validateOutputSafety,
+  parseStoryScenes,
+  extractStoryTitle,
+  logLLMCall,
+  logEvent,
+  recordCrisisEvent,
+  decrementPostCrisisTurn,
+  checkRateLimitPersistent,
+  maybeCleanupRateLimits,
+  getCachedResponse,
+  setCachedResponse,
+  maybeCleanupCache,
+  getClientIP,
+  getAnthropicClient,
+} from "@/lib/anthropic/chat-shared";
 import { createServerClient } from "@supabase/ssr";
-import { getClientIP } from "@/lib/utils/validation";
-import { stripControlTags } from "@/lib/utils/sanitize-chat";
-
-// ─── Story Seed schema (optional, from client state) ───
-const storySeedSchema = z.object({
-  coreSeed: z.string().max(200).optional(),
-  chosenMetaphor: z.string().max(200).optional(),
-  counterForce: z.string().max(200).optional(),
-}).optional();
-
-const chatRequestSchema = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string().min(1).max(2000),
-    })
-  ).max(120),  // Generous limit for long conversations
-  // R6-F5: Constrain sessionId to prevent log pollution and crisis tracking abuse
-  sessionId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).optional(),
-  childAge: z.enum(["0-2", "3-5", "6-8", "9-13"]).optional(),
-  parentRole: z.enum(["엄마", "아빠", "할머니", "할아버지", "기타"]).optional(),
-  parentAge: z.enum(["10s", "20s", "30s", "40s", "50+"]).optional(),
-  currentPhase: z.number().min(1).max(4).optional(),
-  turnCountInCurrentPhase: z.number().min(0).max(50).optional(),
-  storySeed: storySeedSchema,
-});
-
-// ─── Rate Limiting (in-memory fallback only — primary is now Supabase) ───
-const GUEST_RATE_LIMIT = 10;   // 10 req/min for unauthenticated
-const AUTH_RATE_LIMIT = 30;    // 30 req/min for authenticated
-// V5-FIX #5: 3→5 to match client FREE_TURN_LIMIT
-const GUEST_TURN_LIMIT = 5;   // Server-side guest message limit (must match client FREE_TURN_LIMIT)
-const AUTH_TURN_LIMIT = 30;   // Freemium v2: all authenticated users capped at 30 turns per story
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
@@ -341,17 +320,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ─── Phase context ───
-    const MAX_TURNS_PER_PHASE: Record<number, number> = { 1: 7, 2: 10, 3: 10, 4: 999 };
-    const MIN_TURNS_PER_PHASE: Record<number, number> = { 1: 3, 2: 3, 3: 3, 4: 0 };
-    const MIN_MSGS_PER_PHASE: Record<number, number> = { 1: 0, 2: 4, 3: 8, 4: 12 };
-    // Security: 서버가 메시지 수 기반으로 최대 허용 Phase 결정 (클라이언트 값은 UX 힌트)
-    const serverMaxPhase = ([4, 3, 2, 1] as const).find(p => messages.length >= (MIN_MSGS_PER_PHASE[p] || 0)) || 1;
-    const rawPhase = clientPhase && clientPhase >= 1 && clientPhase <= 4
-      ? Math.min(clientPhase, serverMaxPhase) as 1 | 2 | 3 | 4
-      : 1;
-    const safePhase = rawPhase;
-    const safeTurnCount = turnCountInCurrentPhase ?? 0;
+    // ─── Phase context (Bug Bounty: now uses shared calculateSafePhase) ───
+    const { safePhase, safeTurnCount, minTurns, maxTurns } = calculateSafePhase(
+      messages.length,
+      clientPhase,
+      turnCountInCurrentPhase,
+    );
 
     // ─── POST-CRISIS MODE CHECK (decrement turns if in post-crisis) ───
     if (parsed.data.sessionId && crisisResult.severity === null) {
@@ -390,69 +364,20 @@ export async function POST(request: NextRequest) {
 
     const anthropic = getAnthropicClient();
 
-    // ─── PHASE-AWARE PROMPT ASSEMBLY (v3.0) ───
-    let systemPrompt = getSystemPrompt("ko");
-
-    const VALID_CHILD_AGES = ["0-2", "3-5", "6-8", "9-13"] as const;
-    const ageLabels: Record<string, string> = {
-      "0-2": "0~2세 (영아)",
-      "3-5": "3~5세 (유아)",
-      "6-8": "6~8세 (초등 저학년)",
-      "9-13": "9~13세 (초등 고학년~중학생)",
-    };
-    if (childAge && (VALID_CHILD_AGES as readonly string[]).includes(childAge)) {
-      systemPrompt += `\n\n<child_age_context>\n사용자의 자녀 연령: ${ageLabels[childAge]}\nPhase 4 동화 작성 시 해당 연령대의 스타일 가이드를 적용하십시오.\n</child_age_context>`;
-    }
-
-    // Inject parent role & age context for personalized conversation
-    const roleLabels: Record<string, string> = {
-      "엄마": "어머니(엄마)",
-      "아빠": "아버지(아빠)",
-      "할머니": "할머니",
-      "할아버지": "할아버지",
-      "기타": "보호자",
-    };
-    const parentAgeLabels: Record<string, string> = {
-      "10s": "10대",
-      "20s": "20대",
-      "30s": "30대",
-      "40s": "40대",
-      "50+": "50대 이상",
-    };
-    if (parentRole && roleLabels[parentRole]) {
-      let parentContext = `\n\n<parent_context>\n사용자의 역할: ${roleLabels[parentRole]}`;
-      if (parentAge && parentAgeLabels[parentAge]) {
-        parentContext += `\n사용자의 연령대: ${parentAgeLabels[parentAge]}`;
-      }
-      parentContext += `\n대화 시 "어머니" 대신 적절한 호칭을 사용하십시오. (예: 아버지→"아버지", 할머니→"할머니")`;
-      parentContext += `\n</parent_context>`;
-      systemPrompt += parentContext;
-    }
-
-    const maxTurns = MAX_TURNS_PER_PHASE[safePhase] ?? 10;
-    const minTurns = MIN_TURNS_PER_PHASE[safePhase] ?? 3;
-
-    if (safeTurnCount >= maxTurns && safePhase < 4) {
-      systemPrompt += `\n\n<phase_turn_limit_exceeded>\n[긴급] 현재 Phase ${safePhase}에서 ${safeTurnCount}턴이 경과했습니다. ${maxTurns}턴 제한을 초과했으므로 반드시 Phase ${safePhase + 1}로 전환하십시오.\n이번 응답에서 [PHASE:${safePhase + 1}]을 출력하고, Phase ${safePhase + 1}의 역할로 자연스럽게 전환하십시오.\n</phase_turn_limit_exceeded>`;
-    } else if (safeTurnCount < minTurns && safePhase < 4) {
-      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${maxTurns} (최소 ${minTurns}턴 필요)\n[중요] 아직 이 단계에서 최소 ${minTurns}턴의 대화가 필요합니다. 절대 다음 Phase로 전환하지 마십시오.\n사용자가 빨리 넘어가고 싶어하더라도, 이 Phase에서 충분한 정보 수집이 되지 않았으므로 부드럽게 대화를 이어가십시오.\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
-    } else {
-      systemPrompt += `\n\n<phase_context>\n현재 Phase: ${safePhase} | 이 Phase에서의 대화 턴: ${safeTurnCount}/${maxTurns}\n현재 Phase보다 낮은 Phase 번호를 절대 출력하지 마십시오. [PHASE:${safePhase}] 이상만 허용됩니다.\n</phase_context>`;
-    }
-
-    // Inject active phase's clinical protocol
-    const seedContext: StorySeedContext = {
-      coreSeed: storySeed?.coreSeed,
-      chosenMetaphor: storySeed?.chosenMetaphor,
-      counterForce: storySeed?.counterForce,
-      childAge: childAge ? ageLabels[childAge] : undefined,
-    };
-    systemPrompt += getPhasePrompt(safePhase as 1 | 2 | 3 | 4, seedContext);
-
-    // ─── MEDIUM crisis context injection (defense-in-depth: length cap) ───
-    if (crisisResult.severity === "MEDIUM" && crisisResult.promptInjection) {
-      systemPrompt += crisisResult.promptInjection.slice(0, 800);
-    }
+    // ─── PHASE-AWARE PROMPT ASSEMBLY (Bug Bounty: now uses shared buildSystemPrompt) ───
+    const systemPrompt = buildSystemPrompt({
+      locale: "ko",
+      childAge,
+      parentRole,
+      parentAge,
+      safePhase,
+      safeTurnCount,
+      minTurns,
+      maxTurns,
+      crisisResult,
+      isPremiumUser,
+      storySeed,
+    });
 
     // ─── INTELLIGENT MODEL ROUTING (litellm-inspired) ───
     const modelSelection = selectModel({
@@ -461,11 +386,6 @@ export async function POST(request: NextRequest) {
       isCrisisContext: crisisResult.severity === "MEDIUM",
     });
 
-    // Append premium story supplement for paid Phase 4
-    if (isPremiumUser && safePhase === 4) {
-      systemPrompt += getPremiumPhase4Supplement();
-    }
-
     const apiStartTime = Date.now();
     // Sprint 8-A: Prompt Caching — cache the system prompt to reduce costs ~20-30%
     const { response, modelUsed, wasFallback } = await callAnthropicWithFallback(anthropic, {
@@ -473,10 +393,7 @@ export async function POST(request: NextRequest) {
       max_tokens: modelSelection.maxTokens,
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       // F-014 FIX: Strip control tags from user messages to prevent prompt injection
-      messages: messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.role === "user" ? stripControlTags(m.content) : m.content,
-      })),
+      messages: prepareMessages(messages),
     });
 
     const apiLatencyMs = Date.now() - apiStartTime;
@@ -486,27 +403,13 @@ export async function POST(request: NextRequest) {
       .map((b) => b.text)
       .join("");
 
-    const detectedPhase = detectPhase(rawText);
-    // V5-FIX #11: Phase null → safePhase (prevent frontend UI breakage)
-    // V5-FIX #8: minTurns strip — block premature phase advance when minimum turns not met
-    let phase: number;
-    if (detectedPhase === null) {
-      phase = safePhase;
-    } else if (detectedPhase < safePhase) {
-      phase = safePhase; // forward-only enforcement
-    } else if (detectedPhase > safePhase && safeTurnCount < minTurns) {
-      phase = safePhase; // server-side minTurns enforcement
-    } else {
-      phase = detectedPhase;
-    }
-    const textNoPhase = stripPhaseTag(rawText);
-    // Sprint 2-C: Extract AI-suggested tags before stripping
-    const suggestedTags = extractTags(textNoPhase);
-    const cleanText = stripTagsTag(textNoPhase);
-    const storyComplete = isStoryComplete(cleanText, phase, safePhase);
+    // Bug Bounty: Phase enforcement now uses shared postProcessResponse
+    const { phase, cleanText, suggestedTags, storyComplete } = postProcessResponse(
+      rawText, safePhase, safeTurnCount, minTurns
+    );
 
     // ─── OUTPUT SAFETY VALIDATION (psysafe-ai inspired) ───
-    const safetyResult = validateOutputSafety(cleanText, safePhase, detectedPhase);
+    const safetyResult = validateOutputSafety(cleanText, safePhase, phase);
     // V5-FIX #10: Block medical advice responses (was log-only, now enforced)
     const hasMedicalAdvice = safetyResult.violations.some(v => v.type === "medical_advice");
     const finalContent = hasMedicalAdvice

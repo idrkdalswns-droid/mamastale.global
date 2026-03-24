@@ -164,58 +164,76 @@ export async function POST(request: NextRequest) {
       ));
     }
 
-    // P0-FIX(US-4): Truly atomic deduction using exact expected value.
-    // Verifies the EXACT current value to ensure only one concurrent request can succeed.
-    // LAUNCH-FIX: Auto-retry on CAS miss (concurrent write ≠ no tickets)
-    let updated: { free_stories_remaining: number } | null = null;
-    for (let casAttempt = 0; casAttempt < 3; casAttempt++) {
-      const currentRemaining = casAttempt === 0 ? remaining : (
-        await sb.client.from("profiles").select("free_stories_remaining").eq("id", user.id).single()
-      ).data?.free_stories_remaining ?? 0;
-
-      if (currentRemaining <= 0) {
+    // Bug Bounty 3-1 FIX: Use atomic RPC with FOR UPDATE row lock instead of CAS.
+    // CAS had a race window: two concurrent reads could get the same value and both succeed.
+    // decrement_ticket RPC (033_atomic_ticket_decrement.sql) locks the row during read+update.
+    let newRemaining: number;
+    try {
+      const { data, error: rpcErr } = await sb.client.rpc("decrement_ticket", {
+        p_user_id: user.id,
+      });
+      if (rpcErr) {
+        // Check for specific error types from the RPC
+        if (rpcErr.message?.includes("insufficient_tickets")) {
+          return sb.applyCookies(NextResponse.json(
+            { error: "no_tickets", message: "티켓이 부족합니다." },
+            { status: 403 }
+          ));
+        }
+        if (rpcErr.code === "PGRST116") {
+          // RPC not found — fall back to old CAS logic for backward compatibility
+          console.warn("[Tickets/Use] decrement_ticket RPC not found — deploy 033_atomic_ticket_decrement.sql");
+          const { data: casResult, error: deductError } = await sb.client
+            .from("profiles")
+            .update({
+              free_stories_remaining: remaining - 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", user.id)
+            .eq("free_stories_remaining", remaining)
+            .select("free_stories_remaining")
+            .single();
+          if (deductError || !casResult) {
+            return sb.applyCookies(NextResponse.json(
+              { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
+              { status: 409 }
+            ));
+          }
+          newRemaining = casResult.free_stories_remaining;
+        } else {
+          throw rpcErr;
+        }
+      } else {
+        newRemaining = data as number;
+      }
+    } catch (rpcCatchErr) {
+      const errMsg = rpcCatchErr instanceof Error ? rpcCatchErr.message : String(rpcCatchErr);
+      if (errMsg.includes("insufficient_tickets")) {
         return sb.applyCookies(NextResponse.json(
           { error: "no_tickets", message: "티켓이 부족합니다." },
           { status: 403 }
         ));
       }
-
-      const { data: casResult, error: deductError } = await sb.client
-        .from("profiles")
-        .update({
-          free_stories_remaining: currentRemaining - 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-        .eq("free_stories_remaining", currentRemaining) // CAS (Compare-And-Swap)
-        .select("free_stories_remaining")
-        .single();
-
-      if (!deductError && casResult) {
-        updated = casResult;
-        break;
-      }
-      if (casAttempt === 0) {
-        console.warn("[Tickets/Use] CAS miss (concurrent write), retrying...");
-      }
+      throw rpcCatchErr;
     }
 
-    if (!updated) {
-      // R2-FIX(B1): Changed error code from "no_tickets" to "concurrent_conflict"
-      // so the client can distinguish "out of tickets" (403) from "retry needed" (409).
-      // Previously, both cases returned "no_tickets", causing the client to show
-      // a "buy tickets" prompt when the user actually had tickets (just a write conflict).
-      console.warn("[Tickets/Use] CAS deduction failed after retry");
-      return sb.applyCookies(NextResponse.json(
-        { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
-        { status: 409 }
-      ));
-    }
+    const updated = { free_stories_remaining: newRemaining };
 
     // Determine premium status from purchase history (graceful fallback)
     const metadata = await readMetadata(user.id);
     const processedOrders = (metadata.processed_orders as string[]) || [];
     const isPremium = processedOrders.length > 0;
+
+    // Bug Bounty 3-2 FIX: Record ticket usage timestamp for /api/stories POST verification
+    try {
+      await sb.client
+        .from("profiles")
+        .update({ metadata: { ...metadata, last_ticket_used_at: new Date().toISOString() } })
+        .eq("id", user.id);
+    } catch {
+      // Non-critical — story save verification will be slightly less reliable
+      console.warn("[Tickets/Use] Failed to record last_ticket_used_at");
+    }
 
     return sb.applyCookies(NextResponse.json({
       success: true,
