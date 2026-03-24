@@ -23,6 +23,7 @@ export default function TeacherPage() {
   const router = useRouter();
   const [isRecovering, setIsRecovering] = useState(true);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [editStory, setEditStory] = useState<{ storyId: string; title: string; spreads: import("@/lib/types/teacher").TeacherSpread[] } | null>(null);
 
   // 킬 스위치 체크
   const isEnabled = process.env.NEXT_PUBLIC_TEACHER_MODE_ENABLED !== "false";
@@ -413,10 +414,15 @@ export default function TeacherPage() {
       return (
         <TeacherStoryWriter
           onSave={(story: TeacherStory) => {
+            setEditStory(null);
             store.setGeneratedStory(story);
             store.setScreenState("PREVIEW");
           }}
-          onBack={() => store.setScreenState("HOME")}
+          onBack={() => {
+            setEditStory(null);
+            store.setScreenState("HOME");
+          }}
+          editMode={editStory || undefined}
         />
       );
 
@@ -426,6 +432,17 @@ export default function TeacherPage() {
           story={store.generatedStory}
           onNewStory={() => store.setScreenState("HOME")}
           onBack={() => store.setScreenState("HOME")}
+          onEditStory={() => {
+            const s = store.generatedStory;
+            if (s) {
+              setEditStory({
+                storyId: s.id || "",
+                title: s.title || "",
+                spreads: s.spreads || [],
+              });
+              store.setScreenState("WRITING");
+            }
+          }}
         />
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">

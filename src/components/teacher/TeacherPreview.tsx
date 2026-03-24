@@ -15,6 +15,7 @@ interface TeacherPreviewProps {
   story: TeacherStory;
   onNewStory: () => void;
   onBack?: () => void;
+  onEditStory?: () => void;
 }
 
 /** 스프레드 배경색 — 3막 구조에 따른 색상 */
@@ -28,6 +29,7 @@ export function TeacherPreview({
   story,
   onNewStory,
   onBack,
+  onEditStory,
 }: TeacherPreviewProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [editingSpread, setEditingSpread] = useState<number | null>(null);
@@ -307,26 +309,24 @@ export function TeacherPreview({
       {/* ─── 활동지 히스토리 ─── */}
       {story.id && <WorksheetHistory storyId={story.id} />}
 
-      {/* ─── 다운로드 영역 ─── */}
+      {/* ─── 하단 CTA 영역 ─── */}
       <div className="px-4 pb-4 pt-2 border-t border-brown-pale/20 space-y-3
                        pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
 
-        {/* 동화 인쇄 */}
-        <button
-          onClick={() => handleDownload("activity", "html")}
-          disabled={!!pdfLoading || spreads.length === 0}
-          className="w-full py-2.5 rounded-xl text-xs font-medium text-brown-light
-                     border border-brown-pale/30 transition-all active:scale-[0.97]
-                     disabled:opacity-40 bg-paper/40"
-        >
-          {pdfLoading?.startsWith("activity") ? (
-            <span className="animate-pulse">생성 중...</span>
-          ) : (
-            <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.4 42.4 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.75 12h.008v.008h-.008V12zm-3 0h.008v.008h-.008V12z" /></svg>동화 인쇄</>
-          )}
-        </button>
+        {/* 편집 CTA */}
+        {onEditStory && (
+          <button
+            onClick={onEditStory}
+            className="w-full py-2.5 rounded-xl text-xs font-medium text-brown
+                       border border-brown-pale/30 transition-all active:scale-[0.97]
+                       bg-paper/40"
+          >
+            <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+            편집
+          </button>
+        )}
 
-        {/* 무료 활동지 다운로드 */}
+        {/* 활동지 + 다운로드 */}
         <div>
           <p className="text-[11px] text-brown-pale text-center mb-2">
             무료 활동지 다운로드
@@ -351,7 +351,7 @@ export function TeacherPreview({
               {pdfLoading === "free-activity-html" ? (
                 <span className="animate-pulse">생성 중...</span>
               ) : (
-                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>PDF</>
+                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>인쇄 / PDF 저장</>
               )}
             </button>
             <button
@@ -365,7 +365,7 @@ export function TeacherPreview({
               {pdfLoading === "free-activity-doc" ? (
                 <span className="animate-pulse text-brown-light">생성 중...</span>
               ) : (
-                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>DOCX (편집 가능)</>
+                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>DOCX 다운로드</>
               )}
             </button>
           </div>
@@ -527,10 +527,7 @@ function SpreadCard({
       className="rounded-2xl p-4 relative"
       style={{ backgroundColor: getSpreadBg(spread.spreadNumber) }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-brown-light/60">
-          {index + 1}장
-        </span>
+      <div className="flex items-center justify-end mb-2">
         <span className="text-[10px] text-brown-pale">
           {index + 1} / {total}
         </span>
@@ -561,13 +558,7 @@ function SpreadCard({
               {expanded ? "접기" : "더보기"}
             </button>
           )}
-          <button
-            onClick={() => onEdit(index)}
-            className="text-[11px] text-brown-pale underline underline-offset-2
-                       decoration-brown-pale/30 mt-2 block"
-          >
-            편집하기
-          </button>
+          {/* 편집하기 링크 삭제 — 하단 CTA로 이동 */}
         </div>
       )}
     </div>

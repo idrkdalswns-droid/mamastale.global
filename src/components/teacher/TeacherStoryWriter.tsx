@@ -4,18 +4,19 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import type { TeacherSpread, TeacherStory } from "@/lib/types/teacher";
 
+interface EditMode {
+  storyId: string;
+  title: string;
+  spreads: TeacherSpread[];
+}
+
 interface TeacherStoryWriterProps {
   onSave: (story: TeacherStory) => void;
   onBack: () => void;
+  editMode?: EditMode;
 }
 
 type WriterMode = "select" | "template" | "paste" | "preview-split" | "edit";
-
-const TEMPLATES = [
-  { label: "짧은 동화", count: 8, desc: "8장면" },
-  { label: "보통 동화", count: 12, desc: "12장면" },
-  { label: "긴 동화", count: 16, desc: "16장면" },
-];
 
 const DRAFT_KEY = "mamastale_teacher_writer_draft";
 
@@ -27,10 +28,10 @@ function createEmptySpreads(count: number): TeacherSpread[] {
   }));
 }
 
-export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) {
-  const [mode, setMode] = useState<WriterMode>("select");
-  const [title, setTitle] = useState("");
-  const [spreads, setSpreads] = useState<TeacherSpread[]>([]);
+export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWriterProps) {
+  const [mode, setMode] = useState<WriterMode>(editMode ? "edit" : "select");
+  const [title, setTitle] = useState(editMode?.title || "");
+  const [spreads, setSpreads] = useState<TeacherSpread[]>(editMode?.spreads || []);
   const [pasteText, setPasteText] = useState("");
   const [splitPreview, setSplitPreview] = useState<TeacherSpread[]>([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -179,8 +180,14 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
 
     setSaving(true);
     try {
-      const res = await fetch("/api/teacher/stories", {
-        method: "POST",
+      const isEdit = !!editMode?.storyId;
+      const url = isEdit
+        ? `/api/teacher/stories/${editMode.storyId}`
+        : "/api/teacher/stories";
+      const method = isEdit ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
@@ -189,7 +196,7 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
             title: s.title || undefined,
             text: s.text,
           })),
-          source: "manual",
+          ...(isEdit ? {} : { source: "manual" }),
         }),
       });
 
@@ -198,16 +205,16 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
         throw new Error((err as { error?: string }).error || "저장 실패");
       }
 
-      const data = await res.json();
+      const data = isEdit ? { id: editMode.storyId, title: title.trim() } : await res.json();
 
       // 드래프트 삭제
       localStorage.removeItem(DRAFT_KEY);
 
-      toast.success("동화가 저장되었습니다!");
+      toast.success(isEdit ? "수정되었습니다!" : "동화가 저장되었습니다!");
 
       onSave({
         id: data.id,
-        sessionId: "",
+        sessionId: editMode?.storyId ? "" : "",
         title: data.title,
         spreads: nonEmptySpreads,
         metadata: {},
@@ -274,29 +281,13 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
               <p className="text-xs text-brown-light">빈 장면부터 시작하거나, 기존 동화를 붙여넣기</p>
             </div>
 
-            {/* 템플릿 선택 */}
+            {/* 장면 수 직접 설정 */}
             <div className="space-y-2">
               <p className="text-xs font-medium text-brown-light">빈 장면부터 시작</p>
-              {TEMPLATES.map(t => (
-                <button
-                  key={t.count}
-                  onClick={() => handleSelectTemplate(t.count)}
-                  className="w-full p-4 rounded-2xl text-left border border-brown-pale/15
-                             bg-paper active:scale-[0.98] transition-all flex justify-between items-center"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-brown">{t.label}</p>
-                    <p className="text-xs text-brown-light mt-0.5">{t.desc}</p>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4A882" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-                </button>
-              ))}
-
-              {/* 자유 형식 */}
               <div className="flex items-center gap-2 p-4 rounded-2xl border border-brown-pale/15 bg-paper">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-brown">자유 형식</p>
-                  <p className="text-xs text-brown-light mt-0.5">장면 수 직접 설정</p>
+                  <p className="text-sm font-medium text-brown">장면 수 설정</p>
+                  <p className="text-xs text-brown-light mt-0.5">1~20장면</p>
                 </div>
                 <input
                   type="number"
@@ -487,15 +478,6 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
                         삭제
                       </button>
                     </div>
-                    <input
-                      value={spreads[activeTab].title || ""}
-                      onChange={e => updateSpread(activeTab, "title", e.target.value)}
-                      placeholder="장면 제목 (선택)"
-                      maxLength={200}
-                      className="w-full px-3 py-2 rounded-lg border border-brown-pale/15 bg-paper
-                                 text-sm text-brown placeholder:text-brown-pale
-                                 focus:outline-none focus:border-coral/30"
-                    />
                     <textarea
                       value={spreads[activeTab].text}
                       onChange={e => updateSpread(activeTab, "text", e.target.value)}
@@ -525,15 +507,6 @@ export function TeacherStoryWriter({ onSave, onBack }: TeacherStoryWriterProps) 
                         삭제
                       </button>
                     </div>
-                    <input
-                      value={spread.title || ""}
-                      onChange={e => updateSpread(i, "title", e.target.value)}
-                      placeholder="장면 제목 (선택)"
-                      maxLength={200}
-                      className="w-full px-3 py-2 rounded-lg border border-brown-pale/15 bg-cream
-                                 text-sm text-brown placeholder:text-brown-pale
-                                 focus:outline-none focus:border-coral/30"
-                    />
                     <textarea
                       value={spread.text}
                       onChange={e => updateSpread(i, "text", e.target.value)}

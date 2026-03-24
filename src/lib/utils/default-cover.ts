@@ -165,36 +165,23 @@ function coverPathForTone(tone: CoverTone, index: number): string {
 }
 
 /**
- * Return a deterministic default cover image path for a story.
- * 50% chance to pick from new category covers, 50% from classic tone covers.
+ * 이수지 스타일 카테고리 커버 풀 (child + nature + warm + animal)
+ * v1.37.0: classic tone (pink/green/blue) 및 fantasy/style 제외하여 시각적 통일감 확보
  */
-export function getDefaultCover(storyId: string, topic?: string | null): string {
+const UNIFIED_COVERS = [
+  ...CATEGORY_COVERS.child,
+  ...CATEGORY_COVERS.nature,
+  ...CATEGORY_COVERS.warm,
+  ...CATEGORY_COVERS.animal,
+];
+
+/**
+ * Return a deterministic default cover image path for a story.
+ * Uses only 이수지-style category covers for visual consistency.
+ */
+export function getDefaultCover(storyId: string, _topic?: string | null): string {
   const hash = simpleHash(storyId);
-
-  // Try category covers first (if topic maps to a category with images)
-  if (topic && TOPIC_TO_CATEGORY[topic]) {
-    const category = TOPIC_TO_CATEGORY[topic];
-    const covers = CATEGORY_COVERS[category];
-    if (covers.length > 0) {
-      // Alternate between category and classic tone based on hash
-      if (hash % 2 === 0) {
-        return covers[hash % covers.length];
-      }
-    }
-  }
-
-  // Classic tone-based selection
-  if (topic && TOPIC_TO_TONE[topic]) {
-    return coverPathForTone(TOPIC_TO_TONE[topic], hash);
-  }
-
-  // Fallback: distribute across all covers (classic 45 + new category covers)
-  const totalCovers = 45 + ALL_CATEGORY_COVERS.length;
-  const index = hash % totalCovers;
-  if (index < 16) return coverPathForTone("pink", index);
-  if (index < 30) return coverPathForTone("green", index - 16);
-  if (index < 45) return coverPathForTone("blue", index - 30);
-  return ALL_CATEGORY_COVERS[index - 45];
+  return UNIFIED_COVERS[hash % UNIFIED_COVERS.length];
 }
 
 /**

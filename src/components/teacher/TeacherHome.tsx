@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getDefaultCover } from "@/lib/utils/default-cover";
-import { getRecommendedActivity, getActivityLabel } from "@/lib/utils/worksheet-recommend";
-import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import type {
   TeacherOnboarding,
   TeacherMessage,
@@ -40,7 +38,6 @@ interface StoryListItem {
   session_id: string;
   is_mine?: boolean;
   author?: string;
-  _recommended?: string;
 }
 
 export function TeacherHome({
@@ -80,12 +77,7 @@ export function TeacherHome({
       const res = await fetch("/api/teacher/stories?scope=shared");
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
-      // H2: 추천 활동지를 fetch 시점에 1회 계산 (렌더 시 재계산 방지)
-      const storiesWithRecommend = (data.stories || []).map((s: StoryListItem) => ({
-        ...s,
-        _recommended: getRecommendedActivity(s.spreads || []),
-      }));
-      setSharedStories(storiesWithRecommend);
+      setSharedStories(data.stories || []);
     } catch {
       if (retryCount < 2) {
         await new Promise(r => setTimeout(r, 1000));
@@ -248,20 +240,20 @@ export function TeacherHome({
                 준비 중...
               </span>
             ) : (
-              "AI로 새 동화 만들기"
+              "새 동화 만들기"
             )}
           </button>
           <button
             onClick={onWriteStory}
-            className="w-full py-3 rounded-full text-brown text-[14px] font-medium
+            className="w-full py-3 rounded-full text-center
                        border border-brown-pale/30 transition-all active:scale-[0.97]
                        bg-paper/60"
           >
-            직접 동화 작성하기
+            <span className="text-brown text-[14px] font-medium">직접 동화 작성하기</span>
+            <span className="block text-[11px] text-brown-pale mt-0.5">
+              직접 타이핑하거나 외부 동화를 붙여넣기
+            </span>
           </button>
-          <p className="text-[11px] text-brown-pale text-center">
-            직접 타이핑하거나 외부 동화를 붙여넣기
-          </p>
         </div>
 
         {/* 우리 유치원 서재 */}
@@ -317,9 +309,6 @@ export function TeacherHome({
           {!sharedLoading && !sharedError && sharedStories && sharedStories.length > 0 && (
             <div className="grid grid-cols-2 gap-3" role="list">
               {sharedStories.map((story) => {
-                const recommendedLabel = getActivityLabel(
-                  (story._recommended as Parameters<typeof getActivityLabel>[0]) || "post_reading"
-                );
                 const isDeleting = deletingId === story.id;
 
                 return (
@@ -327,14 +316,14 @@ export function TeacherHome({
                     key={story.id}
                     role="listitem"
                     className={`rounded-2xl overflow-hidden bg-paper border border-brown-pale/10
-                               active:scale-[0.97] transition-all relative
+                               transition-all relative
                                ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
                     style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
                   >
-                    {/* 커버이미지 */}
+                    {/* 카드 클릭 영역 */}
                     <button
                       onClick={() => {
-                        if (isDeleting) return; // H1: 삭제 중 클릭 차단
+                        if (isDeleting) return;
                         onViewStory({
                           id: story.id,
                           sessionId: story.session_id,
@@ -348,7 +337,7 @@ export function TeacherHome({
                         });
                       }}
                       disabled={isDeleting}
-                      className="w-full text-left"
+                      className="w-full text-left active:scale-[0.97] transition-all"
                       aria-label={`${story.title || "제목 없는 동화"} 열기`}
                     >
                       <div className="aspect-[3/4] relative overflow-hidden">
@@ -360,8 +349,6 @@ export function TeacherHome({
                           sizes="(max-width: 430px) 50vw, 200px"
                         />
                       </div>
-
-                      {/* 정보 영역 */}
                       <div className="p-3">
                         <p className="text-[13px] font-medium text-brown truncate">
                           {story.title || "제목 없는 동화"}
@@ -370,40 +357,17 @@ export function TeacherHome({
                           {new Date(story.created_at).toLocaleDateString("ko-KR", {
                             month: "long",
                             day: "numeric",
-                          })}{" "}
-                          · {(story.spreads || []).filter((s: { text?: string }) => s.text?.trim()).length}장면
-                          {!story.is_mine && story.author && (
-                            <span className="text-brown-pale"> · {story.author}</span>
-                          )}
+                          })}
                         </p>
-                        {/* 추천 활동지 태그 */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (story.id) {
-                              useWorksheetStore.getState().open(story.id, story.title || "동화");
-                            }
-                          }}
-                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                                     text-[10px] font-medium text-white
-                                     active:scale-[0.95] transition-all"
-                          style={{ background: "linear-gradient(135deg, #8B6AAF, #7A5BA0)" }}
-                        >
-                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-                          {recommendedLabel}
-                        </button>
                       </div>
                     </button>
 
-                    {/* 삭제 버튼 (내 동화만) */}
+                    {/* 삭제 버튼 — 카드 button의 sibling (클릭 전파 없음) */}
                     {story.is_mine !== false && (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteId(story.id);
-                        }}
+                        onClick={() => setConfirmDeleteId(story.id)}
                         disabled={isDeleting}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm
+                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm
                                    flex items-center justify-center text-white/80
                                    active:scale-[0.9] transition-all"
                         aria-label={isDeleting ? "삭제 중" : "삭제"}
