@@ -76,6 +76,16 @@ export default function TeacherPage() {
     }
   }, [store.screenState, store.generatedStory]);
 
+  // Disable pull-to-refresh during chat/onboarding/generating
+  useEffect(() => {
+    if (["CHAT", "ONBOARDING", "GENERATING"].includes(store.screenState)) {
+      document.body.classList.add("no-pull-refresh");
+    } else {
+      document.body.classList.remove("no-pull-refresh");
+    }
+    return () => document.body.classList.remove("no-pull-refresh");
+  }, [store.screenState]);
+
   // 세션 만료 폴링 (60초마다 체크 — useEffect 의존성 race condition 방지)
   useEffect(() => {
     const interval = setInterval(() => {

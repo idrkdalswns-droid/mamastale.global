@@ -108,6 +108,15 @@ export default function Home() {
     };
     document.title = titles[screen];
   }, [screen, chatPhase]);
+  // Disable pull-to-refresh during chat/onboarding to prevent conversation loss
+  useEffect(() => {
+    if (screen === "chat" || screen === "onboarding") {
+      document.body.classList.add("no-pull-refresh");
+    } else {
+      document.body.classList.remove("no-pull-refresh");
+    }
+    return () => document.body.classList.remove("no-pull-refresh");
+  }, [screen]);
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
   const [showStickyCta, setShowStickyCta] = useState(false);

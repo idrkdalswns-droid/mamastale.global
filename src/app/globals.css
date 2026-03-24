@@ -84,9 +84,14 @@
 
   body {
     background: rgb(var(--cream));
-    overscroll-behavior: none;
+    overscroll-behavior-x: none;
     overflow-x: clip;
     font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  }
+
+  /* 채팅/온보딩 등 pull-to-refresh 차단이 필요한 화면 */
+  body.no-pull-refresh {
+    overscroll-behavior: none;
   }
 
   ::-webkit-scrollbar {
