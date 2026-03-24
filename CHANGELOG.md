@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.0] - 2026-03-25
+
+### Changed
+- SEO: JSON-LD 구조화 데이터 강화 (alternateName, HealthApplication, inLanguage)
+- SEO: sitemap.xml에 /teacher 페이지 추가
+- 메인 API 7개 resolveUser 공통 유틸 교체 (stories, tickets, referral, account)
+
 ## [1.39.0] - 2026-03-24
 
 ### Fixed
