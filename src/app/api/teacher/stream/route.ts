@@ -240,19 +240,30 @@ export async function POST(request: NextRequest) {
           }).then(({ error }) => {
             if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
           }),
-          // Atomic turn increment (RPC) + phase update
+          // BugBounty-FIX: Atomic turn increment with CAS fallback + retry
           (async () => {
-            // Try atomic RPC first, fallback to direct update
+            // Try atomic RPC first
             const { error: rpcErr } = await sb.client.rpc("increment_teacher_turn", {
               p_session_id: sessionId,
             });
             if (rpcErr) {
-              // RPC not available — fallback to direct update
-              const { error } = await sb.client.from("teacher_sessions").update({
+              // RPC not available — CAS fallback: only update if turn_count matches expected
+              const prevTurn = newTurnCount - 1;
+              const { error, count } = await sb.client.from("teacher_sessions").update({
                 turn_count: newTurnCount,
                 current_phase: newPhase,
-              }).eq("id", sessionId);
-              if (error) console.error("[Teacher Stream] Failed to update session:", error.message);
+              }).eq("id", sessionId).eq("turn_count", prevTurn);
+              if (error || count === 0) {
+                // CAS failed — 1 retry with fresh read
+                const { data: fresh } = await sb.client.from("teacher_sessions")
+                  .select("turn_count").eq("id", sessionId).single();
+                if (fresh) {
+                  await sb.client.from("teacher_sessions").update({
+                    turn_count: fresh.turn_count + 1,
+                    current_phase: newPhase,
+                  }).eq("id", sessionId).eq("turn_count", fresh.turn_count);
+                }
+              }
             } else {
               // RPC succeeded for turn_count, update phase separately
               const { error } = await sb.client.from("teacher_sessions").update({

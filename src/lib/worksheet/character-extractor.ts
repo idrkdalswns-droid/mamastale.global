@@ -29,6 +29,7 @@ export async function extractCharactersFromStory(
   const client = getAnthropicClient();
 
   try {
+    // BugBounty-FIX: Add 15s timeout to prevent indefinite hang
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1024,
@@ -38,7 +39,7 @@ export async function extractCharactersFromStory(
           content: `${CHARACTER_EXTRACTION_PROMPT}\n\n## 동화 전문\n${storyText}`,
         },
       ],
-    });
+    }, { signal: AbortSignal.timeout(15_000) });
 
     const text =
       response.content[0].type === "text" ? response.content[0].text : "";

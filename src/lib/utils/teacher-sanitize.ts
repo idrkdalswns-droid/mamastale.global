@@ -20,14 +20,30 @@
  * @param maxLen 최대 허용 길이
  * @returns 위생처리된 문자열 (빈 값이면 "미정")
  */
+/** Control tags that must never pass through to AI prompts */
+const CONTROL_TAG_PREFIXES = [
+  "PHASE", "GENERATE", "EXTRACTION", "INTRO", "CONFLICT",
+  "ATTEMPT", "RESOLUTION", "WISDOM", "SP", "READING_GUIDE",
+  "SCENE", "STORY_COMPLETE",
+];
+const CONTROL_TAG_PATTERN = new RegExp(
+  `\\[\\/?\\s*(?:${CONTROL_TAG_PREFIXES.join("|")})\\b[^\\]]*\\]`,
+  "gi"
+);
+
 export function sanitizeUserInput(
   input: string | undefined | null,
   maxLen: number
 ): string {
   if (!input) return "미정";
   let s = String(input);
+  // BugBounty-FIX: Decode HTML entities first to prevent double-encoding bypass
+  s = s.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
   s = s.replace(/[\n\r]+/g, " "); // 개행 → 공백
-  s = s.replace(/\[\/?\w+(?:_\w+)*\]/g, ""); // 대괄호 태그 패턴 모두 제거
+  // BugBounty-FIX: Blocklist control tags only (allows normal brackets like [오늘의 목표])
+  s = s.replace(CONTROL_TAG_PATTERN, "");
+  s = s.replace(/\[\/?\w+(?:_\w+)*\]/g, ""); // Legacy: remaining bracketed tags
   s = s.replace(/<[^>]+>/g, ""); // HTML/XML 태그
   s = s.trim().slice(0, maxLen);
   return s || "미정";

@@ -186,6 +186,10 @@ function parseWithNumberedList(text: string): TeacherSpread[] {
  * @returns 파싱된 스프레드, 메타데이터, 경고 목록
  */
 export function parseTeacherStory(rawText: string): TeacherParseResult {
+  // BugBounty-FIX: Guard against ReDoS — reject oversized input before regex processing
+  if (rawText.length > 50_000) {
+    return { spreads: [], metadata: {}, parseWarnings: ["입력이 너무 깁니다 (50,000자 초과)."] };
+  }
   const warnings: string[] = [];
   const metadata = parseMetadata(rawText);
 

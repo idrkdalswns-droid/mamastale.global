@@ -222,7 +222,7 @@ export default function Home() {
         setTimeout(() => {
           const s = useChatStore.getState();
           if (s.completedScenes.length > 0 && !s.storySaved) {
-            retrySaveStory();
+            retrySaveStory().catch(e => console.error("[retrySaveStory] auto-retry failed:", e));
           }
         }, 1000);
         return;
@@ -244,7 +244,7 @@ export default function Home() {
         setTimeout(() => {
           const s = useChatStore.getState();
           if (s.completedScenes.length > 0 && !s.storySaved) {
-            retrySaveStory();
+            retrySaveStory().catch(e => console.error("[retrySaveStory] auto-retry failed:", e));
           }
         }, 1000);
       }
@@ -625,7 +625,7 @@ export default function Home() {
             </Link>
 
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             {(user ? NAV_ITEMS_AUTH : NAV_ITEMS_PUBLIC).map((item) => (
               <Link
                 key={item.href}
@@ -656,7 +656,7 @@ export default function Home() {
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full px-8 pt-6 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-6 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",

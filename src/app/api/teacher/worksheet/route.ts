@@ -10,14 +10,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 
 export const runtime = "edge";
+
+// BugBounty-FIX: Add rate limiting to GET endpoint (was missing, POST had it)
+const listLimiter = createInMemoryLimiter(RATE_KEYS.TEACHER_WORKSHEET ?? "teacher_worksheet_list");
 
 export async function GET(request: NextRequest) {
   // 1. Supabase client
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB를 사용할 수 없습니다." }, { status: 503 });
+    return NextResponse.json({ error: "서비스를 일시적으로 이용할 수 없습니다." }, { status: 503 });
   }
 
   // 2. Auth
@@ -25,6 +29,13 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return sb.applyCookies(
       NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+    );
+  }
+
+  // 2.5 Rate limit
+  if (!listLimiter.check(user.id, 100, 60_000)) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 })
     );
   }
 

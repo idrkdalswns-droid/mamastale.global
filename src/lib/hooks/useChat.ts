@@ -391,8 +391,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (err) {
       // Y3-FIX: Rollback user message + turn count on auth errors (pattern matches sendMessageStreaming:460-466)
+      // BugBounty-FIX: Use functional updater to remove only the failed message (not stale snapshot)
       if (resStatus === 401 || resStatus === 403) {
-        set({ messages: state.messages, turnCountInCurrentPhase: state.turnCountInCurrentPhase });
+        set((s) => ({
+          messages: s.messages.slice(0, -1),
+          turnCountInCurrentPhase: Math.max(0, s.turnCountInCurrentPhase - 1),
+        }));
         get().saveDraft(); // Force-save clean state to prevent draft corruption
       }
       // Show API error messages (Korean) as-is, but replace raw browser errors

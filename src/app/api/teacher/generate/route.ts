@@ -356,10 +356,7 @@ export async function POST(request: NextRequest) {
     if (spreads.length === 0) {
       console.error("[Teacher/Generate] Parse failed. Raw preview:", generationText.slice(0, 300));
       return NextResponse.json(
-        {
-          error: "동화 생성 결과를 파싱할 수 없습니다. 다시 시도해주세요.",
-          rawPreview: generationText.slice(0, 200).replace(/[<>]/g, ""),
-        },
+        { error: "동화 생성 결과를 파싱할 수 없습니다. 다시 시도해주세요." },
         { status: 500 }
       );
     }
