@@ -316,7 +316,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
 
       {/* "다음" button — shown after story is done, before celebration */}
       {storyDone && completedScenes.length > 0 && !showCelebration && (
-        <div className="z-[60] bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+        <div className="z-[60] backdrop-blur-xl border-t border-black/[0.04]" style={{ background: "rgb(var(--surface) / 0.9)" }}>
           <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
             <button
               onClick={() => setShowCelebration(true)}
@@ -360,7 +360,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       )}
 
       {/* Story save error indicator */}
-      {storyDone && storySaveError && !storySaved && (
+      {/* Bug Bounty Fix 2-7: Show for timeout even when storySaved is true (uncertain state) */}
+      {storyDone && storySaveError && (!storySaved || storySaveError === "timeout") && (
         <div className="fixed bottom-[140px] left-1/2 -translate-x-1/2 z-[75] w-[90%] max-w-sm">
           <div
             className="rounded-2xl p-4 text-center"
@@ -369,15 +370,27 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             <p className="text-sm text-brown font-medium mb-2">
               {storySaveError === "login_required" ? "동화 저장을 위해 로그인이 필요해요" :
                storySaveError === "no_tickets" ? "티켓이 부족하여 저장할 수 없어요" :
+               storySaveError === "timeout" ? "저장을 확인하고 있어요..." :
                "동화 저장에 실패했어요"}
             </p>
-            <button
-              onClick={() => retrySaveStory()}
-              className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] min-h-[44px]"
-              style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-            >
-              다시 저장하기
-            </button>
+            {/* Bug Bounty Fix 2-7: timeout state shows library link instead of retry */}
+            {storySaveError === "timeout" ? (
+              <a
+                href="/library"
+                className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] min-h-[44px] inline-block"
+                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+              >
+                서재에서 확인하기
+              </a>
+            ) : (
+              <button
+                onClick={() => retrySaveStory()}
+                className="px-5 py-2 rounded-full text-xs font-medium text-white transition-all active:scale-[0.97] min-h-[44px]"
+                style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+              >
+                다시 저장하기
+              </button>
+            )}
           </div>
         </div>
       )}

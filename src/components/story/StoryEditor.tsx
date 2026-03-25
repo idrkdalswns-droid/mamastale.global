@@ -30,14 +30,21 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
 
+  // Bug Bounty Fix 2-12: Use refs to capture current state for pushUndo,
+  // preventing stale closure when rapid edits occur.
+  const editedScenesRef = useRef(editedScenes);
+  editedScenesRef.current = editedScenes;
+  const editedTitleRef = useRef(editedTitle);
+  editedTitleRef.current = editedTitle;
+
   // Push current state to undo stack before mutation
   const pushUndo = useCallback((label: string) => {
     setUndoStack((prev) => {
-      const entry: UndoEntry = { scenes: editedScenes.map((s) => ({ ...s })), title: editedTitle, label };
+      const entry: UndoEntry = { scenes: editedScenesRef.current.map((s) => ({ ...s })), title: editedTitleRef.current, label };
       const next = [...prev, entry];
       return next.length > MAX_UNDO ? next.slice(-MAX_UNDO) : next;
     });
-  }, [editedScenes, editedTitle]);
+  }, []);
 
   // Pop and restore from undo stack
   const popUndo = useCallback(() => {

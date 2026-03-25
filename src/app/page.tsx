@@ -113,9 +113,13 @@ export default function Home() {
   const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [startPending, setStartPending] = useState(false);
-  const [ticketUsedForSession, setTicketUsedForSession] = useState(() => {
-    try { return sessionStorage.getItem("mamastale_ticket_session") === "1"; } catch { return false; }
-  });
+  // Bug Bounty Fix 3-1: Initialize in useEffect to prevent SSR hydration mismatch
+  const [ticketUsedForSession, setTicketUsedForSession] = useState(false);
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("mamastale_ticket_session") === "1") setTicketUsedForSession(true);
+    } catch { /* sessionStorage unavailable */ }
+  }, []);
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number; source: string } | null>(null);
   // H5-FIX: Tick counter to refresh relative time display ("3분 전" → "4분 전")
   const [, setDraftTick] = useState(0);
@@ -201,13 +205,21 @@ export default function Home() {
     if (authLoading || screen !== "landing") return;
 
     // Path 0: Post-login redirect (e.g. pricing → login → home → redirect back to pricing)
+    // Bug Bounty Fix 2-5: Validate redirect against whitelist to prevent open redirect
     if (user) {
       try {
         const postLoginRedirect = sessionStorage.getItem("mamastale_post_login_redirect");
         if (postLoginRedirect) {
           sessionStorage.removeItem("mamastale_post_login_redirect");
-          window.location.href = postLoginRedirect;
-          return;
+          try {
+            const ALLOWED_REDIRECT_PREFIXES = ["/pricing", "/library", "/settings", "/community", "/teacher", "/diy"];
+            const normalized = new URL(postLoginRedirect, window.location.origin);
+            if (normalized.origin === window.location.origin
+                && ALLOWED_REDIRECT_PREFIXES.some(p => normalized.pathname.startsWith(p))) {
+              window.location.href = postLoginRedirect;
+              return;
+            }
+          } catch { /* malformed URL — skip redirect */ }
         }
       } catch { /* sessionStorage not available */ }
     }
@@ -410,18 +422,29 @@ export default function Home() {
   }, [myStoryCount, ticketUsedForSession]);
 
   // ─── Browser history integration (JP-Y12) ───
-  // Push state on screen changes so back button navigates within the flow
+  // Bug Bounty Fix 2-10: Only pushState for key screens (chat, story, community).
+  // Other screens use replaceState to avoid excessive back-button presses (was 8+, now 3 max).
   useEffect(() => {
     if (screen !== "landing") {
-      window.history.pushState({ screen }, "", "/");
+      const pushScreens: ScreenState[] = ["chat", "story", "community"];
+      if (pushScreens.includes(screen)) {
+        window.history.pushState({ screen }, "", "/");
+      } else {
+        window.history.replaceState({ screen }, "", "/");
+      }
     }
   }, [screen]);
 
+  // Bug Bounty Fix 2-11: Validate screen data before restoring from popstate
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       isPopstateRef.current = true; // P0-4: 뒤로가기는 전이 가드 비적용
       const prev = e.state?.screen as ScreenState | undefined;
-      if (prev) {
+      // Validate: don't restore "chat" if no chat data exists
+      if (prev === "chat" && useChatStore.getState().messages.length <= 1) {
+        setShow(false);
+        setScreen("landing");
+      } else if (prev) {
         setScreen(prev);
       } else {
         // No prior state → go to landing
@@ -599,7 +622,7 @@ export default function Home() {
         sizes="(max-width: 430px) 100vw, 430px"
         className="object-cover object-top pointer-events-none"
         role="presentation"
-        style={{ opacity: 0.30 }}
+        style={{ opacity: 0.40 }} // Bug Bounty Fix 2-19: 0.30→0.40 (데스크톱 첫인상 개선)
       />
       {/* Gradient overlay for readability — lighter at top to show image */}
       <div
@@ -656,7 +679,7 @@ export default function Home() {
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-6 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-2 relative z-[1] transition-all duration-1000"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -793,7 +816,7 @@ export default function Home() {
                     width={220}
                     height={391}
                     className="w-full aspect-[9/16] object-cover object-top"
-                    loading={i >= 6 && i <= 8 ? "eager" : "lazy"}
+                    loading={i >= 5 && i <= 9 ? "eager" : "lazy"} // Bug Bounty Fix 3-3: Widen eager range for initialIndex=7
                   />
                   <div
                     className="absolute inset-x-0 bottom-0 px-3 pt-14 pb-3 flex flex-col justify-end"
@@ -963,7 +986,8 @@ export default function Home() {
       </div>
 
       {/* Sticky CTA — visible when main CTA scrolls out of view */}
-      {screen === "landing" && showStickyCta && !user && (
+      {/* Bug Bounty Fix 3-2: Show for all users (was !user only) */}
+      {screen === "landing" && showStickyCta && (
         <div
           className="fixed bottom-0 left-0 right-0 z-50 px-4 py-3 backdrop-blur-md"
           style={{ background: "rgba(251,245,236,0.92)", borderTop: "1px solid rgba(196,168,130,0.15)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
@@ -974,7 +998,7 @@ export default function Home() {
               className="w-full py-3.5 rounded-full text-white text-[14px] font-medium transition-transform active:scale-[0.97]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 4px 16px rgba(224,122,95,0.3)" }}
             >
-              {process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기"}
+              {user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}
             </button>
           </div>
         </div>

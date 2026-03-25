@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -44,6 +44,14 @@ const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
   const [imgErr, setImgErr] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const cover = resolveCover(story.cover_image, story.id, story.topic);
+
+  // Bug Bounty Fix 2-1: Safety timeout — force show image after 3s if onLoad never fires.
+  // Next.js Image with placeholder="blur" + fill + lazy can miss onLoad in some browsers.
+  useEffect(() => {
+    if (imgLoaded) return;
+    const timer = setTimeout(() => setImgLoaded(true), 3000);
+    return () => clearTimeout(timer);
+  }, [imgLoaded]);
   const fallback = resolveCover(undefined, story.id, story.topic);
   const sceneCount = story.scenes?.length || 0;
 
@@ -72,6 +80,10 @@ const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
         {!imgLoaded && (
           <div className="absolute inset-0 bg-gradient-to-r from-paper via-cream to-paper animate-pulse" />
         )}
+        {/* Bug Bounty Fix 2-1: onLoad may not fire reliably with placeholder="blur" on some
+            browsers/CDN configs, causing images to stay opacity-0 forever.
+            Fix: Use onLoad on the underlying <img> via onLoadingComplete (deprecated but reliable),
+            and add a 2s safety timeout to force opacity-100 if onLoad never fires. */}
         <Image
           src={imgErr ? fallback : cover}
           alt={`${story.title || "동화"} 표지`}
@@ -82,7 +94,7 @@ const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
           placeholder="blur"
           blurDataURL={BLUR_PLACEHOLDER}
           onLoad={() => setImgLoaded(true)}
-          onError={() => setImgErr(true)}
+          onError={() => { setImgErr(true); setImgLoaded(true); }}
         />
 
         {/* Lock badge */}

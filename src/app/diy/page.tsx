@@ -17,7 +17,8 @@ export default function DIYPage() {
         <h1 className="font-serif text-xl font-bold text-brown tracking-tight">
           DIY 동화 만들기
         </h1>
-        <p className="text-[13px] text-brown-light font-light mt-1.5 leading-relaxed">
+        {/* Bug Bounty Fix 3-23: Strengthen text contrast (was text-brown-light, nearly invisible) */}
+        <p className="text-[13px] text-brown-mid font-light mt-1.5 leading-relaxed">
           일러스트를 골라 순서를 정하고, 아이와 함께 이야기를 써보세요
         </p>
         <Link

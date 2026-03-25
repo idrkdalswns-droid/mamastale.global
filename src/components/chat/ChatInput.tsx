@@ -86,7 +86,9 @@ export default memo(function ChatInput({
       if (e.nativeEvent.isComposing || e.keyCode === 229) return;
       // Mobile: Enter creates newline (send via button only)
       // Desktop: Enter sends (Shift+Enter for newline)
-      const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      // Bug Bounty Fix 2-17: Use hover/pointer media query instead of ontouchstart
+      // to correctly handle touchscreen laptops (Surface Pro) with physical keyboards.
+      const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
       if (isTouchDevice) return;
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();

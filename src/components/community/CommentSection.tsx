@@ -31,7 +31,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
   useEffect(() => {
     const controller = new AbortController();
     setCommentsLoading(true);
-    fetch(`/api/community/${storyId}/comments`, { signal: controller.signal })
+    fetch(`/api/community/${storyId}/comments`, { signal: controller.signal, credentials: "include" })
       .then((res) => { if (!res.ok) throw new Error("fetch failed"); return res.json(); })
       .then((data) => setComments(data.comments || []))
       .catch(() => { /* AbortError or network — non-critical */ })

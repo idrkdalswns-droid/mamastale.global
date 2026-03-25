@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 
 interface TeacherCodeModalProps {
   onVerified: (data: {
@@ -42,9 +43,19 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
     setError("");
 
     try {
+      // Bug Bounty Fix 2-6: Include Bearer token for mobile/WebView compatibility
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const supabase = createClient();
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      } catch { /* ignore */ }
       const res = await fetch("/api/teacher/verify-code", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
+        credentials: "include",
         body: JSON.stringify({ code: trimmed }),
       });
 
@@ -96,9 +107,19 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
             <button
               onClick={async () => {
                 try {
+                  // Bug Bounty Fix 2-6: Bearer token for session DELETE
+                  const delHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                  try {
+                    const sb = createClient();
+                    if (sb) {
+                      const { data: { session: s } } = await sb.auth.getSession();
+                      if (s?.access_token) delHeaders["Authorization"] = `Bearer ${s.access_token}`;
+                    }
+                  } catch { /* ignore */ }
                   await fetch("/api/teacher/session", {
                     method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
+                    headers: delHeaders,
+                    credentials: "include",
                     body: JSON.stringify({ sessionId: existingSession.data.sessionId }),
                   });
                 } catch { /* ignore */ }
