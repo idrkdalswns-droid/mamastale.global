@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.44.0] - 2026-03-25
+
+### Fixed (11팀 검수 후속 — Stage 1A+1B+2 핵심)
+- **결제**: 티켓 조회 실패 시 0 대신 null 유지 (불필요 결제 유도 방지)
+- **결제**: Toss SDK 에러 시 하단 sticky 결제 버튼 비활성화
+- **결제**: 금액 불일치 시 Slack 알림 추가 (모니터링 강화)
+- **결제**: 확인 모달에 이용약관·환불 정책 링크 추가 (전자상거래법)
+- **결제**: VAT 포함 명시 문구 추가
+- **결제**: 가격 프레이밍 마이크로카피 ("카페 라떼 한 잔 가격")
+- **결제**: 성공 페이지 자동 리다이렉트 15초→8초
+- **보안**: chat/stream 게스트 UA 해시 chat/route와 동기화 (buildGuestRateLimitKey 공통 함수)
+- **보안**: stories 티켓 검증 윈도우 1시간→30분 + catch 재시도 강화
+- **보안**: verify-code 타이밍 공격 방어 (무효 코드에 인위 지연)
+- **UX**: ErrorBoundary 랜딩 섹션별 래핑 (갤러리/DIY 크래시 시 CTA 유지)
+- **UX**: SPA 화면 전환 시 포커스 자동 이동 (접근성)
+- **UX**: window.confirm() 제거 (드래프트 삭제)
+- **UX**: 랜딩 fade-in 1000ms→600ms
+- **UX**: 워크시트 위자드 store 마운트 시 초기화
+- **접근성**: chat aria-relevant="additions" (과도한 스크린리더 읽기 방지)
+- **접근성**: dvh 미지원 브라우저 vh 폴백
+- **성능**: Supabase preconnect 추가
+- **성능**: Phase 전환 250ms→150ms
+- **Teacher**: fetchSharedStories AbortController 추가
+- **Teacher**: TeacherCodeModal autocomplete="off"
+
 ## [1.43.0] - 2026-03-25
 
 ### Fixed (Bug Bounty — 71건 시뮬레이션, 핵심 수정)
