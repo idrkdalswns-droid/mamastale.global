@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.45.0] - 2026-03-25
+
+### Added
+- **RetryableToast**: 재시도 버튼 포함 토스트 유틸 (삭제·인쇄 실패 시 공통 사용)
+- **워크시트 티켓 UX**: 생성 버튼 옆 인라인 티켓 잔여량 표시 + 마지막 1장 확인 게이트
+- **결제 재시도**: 네트워크 실패 시 3회 자동 재시도 (exponential backoff, 멱등성 보장)
+- **온보딩 건너뛰기**: 모든 슬라이드 하단에 "건너뛰기" 텍스트 링크 추가
+
+### Changed
+- **CoverPicker**: 선택 피드백 강화 — 3px coral ring + whileTap bounce + aria-current
+- **스와이프**: flick 감지 추가 (200ms 이내 30px+ = 빠른 넘기기), 일반 스와이프 40px
+- **선생님 홈 카드**: 메인 라이브러리 StoryCard와 동일 디자인 통일 (aspect-ratio, gradient)
+- **다크모드**: StoryViewer/StoryEditor/CoverPickerModal의 bg-white → bg-paper 전환
+- **Chat API**: premium 체크 보안 주석 강화 (clientPhase 비신뢰 명시)
+
+### Fixed
+- **스토리 삭제 실패**: 3초 자동 닫힘 토스트 → 수동 닫기 + 재시도 버튼
+- **워크시트 인쇄 실패**: alert → RetryableToast + 15초 타임아웃 추가
+- **Referral API**: 코드 생성·검증 실패 지점에 구조적 에러 로깅 추가
+
 ## [1.44.0] - 2026-03-25
 
 ### Fixed (11팀 검수 후속 — Stage 1A+1B+2 핵심)

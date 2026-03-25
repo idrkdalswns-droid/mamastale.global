@@ -100,7 +100,7 @@ export function CoverPickerModal({
           {/* Saving overlay */}
           {saving && (
             <div className="fixed inset-0 bg-black/10 z-[105] flex items-center justify-center">
-              <div className="bg-white/90 backdrop-blur-xl px-6 py-4 rounded-2xl text-sm text-brown font-medium">
+              <div className="bg-paper/90 backdrop-blur-xl px-6 py-4 rounded-2xl text-sm text-brown font-medium">
                 저장하는 중...
               </div>
             </div>

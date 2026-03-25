@@ -274,7 +274,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
           {filteredImages.map((img) => {
             const isSelected = img.path === selected.path;
             return (
-              <button
+              <motion.button
                 key={img.path}
                 data-path={img.path}
                 onClick={() => handleSelect(img)}
@@ -284,8 +284,10 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
                   height: 55,
                   opacity: isSelected ? 1 : 0.7,
                   transform: isSelected ? "scale(1.08)" : "scale(1)",
-                  boxShadow: isSelected ? "0 0 0 2px #E07A5F" : "none",
+                  boxShadow: isSelected ? "0 0 0 3px #E07A5F" : "none",
                 }}
+                whileTap={{ scale: 0.95 }}
+                aria-current={isSelected ? "true" : undefined}
               >
                 <Image
                   src={img.path}
@@ -306,7 +308,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
                     </svg>
                   </div>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>

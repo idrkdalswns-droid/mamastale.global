@@ -7,8 +7,28 @@ import { ACTIVITY_META } from "@/lib/worksheet/types";
 export function ConfirmStep() {
   const store = useWorksheetStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ticketCount, setTicketCount] = useState<number | null>(null);
+  const [isFirstFree, setIsFirstFree] = useState(false);
+  const [lastTicketConfirmed, setLastTicketConfirmed] = useState(false);
 
   const activityMeta = ACTIVITY_META.find((m) => m.type === store.activityType);
+
+  // Fetch ticket count for inline display
+  useEffect(() => {
+    fetch("/api/tickets")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) setTicketCount(d.worksheet_tickets_remaining ?? 0);
+      })
+      .catch(() => {});
+    // Check if first free worksheet (no prior worksheets across all stories)
+    fetch(`/api/teacher/worksheet?story_id=${store.storyId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && (!d.worksheets || d.worksheets.length === 0)) setIsFirstFree(true);
+      })
+      .catch(() => {});
+  }, [store.storyId]);
 
   // 생성 중 이탈 방지
   useEffect(() => {
@@ -104,9 +124,35 @@ export function ConfirmStep() {
         </div>
       )}
 
+      {/* 티켓 차감 안내 (인라인) */}
+      {ticketCount !== null && !isFirstFree && (
+        <p className="text-[12px] text-brown-light text-center mb-2">
+          🎟️ 티켓 1장 차감 · 남은 {ticketCount}장
+        </p>
+      )}
+      {isFirstFree && (
+        <p className="text-[12px] text-mint-deep font-medium text-center mb-2">
+          첫 활동지는 무료예요!
+        </p>
+      )}
+
+      {/* 마지막 1장 경고 */}
+      {ticketCount === 1 && !isFirstFree && !lastTicketConfirmed && (
+        <div className="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-center">
+          <p className="text-brown font-medium mb-2">마지막 티켓입니다</p>
+          <button
+            onClick={() => setLastTicketConfirmed(true)}
+            className="px-4 py-2 rounded-full text-white text-[13px] font-medium"
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+          >
+            사용하기
+          </button>
+        </div>
+      )}
+
       <button
         onClick={handleGenerate}
-        disabled={isSubmitting}
+        disabled={isSubmitting || (ticketCount === 1 && !isFirstFree && !lastTicketConfirmed)}
         className="w-full py-4 rounded-full text-white text-[15px] font-medium transition-all active:scale-[0.97] disabled:opacity-50"
         style={{
           background: "linear-gradient(135deg, #E07A5F, #C96B52)",

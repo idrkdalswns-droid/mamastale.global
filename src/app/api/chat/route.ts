@@ -134,9 +134,9 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
 
       // ─── Premium user + ticket detection ───
-      // Fix 2-13: Only query DB for premium status when needed (Phase 3+ heuristic)
-      // Premium affects model routing only in Phase 4, but clientPhase isn't parsed yet.
-      // Use clientPhase from request body as hint — safe because calculateSafePhase validates later.
+      // isPremiumUser is used ONLY for model routing in Phase 4 (Opus vs Sonnet).
+      // clientPhase from request body is an untrusted hint — never use it for auth/security decisions.
+      // DB query runs unconditionally for authenticated users to avoid clientPhase bypass.
       if (userId) {
         try {
           const { data: profile } = await supabase

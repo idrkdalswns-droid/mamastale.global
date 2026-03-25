@@ -122,22 +122,24 @@ function PaymentSuccessContent() {
       }
     }, 15_000);
 
-    callConfirm(params)
-      .then(async (res) => {
+    // D1: Retry confirm call with exponential backoff on network failure
+    // Backend has triple-layer idempotency (in-memory, order_claims, processed_orders),
+    // so re-sending the same orderId is always safe.
+    const MAX_RETRIES = 3;
+    const confirmWithRetry = async (attempt: number): Promise<void> => {
+      try {
+        const res = await callConfirm(params);
         clearTimeout(timeoutId);
         if (!mounted) return;
         const data = await res.json();
         if (res.ok && data.success) {
-          // Bug Bounty Fix 2-2/2-4: Use centralized ticketsForAmount() instead of hardcoded logic
           const derivedTickets = ticketsForAmount(params.amount) ?? 1;
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
-          // Re-set receipt amount from confirmed params (survives refresh via sessionStorage)
           setReceiptAmount(params.amount);
           setReceiptOrderId(params.orderId);
           try { sessionStorage.setItem("mamastale_receipt", JSON.stringify({ amount: params.amount, orderId: params.orderId })); } catch {}
           setStatus("success");
-          // GA4 purchase event for conversion tracking
           try {
             if (typeof window !== "undefined" && typeof window.gtag === "function") {
               window.gtag("event", "purchase", {
@@ -153,20 +155,27 @@ function PaymentSuccessContent() {
             }
           } catch { /* ignore analytics errors */ }
         } else if (data.code === "TICKET_INCREMENT_FAILED") {
-          // Payment confirmed but ticket grant failed — offer retry (money already charged)
           setStatus("ticket_failed");
         } else {
-          // Redirect to fail page with error code (like official Toss sample)
           const errorCode = data.code || "CONFIRM_FAILED";
           router.replace(`/payment/fail?code=${encodeURIComponent(errorCode)}`);
         }
-      })
-      .catch(() => {
-        clearTimeout(timeoutId);
+      } catch {
+        // Network error — retry with exponential backoff
         if (!mounted) return;
+        if (attempt < MAX_RETRIES) {
+          const delay = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+          await new Promise(r => setTimeout(r, delay));
+          if (mounted) return confirmWithRetry(attempt + 1);
+        }
+        // All retries exhausted
+        clearTimeout(timeoutId);
         setStatus("error");
         setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-      });
+      }
+    };
+
+    confirmWithRetry(0);
 
     // R7-4: Cleanup on unmount
     return () => {

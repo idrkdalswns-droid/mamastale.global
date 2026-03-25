@@ -290,9 +290,9 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
             <button
               type="button"
               onClick={onGoHome}
-              className="block w-full mt-2 bg-transparent border-none text-[12px] text-brown-pale cursor-pointer font-sans py-2 font-light min-h-[44px]"
+              className="block w-full mt-1 bg-transparent border-none text-[12px] text-brown-light/60 cursor-pointer font-sans py-2 font-light min-h-[44px]"
             >
-              ← 홈으로 돌아가기
+              건너뛰기
             </button>
           )}
         </div>

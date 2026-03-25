@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
       code = null;
     }
     if (!code) {
+      console.error("[Referral] Code generation exhausted after 5 attempts", { userId: user.id.slice(0, 8) });
       return sb.applyCookies(
         NextResponse.json({ error: "코드 생성 실패. 다시 시도해주세요." }, { status: 500 })
       );
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (!referrer) {
+    console.error("[Referral] Invalid code attempted", { code, userId: user.id.slice(0, 8) });
     return sb.applyCookies(
       NextResponse.json({ error: "존재하지 않는 추천 코드입니다." }, { status: 404 })
     );

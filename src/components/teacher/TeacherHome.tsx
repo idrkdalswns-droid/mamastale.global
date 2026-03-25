@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import { showRetryToast } from "@/components/ui/RetryableToast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getDefaultCover } from "@/lib/utils/default-cover";
 import type {
@@ -111,7 +112,7 @@ export function TeacherHome({
       }
       toast.success("동화가 삭제되었습니다.");
     } catch {
-      toast.error("삭제에 실패했습니다.");
+      showRetryToast("삭제에 실패했습니다.", () => handleDelete(storyId));
       // 롤백: 다시 불러오기
       fetchSharedStories();
     } finally {
@@ -318,10 +319,13 @@ export function TeacherHome({
                   <div
                     key={story.id}
                     role="listitem"
-                    className={`rounded-2xl overflow-hidden bg-paper border border-brown-pale/10
-                               transition-all relative
+                    className={`rounded-xl overflow-hidden transition-all relative
                                ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
-                    style={{ boxShadow: "0 2px 8px rgba(90,62,43,0.04)" }}
+                    style={{
+                      background: "rgba(255,255,255,0.7)",
+                      border: "1px solid rgba(196,149,106,0.1)",
+                      boxShadow: "0 2px 12px rgba(90,62,43,0.06)",
+                    }}
                   >
                     {/* 카드 클릭 영역 */}
                     <button
@@ -344,24 +348,40 @@ export function TeacherHome({
                       aria-label={`${story.title || "제목 없는 동화"} 열기`}
                     >
                       <div className="aspect-[3/4] relative overflow-hidden">
+                        {/* Skeleton placeholder */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-paper via-cream to-paper" />
                         <Image
                           src={getCover(story)}
                           alt={story.title || "동화 표지"}
                           fill
-                          className="object-cover"
+                          className="object-cover object-top"
                           sizes="(max-width: 430px) 50vw, 200px"
+                          loading="lazy"
+                        />
+                        {/* Bottom gradient overlay */}
+                        <div
+                          className="absolute inset-x-0 bottom-0 h-12"
+                          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.15) 0%, transparent 100%)" }}
                         />
                       </div>
-                      <div className="p-3">
-                        <p className="text-[13px] font-medium text-brown truncate">
+                      <div className="p-2.5">
+                        <p className="text-[13px] font-serif font-semibold text-brown leading-tight line-clamp-1">
                           {story.title || "제목 없는 동화"}
                         </p>
-                        <p className="text-[11px] text-brown-light mt-0.5">
-                          {new Date(story.created_at).toLocaleDateString("ko-KR", {
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
+                        <div className="flex items-center gap-1.5 text-[9px] text-brown-pale mt-0.5">
+                          <span>
+                            {new Date(story.created_at).toLocaleDateString("ko-KR", {
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
+                          {story.author && (
+                            <>
+                              <span>·</span>
+                              <span>{story.author}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </button>
 

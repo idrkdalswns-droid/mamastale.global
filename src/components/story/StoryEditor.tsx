@@ -183,7 +183,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
   return (
     <div className="min-h-dvh bg-cream flex flex-col font-sans">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
+      <div className="sticky top-0 z-50 bg-paper/80 backdrop-blur-xl border-b border-black/[0.04]">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="text-xs text-brown-light font-medium">
@@ -249,7 +249,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
             onChange={(e) => setEditedTitle(e.target.value)}
             maxLength={100}
             required
-            className="w-full px-4 py-3 rounded-xl text-base font-serif font-bold bg-white/70 border border-brown-pale/15 text-brown outline-none"
+            className="w-full px-4 py-3 rounded-xl text-base font-serif font-bold bg-paper/70 border border-brown-pale/15 text-brown outline-none"
             style={{ fontSize: 18 }}
           />
         </div>
@@ -271,7 +271,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
                 value={scene.text}
                 onChange={(e) => updateScene(index, e.target.value)}
                 maxLength={500}
-                className="w-full px-4 py-3 rounded-xl text-[15px] font-serif bg-white/70 border border-brown-pale/15 text-brown outline-none resize-none leading-[2.2] break-keep"
+                className="w-full px-4 py-3 rounded-xl text-[15px] font-serif bg-paper/70 border border-brown-pale/15 text-brown outline-none resize-none leading-[2.2] break-keep"
                 style={{ minHeight: 80 }}
                 aria-label={`${index + 1}페이지 본문`}
               />
@@ -292,7 +292,7 @@ export function StoryEditor({ scenes, title, onDone }: StoryEditorProps) {
       </div>
 
       {/* Sticky bottom button */}
-      <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+      <div className="sticky bottom-0 bg-paper/90 backdrop-blur-xl border-t border-black/[0.04]">
         <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
           <button
             onClick={handleDone}

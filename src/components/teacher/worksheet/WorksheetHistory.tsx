@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { showRetryToast } from "@/components/ui/RetryableToast";
 import { ACTIVITY_META } from "@/lib/worksheet/types";
 import type { ActivityType } from "@/lib/worksheet/types";
 
@@ -98,7 +99,9 @@ export function WorksheetHistory({ storyId }: WorksheetHistoryProps) {
     setPrintingId(worksheetId);
 
     try {
-      const res = await fetch(`/api/teacher/worksheet/${worksheetId}`);
+      const res = await fetch(`/api/teacher/worksheet/${worksheetId}`, {
+        signal: AbortSignal.timeout(15_000),
+      });
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
 
@@ -133,7 +136,7 @@ export function WorksheetHistory({ storyId }: WorksheetHistoryProps) {
         };
       }
     } catch {
-      alert("인쇄에 실패했습니다. 다시 시도해 주세요.");
+      showRetryToast("인쇄에 실패했습니다.", () => handlePrint(worksheetId));
     } finally {
       setPrintingId(null);
     }

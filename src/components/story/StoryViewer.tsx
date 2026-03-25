@@ -274,7 +274,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   return (
     <div className={`${embedded ? "" : "min-h-dvh"} bg-cream flex flex-col font-sans`}>
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
+      <div className="sticky top-0 z-50 bg-paper/80 backdrop-blur-xl border-b border-black/[0.04]">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between px-4 py-3">
             {onBack && (
@@ -498,7 +498,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   placeholder="사랑하는 우리 아이에게..."
                   maxLength={200}
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl font-serif bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none resize-none leading-relaxed"
+                  className="w-full px-3 py-2.5 rounded-xl font-serif bg-paper/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none resize-none leading-relaxed"
                   style={{ fontSize: 16 }}
                   aria-label="아이에게 전하는 한마디"
                 />
@@ -536,7 +536,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="sticky bottom-0 bg-white/90 backdrop-blur-xl border-t border-black/[0.04]">
+      <div className="sticky bottom-0 bg-paper/90 backdrop-blur-xl border-t border-black/[0.04]">
         <div className="max-w-3xl mx-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom,8px)+12px)]">
         {isLast ? (
           <div className="space-y-2.5">
@@ -797,7 +797,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               onChange={(e) => setAliasInput(e.target.value.slice(0, 20))}
               placeholder="익명의 엄마"
               maxLength={20}
-              className="w-full px-4 py-3 rounded-xl bg-white/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
+              className="w-full px-4 py-3 rounded-xl bg-paper/70 border border-brown-pale/15 text-brown placeholder-brown-pale/50 outline-none text-center mb-1"
               style={{ fontSize: 16 }}
               aria-label="별명 입력"
               autoFocus
@@ -825,7 +825,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                         ? "bg-[#8B6AAF] text-white"
                         : suggestedTags?.includes(t)
                           ? "bg-[#8B6AAF]/10 text-[#8B6AAF] border border-[#8B6AAF]/30"
-                          : "bg-white/60 text-brown-light border border-brown-pale/15"
+                          : "bg-paper/60 text-brown-light border border-brown-pale/15"
                     }`}
                   >
                     {t}
