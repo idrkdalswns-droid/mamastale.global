@@ -108,9 +108,12 @@ export default async function RootLayout({
             }),
           }}
         />
-        {/* Non-blocking Google Fonts with preconnect */}
+        {/* Fix 1-15: Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        )}
         {/* H-2: Preload critical font CSS to avoid render-blocking */}
         <link
           rel="preload"

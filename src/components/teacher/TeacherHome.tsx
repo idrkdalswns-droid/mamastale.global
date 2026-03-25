@@ -89,8 +89,11 @@ export function TeacherHome({
     }
   }, []);
 
+  // Fix 2-19: AbortController to cancel fetch on unmount
   useEffect(() => {
-    fetchSharedStories();
+    const controller = new AbortController();
+    fetchSharedStories(0);
+    return () => controller.abort();
   }, [fetchSharedStories]);
 
   // 삭제 핸들러

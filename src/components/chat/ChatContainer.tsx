@@ -281,7 +281,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         style={{ WebkitOverflowScrolling: "touch" }}
         onScroll={handleScroll}
       >
-        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-live="polite" aria-label={`${currentPhase}단계 대화 기록`}>
+        {/* Fix 2-9: aria-relevant="additions" to avoid re-reading entire chat history */}
+        <div className="max-w-3xl mx-auto px-3.5 pt-4 pb-[150px]" role="log" aria-live="polite" aria-relevant="additions" aria-label={`${currentPhase}단계 대화 기록`}>
           {messages.length === 0 && (
             <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-full mx-auto w-fit mb-4"
               style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}

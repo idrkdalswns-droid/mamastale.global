@@ -157,6 +157,11 @@
   transform-style: preserve-3d;
 }
 
+/* ── Fix 2-3: dvh fallback for browsers without dvh support ── */
+@supports not (min-height: 100dvh) {
+  .min-h-dvh { min-height: 100vh; }
+}
+
 /* ── Accessibility: prefers-reduced-motion ── */
 @media (prefers-reduced-motion: reduce) {
   *,

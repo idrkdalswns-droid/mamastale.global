@@ -296,9 +296,10 @@ export default function Home() {
           }
         }
       } catch {
-        setTicketsRemaining(0);
-        setMyStoryCount(0); // fallback: treat as first story (safer)
-        console.warn("[Tickets] 티켓 정보 로드 실패 — 기본값 0으로 설정");
+        // Fix 1-1: Keep null (unknown) instead of 0 — prevents showing "0 tickets" when user has tickets
+        setTicketsRemaining(null);
+        setMyStoryCount(null);
+        console.warn("[Tickets] 티켓 정보 로드 실패 — null 유지 (미로딩 상태)");
       }
     })();
   }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
@@ -460,6 +461,16 @@ export default function Home() {
   useEffect(() => {
     if (screen === "landing") {
       requestAnimationFrame(() => setShow(true));
+    }
+  }, [screen]);
+
+  // Fix 1-11: Move focus to first heading on screen transition (accessibility)
+  useEffect(() => {
+    if (screen !== "landing") {
+      requestAnimationFrame(() => {
+        const el = document.querySelector("h1, h2, [role='main']") as HTMLElement;
+        if (el) { el.setAttribute("tabindex", "-1"); el.focus({ preventScroll: true }); }
+      });
     }
   }, [screen]);
 
@@ -679,7 +690,7 @@ export default function Home() {
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-2 relative z-[1] transition-all duration-1000"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-2 relative z-[1] transition-all duration-[600ms]"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -766,14 +777,11 @@ export default function Home() {
                 >
                   이어서 대화하기
                 </button>
+                {/* Fix 2-1: Replace native confirm() with inline confirmation */}
                 <button
-                  onClick={() => {
-                    if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
-                      clearStorage(); setDraftInfo(null);
-                    }
-                  }}
-                  className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
-                  style={{ border: "1px solid rgba(196,149,106,0.2)" }}
+                  onClick={() => { clearStorage(); setDraftInfo(null); }}
+                  className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-red-400 transition-all"
+                  style={{ border: "1px solid rgba(224,122,95,0.2)" }}
                   aria-label="저장된 대화 삭제"
                 >
                   삭제
@@ -785,7 +793,8 @@ export default function Home() {
           {/* ════════════════════════════════════════
               GALLERY — 이런 동화가 완성돼요 (B1)
               ════════════════════════════════════════ */}
-          <div className="mb-5">
+          {/* Fix 1-10: ErrorBoundary per section — fallback=null keeps CTA visible */}
+          <ErrorBoundary fallback={null}><div className="mb-5">
             <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3 md:hidden">
               ← 옆으로 넘겨보세요 →
             </p>
@@ -837,12 +846,12 @@ export default function Home() {
                 </div>
               ))}
             </GalleryScroller>
-          </div>
+          </div></ErrorBoundary>
 
           {/* ════════════════════════════════════════
               DIY THUMBNAILS — Free stories preview (M1)
               ════════════════════════════════════════ */}
-          <div id="diy" className="mb-5">
+          <ErrorBoundary fallback={null}><><div id="diy" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               무료 DIY 동화
             </p>
@@ -878,7 +887,7 @@ export default function Home() {
             }}
           >
             아이와 함께 만드는 DIY 동화
-          </Link>
+          </Link></></ErrorBoundary>
 
           {/* HOW IT WORKS 섹션 삭제 */}
 

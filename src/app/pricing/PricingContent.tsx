@@ -473,7 +473,7 @@ function PricingContent() {
             <h3 className="font-serif text-lg text-brown font-semibold">
               동화 한 편 · 15분 완성
             </h3>
-            <p className="text-xs text-brown-light font-light mt-1">1회 체험에 적합</p>
+            <p className="text-xs text-brown-light font-light mt-1">카페 라떼 한 잔 가격으로 세상에 하나뿐인 동화를</p>
             <div className="flex items-baseline justify-center gap-2 mt-3">
               <span className="text-sm text-brown-pale line-through">
                 ₩4,900
@@ -484,7 +484,7 @@ function PricingContent() {
             </div>
           </div>
 
-          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2"><Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
+          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2">VAT 포함 · <Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
           <button
             onClick={() => initiatePayment("ticket")}
             disabled={isProcessing || !sdkReady}
@@ -536,7 +536,7 @@ function PricingContent() {
             </p>
           </div>
 
-          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2"><Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
+          <p className="text-[10px] text-brown-pale/60 font-light text-center mb-2">VAT 포함 · <Link href="/terms#section9" className="underline underline-offset-2 decoration-brown-pale/30">환불 정책 보기</Link></p>
           <button
             onClick={() => initiatePayment("bundle")}
             disabled={isProcessing || !sdkReady}
@@ -978,7 +978,7 @@ function PricingContent() {
           {/* R2: 단품 먼저 (순서 반전) */}
           <button
             onClick={() => initiatePayment("ticket", "sticky")}
-            disabled={isProcessing || !sdkReady}
+            disabled={isProcessing || !sdkReady || sdkError}
             className="flex-[2] py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",
@@ -989,7 +989,7 @@ function PricingContent() {
           </button>
           <button
             onClick={() => initiatePayment("bundle", "sticky")}
-            disabled={isProcessing || !sdkReady}
+            disabled={isProcessing || !sdkReady || sdkError}
             className="flex-1 py-3 min-h-[44px] rounded-full text-[13px] font-bold text-white transition-all active:scale-[0.97] disabled:opacity-60"
             style={{
               background: "linear-gradient(135deg, #6D4C91, #8B6FB0)",
@@ -1059,6 +1059,13 @@ function PricingContent() {
             >
               결제하기
             </button>
+            {/* Fix 1-9: 약관 + 환불 정책 링크 (전자상거래법 준수) */}
+            <p className="text-[10px] text-brown-pale font-light text-center mb-2 break-keep">
+              결제 시{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</a>,{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">개인정보처리방침</a>{" "}
+              및 환불 불가 정책에 동의합니다.
+            </p>
             <button
               onClick={() => { if (confirmModal) trackPricingModalCancel(confirmModal); setConfirmModal(null); }}
               className="w-full py-2.5 min-h-[44px] text-[12px] font-light text-brown-pale transition-all active:scale-[0.97]"

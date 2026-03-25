@@ -92,6 +92,12 @@ export function WorksheetWizard() {
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => setHydrated(true), []);
 
+  // Fix 1-5: Reset store on mount to clear stale state from previous wizard session
+  useEffect(() => {
+    if (isOpen) useWorksheetStore.getState().reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount when opened
+  }, []);
+
   // Reset scroll position when step changes
   useEffect(() => {
     if (scrollRef.current) {

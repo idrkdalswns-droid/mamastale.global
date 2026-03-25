@@ -43,7 +43,7 @@ function PaymentSuccessContent() {
   const [hasSavedChat, setHasSavedChat] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
-  const [autoRedirectCount, setAutoRedirectCount] = useState(15); // 5→15초 (사용자가 읽을 시간 확보)
+  const [autoRedirectCount, setAutoRedirectCount] = useState(8); // Fix 2-4: 15→8초 (이탈 방지)
   const autoRedirectRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const confirmedRef = useRef(false);
   // R5-CRIT2: Track status in ref to avoid stale closure in setTimeout

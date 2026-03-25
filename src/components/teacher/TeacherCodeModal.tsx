@@ -178,6 +178,7 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
             }}
             placeholder="예: HANA-2024"
             maxLength={30}
+            autoComplete="off"
             disabled={isSubmitting}
             className="w-full px-4 py-3 rounded-xl border border-brown-pale/30
                        text-center text-lg font-medium tracking-wider
