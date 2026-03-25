@@ -212,11 +212,25 @@ export async function POST(request: NextRequest) {
     const isPremium = processedOrders.length > 0;
 
     // Bug Bounty 3-2 FIX: Record ticket usage timestamp for /api/stories POST verification
+    // Bug Bounty v1.42 Fix 1-1: Use JSONB partial update RPC to prevent metadata overwrite.
+    // Previously used spread ({ ...metadata, last_ticket_used_at: ... }) which could overwrite
+    // concurrent changes (e.g. processed_orders from payment webhook) → data loss.
     try {
-      await sb.client
-        .from("profiles")
-        .update({ metadata: { ...metadata, last_ticket_used_at: new Date().toISOString() } })
-        .eq("id", user.id);
+      const { error: rpcErr } = await sb.client.rpc("update_profile_metadata_field", {
+        p_user_id: user.id,
+        p_key: "last_ticket_used_at",
+        p_value: JSON.stringify(new Date().toISOString()),
+      });
+      if (rpcErr && rpcErr.code === "PGRST116") {
+        // RPC not found — fallback to spread (backward compat, deploy 037_jsonb_partial_update.sql)
+        console.warn("[Tickets/Use] update_profile_metadata_field RPC not found — using spread fallback");
+        await sb.client
+          .from("profiles")
+          .update({ metadata: { ...metadata, last_ticket_used_at: new Date().toISOString() } })
+          .eq("id", user.id);
+      } else if (rpcErr) {
+        console.warn("[Tickets/Use] RPC update_profile_metadata_field failed:", rpcErr.code);
+      }
     } catch {
       // Non-critical — story save verification will be slightly less reliable
       console.warn("[Tickets/Use] Failed to record last_ticket_used_at");

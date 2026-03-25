@@ -81,8 +81,9 @@ describe("validateOutputSafety", () => {
   // ─── Medical advice detection ───
   describe("medical advice", () => {
     it("detects medical advice outside crisis context", () => {
+      // Bug Bounty Fix 3-18: "병원" is now a crisis exception → test with pure medical advice
       const result = validateOutputSafety(
-        "빨리 병원에 가세요. 약을 드세요.",
+        "약을 드세요. 처방전을 받으세요.",
         2,
         2
       );

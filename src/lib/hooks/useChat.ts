@@ -206,7 +206,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   initSession: (sessionId: string) => {
     // Don't overwrite if session already exists (LOW-12 fix)
-    if (!get().sessionId) {
+    // Bug Bounty Fix 1-2: Also skip if restored from draft (prevents race between
+    // restoreDraft setting sessionId and ChatContainer calling initSession on mount)
+    if (!get().sessionId && !get().isFromDraft) {
       // Rebuild initial messages to pick up latest localStorage values
       // (e.g. child age set during onboarding AFTER Zustand module-level init)
       set({ sessionId, messages: makeInitialMessages() });
@@ -347,8 +349,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         saveInFlight = true; // P1-FIX(KR-3): Module-level lock in addition to state flag
             // R3-FIX: Timeout fallback — release lock after 30s to prevent permanent deadlock
             if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
-            // V5-FIX #17: Timeout also resets storySaved so user can retry after deadlock
-            saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; set({ storySaved: false }); }, 30_000);
+            // V5-FIX #17 + Bug Bounty Fix 2-7: On timeout, set "timeout" error instead of
+            // resetting storySaved (which could mark an already-saved story as unsaved).
+            saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; set({ storySaveError: "timeout" }); }, 30_000);
         set({ storySaved: true }); // Synchronous mutex — prevents concurrent save attempts
         try {
           const storyTitle = data.title || "나의 마음 동화";
@@ -513,17 +516,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
           try { event = JSON.parse(line.slice(6)); } catch (e) { console.warn("[useChat] SSE JSON 파싱 실패", e); continue; }
 
           // E2E: rAF batching — accumulate chunks, flush once per frame
+          // Bug Bounty Fix 2-15: Use rAF in foreground, setTimeout in background tab.
+          // rAF is paused when tab is inactive, causing streaming to freeze until tab refocus.
           if (event.type === "text" && event.text) {
             assistantContent += event.text;
             if (!rafId) {
-              rafId = requestAnimationFrame(() => {
+              const flush = () => {
                 rafId = 0;
                 set((s) => ({
                   messages: s.messages.map((m) =>
                     m.id === assistantMsgId ? { ...m, content: assistantContent } : m
                   ),
                 }));
-              });
+              };
+              rafId = document.hidden
+                ? (setTimeout(flush, 16) as unknown as number)
+                : requestAnimationFrame(flush);
             }
           }
 

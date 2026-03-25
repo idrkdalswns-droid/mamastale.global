@@ -80,6 +80,7 @@ const MEDICAL_ADVICE_KO: string[] = [
 ];
 
 // These are ALLOWED in crisis context (when referring to professional help)
+// Bug Bounty Fix 3-18: Added "병원", "응급실" — crisis context에서 의료 기관 안내 허용
 const MEDICAL_ADVICE_CRISIS_EXCEPTIONS: string[] = [
   "전문가",
   "전문 상담",
@@ -88,6 +89,8 @@ const MEDICAL_ADVICE_CRISIS_EXCEPTIONS: string[] = [
   "119",
   "위기",
   "도움을 받",
+  "병원",
+  "응급실",
 ];
 
 /**

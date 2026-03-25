@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { incrementTickets } from "@/lib/supabase/tickets";
+// Bug Bounty Fix 2-4: Centralized pricing constants
+import { STORY_PRICES, ALLOWED_CURRENCIES } from "@/lib/constants/pricing";
 
 export const runtime = "edge";
 
@@ -142,24 +144,16 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // Fix 3: Currency allowlist — Korean mothers paying from overseas (USD/JPY)
-        const ALLOWED_CURRENCIES = ["krw", "usd", "jpy"];
+        // Fix 3: Currency allowlist — Bug Bounty Fix 2-4: Use centralized ALLOWED_CURRENCIES
         if (session.currency && !ALLOWED_CURRENCIES.includes(session.currency.toLowerCase())) {
           console.warn(`[Stripe] Unexpected currency: ${session.currency}, session: ${session.id}`);
           break;
         }
 
         // v1.22.2 Bug Bounty #4: amount 우선, metadata는 폴백만
-        // metadata는 클라이언트 조작 가능 → Stripe 확인 금액이 소스 오브 트루스
-        const STRIPE_AMOUNT_TO_TICKETS: Record<number, number> = {
-          3920: 1,    // ₩3,920 = 1 ticket (20% discount)
-          4900: 1,    // ₩4,900 = 1 ticket
-          14900: 4,   // ₩14,900 = 4 tickets (bundle)
-        };
+        // Bug Bounty Fix 2-4: Use centralized STORY_PRICES (single source of truth)
         const paidAmount = session.amount_total;
-        // F-015 FIX: Remove metadata fallback — only trust server-side amount mapping
-        // ⚠️ When adding new prices, update STRIPE_AMOUNT_TO_TICKETS above
-        const ticketCount = STRIPE_AMOUNT_TO_TICKETS[paidAmount];
+        const ticketCount = STORY_PRICES[paidAmount];
         if (!ticketCount) {
           console.error(`[Stripe] Unknown payment amount: ${paidAmount}, session: ${session.id}`);
           break; // Return 200 to stop Stripe retries, log for manual review

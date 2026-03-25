@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { trackPaymentAbandon } from "@/lib/utils/analytics";
+// Bug Bounty Fix 2-4: Centralized pricing constants
+import { ticketsForAmount } from "@/lib/constants/pricing";
 
 // GA4 gtag type declaration
 declare global {
@@ -126,8 +128,8 @@ function PaymentSuccessContent() {
         if (!mounted) return;
         const data = await res.json();
         if (res.ok && data.success) {
-          // ticketsAdded may be absent on alreadyProcessed responses -- derive from amount
-          const derivedTickets = params.amount >= 14900 ? 4 : 1;
+          // Bug Bounty Fix 2-2/2-4: Use centralized ticketsForAmount() instead of hardcoded logic
+          const derivedTickets = ticketsForAmount(params.amount) ?? 1;
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           // Re-set receipt amount from confirmed params (survives refresh via sessionStorage)
@@ -194,7 +196,7 @@ function PaymentSuccessContent() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        const derivedTickets = params.amount >= 14900 ? 4 : 1;
+        const derivedTickets = ticketsForAmount(params.amount) ?? 1;
         setTicketsAdded(data.ticketsAdded || derivedTickets);
         if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
         setStatus("success");
@@ -203,7 +205,7 @@ function PaymentSuccessContent() {
       } else {
         // On retry, if backend returns success (alreadyProcessed), treat as success
         if (data.success) {
-          const derivedTickets = params.amount >= 14900 ? 4 : 1;
+          const derivedTickets = ticketsForAmount(params.amount) ?? 1;
           setTicketsAdded(data.ticketsAdded || derivedTickets);
           setStatus("success");
         } else {

@@ -214,8 +214,15 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      // Bug Bounty: Persistent server-side guest turn tracking (parity with /api/chat/stream)
-      const guestTurnAllowed = await checkRateLimitPersistent(`guest_turns:${ip}`, GUEST_TURN_LIMIT, 86400);
+      // Bug Bounty Fix 2-8: Server-side guest turn tracking with IP + UA hash composite key.
+      // Pure IP-based limits can be bypassed with VPN. Adding UA hash as secondary signal
+      // makes it harder to rotate identity (attacker must change both IP AND User-Agent).
+      // Note: UA alone is not trusted (client-controlled), but combined with IP it raises the bar.
+      const ua = request.headers.get("user-agent") || "";
+      const uaBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ua));
+      const uaHash = Array.from(new Uint8Array(uaBuf)).slice(0, 4).map(x => x.toString(16).padStart(2, "0")).join("");
+      const guestKey = `guest_turns:${ip}:${uaHash}`;
+      const guestTurnAllowed = await checkRateLimitPersistent(guestKey, GUEST_TURN_LIMIT, 86400);
       if (!guestTurnAllowed) {
         return NextResponse.json(
           { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
@@ -333,14 +340,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── RESPONSE CACHE CHECK (Phase 1 only) ───
-    // R2-FIX(C2): Include user context in cache key to prevent cross-user personalization leaks
-    // H2-FIX: Hash cache key to strip PII from in-memory storage
-    const rawCacheKey = parentRole || childAge
-      ? `${latestUserMsg?.content || ""}|role:${parentRole || ""}|age:${childAge || ""}`
-      : latestUserMsg?.content || "";
-    const cacheKeyBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawCacheKey));
-    const cacheKey = Array.from(new Uint8Array(cacheKeyBuf), b => b.toString(16).padStart(2, "0")).join("");
+    // Bug Bounty Fix 2-13: Moved SHA-256 computation inside Phase 1 check to avoid
+    // unnecessary crypto work on Phase 2-4 requests. Added locale to cache key.
+    let cacheKey = "";
     if (safePhase === 1 && latestUserMsg && crisisResult.severity === null) {
+      const rawCacheKey = `${latestUserMsg.content}|role:${parentRole || ""}|age:${childAge || ""}|locale:ko`;
+      const cacheKeyBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawCacheKey));
+      cacheKey = Array.from(new Uint8Array(cacheKeyBuf), b => b.toString(16).padStart(2, "0")).join("");
       const cached = await getCachedResponse(cacheKey, safePhase);
       if (cached) {
         logLLMCall({

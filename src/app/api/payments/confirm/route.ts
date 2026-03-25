@@ -6,32 +6,17 @@ import { z } from "zod";
 import { sendReceipt } from "@/lib/email/send-receipt";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+// Bug Bounty Fix 2-4: Centralized pricing constants (single source of truth)
+import { ALL_PRICES, resolveTicketType } from "@/lib/constants/pricing";
 
 export const runtime = "edge";
 
 // ─── Rate limiter (payment rate only; processedOrders dedup Map is separate) ───
 const paymentLimiter = createInMemoryLimiter(RATE_KEYS.PAYMENT_CONFIRM, { maxEntries: 300 });
 
-// ─── Valid prices (server-side source of truth) ───
-const STORY_PRICES: Record<number, number> = {
-  3920: 1,   // ₩3,920 = 1 ticket (론칭 할인)
-  4900: 1,   // ₩4,900 = 1 ticket
-  14900: 4,  // ₩14,900 = 4 tickets (4일 프로그램)
-};
-
-const WORKSHEET_PRICES: Record<number, number> = {
-  1900: 1,   // ₩1,900 = 활동지 1건 (론칭 할인 20%)
-  7600: 5,   // ₩7,600 = 활동지 5건 (론칭 할인 20%, 건당 ₩1,520)
-};
-
-// Combined lookup for validation (backward compat)
-const VALID_PRICES: Record<number, number> = { ...STORY_PRICES, ...WORKSHEET_PRICES };
-
-function resolveTicketType(amount: number): { type: "story" | "worksheet"; tickets: number } | null {
-  if (STORY_PRICES[amount]) return { type: "story", tickets: STORY_PRICES[amount] };
-  if (WORKSHEET_PRICES[amount]) return { type: "worksheet", tickets: WORKSHEET_PRICES[amount] };
-  return null;
-}
+// Bug Bounty Fix 2-4: STORY_PRICES, WORKSHEET_PRICES, VALID_PRICES, resolveTicketType
+// moved to @/lib/constants/pricing.ts (single source of truth)
+const VALID_PRICES = ALL_PRICES;
 
 // ─── Zod schema for payment confirmation request ───
 // mode: "widget" uses TOSS_WIDGET_SECRET_KEY (gsk_), "standard" uses TOSS_SECRET_KEY (sk_)
@@ -153,10 +138,14 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Server-side idempotency guard ───
+    // Bug Bounty Fix 2-2: Include ticketsAdded in alreadyProcessed response
+    // so the frontend success page shows correct ticket count on refresh.
     if (isOrderProcessed(orderId)) {
+      const resolved = resolveTicketType(Number(amount));
       return sb.applyCookies(NextResponse.json({
         success: true,
         alreadyProcessed: true,
+        ticketsAdded: resolved?.tickets ?? 1,
       }));
     }
 
@@ -237,14 +226,12 @@ export async function POST(request: NextRequest) {
     // ─── Use Toss-confirmed amount (not client-supplied) ───
     const confirmedAmount = confirmData.totalAmount;
 
-    // LAUNCH-FIX: Verify Toss-confirmed amount matches client request (detect tampering/mismatch)
-    // R4-FIX: Block transaction if client-declared amount doesn't match Toss-confirmed amount
+    // Bug Bounty Fix 2-3: On amount mismatch, proceed with Toss-confirmed amount
+    // instead of blocking (which would charge user but not grant tickets).
+    // Log security alert for monitoring.
     if (confirmedAmount !== numericAmount) {
-      console.error(`[SECURITY] Amount tampering attempt: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
-      return sb.applyCookies(NextResponse.json(
-        { error: "결제 금액 검증에 실패했습니다. 다시 시도해 주세요." },
-        { status: 400 }
-      ));
+      console.error(`[SECURITY] Amount mismatch: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
+      // Continue with Toss-confirmed amount (사용자 불이익 방지)
     }
 
     const resolved = resolveTicketType(confirmedAmount);
