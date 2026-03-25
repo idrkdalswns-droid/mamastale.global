@@ -23,6 +23,14 @@ function makeImages(storyId: string): string[] {
 export const DIY_STORIES: DIYStory[] = [
   // 홈 랜딩에 표시 (처음 3개)
   {
+    id: "shoe-mama",
+    title: "구두야, 엄마 데리고 가!",
+    description: "금빛 구두와 아이가 엄마를 다시 세상 밖으로 데리고 나가는 이야기",
+    thumbnail: `${BASE}/구두야, 엄마 데리고 가!/1.jpeg`,
+    accent: "#D4A574",
+    images: Array.from({ length: 9 }, (_, i) => `${BASE}/구두야, 엄마 데리고 가!/${i + 1}.jpeg`),
+  },
+  {
     id: "cotton-candy-bear",
     title: "거대한 솜사탕 엄마 곰",
     description: "솜사탕처럼 달콤한 엄마 곰과 아기 곰의 모험",
