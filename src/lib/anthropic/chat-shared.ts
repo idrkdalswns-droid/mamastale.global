@@ -281,6 +281,18 @@ export function postProcessResponse(
   return { phase, cleanText, suggestedTags, storyComplete };
 }
 
+/**
+ * Fix 1-3: Build a composite guest rate-limit key from IP + User-Agent hash.
+ * Shared between chat/route.ts and chat/stream/route.ts to prevent divergence.
+ * IP alone can be bypassed with VPN; adding UA hash raises the bar.
+ */
+export async function buildGuestRateLimitKey(request: Request, ip: string): Promise<string> {
+  const ua = request.headers.get("user-agent") || "";
+  const uaBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ua));
+  const uaHash = Array.from(new Uint8Array(uaBuf)).slice(0, 4).map(x => x.toString(16).padStart(2, "0")).join("");
+  return `guest_turns:${ip}:${uaHash}`;
+}
+
 // Re-export commonly used types and functions for convenience
 export { screenForCrisis } from "@/lib/anthropic/system-prompt";
 export type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";

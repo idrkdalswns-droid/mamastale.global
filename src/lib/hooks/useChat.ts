@@ -293,7 +293,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (nextPhase && nextPhase > currentPhaseNow) {
         trackChatPhaseEnter(nextPhase); // C1: 퍼널 트래킹
         set({ isTransitioning: true });
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => setTimeout(r, 150)); // Fix 2-8: faster phase transition
         set((s) => ({
           currentPhase: nextPhase as 1 | 2 | 3 | 4,
           visitedPhases: s.visitedPhases.includes(nextPhase)
@@ -301,7 +301,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : [...s.visitedPhases, nextPhase],
           turnCountInCurrentPhase: 0, // Reset turn count for new phase
         }));
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => setTimeout(r, 150)); // Fix 2-8: faster phase transition
         set({ isTransitioning: false });
       }
 
@@ -565,7 +565,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (streamNextPhase && streamNextPhase > currentPhaseNow) {
               trackChatPhaseEnter(streamNextPhase); // C1: 퍼널 트래킹
               set({ isTransitioning: true });
-              await new Promise((r) => setTimeout(r, 250));
+              await new Promise((r) => setTimeout(r, 150)); // Fix 2-8: faster phase transition
               set((s) => ({
                 currentPhase: streamNextPhase as 1 | 2 | 3 | 4,
                 visitedPhases: s.visitedPhases.includes(streamNextPhase)
@@ -573,7 +573,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   : [...s.visitedPhases, streamNextPhase],
                 turnCountInCurrentPhase: 0,
               }));
-              await new Promise((r) => setTimeout(r, 250));
+              await new Promise((r) => setTimeout(r, 150)); // Fix 2-8: faster phase transition
               set({ isTransitioning: false });
             }
 

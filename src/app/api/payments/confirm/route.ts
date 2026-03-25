@@ -231,6 +231,17 @@ export async function POST(request: NextRequest) {
     // Log security alert for monitoring.
     if (confirmedAmount !== numericAmount) {
       console.error(`[SECURITY] Amount mismatch: client=${numericAmount}, toss=${confirmedAmount}, order=${orderId}`);
+      // Fix 1-6: Slack alert for payment amount mismatch (fire-and-forget)
+      const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+      if (slackUrl) {
+        fetch(slackUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `⚠️ Payment Amount Mismatch\nClient: ₩${numericAmount}\nToss: ₩${confirmedAmount}\nOrder: ${orderId}`,
+          }),
+        }).catch(() => {});
+      }
       // Continue with Toss-confirmed amount (사용자 불이익 방지)
     }
 

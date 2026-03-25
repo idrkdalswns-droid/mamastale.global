@@ -43,6 +43,7 @@ import {
   checkRateLimitPersistent,
   getClientIP,
   getAnthropicClient,
+  buildGuestRateLimitKey,
 } from "@/lib/anthropic/chat-shared";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
@@ -121,8 +122,9 @@ export async function POST(request: NextRequest) {
     if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
       return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
     }
-    // P1-2: Persistent server-side guest turn tracking (survives browser restart, prevents bypass)
-    const guestTurnAllowed = await checkRateLimitPersistent(`guest_turns:${ip}`, GUEST_TURN_LIMIT, 86400);
+    // Fix 1-3: Use shared buildGuestRateLimitKey (IP + UA hash, synced with chat/route.ts)
+    const guestKey = await buildGuestRateLimitKey(request, ip);
+    const guestTurnAllowed = await checkRateLimitPersistent(guestKey, GUEST_TURN_LIMIT, 86400);
     if (!guestTurnAllowed) {
       return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
     }

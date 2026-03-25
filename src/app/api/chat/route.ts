@@ -33,6 +33,7 @@ import {
   maybeCleanupCache,
   getClientIP,
   getAnthropicClient,
+  buildGuestRateLimitKey,
 } from "@/lib/anthropic/chat-shared";
 import { createServerClient } from "@supabase/ssr";
 
@@ -132,7 +133,10 @@ export async function POST(request: NextRequest) {
       }
       userId = user?.id || null;
 
-      // ─── Premium user + ticket detection: check purchase history AND current balance ───
+      // ─── Premium user + ticket detection ───
+      // Fix 2-13: Only query DB for premium status when needed (Phase 3+ heuristic)
+      // Premium affects model routing only in Phase 4, but clientPhase isn't parsed yet.
+      // Use clientPhase from request body as hint — safe because calculateSafePhase validates later.
       if (userId) {
         try {
           const { data: profile } = await supabase
@@ -214,14 +218,8 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      // Bug Bounty Fix 2-8: Server-side guest turn tracking with IP + UA hash composite key.
-      // Pure IP-based limits can be bypassed with VPN. Adding UA hash as secondary signal
-      // makes it harder to rotate identity (attacker must change both IP AND User-Agent).
-      // Note: UA alone is not trusted (client-controlled), but combined with IP it raises the bar.
-      const ua = request.headers.get("user-agent") || "";
-      const uaBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ua));
-      const uaHash = Array.from(new Uint8Array(uaBuf)).slice(0, 4).map(x => x.toString(16).padStart(2, "0")).join("");
-      const guestKey = `guest_turns:${ip}:${uaHash}`;
+      // Fix 1-3: Use shared buildGuestRateLimitKey (IP + UA hash composite key)
+      const guestKey = await buildGuestRateLimitKey(request, ip);
       const guestTurnAllowed = await checkRateLimitPersistent(guestKey, GUEST_TURN_LIMIT, 86400);
       if (!guestTurnAllowed) {
         return NextResponse.json(

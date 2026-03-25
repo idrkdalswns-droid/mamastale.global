@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (codeError || !codeData) {
+    // Fix 1-14: Artificial delay to prevent timing-based code enumeration
+    await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
     return sb.applyCookies(
       NextResponse.json(
         { error: "유효하지 않은 코드입니다." },
