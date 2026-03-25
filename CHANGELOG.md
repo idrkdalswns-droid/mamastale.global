@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.43.0] - 2026-03-25
+
+### Fixed (Bug Bounty — 71건 시뮬레이션, 핵심 수정)
+- **CRITICAL**: metadata JSONB 덮어쓰기 방지 — RPC 부분 업데이트로 processed_orders 소실 차단
+- **CRITICAL**: initSession vs restoreDraft 세션 ID 경쟁 조건 해결
+- **결제**: 가격→티켓 매핑 3곳 하드코딩을 `lib/constants/pricing.ts`로 통합 (single source of truth)
+- **결제**: Toss 금액 불일치 시 사용자 불이익 방지 (Toss 확인 금액 기준 진행)
+- **결제**: alreadyProcessed 응답에 ticketsAdded 포함 (워크시트 번들 오계산 수정)
+- **보안**: 오픈 리다이렉트 방어 — sessionStorage 리다이렉트에 화이트리스트+URL 정규화 적용
+- **보안**: 게스트 턴 제한 강화 — IP+UA 해시 복합 키로 VPN 우회 방지
+- **보안**: Bearer 토큰 미포함 5개 파일 수정 (TeacherCodeModal, FeedbackWizard, CommentSection)
+- **UX**: 라이브러리 커버 이미지 opacity-0 고착 해결 — 3초 안전 타임아웃 추가
+- **UX**: 스토리 저장 타임아웃 시 "확인 중" 상태 + 서재 링크 표시 (storySaved 잘못 리셋 방지)
+- **UX**: history pushState 축소 (8→3) — 뒤로가기 과다 누적 해결
+- **UX**: popstate 핸들러 상태 유효성 검증 (빈 채팅으로 복귀 방지)
+- **UX**: Sticky CTA 로그인 사용자에게도 표시
+- **UX**: 터치 디바이스 감지 개선 — `matchMedia("(hover: none)")` (Surface Pro 대응)
+- **UX**: 데스크톱 랜딩 여백 조정 (pt-6→pt-2, hero opacity 0.30→0.40)
+- **UX**: DIY 페이지 텍스트 대비 강화 (text-brown-light→text-brown-mid)
+- **AI**: SSE 스트리밍 배칭 포그라운드/백그라운드 분기 (탭 전환 시 프리즈 방지)
+- **AI**: Phase 1 캐시 키에 locale 포함 + 불필요한 SHA-256 계산 Phase 1 내부로 이동
+- **AI**: 위기 컨텍스트 의료 기관 안내 허용 — "병원", "응급실" crisis exception 추가
+- **프론트**: StoryEditor undo stale closure 수정 (ref 기반 캡처)
+- **프론트**: ChatContainer "다음" 버튼 다크모드 대응 (bg-white→bg-surface)
+- **프론트**: ticketUsedForSession hydration mismatch 방지 (useEffect 초기화)
+- **프론트**: 갤러리 이미지 eager 로딩 범위 확대 (6-8→5-9)
+
+### Added
+- `supabase/migrations/037_jsonb_partial_update.sql` — profiles metadata 부분 업데이트 RPC
+- `supabase/migrations/038_stripe_events_dedup.sql` — Stripe 이벤트 중복 방지 테이블
+- `src/lib/constants/pricing.ts` — 가격→티켓 매핑 통합 상수 (Edge Runtime 호환)
+
 ## [1.42.0] - 2026-03-25
 
 ### Added
