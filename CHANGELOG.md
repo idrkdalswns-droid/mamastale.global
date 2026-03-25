@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.42.0] - 2026-03-25
+
+### Added
+- 신규 DIY 동화: "구두야, 엄마 데리고 가!" (9장 이미지)
+- 쇼케이스 동화 DB INSERT SQL (커뮤니티 "클래스 완성작")
+- `/add-story` 슬래시 커맨드 (동화 등록 자동화)
+- Pull-to-Refresh 커스텀 컴포넌트 (iOS PWA 지원)
+- IDOR 방지 DB CHECK 제약 마이그레이션
+
+### Fixed
+- useChat 에러 롤백: stale closure → 마지막 메시지만 제거
+- retrySaveStory 미처리 Promise rejection 2곳
+- 모바일 375px 레이아웃 잘림 (px-8 → px-5 sm:px-8)
+- rawPreview AI 응답 노출 제거
+- 프롬프트 인젝션 방어 강화 (제어 태그 블랙리스트)
+- 선생님 모드 turn_count CAS + 재시도
+- ReDoS 방어 (50K자 입력 가드)
+- 캐릭터 추출 API 15초 타임아웃 추가
+- 선생님 활동지 GET 레이트 리밋 추가
+
+### Changed
+- 쇼케이스 이미지 최적화 (70MB → 20MB, 1080px 리사이즈)
+- nav.ts: 구매 링크를 PUBLIC/AUTH 모두 표시
+
 ## [1.41.0] - 2026-03-25
 
 ### Removed

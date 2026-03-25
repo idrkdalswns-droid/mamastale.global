@@ -39,3 +39,5 @@ next-env.d.ts
 # simulation scripts and results (dev only)
 scripts/
 docs/simulation-results/
+public/images/showcase/*/\_backup/
+public/sw.js
