@@ -252,7 +252,7 @@ export async function DELETE(
     .maybeSingle();
 
   if (error) {
-    console.error("[Teacher Story DELETE] Error:", error.code);
+    console.error("[Teacher Story DELETE] Error:", error.code, error.message, "storyId:", id, "userId:", user.id.slice(0, 8));
     return sb.applyCookies(
       NextResponse.json({ error: "삭제에 실패했습니다." }, { status: 500 })
     );
