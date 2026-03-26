@@ -9,6 +9,7 @@ import { ErrorReporter } from "@/components/ui/ErrorReporter";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { MotionProvider } from "@/components/layout/MotionProvider";
 import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
+import { SWUpdateBanner } from "@/components/ui/SWUpdateBanner";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import "./globals.css";
@@ -150,6 +151,7 @@ export default async function RootLayout({
         <CookieConsent />
         <ErrorReporter />
         <PWAInstallBanner />
+        <SWUpdateBanner />
         <Toaster
           position="top-center"
           containerStyle={{ paddingTop: "env(safe-area-inset-top, 0px)" }}

@@ -207,7 +207,7 @@ export default function PremiumUpgradeCTA({
         >
           <span>대화 100% 비공개</span>
           <span>안전 결제</span>
-          <span>환불 불가</span>
+          <span>미사용 환불 가능</span>
         </motion.div>
       </motion.div>
     </motion.div>

@@ -130,17 +130,20 @@ export function ResultStep() {
         />
       </div>
 
-      {/* 인쇄 버튼 */}
+      {/* PDF 저장 버튼 */}
       <button
         onClick={handlePrint}
-        className="w-full py-4 rounded-full text-white text-[15px] font-medium transition-all active:scale-[0.97] mb-3"
+        className="w-full py-4 rounded-full text-white text-[15px] font-medium transition-all active:scale-[0.97] mb-1"
         style={{
           background: "linear-gradient(135deg, #E07A5F, #C96B52)",
           boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
         }}
       >
-        🖨️ 인쇄하기 / PDF 저장
+        📄 PDF로 저장하기
       </button>
+      <p className="text-[11px] text-brown-pale text-center mb-3">
+        인쇄 대화상자에서 &apos;대상&apos;을 &apos;PDF로 저장&apos;으로 선택하세요
+      </p>
 
       {/* Word 다운로드 버튼 */}
       {DOCX_SUPPORTED.has(activityTypeUsed as ActivityType) ? (

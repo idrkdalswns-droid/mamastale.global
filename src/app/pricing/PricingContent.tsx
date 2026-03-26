@@ -84,7 +84,7 @@ const FAQS = [
   },
   {
     q: "환불은 가능한가요?",
-    a: "모든 구매는 최종 확정이며, 환불이 불가합니다. 신중하게 결정해 주세요.",
+    a: "미사용 티켓은 고객센터를 통해 환불이 가능합니다. 자세한 사항은 이용약관 제9조를 확인해 주세요.",
   },
   {
     q: "어떤 결제 수단을 지원하나요?",
@@ -1044,7 +1044,7 @@ function PricingContent() {
             <p className="text-[11px] text-center mb-5 font-medium"
               style={{ color: "rgba(224,122,95,0.8)" }}
             >
-              ※ 구매 확정 후 환불이 불가합니다 (<Link href="/terms" className="underline">이용약관 제9조</Link>)
+              ※ 미사용 티켓은 고객센터를 통해 환불 가능 (<Link href="/terms" className="underline">이용약관 제9조</Link>)
             </p>
             <button
               onClick={confirmPayment}
@@ -1064,7 +1064,7 @@ function PricingContent() {
               결제 시{" "}
               <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline">이용약관</a>,{" "}
               <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">개인정보처리방침</a>{" "}
-              및 환불 불가 정책에 동의합니다.
+              및 환불 정책에 동의합니다.
             </p>
             <button
               onClick={() => { if (confirmModal) trackPricingModalCancel(confirmModal); setConfirmModal(null); }}

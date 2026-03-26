@@ -44,7 +44,7 @@ export default function TermsPage() {
           </ul>
 
           <h2 className="font-serif text-lg font-semibold text-brown mt-8">제9조 (환불 정책)</h2>
-          <p>모든 티켓 구매는 최종 확정이며 환불이 불가합니다. 구매 전 신중하게 결정해 주세요.</p>
+          <p>미사용 티켓은 고객센터를 통해 환불이 가능합니다. 이미 사용된 티켓(동화 생성에 사용)은 환불 대상에서 제외됩니다.</p>
 
           <p className="text-[11px] text-brown-pale mt-8">시행일: 2026년 3월 3일</p>
         </div>

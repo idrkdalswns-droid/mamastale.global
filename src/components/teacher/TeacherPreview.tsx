@@ -39,6 +39,7 @@ export function TeacherPreview({
   );
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
   const { ticketData } = useTickets();
 
   useEffect(() => {
@@ -196,6 +197,36 @@ export function TeacherPreview({
     [pdfLoading, story, spreads, metadata]
   );
 
+  // ─── 학부모 공유 ───
+  const handleShare = useCallback(async () => {
+    if (!story.id || shareLoading) return;
+    setShareLoading(true);
+    try {
+      const res = await fetch(`/api/teacher/stories/${story.id}/share`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error((data as { error?: string }).error || "공유 링크 생성에 실패했습니다.");
+        return;
+      }
+      const { shareUrl } = await res.json() as { shareUrl: string };
+      // Web Share API or clipboard fallback
+      if (navigator.share) {
+        await navigator.share({
+          title: story.title || "동화",
+          text: `선생님이 공유한 동화: ${story.title || ""}`,
+          url: shareUrl,
+        }).catch(() => {});
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("공유 링크가 복사되었습니다!");
+      }
+    } catch {
+      toast.error("공유 링크 생성에 실패했습니다.");
+    } finally {
+      setShareLoading(false);
+    }
+  }, [story.id, story.title, shareLoading]);
+
   return (
     <div className="flex flex-col min-h-[60dvh]">
       {/* 헤더 */}
@@ -302,6 +333,25 @@ export function TeacherPreview({
 
       {/* ─── 활동지 히스토리 ─── */}
       {story.id && <WorksheetHistory storyId={story.id} />}
+
+      {/* ─── 학부모 공유 ─── */}
+      {story.id && (
+        <div className="px-4 pt-2">
+          <button
+            onClick={handleShare}
+            disabled={shareLoading || spreads.length === 0}
+            className="w-full py-2.5 rounded-xl text-[13px] font-medium text-brown
+                       border border-brown-pale/30 transition-all active:scale-[0.97]
+                       bg-paper/40 disabled:opacity-40"
+          >
+            {shareLoading ? (
+              <span className="animate-pulse">링크 생성 중...</span>
+            ) : (
+              <>🔗 학부모에게 공유하기</>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ─── 하단 CTA 영역 ─── */}
       <div className="px-4 pb-4 pt-2 border-t border-brown-pale/20 space-y-3

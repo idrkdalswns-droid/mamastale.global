@@ -139,6 +139,14 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
+// ── SW Update Banner: Handle SKIP_WAITING message from client ──
+self.addEventListener("message", (event: MessageEvent) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (self as any).skipWaiting();
+  }
+});
+
 // ── Sprint 4-A: Web Push Notification Handlers ──
 // Type declarations for Service Worker push/notification events
 // (WebWorker lib conflicts with DOM lib in tsconfig, so declare locally)

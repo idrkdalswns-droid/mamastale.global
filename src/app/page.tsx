@@ -731,7 +731,7 @@ export default function Home() {
             ) : (
               <>
                 <span className="text-[15px]">{user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}</span>
-                <span className="text-[10px] font-light text-white/60">심리학 기반 4단계 치유 대화 엔진</span>
+                <span className="text-[10px] font-light text-white/60">당신만을 위한 치유 이야기</span>
               </>
             )}
           </button>

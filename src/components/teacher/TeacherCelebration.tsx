@@ -41,7 +41,8 @@ export function TeacherCelebration({
       pollRef.current++;
 
       try {
-        const res = await fetch("/api/teacher/generate", {
+        // TB1: Use brief endpoint for cover polling (lighter, returns existing story via idempotency)
+        const res = await fetch("/api/teacher/generate/brief", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId }),

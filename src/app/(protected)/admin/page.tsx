@@ -91,6 +91,74 @@ function EventBadge({ type }: { type: string }) {
   );
 }
 
+// ─── B1-Toss: Refund Section ───
+function RefundSection() {
+  const [paymentKey, setPaymentKey] = useState("");
+  const [cancelReason, setCancelReason] = useState("관리자 환불 처리");
+  const [refunding, setRefunding] = useState(false);
+  const [result, setResult] = useState<{ success?: boolean; error?: string; toss?: unknown; db?: unknown } | null>(null);
+
+  const handleRefund = async () => {
+    if (!paymentKey.trim()) return;
+    if (!confirm(`정말 환불하시겠습니까?\npaymentKey: ${paymentKey}`)) return;
+    setRefunding(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentKey: paymentKey.trim(), cancelReason }),
+      });
+      const data = await res.json();
+      setResult(data);
+      if (data.success) setPaymentKey("");
+    } catch {
+      setResult({ error: "네트워크 오류" });
+    } finally {
+      setRefunding(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <h2 className="text-sm font-bold text-gray-800 mb-3">Toss 환불 처리</h2>
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={paymentKey}
+          onChange={(e) => setPaymentKey(e.target.value)}
+          placeholder="paymentKey (Toss)"
+          className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-coral focus:outline-none"
+        />
+        <input
+          type="text"
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          placeholder="환불 사유"
+          className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:border-coral focus:outline-none"
+        />
+        <button
+          onClick={handleRefund}
+          disabled={refunding || !paymentKey.trim()}
+          className="w-full py-2 rounded-lg text-xs font-medium text-white transition-all disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+        >
+          {refunding ? "처리 중..." : "환불 실행"}
+        </button>
+      </div>
+      {result && (
+        <div className={`mt-3 p-2 rounded-lg text-xs ${result.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+          {result.success ? (
+            <pre className="whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>
+          ) : (
+            <p>{result.error}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -275,6 +343,9 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* B1-Toss: Refund Section */}
+      <RefundSection />
 
       {/* Refresh */}
       <div className="mt-6 text-center">

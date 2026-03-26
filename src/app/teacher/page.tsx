@@ -207,20 +207,45 @@ export default function TeacherPage() {
     store.setGenerating(true);
 
     try {
-      const res = await fetch("/api/teacher/generate", {
+      // TB1 Fix: Split into brief (Haiku, ~5s) + story (Opus, ~20s) to stay under Edge 30s
+      // Step 1: Brief extraction
+      const briefRes = await fetch("/api/teacher/generate/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId: store.sessionId }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(
-          (errData as { error?: string }).error || `HTTP ${res.status}`
-        );
+      if (!briefRes.ok) {
+        const errData = await briefRes.json().catch(() => ({}));
+        throw new Error((errData as { error?: string }).error || `HTTP ${briefRes.status}`);
       }
 
-      const data = await res.json();
+      const briefData = await briefRes.json();
+
+      // If already generated (idempotency), skip Step 2
+      if (briefData.alreadyGenerated) {
+        store.setGeneratedStory(briefData);
+        store.setScreenState("CELEBRATION");
+        return;
+      }
+
+      // Step 2: Story generation
+      const storyRes = await fetch("/api/teacher/generate/story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: store.sessionId,
+          briefContext: briefData.briefContext,
+          onboarding: briefData.onboarding,
+        }),
+      });
+
+      if (!storyRes.ok) {
+        const errData = await storyRes.json().catch(() => ({}));
+        throw new Error((errData as { error?: string }).error || `HTTP ${storyRes.status}`);
+      }
+
+      const data = await storyRes.json();
       store.setGeneratedStory(data);
       store.setScreenState("CELEBRATION");
     } catch (err) {

@@ -23,15 +23,31 @@ export function useAuth() {
       return;
     }
 
+    // F1 Fix: Timeout fallback — if getUser() hangs (e.g. network issue),
+    // force loading=false after 5s so CTA button doesn't stay disabled forever
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        setLoading(false);
+      }
+    }, 5000);
+
     // Get initial session
     const fetchUser = async () => {
       try {
         const { data } = await supabase.auth.getUser();
-        setUser(data.user as AuthUser | null);
+        if (!resolved) {
+          resolved = true;
+          setUser(data.user as AuthUser | null);
+          setLoading(false);
+        }
       } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
+        if (!resolved) {
+          resolved = true;
+          setUser(null);
+          setLoading(false);
+        }
       }
     };
     fetchUser();
@@ -43,7 +59,10 @@ export function useAuth() {
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   // IN-9: Await signOut to ensure cookies are cleared before navigating
