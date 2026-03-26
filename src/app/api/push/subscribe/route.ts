@@ -19,7 +19,7 @@ const unsubscribeSchema = z.object({ endpoint: z.string().url().max(2048) });
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const { data: { user }, error: authError } = await sb.client.auth.getUser();
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`push_sub:${user.id}`, 10, 60);
   if (!allowed) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const { data: { user }, error: authError } = await sb.client.auth.getUser();
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`push_unsub:${user.id}`, 10, 60);
   if (!allowed) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 

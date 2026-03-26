@@ -34,6 +34,7 @@ import {
   getClientIP,
   getAnthropicClient,
   buildGuestRateLimitKey,
+  checkPremiumStatus,
 } from "@/lib/anthropic/chat-shared";
 import { createServerClient } from "@supabase/ssr";
 
@@ -137,19 +138,9 @@ export async function POST(request: NextRequest) {
       // isPremiumUser is used ONLY for model routing in Phase 4 (Opus vs Sonnet).
       // clientPhase from request body is an untrusted hint — never use it for auth/security decisions.
       // DB query runs unconditionally for authenticated users to avoid clientPhase bypass.
+      // B3 Fix: Use subscriptions table (refund-aware) instead of processed_orders
       if (userId) {
-        try {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("metadata, free_stories_remaining")
-            .eq("id", userId)
-            .single();
-          const metadata = (profile?.metadata as Record<string, unknown>) || {};
-          const processedOrders = (metadata.processed_orders as string[]) || [];
-          isPremiumUser = processedOrders.length > 0;
-        } catch {
-          // Profile check failed — default to standard tier
-        }
+        isPremiumUser = await checkPremiumStatus(supabase, userId);
       }
     } catch {
       // Auth check failed — treat as guest
@@ -508,7 +499,7 @@ export async function POST(request: NextRequest) {
       if (status === 429) {
         return NextResponse.json(
           { error: "잠시 후 다시 시도해 주세요. (요청이 너무 많습니다)" },
-          { status: 429 }
+          { status: 429, headers: { "Retry-After": "60" } }
         );
       }
       if (status === 401) {

@@ -33,7 +33,7 @@ export async function GET(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
@@ -45,7 +45,7 @@ export async function GET(
 
   if (!limiter.check(`get:${user.id}`, 30, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -80,7 +80,7 @@ export async function PATCH(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
@@ -92,7 +92,7 @@ export async function PATCH(
 
   if (!limiter.check(`patch:${user.id}`, 10, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -225,7 +225,7 @@ export async function DELETE(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
@@ -237,7 +237,7 @@ export async function DELETE(
 
   if (!limiter.check(`delete:${user.id}`, 10, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 })
+      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 

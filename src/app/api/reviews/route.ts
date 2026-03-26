@@ -58,14 +58,14 @@ export async function POST(request: NextRequest) {
   if (!reviewPostLimiter.check(ip, 3, 300_000)) {
     return NextResponse.json(
       { error: "후기는 5분에 3건까지 등록 가능합니다." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
   // HIGH #4 FIX: Authenticate user — only logged-in users can submit reviews
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   let user = (await sb.client.auth.getUser()).data.user;

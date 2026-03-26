@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   if (!interestLimiter.check(ip, 5, 300_000)) {
     return NextResponse.json(
       { error: "잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 

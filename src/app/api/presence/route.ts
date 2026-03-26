@@ -17,7 +17,7 @@ const presenceSchema = z.object({
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!presenceLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // LAUNCH-FIX: Body size limit (presence payloads are tiny, 4KB max)

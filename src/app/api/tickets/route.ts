@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
   if (!ticketCheckLimiter.check(ip, 15, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Tickets");

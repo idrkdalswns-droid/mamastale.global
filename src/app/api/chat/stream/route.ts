@@ -44,6 +44,7 @@ import {
   getClientIP,
   getAnthropicClient,
   buildGuestRateLimitKey,
+  checkPremiumStatus,
 } from "@/lib/anthropic/chat-shared";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 
@@ -68,17 +69,9 @@ export async function POST(request: NextRequest) {
         }
       }
       userId = user?.id || null;
+      // B3 Fix: Use subscriptions table (refund-aware) instead of processed_orders
       if (userId) {
-        try {
-          const { data: profile } = await sb.client
-            .from("profiles")
-            .select("metadata, free_stories_remaining")
-            .eq("id", userId)
-            .single();
-          const metadata = (profile?.metadata as Record<string, unknown>) || {};
-          const processedOrders = (metadata.processed_orders as string[]) || [];
-          isPremiumUser = processedOrders.length > 0;
-        } catch { /* default to standard */ }
+        isPremiumUser = await checkPremiumStatus(sb.client, userId);
       }
     } catch { /* treat as guest */ }
   }
@@ -91,7 +84,7 @@ export async function POST(request: NextRequest) {
   // ─── Rate limiting ───
   const withinLimit = await checkRateLimitPersistent(rateKey, rateLimit, 60);
   if (!withinLimit) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // ─── Body size check ───

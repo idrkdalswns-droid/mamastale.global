@@ -60,7 +60,7 @@ async function sendWebPush(
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!pushLimiter.check(ip, 100, 60_000)) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // Constant-time API key check for internal use

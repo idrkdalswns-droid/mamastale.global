@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   if (!feedbackLimiter.check(ip, 5, 300_000)) {
     return NextResponse.json(
       { error: "피드백은 5분에 5건까지 등록 가능합니다." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 

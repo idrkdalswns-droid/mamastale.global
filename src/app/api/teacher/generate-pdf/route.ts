@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   if (!pdfLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   // 3. Auth
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);

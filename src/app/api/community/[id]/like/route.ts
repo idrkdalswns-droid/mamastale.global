@@ -29,7 +29,7 @@ export async function POST(
   // Use createApiSupabaseClient to preserve session cookies on auth refresh
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -46,7 +46,7 @@ export async function POST(
   if (user && !authLimiter.check(user.id, 15, 60_000)) {
     return sb.applyCookies(NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
 
@@ -57,7 +57,7 @@ export async function POST(
     if (!guestBurstLimiter.check(ip, 2, 300_000) || !guestDailyLimiter.check(ip, 10, 86_400_000)) {
       return sb.applyCookies(NextResponse.json(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": "60" } }
       ));
     }
 

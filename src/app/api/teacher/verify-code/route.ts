@@ -6,14 +6,14 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logEvent } from "@/lib/utils/llm-logger";
 
-const SESSION_DURATION_HOURS = 3;
+const SESSION_DURATION_HOURS = 6;
 
 export async function POST(request: NextRequest) {
   // 1. Supabase 클라이언트
   const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json(
-      { error: "DB not configured" },
+      { error: "시스템 설정 오류입니다." },
       { status: 503 }
     );
   }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "너무 많은 시도입니다. 1분 후 다시 시도해주세요." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": "60" } }
       )
     );
   }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "인증 시도가 너무 많습니다. 5분 후 다시 시도해주세요." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": "60" } }
       )
     );
   }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "오늘 이 코드의 사용 한도에 도달했습니다. 내일 다시 시도해주세요." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": "60" } }
       )
     );
   }

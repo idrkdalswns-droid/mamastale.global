@@ -11,7 +11,7 @@ const exportLimiter = createInMemoryLimiter(RATE_KEYS.ACCOUNT_EXPORT, { maxEntri
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Account/Export");
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   // JP-05: Rate limit exports (3 per hour per user)
   if (!exportLimiter.check(user.id, 3, 3_600_000)) {
-    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429 }));
+    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   const userId = user.id;

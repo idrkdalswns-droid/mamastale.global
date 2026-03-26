@@ -299,6 +299,30 @@ export async function buildGuestRateLimitKey(request: Request, ip: string): Prom
   return `guest_turns:${ip}:${uaHash}`;
 }
 
+// ─── B3 Fix: Premium status check (refund-aware) ───
+
+/**
+ * Check if user has active (non-refunded) orders → premium status.
+ * B3 Fix: Previously checked processed_orders.length > 0, which kept
+ * refunded users as premium forever. Now queries subscriptions table.
+ */
+export async function checkPremiumStatus(
+  supabase: { from: (table: string) => unknown },
+  userId: string,
+): Promise<boolean> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (supabase as any)
+      .from("subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "refunded");
+    return (count ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
 // Re-export commonly used types and functions for convenience
 export { screenForCrisis } from "@/lib/anthropic/system-prompt";
 export type { CrisisScreenResult } from "@/lib/anthropic/system-prompt";

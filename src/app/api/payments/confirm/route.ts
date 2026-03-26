@@ -28,6 +28,19 @@ const confirmRequestSchema = z.object({
   mode: z.enum(["widget", "standard"]).default("widget"),
 });
 
+/** BS4: Toss 결제 확인 응답 Zod 검증 (any 타입 제거)
+ * totalAmount는 성공 시에만 존재 (에러 응답은 code/message만) */
+const tossConfirmResponseSchema = z.object({
+  totalAmount: z.number().optional(),
+  orderId: z.string().optional(),
+  code: z.string().optional(),
+  message: z.string().optional(),
+  method: z.string().optional(),
+  easyPay: z.object({ provider: z.string().optional() }).optional(),
+}).passthrough();
+
+type TossConfirmResponse = z.infer<typeof tossConfirmResponseSchema>;
+
 // ─── Request body size limit ───
 const MAX_BODY_SIZE = 4_000; // 4KB — confirm requests are tiny
 
@@ -56,7 +69,7 @@ export async function POST(request: NextRequest) {
   if (!paymentLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
@@ -73,7 +86,7 @@ export async function POST(request: NextRequest) {
   // Authenticate user
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -189,12 +202,13 @@ export async function POST(request: NextRequest) {
     clearTimeout(tossTimeout);
 
     // P0-FIX: Wrap Toss response parsing in try-catch (Toss may return HTML on 502/503)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let confirmData: any;
+    // BS4: any → Zod 검증으로 타입 안전성 확보
+    let confirmData: TossConfirmResponse;
     try {
-      confirmData = await confirmRes.json();
+      const rawJson = await confirmRes.json();
+      confirmData = tossConfirmResponseSchema.parse(rawJson);
     } catch {
-      console.error("[Toss] Non-JSON response from Toss API, status:", confirmRes.status);
+      console.error("[Toss] Non-JSON or invalid response from Toss API, status:", confirmRes.status);
       return sb.applyCookies(NextResponse.json(
         { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요.", code: "PROVIDER_ERROR" },
         { status: 502 }
@@ -224,6 +238,14 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Use Toss-confirmed amount (not client-supplied) ───
+    // BS4: totalAmount가 없으면 결제 데이터 이상
+    if (confirmData.totalAmount == null) {
+      console.error("[Toss] Missing totalAmount in success response:", Object.keys(confirmData));
+      return sb.applyCookies(NextResponse.json(
+        { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요.", code: "PROVIDER_ERROR" },
+        { status: 502 }
+      ));
+    }
     const confirmedAmount = confirmData.totalAmount;
 
     // Bug Bounty Fix 2-3: On amount mismatch, proceed with Toss-confirmed amount

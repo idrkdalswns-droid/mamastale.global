@@ -20,7 +20,7 @@ const errorReportLimiter = createInMemoryLimiter(RATE_KEYS.ERROR_REPORT);
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!errorReportLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "too many reports" }, { status: 429 });
+    return NextResponse.json({ error: "too many reports" }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // LAUNCH-FIX: Body size limit (error reports with stack traces, 32KB max)

@@ -29,11 +29,11 @@ function generateCode(): string {
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
   if (!referralLimiter.check(ip, 15, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   const sb = createApiSupabaseClient(request);
-  if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
 
   const user = await resolveUser(sb!.client, request, "Referral");
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   // Bug Bounty: 3/min (was 5) to slow enumeration attacks
   if (!referralLimiter.check(ip, 3, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   const sb = createApiSupabaseClient(request);
-  if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
 
   const user = await resolveUser(sb!.client, request, "Referral");
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });

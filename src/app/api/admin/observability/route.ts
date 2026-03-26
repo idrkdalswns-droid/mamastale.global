@@ -25,14 +25,14 @@ const adminLimiter = createInMemoryLimiter(RATE_KEYS.ADMIN, { maxEntries: 50 });
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
   if (!adminLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
+    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
   }
   // ─── Auth check ───
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {

@@ -35,7 +35,7 @@ const storyListLimiter = createInMemoryLimiter(RATE_KEYS.STORY_LIST, { maxEntrie
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
@@ -44,14 +44,15 @@ export async function GET(request: NextRequest) {
   }
 
   if (!storyListLimiter.check(user.id, 15, 60_000)) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   const { data: stories, error } = await sb.client
     .from("stories")
     // R7-F1: Include cover_image, topic, metadata (for source detection)
     // Freemium v2: include is_unlocked for lock badge
-    .select("id, title, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
+    // F5 Fix: Include scenes for accurate scene count in library grid
+    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
     // B3: 빈 장면 스토리 필터링 (0장면/null 제외)
@@ -65,9 +66,12 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
   }
 
-  // Extract source from metadata, don't expose raw metadata to client
-  const safeStories = (stories || []).map(({ metadata, ...s }) => ({
+  // Extract source from metadata, compute scene count, don't expose raw metadata to client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const safeStories = (stories || []).map(({ metadata, scenes, ...s }: any) => ({
     ...s,
+    // F5 Fix: Include scenes so library grid shows accurate scene count
+    scenes: Array.isArray(scenes) ? scenes : [],
     is_unlocked: s.is_unlocked ?? true, // backward compat: missing = unlocked
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
   }));
@@ -79,7 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
@@ -278,15 +282,48 @@ export async function POST(request: NextRequest) {
 
     if (insertResult.error || !insertResult.data) {
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
-      // Security: 티켓은 /api/tickets/use에서 이미 차감됨 → 저장 실패 시 복원
-      try {
-        const { incrementTickets } = await import("@/lib/supabase/tickets");
-        await incrementTickets(sb.client, user.id, 1);
-        console.log("[Stories] 티켓 롤백 성공 (저장 실패 복구)");
-      } catch (rollbackErr) {
-        console.error("[Stories] 티켓 롤백 실패:", rollbackErr);
+      // B2 Fix: 티켓 롤백 with retry + failure tracking
+      let rollbackSuccess = false;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { incrementTickets } = await import("@/lib/supabase/tickets");
+          await incrementTickets(sb.client, user.id, 1);
+          console.log("[Stories] 티켓 롤백 성공 (저장 실패 복구, attempt:", attempt + 1, ")");
+          rollbackSuccess = true;
+          break;
+        } catch (rollbackErr) {
+          console.error(`[Stories] 티켓 롤백 실패 (attempt ${attempt + 1}):`, rollbackErr);
+        }
       }
-      return sb.applyCookies(NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 }));
+
+      if (!rollbackSuccess) {
+        // B2: Record failed rollback for manual recovery + Slack alert
+        console.error("[Stories] 티켓 롤백 2회 실패 — 수동 복구 필요:", { userId: user.id.slice(0, 8) });
+        try {
+          await sb.client.from("error_logs").insert({
+            error_type: "ticket_rollback_failed",
+            error_message: `Story save failed + ticket rollback failed after 2 attempts`,
+            metadata: { user_id: user.id, insert_error: insertResult.error?.code },
+          });
+        } catch { /* best-effort logging */ }
+        // Slack notification (fire-and-forget)
+        const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+        if (slackUrl) {
+          fetch(slackUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: `🚨 [Stories] 티켓 롤백 실패 — userId: ${user.id.slice(0, 8)}... 수동 복구 필요` }),
+          }).catch(() => {});
+        }
+        return sb.applyCookies(NextResponse.json({
+          error: "동화 저장에 실패했습니다. 티켓이 복원되지 않았습니다. 고객센터에 문의해 주세요.",
+          code: "ticket_rollback_failed",
+        }, { status: 500 }));
+      }
+
+      return sb.applyCookies(NextResponse.json({
+        error: "동화 저장에 실패했습니다. 티켓은 복원되었습니다. 다시 시도해 주세요.",
+      }, { status: 500 }));
     }
 
     const storyId = insertResult.data.id;
@@ -316,26 +353,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let coverGenerated = false;
-
-    // AI 표지 생성 후처리 (Freemium: 잠금 동화는 skip)
+    // BS5 Fix: Cover generation fire-and-forget (don't block response)
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey && !isFirstStory && !storyInsert.cover_image) {
-      try {
-        const result = await generateCoverImage(scenes, title || "");
-        if (result) {
-          const publicUrl = await uploadCoverToStorage(result.base64, result.mimeType, storyId);
-          if (publicUrl) {
-            await sb.client.from("stories").update({ cover_image: publicUrl }).eq("id", storyId);
-            coverGenerated = true;
-          }
+      generateCoverImage(scenes, title || "").then(async (result) => {
+        if (!result) return;
+        const publicUrl = await uploadCoverToStorage(result.base64, result.mimeType, storyId);
+        if (publicUrl) {
+          await sb.client.from("stories").update({ cover_image: publicUrl }).eq("id", storyId);
         }
-      } catch (e) {
+      }).catch((e) => {
         console.error("[Stories] Cover generation failed (non-blocking):", e);
-      }
+      });
     }
 
-    return sb.applyCookies(NextResponse.json({ id: storyId, coverGenerated }));
+    return sb.applyCookies(NextResponse.json({ id: storyId, coverGenerated: false }));
   } catch {
     return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }

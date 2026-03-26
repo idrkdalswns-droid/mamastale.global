@@ -90,7 +90,7 @@ export async function POST(
   if (!commentPostLimiter.check(ip, 5, 60_000)) {
     return NextResponse.json(
       { error: "댓글은 1분에 5개까지 등록 가능합니다." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
@@ -103,7 +103,7 @@ export async function POST(
   // Use createApiSupabaseClient to preserve session cookies on auth refresh
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -123,7 +123,7 @@ export async function POST(
   if (!commentPostLimiter.check(`user:${user.id}`, 5, 60_000)) {
     return sb.applyCookies(NextResponse.json(
       { error: "댓글은 1분에 5개까지 등록 가능합니다." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
 

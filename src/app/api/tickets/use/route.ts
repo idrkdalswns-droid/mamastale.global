@@ -3,6 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { checkPremiumStatus } from "@/lib/anthropic/chat-shared";
 
 export const runtime = "edge";
 
@@ -22,13 +23,13 @@ export async function POST(request: NextRequest) {
   if (!allowed) {
     return NextResponse.json(
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Tickets/Use");
@@ -132,9 +133,8 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      const metadata = await readMetadata(user.id);
-      const processedOrders = (metadata.processed_orders as string[]) || [];
-      const isPremium = processedOrders.length > 0;
+      // B3 Fix: Use subscriptions table (refund-aware)
+      const isPremium = await checkPremiumStatus(sb.client, user.id);
 
       return sb.applyCookies(NextResponse.json({
         success: true,
@@ -206,10 +206,8 @@ export async function POST(request: NextRequest) {
 
     const updated = { free_stories_remaining: newRemaining };
 
-    // Determine premium status from purchase history (graceful fallback)
-    const metadata = await readMetadata(user.id);
-    const processedOrders = (metadata.processed_orders as string[]) || [];
-    const isPremium = processedOrders.length > 0;
+    // B3 Fix: Use subscriptions table (refund-aware)
+    const isPremium = await checkPremiumStatus(sb.client, user.id);
 
     // Bug Bounty 3-2 FIX: Record ticket usage timestamp for /api/stories POST verification
     // Bug Bounty v1.42 Fix 1-1: Use JSONB partial update RPC to prevent metadata overwrite.
@@ -224,9 +222,10 @@ export async function POST(request: NextRequest) {
       if (rpcErr && rpcErr.code === "PGRST116") {
         // RPC not found — fallback to spread (backward compat, deploy 037_jsonb_partial_update.sql)
         console.warn("[Tickets/Use] update_profile_metadata_field RPC not found — using spread fallback");
+        const fallbackMeta = await readMetadata(user.id);
         await sb.client
           .from("profiles")
-          .update({ metadata: { ...metadata, last_ticket_used_at: new Date().toISOString() } })
+          .update({ metadata: { ...fallbackMeta, last_ticket_used_at: new Date().toISOString() } })
           .eq("id", user.id);
       } else if (rpcErr) {
         console.warn("[Tickets/Use] RPC update_profile_metadata_field failed:", rpcErr.code);

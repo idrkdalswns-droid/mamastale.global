@@ -1,0 +1,89 @@
+/**
+ * Teacher Shared Story — 공개 조회 API
+ *
+ * GET /api/teacher/shared/[token]
+ * 공유 토큰으로 동화 조회 (인증 불필요).
+ * Service role로 RLS 우회하여 조회.
+ *
+ * @module teacher-shared-story
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+export const runtime = "edge";
+
+import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { getClientIP } from "@/lib/utils/validation";
+
+const limiter = createInMemoryLimiter("teacher_shared");
+
+// UUID v4 format check
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ token: string }> }
+) {
+  const { token } = await params;
+
+  // 1. Validate token format
+  if (!UUID_RE.test(token)) {
+    return NextResponse.json({ error: "잘못된 링크입니다." }, { status: 400 });
+  }
+
+  // 2. Rate limiting (IP-based, public endpoint)
+  const ip = getClientIP(request);
+  if (!limiter.check(ip, 30, 60_000)) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
+  // 3. Service role client (bypass RLS for public access)
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+  }
+
+  const supabase = createServerClient(supabaseUrl, serviceKey, {
+    cookies: { getAll() { return []; }, setAll() {} },
+  });
+
+  // 4. Query by share_token
+  const { data: story, error } = await supabase
+    .from("teacher_stories")
+    .select("id, title, spreads, metadata, brief_context, cover_image, created_at, share_expires_at")
+    .eq("share_token", token)
+    .is("deleted_at", null)
+    .single();
+
+  if (error || !story) {
+    return NextResponse.json(
+      { error: "동화를 찾을 수 없거나 공유가 만료되었습니다." },
+      { status: 404 }
+    );
+  }
+
+  // 5. Check expiration
+  if (story.share_expires_at && new Date(story.share_expires_at) < new Date()) {
+    return NextResponse.json(
+      { error: "공유 링크가 만료되었습니다." },
+      { status: 410 }
+    );
+  }
+
+  // 6. Return story data (no sensitive info)
+  return NextResponse.json({
+    id: story.id,
+    title: story.title,
+    spreads: story.spreads,
+    coverImage: story.cover_image || null,
+    createdAt: story.created_at,
+    // Extract age info for display
+    ageGroup: (story.brief_context as Record<string, unknown>)?.targetAge || null,
+  });
+}

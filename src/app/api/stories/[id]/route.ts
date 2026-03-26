@@ -20,7 +20,7 @@ export async function GET(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
@@ -31,7 +31,7 @@ export async function GET(
   // T-2: Persistent rate limit (30/min per user, survives across Edge isolates)
   const getAllowed = await checkRateLimitPersistent(`story_get:${user.id}`, 30, 60);
   if (!getAllowed) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   const { data: story, error } = await sb.client
@@ -81,7 +81,7 @@ export async function PATCH(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
@@ -92,7 +92,7 @@ export async function PATCH(
   // T-2: Persistent rate limit (10 PATCH/min per user)
   const patchAllowed = await checkRateLimitPersistent(`story_patch:${user.id}`, 10, 60);
   if (!patchAllowed) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   try {
@@ -210,7 +210,7 @@ export async function DELETE(
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
@@ -220,7 +220,7 @@ export async function DELETE(
 
   // Rate limit: 5 deletes/min per user
   if (!deleteLimiter.check(`delete:${user.id}`, 5, 60_000)) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   // Soft delete: set status='deleted' and hide from community
