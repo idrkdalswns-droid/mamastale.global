@@ -175,20 +175,28 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 5.5. Ticket pre-check (before Claude call to avoid wasted AI cost)
+  // 5.5. Ticket check & atomic deduction BEFORE Claude call (3.1 FIX: race condition)
   const { count: wsCount } = await sb.client
     .from("worksheet_outputs")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
   const isFirstFree = (wsCount ?? 0) === 0;
 
+  // Use service_role client for ticket deduction (bypasses RLS)
+  const adminClient = createServiceRoleClient();
+  if (!adminClient) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "서버 설정 오류입니다." }, { status: 503 })
+    );
+  }
+
+  let ticketDeducted = false;
   if (!isFirstFree) {
-    const { data: ticketProfile } = await sb.client
-      .from("profiles")
-      .select("worksheet_tickets_remaining")
-      .eq("id", user.id)
-      .single();
-    if (!ticketProfile || ticketProfile.worksheet_tickets_remaining < 1) {
+    const { data: ticketOk } = await adminClient.rpc('consume_worksheet_ticket', {
+      p_user_id: user.id,
+      p_count: 1,
+    });
+    if (!ticketOk) {
       return sb.applyCookies(
         NextResponse.json(
           { error: "활동지 티켓이 부족합니다. 티켓을 구매해 주세요.", code: "INSUFFICIENT_TICKETS" },
@@ -196,6 +204,7 @@ export async function POST(request: NextRequest) {
         )
       );
     }
+    ticketDeducted = true;
   }
 
   // 6. Ensure character metadata (lazy migration)
@@ -233,6 +242,10 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (attempt === 1) {
         console.error("[worksheet] Claude call failed after 2 attempts:", error);
+        // 3.1 FIX: Refund ticket on Claude failure
+        if (ticketDeducted) {
+          try { await adminClient.rpc('refund_worksheet_ticket', { p_user_id: user.id, p_count: 1 }); } catch { /* refund best-effort */ }
+        }
         return sb.applyCookies(
           NextResponse.json(
             { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
@@ -276,6 +289,10 @@ export async function POST(request: NextRequest) {
     }
   } catch {
     console.error("[worksheet] Failed to parse Claude JSON:", claudeResponse!.slice(0, 200));
+    // 3.1 FIX: Refund ticket on parse failure
+    if (ticketDeducted) {
+      try { await adminClient.rpc('refund_worksheet_ticket', { p_user_id: user.id, p_count: 1 }); } catch { /* refund best-effort */ }
+    }
     return sb.applyCookies(
       NextResponse.json(
         { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
@@ -339,6 +356,10 @@ export async function POST(request: NextRequest) {
   const validated = outputSchema.safeParse(worksheetData);
   if (!validated.success) {
     console.error("[worksheet] Zod validation failed:", validated.error.issues.slice(0, 3));
+    // 3.1 FIX: Refund ticket on validation failure
+    if (ticketDeducted) {
+      try { await adminClient.rpc('refund_worksheet_ticket', { p_user_id: user.id, p_count: 1 }); } catch { /* refund best-effort */ }
+    }
     return sb.applyCookies(
       NextResponse.json(
         { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
@@ -359,30 +380,8 @@ export async function POST(request: NextRequest) {
   }
   html = renderer(validated.data, derivedParams);
 
-  // Use service_role client for ticket deduction & INSERT (bypasses RLS)
+  // 11. (Moved to step 5.5 — ticket already deducted before Claude call)
   const generationTimeMs = Date.now() - startTime;
-  const adminClient = createServiceRoleClient();
-  if (!adminClient) {
-    return sb.applyCookies(
-      NextResponse.json({ error: "서버 설정 오류입니다." }, { status: 503 })
-    );
-  }
-
-  // 11. Ticket deduction (skip for first free worksheet)
-  if (!isFirstFree) {
-    const { data: ticketOk } = await adminClient.rpc('consume_worksheet_ticket', {
-      p_user_id: user.id,
-      p_count: 1,
-    });
-    if (!ticketOk) {
-      return sb.applyCookies(
-        NextResponse.json(
-          { error: "활동지 티켓이 부족합니다. 티켓을 구매해 주세요.", code: "INSUFFICIENT_TICKETS" },
-          { status: 403 }
-        )
-      );
-    }
-  }
 
   // 12. Save to worksheet_outputs
   const { error: saveErr } = await adminClient.from("worksheet_outputs").insert({
