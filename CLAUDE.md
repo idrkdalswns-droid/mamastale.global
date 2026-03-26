@@ -771,6 +771,7 @@ AI가 잘못된 방향 → 즉시 git stash/revert → 새 접근
 | `/retro` | `.claude/commands/retro.md` | 주간 엔지니어링 회고 — 커밋 분석·트렌드·습관 (gstack 기반) |
 | `/ship` | `.claude/commands/ship.md` | 완전 자동 Ship (merge→test→review→version→changelog→commit→push) |
 | `/illust` | `.claude/commands/illust.md` | 이수지 스타일 미니멀 일러스트 프롬프트 생성 (나노바나나프로용) |
+| `/add-story` | `.claude/commands/add-story.md` | 신규 동화 등록 — DIY+쇼케이스 이미지 → 영문 리네임 → 코드 등록 → DB SQL 생성 |
 | `checklist.md` | `.claude/commands/checklist.md` | 코드 리뷰 체크리스트 (독립 참조 파일) |
 | `/pb-orchestrator` | `.claude/commands/pb-orchestrator.md` | 그림책 창작 오케스트레이터 — 7개 에이전트 파이프라인 총괄 지휘 |
 | `/pb-story-architect` | `.claude/commands/pb-story-architect.md` | 서사 구조 설계 — 6가지 구조 유형, 14스프레드 플롯 분해, 누리과정 매핑 |
