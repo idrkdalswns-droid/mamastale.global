@@ -131,13 +131,13 @@ export function validateOutputSafety(
 
   // ─── 2. Medical advice detection (only outside crisis context) ───
   // v1.22.2 Bug Bounty #10: 공백/특수문자 정규화 후 매칭 (우회 방지)
-  const normalizedContent = content.replace(/[\s\-…·.,:;!?()]/g, "");
+  const normalizedContent = content.replace(/[\s\-…·.,:;!?()\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "");
   const isCrisisContext = MEDICAL_ADVICE_CRISIS_EXCEPTIONS.some(
     (kw) => content.includes(kw)
   );
   if (!isCrisisContext) {
     for (const phrase of MEDICAL_ADVICE_KO) {
-      const normalizedPhrase = phrase.replace(/[\s\-…·.,:;!?()]/g, "");
+      const normalizedPhrase = phrase.replace(/[\s\-…·.,:;!?()\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "");
       if (normalizedContent.includes(normalizedPhrase)) {
         violations.push({
           type: "medical_advice",

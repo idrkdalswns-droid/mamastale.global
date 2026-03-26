@@ -111,23 +111,6 @@ export async function PATCH(
     }
     const updates: Record<string, unknown> = {};
 
-    // Freemium v2: Block publishing locked stories to community
-    // /api/community/[id] returns ALL scenes, so a locked story published publicly would bypass the lock
-    if (body.isPublic === true) {
-      const { data: storyCheck } = await sb.client
-        .from("stories")
-        .select("is_unlocked")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single();
-      if (storyCheck && storyCheck.is_unlocked === false) {
-        return sb.applyCookies(NextResponse.json(
-          { error: "잠금 해제 후 공유할 수 있습니다." },
-          { status: 403 }
-        ));
-      }
-    }
-
     // Only allow specific fields to be updated
     if (typeof body.isPublic === "boolean") updates.is_public = body.isPublic;
     if (typeof body.authorAlias === "string") {
@@ -184,13 +167,16 @@ export async function PATCH(
       return sb.applyCookies(NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 }));
     }
 
-    const { data: updated, error } = await sb.client
+    // Bug Bounty: CAS guard — publishing requires is_unlocked=true (atomic, no TOCTOU)
+    let query = sb.client
       .from("stories")
       .update(updates)
       .eq("id", id)
-      .eq("user_id", user.id)
-      .select("id")
-      .maybeSingle();
+      .eq("user_id", user.id);
+    if (body.isPublic === true) {
+      query = query.eq("is_unlocked", true);
+    }
+    const { data: updated, error } = await query.select("id").maybeSingle();
 
     if (error) {
       console.error("[Stories] Update error: code=", error.code);
@@ -198,6 +184,10 @@ export async function PATCH(
     }
 
     if (!updated) {
+      // If publishing a locked story, CAS guard returns 0 rows → 403
+      if (body.isPublic === true) {
+        return sb.applyCookies(NextResponse.json({ error: "잠금 해제 후 공유할 수 있습니다." }, { status: 403 }));
+      }
       return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
     }
 

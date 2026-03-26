@@ -86,7 +86,8 @@ export async function GET(request: NextRequest) {
 // POST: Claim a referral code (called during/after signup)
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
-  if (!referralLimiter.check(ip, 5, 60_000)) {
+  // Bug Bounty: 3/min (was 5) to slow enumeration attacks
+  if (!referralLimiter.check(ip, 3, 60_000)) {
     return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429 });
   }
 
@@ -109,6 +110,11 @@ export async function POST(request: NextRequest) {
   }
 
   const code = parsed.data.code;
+
+  // Bug Bounty: Reject invalid format before DB query (prevents blind enumeration)
+  if (!/^[A-Z0-9]{6}$/.test(code)) {
+    return NextResponse.json({ error: "잘못된 코드 형식입니다." }, { status: 400 });
+  }
 
   // Check if already referred
   const { data: myProfile } = await sb.client

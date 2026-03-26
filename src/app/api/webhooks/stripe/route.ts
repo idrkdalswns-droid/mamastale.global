@@ -4,6 +4,11 @@ import { incrementTickets } from "@/lib/supabase/tickets";
 // Bug Bounty Fix 2-4: Centralized pricing constants
 import { STORY_PRICES, ALLOWED_CURRENCIES } from "@/lib/constants/pricing";
 
+// Bug Bounty: Reverse lookup amount → ticket count for refunds
+const REFUND_TICKET_LOOKUP: Record<number, number> = Object.fromEntries(
+  Object.entries(STORY_PRICES).map(([amt, tickets]) => [Number(amt), tickets])
+);
+
 export const runtime = "edge";
 
 // ─── Timestamp tolerance: 5 minutes ───
@@ -282,6 +287,45 @@ export async function POST(request: NextRequest) {
           updated_at: delEventTime,
         })
         .eq("stripe_subscription_id", sub.id);
+      break;
+    }
+    case "charge.refunded": {
+      const charge = event.data.object;
+      console.info("[Stripe] Charge refunded:", charge.id);
+
+      // Stripe propagates checkout session metadata to charge via PaymentIntent
+      const userId = charge.metadata?.user_id;
+      if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+        console.error("[Stripe] Refund: missing or invalid user_id in charge metadata:", charge.id);
+        break; // 200 to stop retries, log for manual review
+      }
+
+      const refundedAmount = charge.amount_refunded;
+      const ticketCount = REFUND_TICKET_LOOKUP[refundedAmount];
+      if (!ticketCount) {
+        console.warn(`[Stripe] Refund: unknown amount ${refundedAmount}, charge: ${charge.id}. Manual review needed.`);
+        break;
+      }
+
+      // Atomic ticket decrement: min(ticketCount, currentRemaining) via GREATEST(0, ...)
+      try {
+        await supabase.rpc("decrement_tickets_refund", {
+          p_user_id: userId,
+          p_count: ticketCount,
+        });
+      } catch (err) {
+        console.error("[Stripe] Refund ticket decrement failed:", err);
+        return NextResponse.json({ error: "Refund processing failed" }, { status: 500 });
+      }
+
+      // Update subscription status to 'refunded'
+      await supabase
+        .from("subscriptions")
+        .update({ status: "refunded", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      console.info(`[Stripe] Refund processed: user=${userId.slice(0, 8)}…, tickets=-${ticketCount}`);
       break;
     }
   }

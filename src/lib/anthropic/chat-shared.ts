@@ -202,7 +202,13 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     let injection = crisisResult.promptInjection;
     if (injection.length > 800) {
       // Preserve closing tag when truncating
-      injection = injection.slice(0, 780) + "\n</crisis_context>";
+      let truncated = injection.slice(0, 780);
+      // Bug Bounty: Prevent incomplete XML entity (e.g., &amp → &am)
+      const lastAmp = truncated.lastIndexOf("&");
+      if (lastAmp !== -1 && !truncated.slice(lastAmp).includes(";")) {
+        truncated = truncated.slice(0, lastAmp);
+      }
+      injection = truncated + "\n</crisis_context>";
     }
     systemPrompt += injection;
   }
