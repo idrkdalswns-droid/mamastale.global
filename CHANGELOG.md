@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.46.0] - 2026-03-26
+
+### Changed
+- **폰트 자체 호스팅**: Google Fonts CDN → `next/font/google` 전환 (CDN 장애 방어)
+- **Analytics 전환**: GA4/AdSense 제거, Cloudflare Web Analytics 비콘 추가
+- **CSP 구조화**: 미들웨어 CSP를 객체 구조로 리팩토링, 외부 도메인 축소
+- **색상 대비 강화**: `--brown-pale` WCAG 4.5:1+ 충족으로 변경
+- **StoryViewer 애니메이션**: 페이지 전환 슬라이드 애니메이션 (popLayout + 150ms)
+
+### Added
+- **동화 삭제 기능**: soft delete + 확인 모달 + optimistic UI
+- **선생님 세션 DELETE**: "새로 시작하기" 시 기존 세션 만료 처리
+- **useTickets 훅**: 티켓 API 중복 호출 방지 (window 캐시, TTL 30초)
+- **"첫 동화는 무료" 배지**: 비로그인 사용자 히어로 섹션에 표시
+- **네비게이션 "내 서재"**: 로그인 사용자 네비게이션에 서재 링크 추가
+- **선생님 PDF/DOCX 설명**: 다운로드 버튼 하단 포맷 설명 추가
+- **접근성 aria-label**: 코드 입력, 뷰어 버튼 등 보강
+
+### Fixed
+- **채팅 이름 버그**: reset 시 온보딩 localStorage 4개 키 삭제로 이전 이름 잔류 해결
+- **0장면 스토리**: 라이브러리에서 빈 장면 스토리 필터링
+- **Rate limit 메시지**: 429 응답에 구체적 재시도 시간 포함
+
 ## [1.45.0] - 2026-03-25
 
 ### Added
