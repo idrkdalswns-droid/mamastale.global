@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.47.0] - 2026-03-26
+
+### Fixed (보안)
+- Stripe 웹훅: Supabase null 시 500 반환 (티켓 유실 방지)
+- Teacher stream: Phase 전환 off-by-one 수정 (`resolvePhaseTransition` 추출)
+- Teacher stream: onboarding 필드 프롬프트 인젝션 방어
+- 동화 저장: CAS 패턴으로 30분 윈도우 내 티켓 재사용 차단
+- 워크시트: 티켓 차감을 Claude 호출 전으로 이동 (레이스 컨디션 해결)
+- 추천 코드: `Math.random()` → `crypto.getRandomValues()` (CSPRNG)
+- verify-code: 404 → 400 (정보 유출 방지)
+
+### Changed (접근성)
+- Phase 1 색상 대비 4.6:1+ (`#7FBFB0` → `#4A9A8A`)
+- PhaseTransition: `role="status"` + `aria-live="polite"` 스크린리더 지원
+- FeedbackWizard: 12px 최소 텍스트, progressbar 역할, "이전 질문" 뒤로가기
+- TeacherChat 나가기: FocusTrapModal (Escape + focus trap + aria-modal)
+- WorksheetWizard: `role="dialog"` + `aria-modal` + Escape 키
+- Library 삭제: `confirm()` → 커스텀 모달 (FocusTrapModal)
+
+### Added
+- `resolvePhaseTransition()` 단위 테스트 23개 (총 340개)
+- 마이그레이션 039: teacher_messages turn_number + unique index
+- 마이그레이션 040: `delete_user_cascade` 원자적 계정 삭제 RPC
+- 계정 삭제: 원자적 RPC + 레거시 폴백
+
 ## [1.46.0] - 2026-03-26
 
 ### Changed
