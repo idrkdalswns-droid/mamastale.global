@@ -463,19 +463,19 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
         </div>
       )}
 
-      {/* Guest turn counter */}
+      {/* Guest turn counter — M-F7: shrink dots to prevent overlap on narrow screens */}
       {freeTrialMode && !storyDone && userMsgCount > 0 && userMsgCount < FREE_TURN_LIMIT && (
-        <div className="px-4 py-1.5 flex items-center justify-center gap-2">
-          <div className="flex gap-1">
+        <div className="px-4 py-1.5 flex items-center justify-center gap-2" role="status" aria-label={`무료 대화 ${userMsgCount}/${FREE_TURN_LIMIT}`}>
+          <div className="flex gap-[3px]">
             {Array.from({ length: FREE_TURN_LIMIT }, (_, i) => (
               <div
                 key={i}
-                className="w-2 h-2 rounded-full transition-colors"
+                className="w-1.5 h-1.5 rounded-full transition-colors"
                 style={{ background: i < userMsgCount ? "#E07A5F" : "rgba(196,168,130,0.25)" }}
               />
             ))}
           </div>
-          <span className="text-[10px] text-brown-pale font-light">
+          <span className="text-[10px] text-brown-pale font-light whitespace-nowrap">
             무료 대화 {userMsgCount}/{FREE_TURN_LIMIT}
           </span>
         </div>

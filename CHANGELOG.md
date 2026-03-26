@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.48.6] - 2026-03-27
+
+### Fixed (Sprint 3: MEDIUM 우선 수정 10건)
+- M-F6: ChatInput debounce 시각적 불일치 — 렌더링 시점 계산 isDebouncing 제거
+- M-F7: 턴 카운터 dots 겹침 — dot 크기 축소(w-1.5), gap 조정, whitespace-nowrap
+- M-F8: OnboardingSlides 닫기 버튼 — 부모에 relative 추가 + 터치 타겟 44px
+- M-B4: 커뮤니티 검색어 — 최소 2글자, 최대 100자 제한
+- M-B6: stories GET 페이지네이션 — limit/offset 쿼리 파라미터 + total count 응답
+- T-B14: 교사 모드 cover_image URL 검증 → isValidCoverImage 호스트 화이트리스트
+- T-F29: TeacherHome 삭제 모달 — alertdialog role + aria-modal + autoFocus
+- T-F24: TeacherPreview textarea — auto-resize on input
+- H14: retrySaveStory 지수 백오프 3회 재시도 (Sprint 2에서 구현)
+- H13: 가격 상수 모듈 pricing.ts 확장
+
 ## [1.48.5] - 2026-03-27
 
 ### Fixed (Sprint 2: HIGH 코드 품질 13건)

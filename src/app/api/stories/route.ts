@@ -47,19 +47,24 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
-  const { data: stories, error } = await sb.client
+  // M-B6: Support pagination via query params (backward compatible — defaults to limit=100)
+  const searchParams = new URL(request.url).searchParams;
+  const pageLimit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100", 10) || 100, 1), 100);
+  const pageOffset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
+
+  const { data: stories, count, error } = await sb.client
     .from("stories")
     // R7-F1: Include cover_image, topic, metadata (for source detection)
     // Freemium v2: include is_unlocked for lock badge
     // F5 Fix: Include scenes for accurate scene count in library grid
-    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
+    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at", { count: "exact" })
     .eq("user_id", user.id)
     .eq("status", "completed")
     // B3: 빈 장면 스토리 필터링 (0장면/null 제외)
     .not("scenes", "is", null)
     .not("scenes", "eq", "[]")
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(pageOffset, pageOffset + pageLimit - 1);
 
   if (error) {
     console.error("[Stories] List error: code=", error.code);
@@ -76,7 +81,8 @@ export async function GET(request: NextRequest) {
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
   }));
 
-  return sb.applyCookies(NextResponse.json({ stories: safeStories }));
+  // M-B6: Include total count for pagination support (backward compatible)
+  return sb.applyCookies(NextResponse.json({ stories: safeStories, total: count ?? safeStories.length }));
 }
 
 // POST: Save a new story (with ticket check & deduction)

@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Sprint 2-F: Enhanced search — match title, author_alias, or topic
-  const safeSearch = sanitizeSearchQuery(search);
-  if (safeSearch) {
+  // M-B4: Limit search length to prevent slow ilike queries on large datasets
+  const safeSearch = sanitizeSearchQuery(search?.slice(0, 100));
+  if (safeSearch && safeSearch.length >= 2) {
     const likeEscaped = safeSearch.replace(/%/g, '\\%').replace(/_/g, '\\_');
     query = query.or(`title.ilike.%${likeEscaped}%,author_alias.ilike.%${likeEscaped}%,topic.ilike.%${likeEscaped}%`);
   }

@@ -67,13 +67,13 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
     : "이야기 시작하기";
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="min-h-dvh min-h-screen bg-cream flex flex-col font-sans pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] relative">
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1">
         {/* 닫기 버튼 */}
         {onGoHome && (
           <button
             onClick={onGoHome}
-            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-brown-light/60 hover:text-brown active:scale-90 transition-all"
+            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center text-brown-light/60 hover:text-brown active:scale-90 transition-all min-h-[44px] min-w-[44px]"
             aria-label="온보딩 닫기"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

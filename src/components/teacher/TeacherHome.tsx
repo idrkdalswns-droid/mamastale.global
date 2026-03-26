@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { showRetryToast } from "@/components/ui/RetryableToast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getDefaultCover } from "@/lib/utils/default-cover";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import type {
   TeacherOnboarding,
   TeacherMessage,
@@ -408,37 +409,41 @@ export function TeacherHome({
         </div>
       </div>
 
-      {/* 삭제 확인 모달 */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-[430px] bg-paper rounded-t-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]
-                          animate-[slideUp_0.2s_ease-out]">
-            <p className="text-sm font-medium text-brown text-center mb-1">
-              이 동화를 삭제할까요?
-            </p>
-            <p className="text-xs text-brown-light text-center mb-5">
-              삭제된 동화는 복구할 수 없습니다.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 py-3 rounded-xl text-sm font-medium text-brown
-                           border border-brown-pale/30 active:scale-[0.97] transition-all"
-              >
-                취소
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDeleteId)}
-                className="flex-1 py-3 rounded-xl text-sm font-medium text-white
-                           active:scale-[0.97] transition-all"
-                style={{ background: "#E05252" }}
-              >
-                삭제
-              </button>
-            </div>
+      {/* 삭제 확인 모달 — FocusTrapModal (T-F29) */}
+      <FocusTrapModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        label="동화 삭제 확인"
+        role="alertdialog"
+        overlayClassName="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm"
+        className="w-full max-w-[430px]"
+      >
+        <div className="bg-paper rounded-t-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <p className="text-sm font-medium text-brown text-center mb-1">
+            이 동화를 삭제할까요?
+          </p>
+          <p className="text-xs text-brown-light text-center mb-5">
+            삭제된 동화는 복구할 수 없습니다.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmDeleteId(null)}
+              className="flex-1 py-3 rounded-xl text-sm font-medium text-brown
+                         border border-brown-pale/30 active:scale-[0.97] transition-all"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+              className="flex-1 py-3 rounded-xl text-sm font-medium text-white
+                         active:scale-[0.97] transition-all"
+              style={{ background: "#E05252" }}
+            >
+              삭제
+            </button>
           </div>
         </div>
-      )}
+      </FocusTrapModal>
     </div>
   );
 }

@@ -15,7 +15,7 @@ export const runtime = "edge";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
-import { isValidUUID, containsProfanity, sanitizeSceneText } from "@/lib/utils/validation";
+import { isValidUUID, containsProfanity, sanitizeSceneText, isValidCoverImage } from "@/lib/utils/validation";
 import { logEvent } from "@/lib/utils/llm-logger";
 
 const limiter = createInMemoryLimiter("teacher_story_detail");
@@ -168,15 +168,9 @@ export async function PATCH(
     updates.spreads = sanitizedSpreads;
   }
 
-  // cover_image (optional)
-  if (typeof body.cover_image === "string") {
-    // Static covers (/images/covers/...) or Supabase storage URLs
-    if (
-      body.cover_image.startsWith("/images/covers/") ||
-      body.cover_image.includes("supabase.co/storage")
-    ) {
-      updates.cover_image = body.cover_image;
-    }
+  // cover_image (optional) — T-B14: Use strict host whitelist validation
+  if (typeof body.cover_image === "string" && isValidCoverImage(body.cover_image)) {
+    updates.cover_image = body.cover_image;
   }
 
   if (Object.keys(updates).length === 0) {

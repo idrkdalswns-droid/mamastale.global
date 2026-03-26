@@ -11,13 +11,17 @@ interface FocusTrapModalProps {
   label?: string;
   /** Additional className for the content wrapper */
   className?: string;
+  /** Override dialog role (e.g. "alertdialog" for destructive confirmations) */
+  role?: "dialog" | "alertdialog";
+  /** Additional className for the overlay wrapper */
+  overlayClassName?: string;
 }
 
 /**
  * C5: Reusable modal with focus trap, Escape key, aria-modal.
  * Uses aria-hidden on #main-content instead of `inert` (카카오 인앱 브라우저 호환).
  */
-export function FocusTrapModal({ isOpen, onClose, children, label, className }: FocusTrapModalProps) {
+export function FocusTrapModal({ isOpen, onClose, children, label, className, role = "dialog", overlayClassName }: FocusTrapModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -97,10 +101,10 @@ export function FocusTrapModal({ isOpen, onClose, children, label, className }: 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center"
+          className={overlayClassName || "fixed inset-0 z-[200] flex items-center justify-center"}
           style={{ background: "rgba(0,0,0,0.4)" }}
           onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-          role="dialog"
+          role={role}
           aria-modal="true"
           aria-label={label}
           ref={modalRef}

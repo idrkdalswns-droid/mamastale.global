@@ -632,15 +632,33 @@ interface SpreadEditorProps {
 
 function SpreadEditor({ text, onSave, onCancel }: SpreadEditorProps) {
   const [editText, setEditText] = useState(text);
+  const taRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = useCallback(() => {
+    const el = taRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, []);
+
+  // Auto-resize on mount (initial content)
+  useEffect(() => {
+    autoResize();
+  }, [autoResize]);
 
   return (
     <div className="space-y-3">
       <textarea
+        ref={taRef}
         value={editText}
-        onChange={(e) => setEditText(e.target.value)}
-        rows={8}
+        onChange={(e) => {
+          setEditText(e.target.value);
+          autoResize();
+        }}
+        rows={3}
         className="w-full px-3 py-2 rounded-xl border border-brown-pale/30
-                   text-sm text-brown bg-white/60 resize-none
+                   text-sm text-brown bg-white/60 resize-none overflow-hidden
                    focus:outline-none focus:ring-2 focus:ring-coral/30"
         style={{ fontSize: "14px" }}
       />
