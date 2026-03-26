@@ -195,7 +195,7 @@ export default function AuthCallbackPage() {
         </div>
         <h2
           className="text-lg font-semibold mb-2"
-          style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
+          style={{ color: "rgb(var(--brown))", fontFamily: "var(--font-nanum), serif" }}
         >
           로그인 완료!
         </h2>
@@ -214,7 +214,7 @@ export default function AuthCallbackPage() {
         </div>
         <h2
           className="text-lg font-semibold mb-3"
-          style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
+          style={{ color: "rgb(var(--brown))", fontFamily: "var(--font-nanum), serif" }}
         >
           로그인 실패
         </h2>

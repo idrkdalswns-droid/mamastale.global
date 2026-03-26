@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
-import { sanitizeText, sanitizeSceneText, containsProfanity, isValidUUID, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
-import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { isValidUUID, sanitizeText, sanitizeSceneText, containsProfanity, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
+import { checkRateLimitPersistent, createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
+
+const deleteLimiter = createInMemoryLimiter(RATE_KEYS.STORY_DELETE);
 
 export async function GET(
   request: NextRequest,
@@ -203,4 +205,51 @@ export async function PATCH(
   } catch {
     return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
   }
+}
+
+// DELETE: Soft-delete a story
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  if (!isValidUUID(id)) {
+    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+  }
+
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  const user = await resolveUser(sb.client, request, "Stories");
+  if (!user) {
+    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+  }
+
+  // Rate limit: 5 deletes/min per user
+  if (!deleteLimiter.check(`delete:${user.id}`, 5, 60_000)) {
+    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 }));
+  }
+
+  // Soft delete: set status='deleted' and hide from community
+  const { data: deleted, error } = await sb.client
+    .from("stories")
+    .update({ status: "deleted", is_public: false })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Stories] Delete error: code=", error.code);
+    return sb.applyCookies(NextResponse.json({ error: "삭제에 실패했습니다." }, { status: 500 }));
+  }
+
+  if (!deleted) {
+    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+  }
+
+  return sb.applyCookies(NextResponse.json({ success: true }));
 }

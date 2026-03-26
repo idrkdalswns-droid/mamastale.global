@@ -359,7 +359,7 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
                   <span
                     className="text-[11px] font-medium break-keep text-center"
                     style={{
-                      fontFamily: "'Nanum Myeongjo', serif",
+                      fontFamily: "var(--font-nanum), serif",
                       color: data[currentStep.key] === opt.value ? "#5FA89A" : "rgb(var(--brown-light))",
                       fontWeight: data[currentStep.key] === opt.value ? 600 : 400,
                     }}

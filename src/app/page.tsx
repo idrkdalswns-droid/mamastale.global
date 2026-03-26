@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { useTickets, invalidateTicketCache } from "@/lib/hooks/useTickets";
 
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
@@ -270,39 +271,28 @@ export default function Home() {
     }
   }, [authLoading, user, actionStart, restoreFromStorage, restoreDraft, screen, retrySaveStory, getDraftInfo]);
 
-  // Fetch ticket balance for logged-in users
-  // Re-fetches when returning to landing (e.g. after completing a story)
-  // CTO-FIX(HIGH): Add Bearer token + credentials for WebView/mobile compatibility
+  // Fetch ticket balance for logged-in users (via useTickets singleton cache)
+  const { ticketData, loading: ticketsLoading, refetch: refetchTickets } = useTickets();
+
+  // Sync hook data → local state (null when no user or loading)
   useEffect(() => {
-    if (!user || screen !== "landing") {
-      if (!user) { setTicketsRemaining(null); setMyStoryCount(null); }
+    if (!user) {
+      setTicketsRemaining(null);
+      setMyStoryCount(null);
       return;
     }
-    (async () => {
-      try {
-        const headers: Record<string, string> = {};
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-        const res = await fetch("/api/tickets", { headers, credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data) {
-            setTicketsRemaining(data.remaining ?? 0);
-            // Freemium v2: myStoryCount for first-story detection
-            setMyStoryCount(data.storyCount ?? 0);
-          }
-        }
-      } catch {
-        // Fix 1-1: Keep null (unknown) instead of 0 — prevents showing "0 tickets" when user has tickets
-        setTicketsRemaining(null);
-        setMyStoryCount(null);
-        console.warn("[Tickets] 티켓 정보 로드 실패 — null 유지 (미로딩 상태)");
-      }
-    })();
-  }, [user, showPaymentSuccess, screen]); // re-fetch after payment or returning to landing
+    if (!ticketsLoading) {
+      setTicketsRemaining(ticketData.remaining);
+      setMyStoryCount(ticketData.storyCount);
+    }
+  }, [user, ticketData, ticketsLoading]);
+
+  // Re-fetch when returning to landing or after payment
+  useEffect(() => {
+    if (user && screen === "landing") {
+      refetchTickets();
+    }
+  }, [user, showPaymentSuccess, screen, refetchTickets]);
 
   // Handle deferred /?action=start after auth loaded
   // C-1+SV-3: Everyone starts with 3 free turns — no upfront ticket check
@@ -715,6 +705,12 @@ export default function Home() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
             </Link>
           </div>
+          {/* C2: 무료 퍼널 명확화 — fold 내 배지 */}
+          {!user && (
+            <p className="text-[13px] text-mint-deep font-medium tracking-wide mb-2">
+              첫 동화는 무료
+            </p>
+          )}
           {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
           <button
             ref={mainCtaRef}

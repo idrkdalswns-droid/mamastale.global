@@ -82,7 +82,7 @@ export default function PhaseTransition({
               className="text-lg font-semibold mb-1.5"
               style={{
                 color: T.brown,
-                fontFamily: "'Nanum Myeongjo', serif",
+                fontFamily: "var(--font-nanum), serif",
               }}
             >
               {msg.title}

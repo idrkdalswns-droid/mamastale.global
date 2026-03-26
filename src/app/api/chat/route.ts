@@ -166,8 +166,8 @@ export async function POST(request: NextRequest) {
   if (!withinLimit) {
     logEvent({ eventType: "rate_limit_hit", endpoint: "/api/chat", userId }).catch(() => {});
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { error: "요청이 너무 많습니다. 1분 후 다시 시도해 주세요." },
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 

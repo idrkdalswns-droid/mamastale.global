@@ -21,7 +21,7 @@ export default function Error({
           className="text-xl font-semibold mb-2"
           style={{
             color: "rgb(var(--brown))",
-            fontFamily: "'Nanum Myeongjo', serif",
+            fontFamily: "var(--font-nanum), serif",
           }}
         >
           잠시 쉬어가는 시간이에요

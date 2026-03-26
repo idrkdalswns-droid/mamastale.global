@@ -54,6 +54,9 @@ export async function GET(request: NextRequest) {
     .select("id, title, status, is_public, is_unlocked, cover_image, topic, metadata, created_at")
     .eq("user_id", user.id)
     .eq("status", "completed")
+    // B3: 빈 장면 스토리 필터링 (0장면/null 제외)
+    .not("scenes", "is", null)
+    .not("scenes", "eq", "[]")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -88,8 +91,8 @@ export async function POST(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`story_save:${user.id}`, 5, 60);
   if (!allowed) {
     return sb.applyCookies(NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 429 }
+      { error: "요청이 너무 많습니다. 1분 후 다시 시도해 주세요." },
+      { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
 

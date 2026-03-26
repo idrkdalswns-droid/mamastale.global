@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { createClient } from "@/lib/supabase/client";
+import { useTickets } from "@/lib/hooks/useTickets";
 import { getAnonymousId } from "@/lib/utils/anonymous-id";
 import { containsProfanity } from "@/lib/utils/validation";
 
@@ -18,7 +19,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
   const [shared, setShared] = useState(false);
   const [shareError, setShareError] = useState("");
   const [alias, setAlias] = useState("");
-  const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
+  const { tickets: ticketsRemaining } = useTickets();
   // L-7: Persist interest votes to localStorage
   const [interestSent, setInterestSent] = useState<Record<string, boolean>>(() => {
     try {
@@ -72,30 +73,7 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch ticket balance to show context-aware next-story CTA
-  // KR-J1: AbortController for cleanup on unmount
-  // R3-FIX(A1): Include Bearer token + credentials for mobile/WebView compatibility
-  useEffect(() => {
-    const controller = new AbortController();
-    (async () => {
-      try {
-        const headers = await getAuthHeaders();
-        delete headers["Content-Type"]; // GET request doesn't need Content-Type
-        const res = await fetch("/api/tickets", {
-          headers,
-          credentials: "include",
-          signal: controller.signal,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data) setTicketsRemaining(data.remaining ?? 0);
-        }
-      } catch (err: unknown) {
-        if ((err as Error)?.name !== "AbortError") { /* silent */ }
-      }
-    })();
-    return () => controller.abort();
-  }, [getAuthHeaders]);
+  // Ticket balance is now provided by useTickets hook (singleton cache)
 
   const handleShare = async () => {
     if (!completedScenes.length) return;

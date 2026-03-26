@@ -56,7 +56,7 @@ const MessageBubble = memo(function MessageBubble({
           fontWeight: isUser ? 400 : 300,
           fontFamily:
             message.phase === 4 && !isUser
-              ? "'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif"
+              ? "var(--font-nanum), var(--font-noto-serif), Georgia, serif"
               : undefined,
           boxShadow: isUser
             ? `0 3px 14px ${mp.accent}22`

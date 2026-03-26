@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   if (!ipWithinLimit) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "너무 많은 시도입니다. 잠시 후 다시 시도해주세요." },
+        { error: "너무 많은 시도입니다. 1분 후 다시 시도해주세요." },
         { status: 429 }
       )
     );

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Nanum_Myeongjo, Noto_Sans_KR, Noto_Serif_KR } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { ConsentGatedScripts } from "@/components/layout/ConsentGatedScripts";
@@ -11,6 +12,26 @@ import { PWAInstallBanner } from "@/components/ui/PWAInstallBanner";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import "./globals.css";
+
+// A1: Self-hosted fonts via next/font (빌드 시 다운로드, 런타임 CDN 의존 제거)
+const nanumMyeongjo = Nanum_Myeongjo({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-nanum",
+  display: "swap",
+});
+const notoSansKr = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-noto-sans",
+  display: "swap",
+});
+const notoSerifKr = Noto_Serif_KR({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-noto-serif",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://mamastale-global.pages.dev"),
@@ -74,7 +95,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={`${nanumMyeongjo.variable} ${notoSansKr.variable} ${notoSerifKr.variable}`}>
       <head>
         {/* Schema.org structured data */}
         <script
@@ -108,24 +129,10 @@ export default async function RootLayout({
             }),
           }}
         />
-        {/* Fix 1-15: Preconnect for performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* A1: Google Fonts preconnect 제거 — next/font가 빌드 시 셀프호스팅 */}
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
         )}
-        {/* H-2: Preload critical font CSS to avoid render-blocking */}
-        <link
-          rel="preload"
-          as="style"
-          href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap"
-        />
-        {/* Dark mode removed in v1.41.0 — will be re-added for global launch */}
-        {/* GR-4/GR-5: GA/AdSense moved to ConsentGatedScripts — loaded only after cookie consent */}
       </head>
       <body className="bg-cream antialiased">
         <MotionProvider>
@@ -148,13 +155,21 @@ export default async function RootLayout({
           containerStyle={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           toastOptions={{
             style: {
-              fontFamily: "'Noto Sans KR', sans-serif",
+              fontFamily: "var(--font-noto-sans), sans-serif",
               fontSize: "14px",
               borderRadius: "16px",
             },
           }}
         />
         </MotionProvider>
+        {/* A2: CF Web Analytics — 페이지뷰 전용, 쿠키 없음, GDPR 친화 */}
+        {process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN && (
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={`{"token":"${process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN}"}`}
+          />
+        )}
       </body>
     </html>
   );

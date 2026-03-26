@@ -61,26 +61,27 @@ export async function middleware(request: NextRequest) {
     "max-age=31536000; includeSubDomains; preload"
   );
   const isDev = process.env.NODE_ENV === "development";
-  response.headers.set(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      // TODO(론칭 후): 'unsafe-inline' → nonce 기반 CSP로 전환. 현재는 GA/Toss/Kakao 인라인 스크립트 호환 필요.
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.stripe.com https://*.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com`,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://t1.kakaocdn.net https://k.kakaocdn.net",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.tosspayments.com https://api.stripe.com https://www.google-analytics.com https://kapi.kakao.com https://accounts.google.com https://oauth2.googleapis.com",
-      "frame-src https://js.stripe.com https://*.tosspayments.com https://accounts.kakao.com https://accounts.google.com https://www.youtube.com",
-      "frame-ancestors 'none'",
-      "worker-src 'self'",
-      "manifest-src 'self'",
-      "base-uri 'self'",
-      "form-action 'self' https://accounts.kakao.com https://accounts.google.com https://*.tosspayments.com",
-      "object-src 'none'",
-      "upgrade-insecure-requests",
-    ].join("; ")
-  );
+
+  // CSP directives (객체 형태로 관리 — Phase A에서 개별 directive 수정 용이)
+  const cspDirectives: Record<string, string> = {
+    "default-src": "'self'",
+    "script-src": `'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com https://*.tosspayments.com https://t1.kakaocdn.net https://developers.kakao.com https://static.cloudflareinsights.com`,
+    "style-src": "'self' 'unsafe-inline'",
+    "font-src": "'self'",
+    "img-src": "'self' data: blob: https://*.supabase.co https://t1.kakaocdn.net https://k.kakaocdn.net",
+    "connect-src": "'self' https://*.supabase.co wss://*.supabase.co https://*.tosspayments.com https://api.stripe.com https://kapi.kakao.com https://accounts.google.com https://oauth2.googleapis.com https://cloudflareinsights.com",
+    "frame-src": "https://js.stripe.com https://*.tosspayments.com https://accounts.kakao.com https://accounts.google.com https://www.youtube.com",
+    "frame-ancestors": "'none'",
+    "worker-src": "'self'",
+    "manifest-src": "'self'",
+    "base-uri": "'self'",
+    "form-action": "'self' https://accounts.kakao.com https://accounts.google.com https://*.tosspayments.com",
+    "object-src": "'none'",
+  };
+  const cspString = Object.entries(cspDirectives)
+    .map(([key, value]) => `${key} ${value}`)
+    .join("; ") + "; upgrade-insecure-requests";
+  response.headers.set("Content-Security-Policy", cspString);
 
   // No-store for API responses with sensitive data
   if (pathname.startsWith("/api/")) {

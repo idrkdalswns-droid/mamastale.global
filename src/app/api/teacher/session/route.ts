@@ -3,7 +3,10 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
+
+const sessionDeleteLimiter = createInMemoryLimiter("teacher_session_delete", { maxEntries: 200 });
 
 /** Layer 1: API 경계 Zod 검증 — 인젝션 1차 방어선 */
 const onboardingSchema = z
@@ -198,6 +201,68 @@ export async function PATCH(request: NextRequest) {
         { error: "업데이트에 실패했습니다." },
         { status: 500 }
       )
+    );
+  }
+
+  return sb.applyCookies(
+    NextResponse.json({ success: true })
+  );
+}
+
+/**
+ * DELETE /api/teacher/session — 세션 종료 (soft delete: expires_at = NOW)
+ * B1: 프론트(TeacherCodeModal)에서 "새로 시작하기" 시 호출
+ */
+export async function DELETE(request: NextRequest) {
+  const sb = createApiSupabaseClient(request);
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured" }, { status: 503 });
+  }
+
+  const user = await resolveUser(sb.client, request);
+  if (!user) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+    );
+  }
+
+  // Rate limit: 5/min per user
+  if (!sessionDeleteLimiter.check(user.id, 5, 60_000)) {
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: "요청이 너무 많습니다. 1분 후 다시 시도해주세요." },
+        { status: 429 }
+      )
+    );
+  }
+
+  let body: { sessionId?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return sb.applyCookies(
+      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+    );
+  }
+
+  const sessionId = body.sessionId;
+  if (!sessionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "유효한 sessionId가 필요합니다." }, { status: 400 })
+    );
+  }
+
+  // 소유권 확인 + soft delete (expires_at = NOW)
+  const { error: updateError, count } = await sb.client
+    .from("teacher_sessions")
+    .update({ expires_at: new Date().toISOString() })
+    .eq("id", sessionId)
+    .eq("teacher_id", user.id);
+
+  if (updateError) {
+    console.error("[Teacher] Session delete failed:", updateError.message);
+    return sb.applyCookies(
+      NextResponse.json({ error: "세션 종료에 실패했습니다." }, { status: 500 })
     );
   }
 

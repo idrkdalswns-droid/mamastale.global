@@ -106,7 +106,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
           {/* Child name input */}
           <h2
             className="text-[20px] font-semibold mb-4 text-center leading-snug"
-            style={{ color: "rgb(var(--brown))", fontFamily: "'Nanum Myeongjo', serif" }}
+            style={{ color: "rgb(var(--brown))", fontFamily: "var(--font-nanum), serif" }}
           >
             아이 이름을 알려주세요
           </h2>
@@ -172,7 +172,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                 <span
                   className="text-[11px] tracking-wide"
                   style={{
-                    fontFamily: "'Nanum Myeongjo', serif",
+                    fontFamily: "var(--font-nanum), serif",
                     color: childAge === o.value ? "#5FA89A" : "rgb(var(--brown-light))",
                     fontWeight: childAge === o.value ? 600 : 400,
                   }}

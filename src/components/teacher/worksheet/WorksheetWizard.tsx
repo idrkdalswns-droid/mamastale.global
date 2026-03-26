@@ -7,7 +7,7 @@
  * @module teacher/worksheet/WorksheetWizard
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { getQuestionsForActivity } from "@/lib/worksheet/types";
@@ -22,6 +22,7 @@ import { ConfirmStep } from "./steps/ConfirmStep";
 import { ResultStep } from "./steps/ResultStep";
 import { DynamicProgressBar } from "./DynamicProgressBar";
 import { GeneratingOverlay } from "./GeneratingOverlay";
+import { useTickets } from "@/lib/hooks/useTickets";
 
 /** Map question id → step component */
 const QUESTION_STEP_MAP: Record<string, React.ReactNode> = {
@@ -88,7 +89,8 @@ export function WorksheetWizard() {
   } = useWorksheetStore();
 
   const [hydrated, setHydrated] = useState(false);
-  const [worksheetTickets, setWorksheetTickets] = useState<number | null>(null);
+  const { ticketData, refetch: refetchTickets } = useTickets();
+  const worksheetTickets = ticketData.worksheetTicketsRemaining;
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => setHydrated(true), []);
 
@@ -105,14 +107,8 @@ export function WorksheetWizard() {
     }
   }, [currentStep]);
 
-  // Fetch worksheet ticket count
-  const fetchTickets = useCallback(() => {
-    fetch("/api/tickets")
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setWorksheetTickets(d.worksheet_tickets_remaining ?? 0); })
-      .catch(() => {});
-  }, []);
-  useEffect(() => { if (isOpen) fetchTickets(); }, [isOpen, fetchTickets]);
+  // Re-fetch tickets when wizard opens
+  useEffect(() => { if (isOpen) refetchTickets(); }, [isOpen, refetchTickets]);
 
   // Build step list dynamically based on activity type
   const steps = useMemo(() => buildStepList(activityType), [activityType]);

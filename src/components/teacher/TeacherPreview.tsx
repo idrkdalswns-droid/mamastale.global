@@ -9,6 +9,7 @@ import type {
 } from "@/lib/types/teacher";
 import { createClient } from "@/lib/supabase/client";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
+import { useTickets } from "@/lib/hooks/useTickets";
 import { WorksheetHistory } from "@/components/teacher/worksheet/WorksheetHistory";
 
 interface TeacherPreviewProps {
@@ -38,6 +39,7 @@ export function TeacherPreview({
   );
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const { ticketData } = useTickets();
 
   useEffect(() => {
     setEditedSpreads(story.spreads || []);
@@ -279,19 +281,11 @@ export function TeacherPreview({
       {story.id && (
         <div className="px-4 pt-3">
           <button
-            onClick={async () => {
-              try {
-                const res = await fetch("/api/tickets");
-                if (res.ok) {
-                  const data = await res.json();
-                  const tickets = data.worksheet_tickets_remaining ?? data.free_stories_remaining ?? 0;
-                  if (tickets <= 0) {
-                    toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
-                    return;
-                  }
-                }
-              } catch {
-                // 티켓 확인 실패 시 일단 진행
+            onClick={() => {
+              const wsTickets = ticketData.worksheetTicketsRemaining;
+              if (wsTickets <= 0) {
+                toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
+                return;
               }
               useWorksheetStore.getState().open(story.id!, story.title || "동화");
             }}
@@ -369,6 +363,10 @@ export function TeacherPreview({
               )}
             </button>
           </div>
+          {/* C7: PDF/DOCX 형식 차이 안내 */}
+          <p className="text-[11px] text-brown-pale text-center mt-2">
+            PDF: 바로 인쇄 가능 · DOCX: 내용 편집 후 인쇄
+          </p>
           {spreads.length === 0 && (
             <p className="text-[10px] text-brown-pale text-center mt-1">
               동화를 먼저 완성해주세요

@@ -39,8 +39,75 @@ interface StoryGridProps {
   stories: StoryItem[];
 }
 
+// ─── Delete Confirm Modal ───
+function DeleteConfirmModal({
+  storyTitle,
+  isDeleting,
+  onConfirm,
+  onCancel,
+}: {
+  storyTitle: string;
+  isDeleting: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: "rgba(0,0,0,0.4)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-[320px] rounded-2xl p-5"
+        style={{
+          background: "rgb(var(--cream))",
+          boxShadow: "0 8px 32px rgba(90,62,43,0.15)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-serif text-[16px] font-semibold text-brown text-center mb-2">
+          이 동화를 삭제할까요?
+        </h3>
+        <p className="text-[13px] text-brown-light text-center mb-5 line-clamp-1">
+          {storyTitle || "나의 마음 동화"}
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="flex-1 py-3 rounded-full text-[14px] font-medium text-brown transition-all active:scale-[0.97]"
+            style={{
+              background: "rgba(196,149,106,0.12)",
+              minHeight: "44px",
+            }}
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 py-3 rounded-full text-[14px] font-medium text-white transition-all active:scale-[0.97] disabled:opacity-50"
+            style={{
+              background: "rgb(var(--coral))",
+              minHeight: "44px",
+            }}
+          >
+            {isDeleting ? "삭제 중..." : "삭제"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Grid Card ───
-const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
+const GridCard = memo(function GridCard({
+  story,
+  onDeleteRequest,
+}: {
+  story: StoryItem;
+  onDeleteRequest: (id: string) => void;
+}) {
   const [imgErr, setImgErr] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const cover = resolveCover(story.cover_image, story.id, story.topic);
@@ -132,9 +199,26 @@ const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
           </div>
         )}
 
+        {/* Delete button (bottom-right of cover) */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDeleteRequest(story.id);
+          }}
+          className="absolute bottom-2 right-2 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all active:scale-90"
+          style={{ width: "28px", height: "28px", minWidth: "44px", minHeight: "44px", padding: "8px" }}
+          aria-label="동화 삭제"
+        >
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="rgb(var(--coral))" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h14M8 6V4a1 1 0 011-1h2a1 1 0 011 1v2M5 6v11a2 2 0 002 2h6a2 2 0 002-2V6" />
+            <path d="M9 10v5M11 10v5" />
+          </svg>
+        </button>
+
         {/* Bottom gradient */}
         <div
-          className="absolute inset-x-0 bottom-0 h-10"
+          className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
           style={{
             background: "linear-gradient(to top, rgba(0,0,0,0.12) 0%, transparent 100%)",
           }}
@@ -172,6 +256,57 @@ const GridCard = memo(function GridCard({ story }: { story: StoryItem }) {
 
 // ─── Story Grid ───
 export default function StoryGrid({ stories }: StoryGridProps) {
+  const [localStories, setLocalStories] = useState(stories);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sync when parent stories prop changes
+  useEffect(() => {
+    setLocalStories(stories);
+  }, [stories]);
+
+  const handleDeleteRequest = useCallback((id: string) => {
+    setDeleteTarget(id);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+
+    // Optimistic removal
+    const prev = localStories;
+    setLocalStories((s) => s.filter((st) => st.id !== deleteTarget));
+    setDeleteTarget(null);
+
+    try {
+      const res = await fetch(`/api/stories/${deleteTarget}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "삭제에 실패했습니다.");
+      }
+
+      toast("동화가 삭제되었어요", { icon: "🗑️" });
+    } catch (err) {
+      // Rollback on failure
+      setLocalStories(prev);
+      toast.error(err instanceof Error ? err.message : "삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteTarget, localStories]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteTarget(null);
+  }, []);
+
+  const targetStory = deleteTarget
+    ? localStories.find((s) => s.id === deleteTarget) ?? stories.find((s) => s.id === deleteTarget)
+    : null;
+
   return (
     <div className="w-full px-4 pb-4">
       <div
@@ -179,8 +314,8 @@ export default function StoryGrid({ stories }: StoryGridProps) {
         className="grid gap-3"
         style={{ gridTemplateColumns: "repeat(2, 1fr)" }}
       >
-        {stories.map((story) => (
-          <GridCard key={story.id} story={story} />
+        {localStories.map((story) => (
+          <GridCard key={story.id} story={story} onDeleteRequest={handleDeleteRequest} />
         ))}
       </div>
 
@@ -193,6 +328,16 @@ export default function StoryGrid({ stories }: StoryGridProps) {
           + 새 동화 만들기
         </Link>
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && targetStory && (
+        <DeleteConfirmModal
+          storyTitle={targetStory.title}
+          isDeleting={isDeleting}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
     </div>
   );
 }

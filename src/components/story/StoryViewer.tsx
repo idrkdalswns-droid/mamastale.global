@@ -33,6 +33,13 @@ function isClosingText(text: string): boolean {
   return CLOSING_PATTERNS.some((p) => p.test(trimmed));
 }
 
+/** Slide animation variants for page transitions */
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+};
+
 /** Page background colors — paired scenes share the same tone */
 const pageBgClass: Record<number, string> = {
   0: "bg-[#EEF6F3]",
@@ -98,6 +105,8 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
       return saved >= 0 && saved < totalPages ? saved : 0;
     } catch { return 0; }
   });
+  // Slide animation direction: -1 = prev, +1 = next
+  const [direction, setDirection] = useState(0);
   const [copied, setCopied] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [showAliasModal, setShowAliasModal] = useState(false);
@@ -201,8 +210,8 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   }, [previewMode, isLast, totalPages, storyId]);
 
   // Swipe gestures
-  const goNext = useCallback(() => { setCurrentPage((p) => Math.min(totalPages - 1, p + 1)); hapticLight(); }, [totalPages]);
-  const goPrev = useCallback(() => { setCurrentPage((p) => Math.max(0, p - 1)); hapticLight(); }, []);
+  const goNext = useCallback(() => { setDirection(1); setCurrentPage((p) => Math.min(totalPages - 1, p + 1)); hapticLight(); }, [totalPages]);
+  const goPrev = useCallback(() => { setDirection(-1); setCurrentPage((p) => Math.max(0, p - 1)); hapticLight(); }, []);
   const swipeHandlers = useSwipe({ onSwipeLeft: goNext, onSwipeRight: goPrev });
 
   // Build full story text for copy/share
@@ -343,7 +352,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
               return (
                 <button
                   key={i}
-                  onClick={() => !isLockedPage && setCurrentPage(i)}
+                  onClick={() => { if (!isLockedPage) { setDirection(i > currentPage ? 1 : -1); setCurrentPage(i); } }}
                   className={`flex-1 min-h-[44px] flex items-center ${isLockedPage ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
                   aria-label={isLockedPage ? "잠금된 페이지" : `${i + 1}페이지로 이동`}
                   disabled={isLockedPage}
@@ -364,14 +373,16 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
       </div>
 
       {/* Page Content — 2 scenes, swipeable */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout" custom={direction}>
         <motion.div
           key={currentPage}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.15 }}
           {...swipeHandlers}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
           className={`flex-1 flex flex-col px-6 py-8 ${bgClass} max-w-3xl mx-auto w-full`}
         >
           {/* Story title — shown on every page */}

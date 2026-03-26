@@ -2,26 +2,21 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
+import { useTickets } from "@/lib/hooks/useTickets";
 import { ACTIVITY_META } from "@/lib/worksheet/types";
 
 export function ConfirmStep() {
   const store = useWorksheetStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ticketCount, setTicketCount] = useState<number | null>(null);
+  const { ticketData } = useTickets();
+  const ticketCount = ticketData.worksheetTicketsRemaining;
   const [isFirstFree, setIsFirstFree] = useState(false);
   const [lastTicketConfirmed, setLastTicketConfirmed] = useState(false);
 
   const activityMeta = ACTIVITY_META.find((m) => m.type === store.activityType);
 
-  // Fetch ticket count for inline display
+  // Check if first free worksheet (no prior worksheets across all stories)
   useEffect(() => {
-    fetch("/api/tickets")
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d) setTicketCount(d.worksheet_tickets_remaining ?? 0);
-      })
-      .catch(() => {});
-    // Check if first free worksheet (no prior worksheets across all stories)
     fetch(`/api/teacher/worksheet?story_id=${store.storyId}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {

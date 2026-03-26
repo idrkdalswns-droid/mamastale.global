@@ -15,6 +15,6 @@ export const T = {
   kakao: "#FEE500",
   kakaoBrown: "#3C1E1E",
   white: "#FFFFFF",
-  fontSerif: "'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif",
-  fontSans: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif",
+  fontSerif: "var(--font-nanum), var(--font-noto-serif), Georgia, serif",
+  fontSans: "var(--font-noto-sans), 'Apple SD Gothic Neo', sans-serif",
 } as const;

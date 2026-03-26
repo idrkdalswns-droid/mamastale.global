@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useTickets } from "@/lib/hooks/useTickets";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import toast from "react-hot-toast";
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [refCode, setRefCode] = useState("");
   const [claimingRef, setClaimingRef] = useState(false);
+  const { tickets: ticketCount, loading: ticketsLoading } = useTickets();
 
   useEffect(() => {
     const supabase = createClient();
@@ -32,17 +34,14 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
 
-      const ticketRes = await fetch("/api/tickets", { credentials: "include" });
-      const ticketData = ticketRes.ok ? await ticketRes.json() : null;
-
       setProfile({
         email: user.email || "",
         createdAt: user.created_at || "",
-        tickets: ticketData?.tickets ?? 0,
+        tickets: ticketCount,
       });
       setLoading(false);
     })();
-  }, [router]);
+  }, [router, ticketCount]);
 
   const handleExport = async () => {
     setExporting(true);

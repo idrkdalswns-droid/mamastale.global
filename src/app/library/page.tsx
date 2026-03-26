@@ -10,6 +10,7 @@ import TicketPrompt from "@/components/library/TicketPrompt";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
+import { useTickets } from "@/lib/hooks/useTickets";
 import type { Scene } from "@/lib/types/story";
 
 // R3-FIX: ErrorBoundary to catch rendering crashes gracefully
@@ -67,7 +68,7 @@ function LibraryContent() {
   const [stories, setStories] = useState<StoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [ticketsRemaining, setTicketsRemaining] = useState<number | null>(null);
+  const { tickets: ticketsRemaining } = useTickets();
   const { getDraftInfo, clearStorage } = useChatStore();
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number } | null>(null);
 
@@ -96,31 +97,14 @@ function LibraryContent() {
     try {
       const headers = await getAuthHeaders();
 
-      // Promise.allSettled: stories 실패 → 에러, tickets 실패 → graceful degradation
-      const [storiesResult, ticketsResult] = await Promise.allSettled([
-        fetch("/api/stories", { headers, credentials: "include" }),
-        fetch("/api/tickets", { headers, credentials: "include" }),
-      ]);
-
-      // Handle stories
-      if (storiesResult.status === "fulfilled") {
-        const res = storiesResult.value;
-        if (!res.ok) {
-          if (res.status === 401) { router.push("/login?redirect=/library"); return; }
-          throw new Error("Failed to fetch");
-        }
-        const data = await res.json();
-        setStories(data.stories || []);
-      } else {
+      // Tickets are now handled by useTickets hook (singleton cache)
+      const res = await fetch("/api/stories", { headers, credentials: "include" });
+      if (!res.ok) {
+        if (res.status === 401) { router.push("/login?redirect=/library"); return; }
         throw new Error("Failed to fetch");
       }
-
-      // Handle tickets (graceful degradation)
-      if (ticketsResult.status === "fulfilled" && ticketsResult.value.ok) {
-        const ticketData = await ticketsResult.value.json();
-        setTicketsRemaining(ticketData.remaining ?? null);
-      }
-      // tickets 실패 시 → null 유지 (TicketPrompt 숨김)
+      const data = await res.json();
+      setStories(data.stories || []);
 
     } catch (err) {
       if ((err as Error).message === "AUTH") {

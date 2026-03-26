@@ -822,10 +822,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  // ─── Clear everything (both auth + draft) — used by explicit "삭제" button ───
+  // ─── Clear everything (both auth + draft + onboarding) — used by explicit "삭제" button ───
   clearStorage: () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    // B2: 온보딩 키 정리 — 새 채팅 시 이전 아이 이름/연령 잔류 방지
+    try { localStorage.removeItem("mamastale_child_name"); } catch {}
+    try { localStorage.removeItem("mamastale_child_age"); } catch {}
+    try { localStorage.removeItem("mamastale_parent_role"); } catch {}
+    try { localStorage.removeItem("mamastale_onboarding_done"); } catch {}
   },
 
   // ─── Clear only the persistent draft ───
@@ -886,9 +891,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  // ─── Reset: clears in-memory state + auth save, but NEVER touches DRAFT_KEY ───
+  // ─── Reset: clears in-memory state + auth save + onboarding, but NEVER touches DRAFT_KEY ───
   reset: () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
+    // B2: 온보딩 키 정리 — 새 채팅 시 이전 아이 이름/연령 잔류 방지
+    try { localStorage.removeItem("mamastale_child_name"); } catch {}
+    try { localStorage.removeItem("mamastale_child_age"); } catch {}
+    try { localStorage.removeItem("mamastale_parent_role"); } catch {}
+    try { localStorage.removeItem("mamastale_onboarding_done"); } catch {}
     // NOTE: DRAFT_KEY is intentionally preserved — drafts survive reset
     set({
       sessionId: "",

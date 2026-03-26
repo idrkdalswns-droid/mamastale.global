@@ -1,6 +1,10 @@
 /**
- * GA4 이벤트 트래킹 유틸리티
- * gtag가 로드되지 않은 경우 (쿠키 미동의 등) 조용히 무시
+ * 이벤트 트래킹 유틸리티
+ *
+ * A2: GA4 제거됨. 페이지뷰는 CF Web Analytics, 결제/전환 이벤트는
+ * 서버 event_logs 테이블(logEvent)로 전환 완료.
+ * 아래 함수들은 window.gtag가 없으므로 graceful no-op으로 동작.
+ * 클라이언트 커스텀 이벤트가 필요하면 /api/events/track 엔드포인트 추가 검토.
  */
 
 declare global {

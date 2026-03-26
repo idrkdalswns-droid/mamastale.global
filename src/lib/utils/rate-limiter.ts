@@ -191,4 +191,5 @@ export const RATE_KEYS = {
   PUSH_SEND: "push:send",
   TEACHER_PDF: "teacher:pdf",
   TEACHER_WORKSHEET: "teacher:worksheet",
+  STORY_DELETE: "story:delete",
 } as const;

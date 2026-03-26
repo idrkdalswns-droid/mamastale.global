@@ -13,7 +13,7 @@
   }
 }
 
-/* Fonts loaded via <link> in layout.tsx for non-blocking preconnect */
+/* A1: Fonts loaded via next/font/google (빌드 시 다운로드, 셀프호스팅) */
 
 @layer base {
   * {
@@ -35,7 +35,7 @@
     --brown: 90 62 43;
     --brown-light: 139 111 85;
     --brown-mid: 160 128 96;
-    --brown-pale: 196 168 130;
+    --brown-pale: 160 132 95;
     --kakao: 254 229 0;
     --kakao-brown: 60 30 30;
     --surface: 255 255 255;
@@ -61,7 +61,7 @@
     background: rgb(var(--cream));
     overscroll-behavior-x: none;
     overflow-x: clip;
-    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    font-family: var(--font-noto-sans), 'Apple SD Gothic Neo', sans-serif;
   }
 
   /* 채팅/온보딩 등 pull-to-refresh 차단이 필요한 화면 */
