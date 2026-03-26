@@ -273,58 +273,61 @@ export default function TeacherPage() {
     }
 
     setIsCreatingNew(true);
-    const currentCode = store.teacherCode;
+    // H6-FIX: try/finally ensures isCreatingNew resets even on unexpected errors
+    try {
+      const currentCode = store.teacherCode;
 
-    // 1. 기존 세션 강제 만료
-    if (store.sessionId) {
-      await fetch("/api/teacher/session", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: store.sessionId,
-          currentPhase: "DONE",
-          expiresAt: new Date().toISOString(),
-        }),
-      }).catch(() => {});
-    }
-
-    // 2. store 초기화
-    store.reset();
-
-    // 3. 동일 코드로 새 세션 생성
-    if (currentCode) {
-      try {
-        const res = await fetch("/api/teacher/verify-code", {
-          method: "POST",
+      // 1. 기존 세션 강제 만료
+      if (store.sessionId) {
+        await fetch("/api/teacher/session", {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: currentCode }),
-        });
+          body: JSON.stringify({
+            sessionId: store.sessionId,
+            currentPhase: "DONE",
+            expiresAt: new Date().toISOString(),
+          }),
+        }).catch(() => {});
+      }
 
-        if (res.ok) {
-          const data = await res.json();
-          store.setSession({
-            sessionId: data.sessionId,
-            expiresAt: data.expiresAt,
-            kindergartenName: data.kindergartenName,
-            currentPhase: (data.currentPhase as "A" | "B" | "C" | "D" | "E") || "A",
-            turnCount: data.turnCount || 0,
-            teacherCode: currentCode,
+      // 2. store 초기화
+      store.reset();
+
+      // 3. 동일 코드로 새 세션 생성
+      if (currentCode) {
+        try {
+          const res = await fetch("/api/teacher/verify-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: currentCode }),
           });
-          store.setScreenState("ONBOARDING");
-        } else {
-          toast.error("오늘 동화 만들기 횟수를 초과했어요.");
+
+          if (res.ok) {
+            const data = await res.json();
+            store.setSession({
+              sessionId: data.sessionId,
+              expiresAt: data.expiresAt,
+              kindergartenName: data.kindergartenName,
+              currentPhase: (data.currentPhase as "A" | "B" | "C" | "D" | "E") || "A",
+              turnCount: data.turnCount || 0,
+              teacherCode: currentCode,
+            });
+            store.setScreenState("ONBOARDING");
+          } else {
+            toast.error("오늘 동화 만들기 횟수를 초과했어요.");
+            store.setScreenState("HOME");
+          }
+        } catch {
+          toast.error("네트워크 오류. 다시 시도해주세요.");
           store.setScreenState("HOME");
         }
-      } catch {
-        toast.error("네트워크 오류. 다시 시도해주세요.");
-        store.setScreenState("HOME");
+      } else {
+        // teacherCode 없으면 코드 입력부터 다시
+        store.setScreenState("CODE_ENTRY");
       }
-    } else {
-      // teacherCode 없으면 코드 입력부터 다시
-      store.setScreenState("CODE_ENTRY");
+    } finally {
+      setIsCreatingNew(false);
     }
-
-    setIsCreatingNew(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store.sessionId, store.teacherCode]);
 

@@ -314,12 +314,15 @@ export default function Home() {
   }, [screen]);
 
   // Social proof: fetch total story count for landing
+  // H9-FIX: AbortController for cleanup on unmount/screen change
   useEffect(() => {
     if (screen !== "landing") return;
-    fetch("/api/community?limit=0")
+    const controller = new AbortController();
+    fetch("/api/community?limit=0", { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.total != null) setCommunityCount(d.total); })
       .catch(() => {});
+    return () => controller.abort();
   }, [screen]);
 
   // C-1+SV-3: Auto-ticket effect REMOVED — ticket deduction now happens inline

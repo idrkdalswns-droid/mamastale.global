@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.48.4] - 2026-03-27
+
+### Fixed (Sprint 1: HIGH 보안+안정성 9건)
+- H2: briefContext 프롬프트 인젝션 방어 — Zod strict 스키마 + sanitizeUserInput 적용 (teacher-prompts.ts Single Source of Truth)
+- H1: DELETE rate limiter를 인메모리 → persistent로 전환 (Edge 멀티 인스턴스 우회 방지)
+- H3: 선생님 모드 Opus 타임아웃 25s → 28s (504 에러 감소)
+- H10: Schema.org aggregateRating 허위 데이터 제거 (구글 패널티 방지)
+- H18: stories POST 중복 비속어 체크 제거
+- H5: TeacherPreview setState 콜백 내 side-effect → 외부로 분리 (useRef stale closure 방어)
+- H6: handleNewStory race condition — setIsCreatingNew을 try/finally로 감싸기
+- H9: communityCount fetch에 AbortController + cleanup 추가
+- W3: useTickets 게스트 사용자 401 에러 방지 — auth.getSession() 사전 체크
+
 ## [1.48.3] - 2026-03-26
 
 ### Fixed

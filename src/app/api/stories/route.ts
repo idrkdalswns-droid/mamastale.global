@@ -199,10 +199,7 @@ export async function POST(request: NextRequest) {
     // R2-FIX(A1): Scene titles also use sanitizeSceneText (not sanitizeText) to avoid
     // HTML entity double-encoding. React JSX auto-escapes on render, so entity-encoding
     // at DB save time causes "Tom &amp; Jerry" to display as "Tom &amp;amp; Jerry".
-    // 비속어 필터 (제목 + 장면 텍스트)
-    if (title && containsProfanity(title)) {
-      return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함되어 있습니다." }, { status: 400 }));
-    }
+    // H18-FIX: Removed duplicate title profanity check (already done at line 182)
     for (const s of scenes as Array<{ sceneNumber: number; title: string; text: string }>) {
       if (containsProfanity(s.title) || containsProfanity(s.text)) {
         return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함되어 있습니다." }, { status: 400 }));

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, sanitizeSceneText, containsProfanity, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
-import { checkRateLimitPersistent, createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 
 export const runtime = "edge";
 
-const deleteLimiter = createInMemoryLimiter(RATE_KEYS.STORY_DELETE);
+
 
 export async function GET(
   request: NextRequest,
@@ -218,8 +218,9 @@ export async function DELETE(
     return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
-  // Rate limit: 5 deletes/min per user
-  if (!deleteLimiter.check(`delete:${user.id}`, 5, 60_000)) {
+  // H1-FIX: Rate limit with persistent limiter (data destruction = persistent, not in-memory)
+  const deleteAllowed = await checkRateLimitPersistent(`story_delete:${user.id}`, 5, 60);
+  if (!deleteAllowed) {
     return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 

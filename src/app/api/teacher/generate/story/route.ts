@@ -17,8 +17,10 @@ export const runtime = "edge";
 import { getAnthropicClient } from "@/lib/anthropic/client";
 import {
   getTeacherGenerationPrompt,
+  briefContextSchema,
   type TeacherBriefContext,
 } from "@/lib/anthropic/teacher-prompts";
+import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
@@ -31,9 +33,10 @@ import { z } from "zod";
 
 const limiter = createInMemoryLimiter(RATE_KEYS.TEACHER_GENERATE_STORY);
 
+// H2-FIX: Strict Zod schema for briefContext (prompt injection defense)
 const requestSchema = z.object({
   sessionId: z.string().uuid(),
-  briefContext: z.record(z.unknown()),
+  briefContext: briefContextSchema,
   onboarding: z.record(z.unknown()).optional().default({}),
 });
 
@@ -100,8 +103,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
   }
 
-  const { sessionId, briefContext: rawBrief, onboarding } = body;
-  const briefContext = rawBrief as unknown as TeacherBriefContext;
+  const { sessionId, briefContext, onboarding } = body;
+
+  // H2-FIX: Sanitize string fields against prompt injection
+  // Uses sanitizeUserInput (teacher-sanitize.ts) which strips control tags,
+  // HTML entities, XML tags, and newlines
+  const san = (v: string | null | undefined) => v ? sanitizeUserInput(v, 500) : v ?? null;
+  briefContext.topic = san(briefContext.topic);
+  briefContext.coreMessage = san(briefContext.coreMessage);
+  briefContext.narrativeStructure = san(briefContext.narrativeStructure);
+  briefContext.setting = san(briefContext.setting);
+  briefContext.mood = san(briefContext.mood);
+  briefContext.context = san(briefContext.context);
+  briefContext.situation = san(briefContext.situation);
+  briefContext.endingType = san(briefContext.endingType);
+  briefContext.activityConnection = san(briefContext.activityConnection);
+  if (briefContext.characterDNA) {
+    briefContext.characterDNA.name = san(briefContext.characterDNA.name);
+    briefContext.characterDNA.type = san(briefContext.characterDNA.type);
+    briefContext.characterDNA.speechPattern = san(briefContext.characterDNA.speechPattern);
+  }
 
   // Session validation (lightweight)
   const { data: session, error: sessionError } = await sb.client
@@ -154,7 +175,7 @@ export async function POST(request: NextRequest) {
   const generationPrompt = getTeacherGenerationPrompt(briefContext, onboarding);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000); // 25s (under 30s Edge limit)
+  const timeout = setTimeout(() => controller.abort(), 28_000); // H3-FIX: 28s (Opus needs 20-25s, was timing out at 25s)
 
   try {
     let generationResult;

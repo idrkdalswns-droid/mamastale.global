@@ -120,13 +120,6 @@ export default async function RootLayout({
                 "availability": "https://schema.org/InStock",
                 "url": "https://mamastale-global.pages.dev/pricing"
               },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "reviewCount": "50",
-                "bestRating": "5",
-                "worstRating": "1"
-              }
             }),
           }}
         />

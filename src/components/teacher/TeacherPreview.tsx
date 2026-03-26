@@ -69,42 +69,49 @@ export function TeacherPreview({
   const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveStatus, setSaveStatus] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
 
+  // H5-FIX: useRef to track latest spreads for side-effect (avoids stale closure)
+  const editedSpreadsRef = React.useRef(editedSpreads);
+  editedSpreadsRef.current = editedSpreads;
+
   const handleSaveEdit = useCallback((index: number, newText: string) => {
+    // H5-FIX: Pure setState updater — no side-effects inside
     setEditedSpreads((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], text: newText };
-
-      // 디바운스 1초 후 PATCH API로 DB 저장
-      if (story.id && saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      if (story.id) {
-        saveTimeoutRef.current = setTimeout(async () => {
-          setSaveStatus("saving");
-          try {
-            const res = await fetch(`/api/teacher/stories/${story.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ spreads: updated }),
-            });
-            if (res.ok) {
-              setSaveStatus("saved");
-              // R2 FIX: Track status reset timer for cleanup
-              statusTimerRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
-            } else {
-              setSaveStatus("error");
-              toast.error("저장에 실패했습니다.");
-            }
-          } catch {
-            setSaveStatus("error");
-            toast.error("저장에 실패했습니다.");
-          }
-        }, 1000);
-      }
-
       return updated;
     });
     setEditingSpread(null);
+
+    // H5-FIX: Side-effect (debounced DB save) moved OUTSIDE setState
+    if (story.id && saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    if (story.id) {
+      saveTimeoutRef.current = setTimeout(async () => {
+        // Use ref for latest spreads (stale closure defense)
+        const currentSpreads = [...editedSpreadsRef.current];
+        currentSpreads[index] = { ...currentSpreads[index], text: newText };
+
+        setSaveStatus("saving");
+        try {
+          const res = await fetch(`/api/teacher/stories/${story.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ spreads: currentSpreads }),
+          });
+          if (res.ok) {
+            setSaveStatus("saved");
+            statusTimerRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
+          } else {
+            setSaveStatus("error");
+            toast.error("저장에 실패했습니다.");
+          }
+        } catch {
+          setSaveStatus("error");
+          toast.error("저장에 실패했습니다.");
+        }
+      }, 1000);
+    }
   }, [story.id]);
 
   const handleCancelEdit = useCallback(() => {

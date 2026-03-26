@@ -15,6 +15,7 @@ import type { TeacherOnboarding } from "@/lib/types/teacher";
 import { formatGuardrailsForPrompt, getAgeGuardrails, NARRATIVE_STRUCTURE_MATRIX, VOCABULARY_LEVELS } from "./teacher-guardrails";
 import { formatNuriForPrompt, TOPIC_TO_NURI } from "./nuri-curriculum";
 import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
+import { z } from "zod";
 
 // ─── Phase 전환 로직 ───
 
@@ -345,33 +346,36 @@ export function getExtractionPrompt(): string {
 Phase A의 감정 정보도 coreMessage, mood, situation 추출에 활용하세요.`;
 }
 
-/** TeacherBriefContext 타입 */
-export interface TeacherBriefContext {
-  targetAge: string;
-  topic: string | null;
-  coreMessage: string | null;
-  narrativeStructure: string | null;
-  characterDNA: {
-    name: string | null;
-    type: string | null;
-    personality: string[];
-    appearance: string[];
-    speechPattern: string | null;
-    arc: { start: string; end: string } | null;
-  } | null;
-  supportingCharacters: Array<{
-    name: string;
-    role: string;
-    brief: string;
-  }>;
-  setting: string | null;
-  mood: string | null;
-  avoidElements: string[];
-  endingType: string | null;
-  activityConnection: string | null;
-  context: string | null;
-  situation: string | null;
-}
+/** H2-FIX: TeacherBriefContext Zod 스키마 (Single Source of Truth)
+ *  - `.optional().default()` 패턴으로 프론트 전송 형태 불일치 방어
+ *  - route.ts에서 `z.infer`로 타입 생성 → 인터페이스 이중 관리 방지
+ */
+export const briefContextSchema = z.object({
+  targetAge: z.string().default("toddler"),
+  topic: z.string().nullable().optional().default(null),
+  coreMessage: z.string().nullable().optional().default(null),
+  narrativeStructure: z.string().nullable().optional().default(null),
+  characterDNA: z.object({
+    name: z.string().nullable().optional().default(null),
+    type: z.string().nullable().optional().default(null),
+    personality: z.array(z.string()).optional().default([]),
+    appearance: z.array(z.string()).optional().default([]),
+    speechPattern: z.string().nullable().optional().default(null),
+    arc: z.object({ start: z.string(), end: z.string() }).nullable().optional().default(null),
+  }).nullable().optional().default(null),
+  supportingCharacters: z.array(z.object({
+    name: z.string(), role: z.string(), brief: z.string(),
+  })).optional().default([]),
+  setting: z.string().nullable().optional().default(null),
+  mood: z.string().nullable().optional().default(null),
+  avoidElements: z.array(z.string()).optional().default([]),
+  endingType: z.string().nullable().optional().default(null),
+  activityConnection: z.string().nullable().optional().default(null),
+  context: z.string().nullable().optional().default(null),
+  situation: z.string().nullable().optional().default(null),
+});
+
+export type TeacherBriefContext = z.infer<typeof briefContextSchema>;
 
 /** Phase E: 14스프레드 생성 프롬프트 (Sonnet 4) */
 export function getTeacherGenerationPrompt(

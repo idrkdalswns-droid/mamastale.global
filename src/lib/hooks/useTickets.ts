@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * B5: 티켓 API 중복 호출 방지 훅
@@ -63,6 +64,15 @@ async function fetchTicketsOnce(): Promise<TicketData> {
 
   const promise = (async () => {
     try {
+      // W3-FIX: Skip fetch for unauthenticated users (prevents 401 console error)
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          cache.fetchedAt = Date.now(); // Cache briefly to avoid re-checking
+          return { ...EMPTY_DATA };
+        }
+      }
       const res = await fetch("/api/tickets", { credentials: "include" });
       if (!res.ok) return cache.data; // 실패 시 이전 값 유지
       const raw = await res.json();
