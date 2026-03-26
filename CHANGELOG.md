@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.48.2] - 2026-03-26
+
+### Fixed
+- 동화 삭제 500 에러 수정: stories 테이블 status CHECK constraint에 'deleted' 추가 (DB 마이그레이션 044)
+
 ## [1.48.1] - 2026-03-26
 
 ### Fixed
