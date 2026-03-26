@@ -122,8 +122,17 @@ export function WorksheetWizard() {
   const showProgress = currentStep < resultStepIndex;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
-      <div className="bg-cream w-full max-w-[430px] max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col relative">
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center"
+      onKeyDown={(e) => { if (e.key === "Escape") close(); }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI 맞춤 활동지"
+        className="bg-cream w-full max-w-[430px] max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col relative"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-brown-pale/20">
           {currentStep > 0 && currentStep < resultStepIndex ? (

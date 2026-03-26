@@ -135,10 +135,17 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
       <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
       {/* Progress */}
       <div className="pt-5 px-6 text-center">
-        <div className="text-[10px] text-brown-mid tracking-[3px] font-medium mb-3">
+        <div className="text-[12px] text-brown-mid tracking-[3px] font-medium mb-3">
           피드백 · {step + 1}/{questions.length}
         </div>
-        <div className="flex gap-1 justify-center">
+        <div
+          className="flex gap-1 justify-center"
+          role="progressbar"
+          aria-valuenow={step + 1}
+          aria-valuemin={1}
+          aria-valuemax={questions.length}
+          aria-label={`피드백 진행 ${step + 1}/${questions.length}`}
+        >
           {questions.map((_, i) => (
             <div
               key={i}
@@ -227,7 +234,21 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
         </div>
       </div>
 
-      <div className="px-7 pb-7 text-center">
+      <div className="px-7 pb-7 text-center flex flex-col items-center gap-1">
+        {step > 0 && (
+          <button
+            onClick={() => {
+              setShow(false);
+              setTimeout(() => {
+                setStep((s) => Math.max(0, s - 1));
+                setShow(true);
+              }, 250);
+            }}
+            className="bg-transparent border-none text-[13px] text-brown-light cursor-pointer font-sans py-2.5 px-4 min-h-[44px]"
+          >
+            ← 이전 질문
+          </button>
+        )}
         <button
           onClick={() => {
             // KR-J2: Submit any partial ratings before skipping

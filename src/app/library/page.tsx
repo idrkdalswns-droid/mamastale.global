@@ -12,6 +12,7 @@ import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
 import type { Scene } from "@/lib/types/story";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 
 // R3-FIX: ErrorBoundary to catch rendering crashes gracefully
 class LibraryErrorBoundary extends Component<
@@ -71,6 +72,7 @@ function LibraryContent() {
   const { tickets: ticketsRemaining } = useTickets();
   const { getDraftInfo, clearStorage } = useChatStore();
   const [draftInfo, setDraftInfo] = useState<{ phase: number; messageCount: number; savedAt: number } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -185,11 +187,7 @@ function LibraryContent() {
                 이어서 대화하기
               </Link>
               <button
-                onClick={() => {
-                  if (confirm("진행 중인 대화를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")) {
-                    clearStorage(); setDraftInfo(null);
-                  }
-                }}
+                onClick={() => setShowDeleteConfirm(true)}
                 className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-brown-pale transition-all"
                 style={{ border: "1px solid rgba(196,149,106,0.2)" }}
                 aria-label="저장된 대화 삭제"
@@ -236,6 +234,42 @@ function LibraryContent() {
           </>
         )}
       </div>
+
+      {/* 삭제 확인 모달 */}
+      <FocusTrapModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        label="대화 삭제 확인"
+        className="bg-cream rounded-2xl p-6 mx-6 max-w-sm w-full"
+      >
+        <p className="text-[15px] text-brown font-medium text-center break-keep">
+          진행 중인 대화를 삭제하시겠습니까?
+        </p>
+        <p className="text-xs text-brown-light text-center mt-2 break-keep">
+          이 작업은 되돌릴 수 없습니다.
+        </p>
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            autoFocus
+            className="flex-1 py-3 rounded-full text-sm font-medium transition-all active:scale-[0.97]"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              color: "white",
+              boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
+            }}
+          >
+            취소
+          </button>
+          <button
+            onClick={() => { setShowDeleteConfirm(false); clearStorage(); setDraftInfo(null); }}
+            className="flex-1 py-3 rounded-full text-sm font-medium text-red-500
+                       border border-red-200 active:scale-[0.97] transition-all"
+          >
+            삭제
+          </button>
+        </div>
+      </FocusTrapModal>
     </div>
   );
 }

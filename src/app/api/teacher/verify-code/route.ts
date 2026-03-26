@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     return sb.applyCookies(
       NextResponse.json(
         { error: "유효하지 않은 코드입니다." },
-        { status: 404 }
+        { status: 400 }
       )
     );
   }

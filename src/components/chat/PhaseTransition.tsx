@@ -45,6 +45,9 @@ export default function PhaseTransition({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
+          role="status"
+          aria-live="polite"
+          aria-label={`${phase}단계로 전환: ${msg.title}`}
           className="absolute inset-0 z-[200] flex items-center justify-center"
           style={{
             background: "rgba(251,245,236,0.96)",

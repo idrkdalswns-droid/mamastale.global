@@ -15,10 +15,12 @@ const referralSchema = z.object({
 const referralLimiter = createInMemoryLimiter(RATE_KEYS.REFERRAL, { maxEntries: 200 });
 
 function generateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 for readability
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 for readability (32 chars = no modulo bias with Uint8)
+  const randomBytes = new Uint8Array(6);
+  crypto.getRandomValues(randomBytes);
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomBytes[i] % chars.length];
   }
   return code;
 }

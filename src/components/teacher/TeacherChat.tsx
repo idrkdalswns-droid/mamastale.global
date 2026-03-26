@@ -8,6 +8,7 @@ import ChatInput from "@/components/chat/ChatInput";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import { TEACHER_PHASE_TO_NUMBER } from "@/lib/types/teacher";
 import type { Message } from "@/lib/types/chat";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 
 const MAX_TURNS = 11;
 
@@ -211,40 +212,41 @@ export function TeacherChat({
         </div>
       </div>
 
-      {/* 나가기 확인 다이얼로그 */}
-      {showExitDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-cream rounded-2xl p-6 mx-6 max-w-sm w-full"
-               style={{ boxShadow: "0 8px 32px rgba(90,62,43,0.15)" }}>
-            <p className="text-[15px] text-brown font-medium text-center break-keep">
-              대화를 나가시겠어요?
-            </p>
-            <p className="text-xs text-brown-light text-center mt-2 break-keep">
-              대화는 자동 저장되어 홈에서 이어할 수 있어요
-            </p>
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={() => setShowExitDialog(false)}
-                className="flex-1 py-3 rounded-full text-sm font-medium text-brown-light
-                           border border-brown-pale/30 active:scale-[0.97] transition-all"
-              >
-                계속하기
-              </button>
-              <button
-                onClick={() => { setShowExitDialog(false); onExit(); }}
-                className="flex-1 py-3 rounded-full text-white text-sm font-medium
-                           active:scale-[0.97] transition-all"
-                style={{
-                  background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                  boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
-                }}
-              >
-                홈으로
-              </button>
-            </div>
-          </div>
+      {/* 나가기 확인 다이얼로그 (FocusTrapModal: a11y + Escape + focus trap) */}
+      <FocusTrapModal
+        isOpen={showExitDialog}
+        onClose={() => setShowExitDialog(false)}
+        label="대화 나가기 확인"
+        className="bg-cream rounded-2xl p-6 mx-6 max-w-sm w-full"
+      >
+        <p className="text-[15px] text-brown font-medium text-center break-keep">
+          대화를 나가시겠어요?
+        </p>
+        <p className="text-xs text-brown-light text-center mt-2 break-keep">
+          대화는 자동 저장되어 홈에서 이어할 수 있어요
+        </p>
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={() => setShowExitDialog(false)}
+            autoFocus
+            className="flex-1 py-3 rounded-full text-sm font-medium text-brown-light
+                       border border-brown-pale/30 active:scale-[0.97] transition-all"
+          >
+            계속하기
+          </button>
+          <button
+            onClick={() => { setShowExitDialog(false); onExit(); }}
+            className="flex-1 py-3 rounded-full text-white text-sm font-medium
+                       active:scale-[0.97] transition-all"
+            style={{
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
+            }}
+          >
+            홈으로
+          </button>
         </div>
-      )}
+      </FocusTrapModal>
 
       {/* 메시지 영역 */}
       <div
