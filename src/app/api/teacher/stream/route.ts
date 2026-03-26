@@ -21,7 +21,9 @@ import {
   assembleTeacherSystemPrompt,
   getPhaseFromTurnCount,
   getForceGenerateSystemAddendum,
+  resolvePhaseTransition,
 } from "@/lib/anthropic/teacher-prompts";
+import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
 import { createStreamTimeout, finalMessageWithTimeout } from "@/lib/anthropic/stream-timeout";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
@@ -103,6 +105,12 @@ export async function POST(request: NextRequest) {
   const turnCount = session.turn_count ?? 0;
   const currentPhase = getPhaseFromTurnCount(turnCount);
   const onboarding = session.onboarding || {};
+  // 1.3 FIX: Sanitize onboarding fields (prompt injection defense-in-depth)
+  const safeOnboarding = {
+    ...onboarding,
+    topic: sanitizeUserInput((onboarding as Record<string, unknown>)?.topic as string | undefined, 50),
+    situation: sanitizeUserInput((onboarding as Record<string, unknown>)?.situation as string | undefined, 200),
+  };
 
   // 7. 대화 히스토리 로드
   const { data: historyRows } = await sb.client
@@ -125,7 +133,7 @@ export async function POST(request: NextRequest) {
   // 8. 시스템 프롬프트 조립
   let systemPrompt = assembleTeacherSystemPrompt(
     currentPhase,
-    onboarding,
+    safeOnboarding,
     turnCount
   );
 
@@ -206,16 +214,10 @@ export async function POST(request: NextRequest) {
         inputTokens = finalMessage.usage?.input_tokens ?? 0;
         outputTokens = finalMessage.usage?.output_tokens ?? 0;
 
-        // Phase 전환 확인 (턴 기반 OR AI [PHASE_READY] 판단)
+        // 1.2 FIX: Phase 전환 — resolvePhaseTransition()으로 off-by-one 수정 + 태그 인젝션 방어
         const newTurnCount = turnCount + 1;
-        const phaseReady = fullResponse.includes("[PHASE_READY]");
-        const newPhase = phaseReady
-          ? getPhaseFromTurnCount(newTurnCount + 1)  // AI 판단으로 다음 Phase 강제 전환
-          : getPhaseFromTurnCount(newTurnCount);
+        const { newPhase, generateReady } = resolvePhaseTransition(currentPhase, newTurnCount, fullResponse);
         const phaseChanged = newPhase !== currentPhase;
-
-        // [GENERATE_READY] 태그 감지 또는 11턴 도달 시 자동 생성
-        const generateReady = fullResponse.includes("[GENERATE_READY]") || newTurnCount >= 11;
 
         // ─── DB 저장 (done 이벤트 전에 await — 다음 요청의 히스토리/턴 정합성 보장) ───
         const cleanResponse = fullResponse
@@ -229,6 +231,7 @@ export async function POST(request: NextRequest) {
             role: "user",
             content: message,
             phase: currentPhase,
+            turn_number: turnCount,  // 3.2 FIX: DB-level dedup via unique index
           }).then(({ error }) => {
             if (error) console.error("[Teacher Stream] Failed to save user message:", error.message);
           }),
@@ -237,6 +240,7 @@ export async function POST(request: NextRequest) {
             role: "assistant",
             content: cleanResponse,
             phase: currentPhase,
+            turn_number: turnCount,  // 3.2 FIX: same turn_number for user+assistant pair
           }).then(({ error }) => {
             if (error) console.error("[Teacher Stream] Failed to save assistant message:", error.message);
           }),

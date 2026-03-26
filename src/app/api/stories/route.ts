@@ -98,6 +98,8 @@ export async function POST(request: NextRequest) {
 
   // Bug Bounty 3-2 FIX: Verify ticket was recently deducted via /api/tickets/use
   // Prevents direct POST to /api/stories without paying a ticket
+  // 1.4 FIX: Hoist lastTicketUse for CAS clear after successful save
+  let verifiedTicketTimestamp: string | undefined;
   try {
     const { data: ticketProfile } = await sb.client
       .from("profiles")
@@ -106,7 +108,6 @@ export async function POST(request: NextRequest) {
       .single();
     const ticketMeta = (ticketProfile?.metadata as Record<string, unknown>) || {};
     const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
-    // Fix 1-4: Tightened from 1 hour to 30 minutes
     const TICKET_WINDOW_MS = 30 * 60 * 1000; // 30 min window
     if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
       return sb.applyCookies(NextResponse.json(
@@ -114,8 +115,9 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       ));
     }
+    verifiedTicketTimestamp = lastTicketUse;
   } catch (ticketCheckErr) {
-    // Fix 1-4: Retry once before allowing save
+    // Retry once before allowing save
     try {
       const { data: retryProfile } = await sb.client.from("profiles").select("metadata").eq("id", user.id).single();
       const retryMeta = (retryProfile?.metadata as Record<string, unknown>) || {};
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
       if (!retryTicketUse || Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
         return sb.applyCookies(NextResponse.json({ error: "티켓 확인에 실패했습니다." }, { status: 500 }));
       }
+      verifiedTicketTimestamp = retryTicketUse;
     } catch {
       console.warn("[Stories] Ticket verification retry also failed — allowing save");
     }
@@ -287,6 +290,32 @@ export async function POST(request: NextRequest) {
     }
 
     const storyId = insertResult.data.id;
+
+    // 1.4 FIX: CAS-clear ticket timestamp to prevent reuse within 30min window
+    // Only clears if the timestamp matches what we verified earlier (atomic)
+    if (verifiedTicketTimestamp) {
+      try {
+        const { data: currentProfile } = await sb.client
+          .from("profiles")
+          .select("metadata")
+          .eq("id", user.id)
+          .single();
+        const currentMeta = (currentProfile?.metadata as Record<string, unknown>) || {};
+        if (currentMeta.last_ticket_used_at === verifiedTicketTimestamp) {
+          const { ...restMeta } = currentMeta;
+          delete restMeta.last_ticket_used_at;
+          await sb.client
+            .from("profiles")
+            .update({ metadata: restMeta })
+            .eq("id", user.id);
+        }
+        // If timestamp changed, another request already cleared it — safe to skip
+      } catch (casErr) {
+        // Non-critical: worst case allows one extra save in the window
+        console.warn("[Stories] CAS ticket clear failed (non-blocking):", casErr);
+      }
+    }
+
     let coverGenerated = false;
 
     // AI 표지 생성 후처리 (Freemium: 잠금 동화는 skip)

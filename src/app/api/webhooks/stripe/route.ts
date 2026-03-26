@@ -118,9 +118,13 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
+  if (!supabase) {
+    console.error("[Stripe] Service role client unavailable — returning 500 for retry");
+    return NextResponse.json({ error: "Service unavailable" }, { status: 500 });
+  }
 
   // DB-level deduplication — Edge 격리체 재시작 시에도 안전
-  if (supabase && event.id) {
+  if (event.id) {
     const { error: dupErr } = await supabase
       .from("stripe_processed_events")
       .insert({ event_id: event.id });
@@ -136,7 +140,7 @@ export async function POST(request: NextRequest) {
       const session = event.data.object;
       console.info("[Stripe] Checkout completed:", session.id);
 
-      if (supabase && session.metadata?.user_id) {
+      if (session.metadata?.user_id) {
         const userId = session.metadata.user_id;
         // KR-05: Validate metadata values
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
@@ -224,64 +228,60 @@ export async function POST(request: NextRequest) {
       const sub = event.data.object;
       console.info("[Stripe] Subscription updated:", sub.id, sub.status);
 
-      if (supabase) {
-        // R4-4: Idempotency — only apply if event is newer than last update
-        const eventTime = new Date(event.created * 1000).toISOString();
-        const { data: existing } = await supabase
-          .from("subscriptions")
-          .select("updated_at")
-          .eq("stripe_subscription_id", sub.id)
-          .maybeSingle();
-        if (existing && existing.updated_at >= eventTime) {
-          console.info(`[Stripe] Stale subscription update skipped: ${sub.id}`);
-          break;
-        }
-
-        const periodStart = sub.items?.data?.[0]?.current_period_start;
-        const periodEnd = sub.items?.data?.[0]?.current_period_end;
-
-        await supabase
-          .from("subscriptions")
-          .update({
-            // R8-1: Only use statuses matching DB CHECK constraint (active, past_due, canceled, trialing)
-            status: ["active", "past_due", "canceled", "trialing"].includes(sub.status) ? sub.status : "past_due",
-            ...(periodStart && {
-              current_period_start: new Date(periodStart * 1000).toISOString(),
-            }),
-            ...(periodEnd && {
-              current_period_end: new Date(periodEnd * 1000).toISOString(),
-            }),
-            updated_at: eventTime,
-          })
-          .eq("stripe_subscription_id", sub.id);
+      // R4-4: Idempotency — only apply if event is newer than last update
+      const eventTime = new Date(event.created * 1000).toISOString();
+      const { data: existing } = await supabase
+        .from("subscriptions")
+        .select("updated_at")
+        .eq("stripe_subscription_id", sub.id)
+        .maybeSingle();
+      if (existing && existing.updated_at >= eventTime) {
+        console.info(`[Stripe] Stale subscription update skipped: ${sub.id}`);
+        break;
       }
+
+      const periodStart = sub.items?.data?.[0]?.current_period_start;
+      const periodEnd = sub.items?.data?.[0]?.current_period_end;
+
+      await supabase
+        .from("subscriptions")
+        .update({
+          // R8-1: Only use statuses matching DB CHECK constraint (active, past_due, canceled, trialing)
+          status: ["active", "past_due", "canceled", "trialing"].includes(sub.status) ? sub.status : "past_due",
+          ...(periodStart && {
+            current_period_start: new Date(periodStart * 1000).toISOString(),
+          }),
+          ...(periodEnd && {
+            current_period_end: new Date(periodEnd * 1000).toISOString(),
+          }),
+          updated_at: eventTime,
+        })
+        .eq("stripe_subscription_id", sub.id);
       break;
     }
     case "customer.subscription.deleted": {
       const sub = event.data.object;
       console.info("[Stripe] Subscription canceled:", sub.id);
 
-      if (supabase) {
-        // R4-4: Idempotency — only apply if event is newer
-        const eventTime = new Date(event.created * 1000).toISOString();
-        const { data: existing } = await supabase
-          .from("subscriptions")
-          .select("updated_at")
-          .eq("stripe_subscription_id", sub.id)
-          .maybeSingle();
-        if (existing && existing.updated_at >= eventTime) {
-          console.info(`[Stripe] Stale subscription delete skipped: ${sub.id}`);
-          break;
-        }
-
-        await supabase
-          .from("subscriptions")
-          .update({
-            status: "canceled",
-            updated_at: eventTime,
-          })
-          .eq("stripe_subscription_id", sub.id);
+      // R4-4: Idempotency — only apply if event is newer
+      const delEventTime = new Date(event.created * 1000).toISOString();
+      const { data: existingDel } = await supabase
+        .from("subscriptions")
+        .select("updated_at")
+        .eq("stripe_subscription_id", sub.id)
+        .maybeSingle();
+      if (existingDel && existingDel.updated_at >= delEventTime) {
+        console.info(`[Stripe] Stale subscription delete skipped: ${sub.id}`);
+        break;
       }
+
+      await supabase
+        .from("subscriptions")
+        .update({
+          status: "canceled",
+          updated_at: delEventTime,
+        })
+        .eq("stripe_subscription_id", sub.id);
       break;
     }
   }

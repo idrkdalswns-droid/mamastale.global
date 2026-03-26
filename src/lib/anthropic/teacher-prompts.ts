@@ -32,6 +32,32 @@ export function getPhaseFromTurnCount(turnCount: number): string {
   return "D";
 }
 
+/** Phase 전환을 위한 최소 턴 수 (각 phase 종료 가능 시점) */
+export const MIN_TURNS_FOR_PHASE_END: Record<string, number> = { A: 2, B: 4, C: 6, D: 8 };
+
+/** 다음 Phase 매핑 (명시적 전환) */
+export const NEXT_PHASE: Record<string, string> = { A: "B", B: "C", C: "D", D: "D" };
+
+/** Phase 전환 + [GENERATE_READY] 태그 해석 (서버 사이드)
+ *  - [PHASE_READY]: 최소 턴 수 이상일 때만 다음 phase로 전환
+ *  - [GENERATE_READY]: Phase D이거나 turnCount >= 8일 때만 허용, 또는 11턴 자동
+ */
+export function resolvePhaseTransition(
+  currentPhase: string,
+  turnCount: number,
+  fullResponse: string
+): { newPhase: string; generateReady: boolean } {
+  const phaseReady = fullResponse.includes("[PHASE_READY]")
+    && turnCount >= (MIN_TURNS_FOR_PHASE_END[currentPhase] ?? 0);
+  const newPhase = phaseReady
+    ? NEXT_PHASE[currentPhase] ?? currentPhase
+    : getPhaseFromTurnCount(turnCount);
+  const generateReady =
+    (fullResponse.includes("[GENERATE_READY]") && (currentPhase === "D" || turnCount >= 8))
+    || turnCount >= 11;
+  return { newPhase, generateReady };
+}
+
 /** 현재 Phase에서 남은 턴 수 */
 function getRemainingTurns(turnCount: number, phase: string): number {
   const phaseEnd: Record<string, number> = { A: 3, B: 5, C: 8, D: 11 };
