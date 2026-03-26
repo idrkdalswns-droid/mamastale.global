@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (sort === "popular") {
-    query = query.order("like_count", { ascending: false, nullsFirst: false });
+    query = query.order("like_count", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
   } else {
     query = query.order("created_at", { ascending: false });
   }

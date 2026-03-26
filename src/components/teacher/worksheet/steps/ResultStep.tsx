@@ -122,14 +122,14 @@ export function ResultStep() {
 
   if (!generatedHtml) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8" aria-live="polite">
         <p className="text-brown-light">활동지를 생성하고 있어요...</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div aria-live="polite">
       <div className="text-center mb-4">
         <div className="text-3xl mb-2">🎉</div>
         <h3 className="text-[17px] font-medium text-brown">활동지가 완성됐어요!</h3>

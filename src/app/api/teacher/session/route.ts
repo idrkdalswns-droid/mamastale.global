@@ -181,10 +181,10 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // 만료 확인 — expiresAt 업데이트(강제 만료) 시에는 스킵
+  // T-B1: 만료 확인 — expiresAt 업데이트(강제 만료) 시에는 스킵
   if (!updatePayload.expires_at && new Date(session.expires_at) < new Date()) {
     return sb.applyCookies(
-      NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 })
+      NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 410 })
     );
   }
 

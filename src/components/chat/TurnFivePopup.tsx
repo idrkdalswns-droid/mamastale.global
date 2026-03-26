@@ -17,6 +17,8 @@ interface TurnFivePopupProps {
   onGoHome?: () => void;
   /** Called after inline ticket deduction succeeds (lifts free trial limit) */
   onTicketUsed?: () => void;
+  /** Progress percentage for the story (default 25) */
+  progressPercent?: number;
 }
 
 /**
@@ -31,6 +33,7 @@ export default function TurnFivePopup({
   onPersistChat,
   onGoHome,
   onTicketUsed,
+  progressPercent = 25,
 }: TurnFivePopupProps) {
   // Read child name for personalized messaging
   const childName = (() => {
@@ -132,13 +135,13 @@ export default function TurnFivePopup({
             <div
               className="h-full rounded-full transition-all duration-1000"
               style={{
-                width: "25%",
+                width: `${Math.min(100, Math.max(0, progressPercent))}%`,
                 background: "linear-gradient(90deg, #E07A5F, #C96B52)",
               }}
             />
           </div>
           <p className="text-xs text-coral font-medium">
-            동화의 약 25%가 완성되었어요
+            동화의 약 {Math.round(progressPercent)}%가 완성되었어요
           </p>
         </div>
 

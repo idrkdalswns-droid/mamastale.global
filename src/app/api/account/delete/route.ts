@@ -14,7 +14,7 @@ const deleteLimiter = createInMemoryLimiter(RATE_KEYS.ACCOUNT_DELETE, { maxEntri
 export async function DELETE(request: NextRequest) {
   const ip = getClientIP(request);
   if (!deleteLimiter.check(ip, 3, 3_600_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "3600" } });
   }
   const sb = createApiSupabaseClient(request);
   if (!sb) {

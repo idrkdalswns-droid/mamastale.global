@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: "https://mamastale-global.pages.dev/",
+    canonical: "https://mamastale.com/",
   },
   twitter: {
     card: "summary_large_image",

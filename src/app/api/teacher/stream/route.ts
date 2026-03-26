@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
           sessionId,
           userId: user.id,
           model: "claude-sonnet-4-20250514",
-          phase: null, // teacher 모드는 null (CHECK(1-4) 우회)
+          phase: ({ A: 1, B: 2, C: 3, D: 4 }[currentPhase] ?? null) as number | null, // T-B16: map teacher phase string to number
           inputTokens,
           outputTokens,
           latencyMs: Date.now() - requestStartTime,

@@ -110,6 +110,8 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
   const [customTopic, setCustomTopic] = useState("");
   const [customCharacterInput, setCustomCharacterInput] = useState("");
   const [situation, setSituation] = useState("");
+  // T-F14: Track which images failed to load for fallback display
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   const currentStep = STEPS[step];
 
@@ -200,7 +202,14 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
           </button>
         )}
       </div>
-      <div className="flex gap-1.5 mb-6">
+      <div
+        className="flex gap-1.5 mb-6"
+        role="progressbar"
+        aria-valuenow={step + 1}
+        aria-valuemin={1}
+        aria-valuemax={STEPS.length}
+        aria-label={`온보딩 ${step + 1}/${STEPS.length} 단계`}
+      >
         {STEPS.map((_, idx) => (
           <div
             key={idx}
@@ -300,7 +309,7 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
                                    text-sm text-brown-light font-medium
                                    hover:bg-paper/80 active:scale-[0.98] transition-all"
                       >
-                        {ICON_IMAGES[opt.value] ? (
+                        {ICON_IMAGES[opt.value] && !failedImages.has(opt.value) ? (
                           <div className="w-5 h-5 relative rounded overflow-hidden inline-block mr-1.5 align-middle">
                             <Image
                               src={ICON_IMAGES[opt.value]}
@@ -308,6 +317,7 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
                               fill
                               className="object-cover"
                               sizes="20px"
+                              onError={() => setFailedImages((prev) => new Set(prev).add(opt.value))}
                             />
                           </div>
                         ) : (
@@ -347,14 +357,21 @@ export function TeacherOnboarding({ onComplete, onExit }: TeacherOnboardingProps
                         : "0 2px 8px rgba(90,62,43,0.04)",
                     }}
                   >
-                    <Image
-                      src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
-                      alt={opt.label}
-                      fill
-                      className={`object-cover scale-[1.5]${opt.value === "child" ? " object-top" : ""}`}
-                      sizes="(max-width:430px) 45vw, 200px"
-                      loading={optIdx >= 4 ? "lazy" : undefined}
-                    />
+                    {failedImages.has(opt.value) ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-paper">
+                        <span className="text-2xl">{opt.icon}</span>
+                      </div>
+                    ) : (
+                      <Image
+                        src={ICON_IMAGES[opt.value] || "/images/teacher/onboarding/default.jpeg"}
+                        alt={opt.label}
+                        fill
+                        className={`object-cover scale-[1.5]${opt.value === "child" ? " object-top" : ""}`}
+                        sizes="(max-width:430px) 45vw, 200px"
+                        loading={optIdx >= 4 ? "lazy" : undefined}
+                        onError={() => setFailedImages((prev) => new Set(prev).add(opt.value))}
+                      />
+                    )}
                   </div>
                   <span
                     className="text-[11px] font-medium break-keep text-center"

@@ -92,13 +92,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. 일일 세션 한도 체크 (코드별)
+  // 6. 일일 세션 한도 체크 (코드별) — T-B19: 만료 세션 제외 (활성 세션만 카운트)
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await sb.client
     .from("teacher_sessions")
     .select("id", { count: "exact", head: true })
     .eq("code", code)
-    .gte("created_at", oneDayAgo);
+    .gte("created_at", oneDayAgo)
+    .gt("expires_at", new Date().toISOString());
 
   if (count !== null && count >= codeData.daily_session_limit) {
     return sb.applyCookies(

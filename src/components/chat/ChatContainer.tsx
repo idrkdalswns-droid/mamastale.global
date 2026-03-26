@@ -98,14 +98,22 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
 
   // H7-FIX: Debounce flag to prevent 3-layer save from racing
   const savingRef = useRef(false);
+  // M-F37: Dirty flag — only autosave when messages have actually changed
+  const lastSavedMsgCountRef = useRef(0);
   const guardedSave = useCallback(() => {
     if (savingRef.current) return;
-    savingRef.current = true;
     const state = useChatStore.getState();
+    const msgCount = state.messages.length;
+    // Skip save if nothing has changed since last save
+    if (msgCount === lastSavedMsgCountRef.current) return;
+    savingRef.current = true;
     const userMsgs = state.messages.filter(m => m.role === "user").length;
     if (userMsgs > 0 && !state.storyDone) {
       // Bug Bounty: Promise-based guard prevents concurrent saves regardless of network latency
-      Promise.resolve(state.saveDraft()).catch(() => {}).finally(() => { savingRef.current = false; });
+      Promise.resolve(state.saveDraft()).catch(() => {}).finally(() => {
+        lastSavedMsgCountRef.current = msgCount;
+        savingRef.current = false;
+      });
     } else {
       savingRef.current = false;
     }
@@ -219,6 +227,19 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
   const lastMessage = messages[messages.length - 1];
   const hasErrorMessage = lastMessage?.isError === true;
 
+  // M-F41: Encapsulated error retry handler (extracts inline setState logic)
+  const handleErrorRetry = useCallback(() => {
+    // V5-FIX #18: Use fresh state from store (not stale render-captured `messages`)
+    const freshMessages = useChatStore.getState().messages;
+    const lastUserMsg = [...freshMessages].reverse().find(m => m.role === "user" && !m.isError);
+    if (lastUserMsg) {
+      const withoutErrors = freshMessages.filter(m => !m.isError);
+      const withoutLastUser = withoutErrors.filter(m => m.id !== lastUserMsg.id);
+      useChatStore.setState({ messages: withoutLastUser });
+      sendMessage(lastUserMsg.content);
+    }
+  }, [sendMessage]);
+
   const handleSend = useCallback(
     (text: string) => {
       // Reset scroll tracking on new message
@@ -288,7 +309,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
               style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}
             >
               <span className="text-[11px]" aria-hidden="true">🔒</span>
-              <span className="text-[11px] text-brown-light font-light">대화 내용은 암호화되어 안전하게 보호됩니다</span>
+              <span className="text-[11px] text-brown-light font-light">대화 내용은 안전하게 보관됩니다</span>
             </div>
           )}
           {messages.map((m, idx) => (
@@ -440,18 +461,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       {hasErrorMessage && !isLoading && !storyDone && (
         <div className="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-[60] flex justify-center pb-2">
           <button
-            onClick={() => {
-              // V5-FIX #18: Use fresh state from store (not stale render-captured `messages`)
-              // Prevents race condition where messages array changed between render and click
-              const freshMessages = useChatStore.getState().messages;
-              const lastUserMsg = [...freshMessages].reverse().find(m => m.role === "user" && !m.isError);
-              if (lastUserMsg) {
-                const withoutErrors = freshMessages.filter(m => !m.isError);
-                const withoutLastUser = withoutErrors.filter(m => m.id !== lastUserMsg.id);
-                useChatStore.setState({ messages: withoutLastUser });
-                sendMessage(lastUserMsg.content);
-              }
-            }}
+            onClick={handleErrorRetry}
             className="px-5 py-2.5 rounded-full text-sm font-medium text-white shadow-lg transition-all active:scale-95"
             style={{
               background: "linear-gradient(135deg, #E07A5F, #C96B52)",

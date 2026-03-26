@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -38,6 +38,8 @@ export default function TeacherPage() {
   const [isRecovering, setIsRecovering] = useState(true);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [editStory, setEditStory] = useState<{ storyId: string; title: string; spreads: import("@/lib/types/teacher").TeacherSpread[] } | null>(null);
+  // T-F2: Guard against duplicate session recovery (React StrictMode double-invoke)
+  const recoveryCalledRef = useRef(false);
 
   // 킬 스위치 체크
   const isEnabled = process.env.NEXT_PUBLIC_TEACHER_MODE_ENABLED !== "false";
@@ -45,11 +47,17 @@ export default function TeacherPage() {
   // 세션 복구 (페이지 마운트 시)
   useEffect(() => {
     if (authLoading || !user) return;
+    // T-F9: Use getState() for async context to avoid stale closure
+    const { screenState, sessionId } = useTeacherStore.getState();
     // 이미 HOME이면 복구 불필요 (handleCodeVerified에서 이미 처리됨)
-    if (store.screenState === "HOME" || store.sessionId) {
+    if (screenState === "HOME" || sessionId) {
       setIsRecovering(false);
       return;
     }
+
+    // T-F2: Prevent duplicate recovery calls (React StrictMode)
+    if (recoveryCalledRef.current) return;
+    recoveryCalledRef.current = true;
 
     const recoverSession = async () => {
       try {
@@ -72,10 +80,10 @@ export default function TeacherPage() {
             screenState: "HOME",
           });
         } else {
-          store.setScreenState("CODE_ENTRY");
+          useTeacherStore.getState().setScreenState("CODE_ENTRY");
         }
       } catch {
-        store.setScreenState("CODE_ENTRY");
+        useTeacherStore.getState().setScreenState("CODE_ENTRY");
       } finally {
         setIsRecovering(false);
       }

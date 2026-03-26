@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.49.0] - 2026-03-27
+
+### Fixed (Sprint 4: MEDIUM 전체 25건 — 133건 코드 리뷰 완료)
+
+**빠른 수정 13건:**
+- M-F33/34/35: 접근성 최소 폰트 크기 위반 (9px/8px → 10px)
+- M-F30: GlobalNav 11px → 12px (xs)
+- M-F27: MessageBubble overflow-wrap 구형 브라우저 폴백
+- M-F45: "암호화" 오해 문구 → "안전하게 보관"
+- M-F46: 랜딩 fade-in 600ms → 400ms
+- M-F28: canonical URL pages.dev → mamastale.com
+- T-F31: TeacherOnboarding progressbar role + aria 속성
+- T-F30: WorksheetWizard ResultStep aria-live
+- T-F32: TeacherHome 삭제 버튼 색상 대비 WCAG AA
+- T-B16: 교사 스트림 LLM 로그 phase null → 매핑 (A→1 등)
+- T-B21: Retry-After 값 실제 rate limit 창과 일치 (60→3600)
+
+**중간 수정 12건:**
+- M-F31: TurnFivePopup 진행 바 동적 progressPercent prop
+- M-F37: autosave dirty flag — 변경 없으면 스킵 (배터리 절약)
+- M-F41: 에러 재시도 setState → handleErrorRetry 콜백 캡슐화
+- M-F48: 결제 성공 모달 → FocusTrapModal 적용
+- M-F49: library 에러 메시지 구체화 (네트워크/서버 구분)
+- M-B17: popular 정렬 보조 — like_count 동률 시 최신순
+- T-B1: 세션 PATCH 만료 검증 → 410 Gone
+- T-B19: 일일 한도에서 만료 세션 제외
+- T-F2: 세션 복구 중복 API 호출 방지 (StrictMode guard)
+- T-F9: store 패턴 통일 (getState 비동기 콜백용)
+- T-F14: 온보딩 이미지 로딩 실패 시 이모지 폴백
+- M-B15: 커뮤니티 카운터 감소 (Sprint 2에서 이미 구현 확인)
+
 ## [1.48.6] - 2026-03-27
 
 ### Fixed (Sprint 3: MEDIUM 우선 수정 10건)

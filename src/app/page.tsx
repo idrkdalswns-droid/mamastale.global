@@ -16,6 +16,7 @@ import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
 import { STORY_PRICE_DISPLAY } from "@/lib/constants/pricing";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 /** Horizontal scroll container that auto-scrolls to a specific child index on mount */
@@ -672,7 +673,7 @@ export default function Home() {
 
       {/* Main content — centered, max-width for desktop */}
       <div
-        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-2 relative z-[1] transition-all duration-[600ms]"
+        className="flex-1 flex flex-col max-w-md mx-auto w-full px-5 sm:px-8 pt-2 relative z-[1] transition-all duration-[400ms]"
         style={{
           opacity: show ? 1 : 0,
           transform: show ? "none" : "translateY(24px)",
@@ -783,7 +784,7 @@ export default function Home() {
               ════════════════════════════════════════ */}
           {/* Fix 1-10: ErrorBoundary per section — fallback=null keeps CTA visible */}
           <ErrorBoundary fallback={null}><div className="mb-5">
-            <p className="text-[9px] text-brown-pale/60 font-light text-center mb-3 md:hidden">
+            <p className="text-[10px] text-brown-pale/60 font-light text-center mb-3 md:hidden">
               ← 옆으로 넘겨보세요 →
             </p>
             <GalleryScroller initialIndex={7}>
@@ -827,7 +828,7 @@ export default function Home() {
                     >
                       {text}
                     </p>
-                    <p className="text-[8px] text-brown-pale font-light mt-1.5 text-right">
+                    <p className="text-[10px] text-brown-pale font-light mt-1.5 text-right">
                       {i + 1} / 10
                     </p>
                   </div>
@@ -856,7 +857,7 @@ export default function Home() {
                       loading="lazy"
                     />
                     <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}>
-                      <p className="text-[9px] text-white font-medium leading-tight">{story.title}</p>
+                      <p className="text-[10px] text-white font-medium leading-tight">{story.title}</p>
                     </div>
                   </div>
                 </Link>
@@ -1004,75 +1005,56 @@ export default function Home() {
       {/* C-1+SV-3: TicketConfirmModal & NoTicketsModal removed —
            ticket gate now happens at turn 3 inside chat (TurnFivePopup) */}
 
-      {/* SG-1: Payment Success Modal — accessible dialog with focus trap (AP5) */}
-      {showPaymentSuccess && (
+      {/* SG-1: Payment Success Modal — M-F48: wrapped with FocusTrapModal */}
+      <FocusTrapModal
+        isOpen={showPaymentSuccess}
+        onClose={closePaymentModal}
+        label="결제 완료 안내"
+        overlayClassName="fixed inset-0 z-50 flex items-center justify-center px-6"
+        className="w-full max-w-sm rounded-3xl p-8 text-center"
+      >
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="결제 완료 안내"
-          tabIndex={-1}
-          ref={(el) => { if (el) el.focus(); }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") { closePaymentModal(); return; }
-            // AP5: Focus trap — keep Tab within modal
-            if (e.key === "Tab") {
-              const focusable = e.currentTarget.querySelectorAll<HTMLElement>("button, a, [tabindex]:not([tabindex='-1'])");
-              if (focusable.length === 0) return;
-              const first = focusable[0];
-              const last = focusable[focusable.length - 1];
-              if (e.shiftKey && document.activeElement === first) {
-                e.preventDefault(); last.focus();
-              } else if (!e.shiftKey && document.activeElement === last) {
-                e.preventDefault(); first.focus();
-              }
-            }
+          style={{
+            background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
           }}
+          className="rounded-3xl p-8 text-center"
         >
-          <div
-            className="w-full max-w-sm rounded-3xl p-8 text-center"
+          <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
+            결제가 완료되었어요
+          </h2>
+          <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
+            구매가 완료되었어요.
+          </p>
+          <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
+            이제 아이를 위한 아름다운<br />
+            <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
+            만들어 볼까요?
+          </p>
+          <button
+            onClick={() => {
+              closePaymentModal();
+              // CTO-FIX(CRITICAL): 결제 성공 후에도 반드시 TicketConfirmModal을 거쳐 티켓 차감
+              // 이전: setScreen("onboarding") → 티켓 차감 없이 스토리 시작 (매출 손실)
+              // 수정: handleStartStory() → TicketConfirmModal → /api/tickets/use → onboarding
+              handleStartStory();
+            }}
+            className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
             style={{
-              background: "linear-gradient(180deg, #FFF9F5, #FFFFFF)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+              boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
             }}
           >
-            <h2 className="font-serif text-xl font-bold text-brown mb-3 leading-tight">
-              결제가 완료되었어요
-            </h2>
-            <p className="text-sm text-brown-light font-light leading-relaxed mb-2 break-keep">
-              구매가 완료되었어요.
-            </p>
-            <p className="text-sm text-brown-light font-light leading-relaxed mb-6 break-keep">
-              이제 아이를 위한 아름다운<br />
-              <span className="text-coral font-medium">세상에 하나뿐인 마음 동화</span>를<br />
-              만들어 볼까요?
-            </p>
-            <button
-              onClick={() => {
-                closePaymentModal();
-                // CTO-FIX(CRITICAL): 결제 성공 후에도 반드시 TicketConfirmModal을 거쳐 티켓 차감
-                // 이전: setScreen("onboarding") → 티켓 차감 없이 스토리 시작 (매출 손실)
-                // 수정: handleStartStory() → TicketConfirmModal → /api/tickets/use → onboarding
-                handleStartStory();
-              }}
-              className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 6px 20px rgba(224,122,95,0.3)",
-              }}
-            >
-              지금 바로 동화 만들기
-            </button>
-            <button
-              onClick={closePaymentModal}
-              className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
-            >
-              나중에 할게요
-            </button>
-          </div>
+            지금 바로 동화 만들기
+          </button>
+          <button
+            onClick={closePaymentModal}
+            className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"
+          >
+            나중에 할게요
+          </button>
         </div>
-      )}
+      </FocusTrapModal>
     </div>
   );
 }

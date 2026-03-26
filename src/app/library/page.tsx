@@ -35,7 +35,7 @@ class LibraryErrorBoundary extends Component<
         <div className="min-h-dvh bg-cream flex items-center justify-center px-4">
           <div className="text-center">
             <p className="text-sm text-brown-light font-light mb-4">
-              서재를 불러오는 중 문제가 발생했습니다.
+              서재를 불러오는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.
             </p>
             <button
               onClick={() => this.setState({ hasError: false })}
@@ -113,7 +113,7 @@ function LibraryContent() {
         router.push("/login?redirect=/library");
         return;
       }
-      setError("동화 목록을 불러올 수 없습니다.");
+      setError("동화 목록을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -213,8 +213,8 @@ function LibraryContent() {
             </svg>
             <p className="text-sm text-brown-light font-light mb-1">
               {error.includes("fetch") || error.includes("network") || error.includes("Failed")
-                ? "인터넷 연결을 확인해 주세요"
-                : "서버에 문제가 발생했어요"}
+                ? "인터넷 연결을 확인해 주세요. 네트워크 상태를 점검 후 다시 시도해 주세요."
+                : "동화 목록을 불러오는 중 오류가 발생했습니다."}
             </p>
             <p className="text-[11px] text-brown-pale font-light mb-4">잠시 후 다시 시도해 주세요</p>
             <button

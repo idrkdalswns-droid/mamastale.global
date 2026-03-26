@@ -43,7 +43,7 @@ const MessageBubble = memo(function MessageBubble({
       {/* Bubble */}
       <div
         className="max-w-[88%] sm:max-w-[80%] px-4 py-[13px] whitespace-pre-wrap break-keep overflow-wrap-anywhere"
-        style={{
+        style={{ overflowWrap: "anywhere", wordBreak: "break-word",
           borderRadius: isUser
             ? "20px 20px 5px 20px"
             : "20px 20px 20px 5px",

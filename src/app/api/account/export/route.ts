@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   // JP-05: Rate limit exports (3 per hour per user)
   if (!exportLimiter.check(user.id, 3, 3_600_000)) {
-    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429, headers: { "Retry-After": "60" } }));
+    return sb.applyCookies(NextResponse.json({ error: "데이터 내보내기는 1시간에 3회까지 가능합니다." }, { status: 429, headers: { "Retry-After": "3600" } }));
   }
 
   const userId = user.id;

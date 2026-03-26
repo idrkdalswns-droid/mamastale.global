@@ -210,7 +210,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
           </div>
 
           {/* Watermark */}
-          <span className="absolute bottom-2.5 right-3.5 text-white/30 text-[9px] font-light tracking-wider">
+          <span className="absolute bottom-2.5 right-3.5 text-white/30 text-[10px] font-light tracking-wider">
             mamastale
           </span>
         </div>

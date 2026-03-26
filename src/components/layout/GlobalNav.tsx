@@ -45,7 +45,7 @@ export function GlobalNav() {
                 href={item.href}
                 // R9-FIX: aria-current="page" for screen readers (WCAG 2.4.8)
                 aria-current={isActive ? "page" : undefined}
-                className={`text-[11px] whitespace-nowrap no-underline transition-colors min-h-[44px] justify-center px-1 sm:px-2 flex items-center ${
+                className={`text-xs whitespace-nowrap no-underline transition-colors min-h-[44px] justify-center px-1 sm:px-2 flex items-center ${
                   isActive
                     ? "text-coral font-medium"
                     : "text-brown-mid font-light"
@@ -60,14 +60,14 @@ export function GlobalNav() {
             (user ? (
               <button
                 onClick={() => signOut()}
-                className="text-[11px] whitespace-nowrap text-brown-pale font-light min-h-[44px] flex items-center"
+                className="text-xs whitespace-nowrap text-brown-pale font-light min-h-[44px] flex items-center"
               >
                 로그아웃
               </button>
             ) : (
               <Link
                 href="/login"
-                className="text-[11px] whitespace-nowrap text-white font-medium no-underline px-2 sm:px-2.5 py-1 rounded-full min-h-[44px] flex items-center"
+                className="text-xs whitespace-nowrap text-white font-medium no-underline px-2 sm:px-2.5 py-1 rounded-full min-h-[44px] flex items-center"
                 style={{
                   background: "linear-gradient(135deg, #E07A5F, #C96B52)",
                 }}

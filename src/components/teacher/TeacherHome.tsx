@@ -437,7 +437,7 @@ export function TeacherHome({
               onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
               className="flex-1 py-3 rounded-xl text-sm font-medium text-white
                          active:scale-[0.97] transition-all"
-              style={{ background: "#E05252" }}
+              style={{ background: "#DC2626" }}
             >
               삭제
             </button>

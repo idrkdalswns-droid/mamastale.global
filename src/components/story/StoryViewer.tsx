@@ -301,7 +301,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 {currentPage + 1} / {totalPages}
               </div>
               {isPremium && (
-                <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: "rgba(224,122,95,0.1)", color: "#E07A5F" }}>
+                <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: "rgba(224,122,95,0.1)", color: "#E07A5F" }}>
                   프리미엄 AI
                 </div>
               )}
@@ -315,7 +315,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                 A-
               </button>
               {/* L-5: Font size indicator */}
-              <span className="text-[9px] text-brown-pale/60 font-light w-5 text-center tabular-nums" aria-hidden="true">
+              <span className="text-[10px] text-brown-pale/60 font-light w-5 text-center tabular-nums" aria-hidden="true">
                 {fontSize}
               </span>
               <button
