@@ -851,38 +851,65 @@ export const useChatStore = create<ChatState>((set, get) => ({
     saveInFlight = true;
     // V5-FIX #17: Timeout protection for retrySaveStory (same 30s deadlock prevention)
     if (saveInFlightTimer) clearTimeout(saveInFlightTimer);
-    saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 30_000);
+    saveInFlightTimer = setTimeout(() => { saveInFlight = false; saveInFlightTimer = null; }, 90_000);
+
+    // H14-FIX: Exponential backoff with 3 retries (was single attempt)
+    const MAX_RETRIES = 3;
+    const BACKOFF_BASE_MS = 1_000; // 1s, 2s, 4s
 
     try {
-      // V5-FIX #28: Fresh auth headers (token may have refreshed since first attempt)
-      const authHeaders = await getAuthHeaders();
-      const res = await fetch("/api/stories", {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify({
-          title: "나의 마음 동화",
-          scenes: state.completedScenes,
-          sessionId: state.sessionId || undefined,
-        }),
-        signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
-      });
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          // V5-FIX #28: Fresh auth headers (token may have refreshed since first attempt)
+          const authHeaders = await getAuthHeaders();
+          const res = await fetch("/api/stories", {
+            method: "POST",
+            headers: authHeaders,
+            body: JSON.stringify({
+              title: "나의 마음 동화",
+              scenes: state.completedScenes,
+              sessionId: state.sessionId || undefined,
+            }),
+            signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
+          });
 
-      if (res.ok) {
-        const data = await res.json();
-        set({
-          storySaved: true,
-          storySaveError: null,
-          completedStoryId: data.id || state.completedStoryId,
-        });
-        // Clear auth backup since story is now safely in DB
-        try { localStorage.removeItem(STORAGE_KEY); } catch {}
-        // Clear draft too — story is complete
-        try { localStorage.removeItem(DRAFT_KEY); } catch {}
-        return true;
+          if (res.ok) {
+            const data = await res.json();
+            set({
+              storySaved: true,
+              storySaveError: null,
+              completedStoryId: data.id || state.completedStoryId,
+            });
+            // Clear auth backup since story is now safely in DB
+            try { localStorage.removeItem(STORAGE_KEY); } catch {}
+            // Clear draft too — story is complete
+            try { localStorage.removeItem(DRAFT_KEY); } catch {}
+            return true;
+          }
+
+          // 4xx errors (except 429) are not retryable
+          if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+            console.warn(`[useChat] retrySaveStory non-retryable ${res.status}`);
+            return false;
+          }
+
+          // Retryable error — wait with exponential backoff
+          if (attempt < MAX_RETRIES - 1) {
+            const delay = BACKOFF_BASE_MS * Math.pow(2, attempt);
+            console.warn(`[useChat] retrySaveStory attempt ${attempt + 1}/${MAX_RETRIES} failed (${res.status}), retrying in ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
+          }
+        } catch (e) {
+          // Network error — retry with backoff
+          if (attempt < MAX_RETRIES - 1) {
+            const delay = BACKOFF_BASE_MS * Math.pow(2, attempt);
+            console.warn(`[useChat] retrySaveStory attempt ${attempt + 1}/${MAX_RETRIES} network error, retrying in ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
+          } else {
+            console.warn("[useChat] retrySaveStory 실패 (all retries exhausted)", e);
+          }
+        }
       }
-      return false;
-    } catch (e) {
-      console.warn("[useChat] retrySaveStory 실패", e);
       return false;
     } finally {
       saveInFlight = false;

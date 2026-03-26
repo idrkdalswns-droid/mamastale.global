@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
-import { createClient } from "@/lib/supabase/client";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 const questions = [
   { key: "empathy", label: "1단계 · 공감적 상담사", sub: "AI가 감정을 충분히 공감해 주었나요?" },
@@ -62,19 +62,8 @@ export function FeedbackWizard({ onRestart, sessionId }: FeedbackWizardProps) {
     if (Object.keys(ratings).length === 0 && !freeText.trim()) return;
 
     try {
-      // Bug Bounty Fix 2-6: Include Bearer token + credentials
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      } catch { /* ignore */ }
-      const res = await fetch("/api/feedback", {
+      const res = await authFetchOnce("/api/feedback", {
         method: "POST",
-        headers,
-        credentials: "include",
         body: JSON.stringify(feedbackData),
       });
       if (!res.ok) {

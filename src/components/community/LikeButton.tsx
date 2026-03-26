@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { trackCommunityLike } from "@/lib/utils/analytics";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { hapticLight } from "@/lib/utils/haptic";
 
 interface LikeButtonProps {
@@ -64,20 +64,8 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
 
     setLoading(true);
     try {
-      // CTO-FIX: Include Bearer token for auth in mobile/WebView
-      const headers: Record<string, string> = {};
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      } catch {}
-
-      const res = await fetch(`/api/community/${storyId}/like`, {
+      const res = await authFetchOnce(`/api/community/${storyId}/like`, {
         method: "POST",
-        headers,
-        credentials: "include",
       });
       if (!res.ok) {
         // 429 = rate limited, other errors silently ignored

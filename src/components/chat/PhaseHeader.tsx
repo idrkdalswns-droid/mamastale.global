@@ -196,6 +196,7 @@ export default memo(function PhaseHeader({
                 }}
                 className="flex-1 py-1.5 min-h-[44px] rounded-lg text-center transition-all flex items-center justify-center"
                 role="radio"
+                aria-checked={fontSize === s}
                 style={{
                   fontSize: s === "small" ? 11 : s === "medium" ? 13 : 15,
                   background: fontSize === s ? p.accent : "transparent",

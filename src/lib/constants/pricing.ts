@@ -55,3 +55,14 @@ export function resolveTicketType(
 
 /** Allowed currencies for international payments */
 export const ALLOWED_CURRENCIES = ["krw", "usd", "jpy", "eur"];
+
+// ── Display-facing pricing (H13: remove hardcoded prices from UI components) ──
+
+/** Minimum story price for display (KRW) */
+export const STORY_PRICE_MIN_KRW = 3_920;
+/** Story regular price for display (KRW) */
+export const STORY_PRICE_REGULAR_KRW = 4_900;
+/** Formatted display string for minimum story price */
+export const STORY_PRICE_DISPLAY = "₩3,920";
+/** Formatted display string "부터" suffix for minimum story price */
+export const STORY_PRICE_FROM_DISPLAY = "₩3,920부터";

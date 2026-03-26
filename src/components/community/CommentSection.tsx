@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { formatTime } from "@/lib/utils/format-time";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 interface Comment {
   id: string;
@@ -57,19 +57,10 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
         JSON.stringify([...updated])
       );
     } catch {}
-    // CTO-FIX(HIGH): Include Bearer token + credentials for WebView/mobile
     (async () => {
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        } catch {}
-        await fetch(`/api/community/${storyId}/comments/report`, {
+        await authFetchOnce(`/api/community/${storyId}/comments/report`, {
           method: "POST",
-          headers,
-          credentials: "include",
           body: JSON.stringify({ commentId }),
         });
       } catch {}
@@ -82,20 +73,8 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
     setLoading(true);
     setSubmitError("");
     try {
-      // CTO-FIX: Include Bearer token for auth in mobile/WebView
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      } catch {}
-
-      const res = await fetch(`/api/community/${storyId}/comments`, {
+      const res = await authFetchOnce(`/api/community/${storyId}/comments`, {
         method: "POST",
-        headers,
-        credentials: "include",
         body: JSON.stringify({
           content: newComment.trim(),
           authorAlias: alias.trim() || undefined,

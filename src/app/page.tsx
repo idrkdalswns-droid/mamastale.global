@@ -15,6 +15,7 @@ import { trackScreenView } from "@/lib/utils/analytics";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
+import { STORY_PRICE_DISPLAY } from "@/lib/constants/pricing";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 /** Horizontal scroll container that auto-scrolls to a specific child index on mount */
@@ -604,7 +605,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream flex flex-col relative overflow-x-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="min-h-screen min-h-dvh bg-cream flex flex-col relative overflow-x-hidden pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
       {/* Background hero image */}
       <Image
         src="/images/hero.jpg"
@@ -967,7 +968,7 @@ export default function Home() {
             </button>
             {!user && !authLoading && (
               <p className="text-[10px] text-brown-pale/70 font-light text-center mt-2">
-                첫 체험 무료 · 동화 완성 ₩3,920 · 4일 프로그램 ₩14,900 →
+                첫 체험 무료 · 동화 완성 {STORY_PRICE_DISPLAY} · 4일 프로그램 ₩14,900 →
               </p>
             )}
           </div>

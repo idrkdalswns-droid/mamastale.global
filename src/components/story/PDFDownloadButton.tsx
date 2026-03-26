@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { trackPdfDownload } from "@/lib/utils/analytics";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import type { Scene } from "@/lib/types/story";
 
 interface PDFDownloadButtonProps {
@@ -38,21 +38,8 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
     }
 
     try {
-      // CTO-FIX: Include Bearer token for mobile/WebView compatibility
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-        }
-      } catch { /* ignore */ }
-
-      const res = await fetch("/api/story/generate-pdf", {
+      const res = await authFetchOnce("/api/story/generate-pdf", {
         method: "POST",
-        headers,
         body: JSON.stringify({ scenes, title, authorName, coverImage }),
       });
 

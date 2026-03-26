@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { PopupBookViewer } from "./PopupBookViewer";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useDIYStore } from "@/lib/hooks/useDIY";
-import { createClient } from "@/lib/supabase/client";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 const VALID_TOPICS = ["parenting", "healing", "growth", "relationship", "identity", "other"] as const;
 
@@ -61,18 +61,6 @@ export function DIYComplete({
 
   const writtenPages = imageOrder.filter((idx) => texts[idx]?.trim()).length;
 
-  async function getAuthHeaders(): Promise<Record<string, string>> {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    try {
-      const supabase = createClient();
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-      }
-    } catch { /* ignore */ }
-    return headers;
-  }
-
   async function handleSaveToLibrary() {
     if (!user) return;
     setSaving(true);
@@ -86,11 +74,8 @@ export function DIYComplete({
         imagePrompt: images[imgIdx],
       }));
 
-      const headers = await getAuthHeaders();
-      const res = await fetch("/api/stories", {
+      const res = await authFetchOnce("/api/stories", {
         method: "POST",
-        headers,
-        credentials: "include",
         body: JSON.stringify({
           title: storyTitle,
           scenes,
@@ -119,11 +104,8 @@ export function DIYComplete({
     setShareError(null);
 
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/stories/${savedStoryId}`, {
+      const res = await authFetchOnce(`/api/stories/${savedStoryId}`, {
         method: "PATCH",
-        headers,
-        credentials: "include",
         body: JSON.stringify({
           isPublic: true,
           authorAlias: authorAlias.trim(),

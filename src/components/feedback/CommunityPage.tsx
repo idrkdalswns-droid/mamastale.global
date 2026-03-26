@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { useChatStore } from "@/lib/hooks/useChat";
-import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { getAnonymousId } from "@/lib/utils/anonymous-id";
 import { containsProfanity } from "@/lib/utils/validation";
 
@@ -28,21 +28,6 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
     } catch { return {}; }
   });
   const { completedScenes, completedStoryId, storySaved, retrySaveStory } = useChatStore();
-
-  // SIM-FIX(S19): Get auth headers with Bearer token fallback
-  const getAuthHeaders = useCallback(async () => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    try {
-      const supabase = createClient();
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      }
-    } catch { /* ignore */ }
-    return headers;
-  }, []);
 
   // Interest click handler (illustration / video_story)
   const handleInterestClick = useCallback(async (featureType: "illustration" | "video_story") => {
@@ -85,15 +70,12 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
     setIsSharing(true);
     setShareError("");
     try {
-      // SIM-FIX(S19): Include Bearer token for cookie fallback
-      const headers = await getAuthHeaders();
       let res: Response;
 
       if (completedStoryId && storySaved) {
         // Story already saved — just update to public (no duplicate)
-        res = await fetch(`/api/stories/${completedStoryId}`, {
+        res = await authFetchOnce(`/api/stories/${completedStoryId}`, {
           method: "PATCH",
-          headers,
           body: JSON.stringify({
             isPublic: true,
             authorAlias: alias.trim() || "익명의 엄마",
@@ -105,9 +87,8 @@ export function CommunityPage({ onRestart, onViewStory }: CommunityPageProps) {
           ? `${completedScenes[0].title}의 이야기`
           : "나의 마음 동화";
 
-        res = await fetch("/api/stories", {
+        res = await authFetchOnce("/api/stories", {
           method: "POST",
-          headers,
           body: JSON.stringify({
             title,
             scenes: completedScenes,

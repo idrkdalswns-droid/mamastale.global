@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
-import { createClient } from "@/lib/supabase/client";
 import { nameWithParticle } from "@/lib/utils/korean";
+import { STORY_PRICE_FROM_DISPLAY } from "@/lib/constants/pricing";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 interface TurnFivePopupProps {
   /** Whether the user is logged in */
@@ -67,19 +68,9 @@ export default function TurnFivePopup({
     setTicketError(null);
 
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      } catch { /* Session read failed — proceed with cookies */ }
-
-      const res = await fetch("/api/tickets/use", {
+      // H12-FIX: Use authFetchOnce (centralized auth header wrapper)
+      const res = await authFetchOnce("/api/tickets/use", {
         method: "POST",
-        headers,
-        credentials: "include",
       });
 
       if (res.ok) {
@@ -227,7 +218,7 @@ export default function TurnFivePopup({
                   만들기 1회면 동화가 완성돼요
                 </p>
                 <p className="text-xs text-brown-pale font-light mt-1">
-                  ₩4,900부터
+                  {STORY_PRICE_FROM_DISPLAY}
                 </p>
               </div>
 

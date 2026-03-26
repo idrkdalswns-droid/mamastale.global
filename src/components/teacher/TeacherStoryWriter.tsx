@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import type { TeacherSpread, TeacherStory } from "@/lib/types/teacher";
 
 interface EditMode {
@@ -192,9 +193,9 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
         : "/api/teacher/stories";
       const method = isEdit ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      // H22-FIX: Use authFetchOnce for Bearer token + cookie auth
+      const res = await authFetchOnce(url, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
           spreads: nonEmptySpreads.map((s, i) => ({

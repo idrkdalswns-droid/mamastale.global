@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CoverPicker } from "@/components/story/CoverPicker";
-import { createClient } from "@/lib/supabase/client";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 interface CoverPickerModalProps {
   isOpen: boolean;
@@ -34,16 +34,8 @@ export function CoverPickerModal({
       setSaving(true);
       setError("");
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-        } catch { /* ignore */ }
-
-        const res = await fetch(`/api/stories/${storyId}`, {
+        const res = await authFetchOnce(`/api/stories/${storyId}`, {
           method: "PATCH",
-          headers,
           body: JSON.stringify({ coverImage: coverPath }),
         });
 

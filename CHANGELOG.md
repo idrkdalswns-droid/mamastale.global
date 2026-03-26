@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.48.5] - 2026-03-27
+
+### Fixed (Sprint 2: HIGH 코드 품질 13건)
+- H12: 9개 컴포넌트의 수동 Bearer 토큰 구성 → `authFetchOnce` 중앙 집중화
+- H13: 가격 하드코딩(₩4,900/₩3,920) → `pricing.ts` 상수 모듈로 추출
+- H14: retrySaveStory 1회 시도 → 지수 백오프 3회 재시도 (1s/2s/4s)
+- H16: PhaseHeader 라디오 버튼 `aria-checked` 접근성 추가
+- H17: `min-h-dvh` → `min-h-screen` 폴백 (구형 브라우저)
+- H19: 신규 유저 CAS 티켓 차감 → `decrement_ticket` RPC 통일
+- H20: `decrementCommunityCounters` 빈 함수 → 실제 카운터 감소 구현
+- H21: DELETE 에러 로깅에 `error.hint` 추가
+- H22: TeacherStoryWriter Bearer 토큰 → `authFetchOnce` 적용
+- H24: 메타데이터 RPC 실패 시 1회 재시도 + 구조화된 경고 로그
+
 ## [1.48.4] - 2026-03-27
 
 ### Fixed (Sprint 1: HIGH 보안+안정성 9건)

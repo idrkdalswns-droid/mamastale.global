@@ -7,7 +7,7 @@ import type {
   TeacherStory,
   TeacherSpread,
 } from "@/lib/types/teacher";
-import { createClient } from "@/lib/supabase/client";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { useTickets } from "@/lib/hooks/useTickets";
 import { WorksheetHistory } from "@/components/teacher/worksheet/WorksheetHistory";
@@ -136,16 +136,8 @@ export function TeacherPreview({
       setPdfError(null);
 
       try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-
-        const res = await fetch("/api/teacher/generate-pdf", {
+        const res = await authFetchOnce("/api/teacher/generate-pdf", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
           body: JSON.stringify({
             type,
             format,

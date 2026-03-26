@@ -113,24 +113,54 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      // Deduct 1 ticket from actual remaining (CAS guard)
-      const { data: updated, error: deductError } = await sb.client
-        .from("profiles")
-        .update({
-          free_stories_remaining: actualRemaining - 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id)
-        .eq("free_stories_remaining", actualRemaining)
-        .select("free_stories_remaining")
-        .single();
-
-      if (deductError || !updated) {
-        // R8-FIX(B2): CAS failure for new user = concurrent conflict, not genuinely out of tickets
-        return sb.applyCookies(NextResponse.json(
-          { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
-          { status: 409 }
-        ));
+      // H19-FIX: Use atomic RPC (same as existing user path) instead of CAS
+      let newUserRemaining: number;
+      try {
+        const { data, error: rpcErr } = await sb.client.rpc("decrement_ticket", {
+          p_user_id: user.id,
+        });
+        if (rpcErr) {
+          if (rpcErr.message?.includes("insufficient_tickets")) {
+            return sb.applyCookies(NextResponse.json(
+              { error: "no_tickets", message: "티켓이 부족합니다." },
+              { status: 403 }
+            ));
+          }
+          if (rpcErr.code === "PGRST116") {
+            // RPC not found — fall back to CAS for backward compatibility
+            console.warn("[Tickets/Use] decrement_ticket RPC not found (new user path)");
+            const { data: casResult, error: deductError } = await sb.client
+              .from("profiles")
+              .update({
+                free_stories_remaining: actualRemaining - 1,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", user.id)
+              .eq("free_stories_remaining", actualRemaining)
+              .select("free_stories_remaining")
+              .single();
+            if (deductError || !casResult) {
+              return sb.applyCookies(NextResponse.json(
+                { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
+                { status: 409 }
+              ));
+            }
+            newUserRemaining = casResult.free_stories_remaining;
+          } else {
+            throw rpcErr;
+          }
+        } else {
+          newUserRemaining = data as number;
+        }
+      } catch (rpcCatchErr) {
+        const errMsg = rpcCatchErr instanceof Error ? rpcCatchErr.message : String(rpcCatchErr);
+        if (errMsg.includes("insufficient_tickets")) {
+          return sb.applyCookies(NextResponse.json(
+            { error: "no_tickets", message: "티켓이 부족합니다." },
+            { status: 403 }
+          ));
+        }
+        throw rpcCatchErr;
       }
 
       // B3 Fix: Use subscriptions table (refund-aware)
@@ -138,7 +168,7 @@ export async function POST(request: NextRequest) {
 
       return sb.applyCookies(NextResponse.json({
         success: true,
-        remaining: updated.free_stories_remaining,
+        remaining: newUserRemaining,
         isPremium,
       }));
     }
@@ -213,26 +243,35 @@ export async function POST(request: NextRequest) {
     // Bug Bounty v1.42 Fix 1-1: Use JSONB partial update RPC to prevent metadata overwrite.
     // Previously used spread ({ ...metadata, last_ticket_used_at: ... }) which could overwrite
     // concurrent changes (e.g. processed_orders from payment webhook) → data loss.
-    try {
-      const { error: rpcErr } = await sb.client.rpc("update_profile_metadata_field", {
-        p_user_id: user.id,
-        p_key: "last_ticket_used_at",
-        p_value: JSON.stringify(new Date().toISOString()),
-      });
-      if (rpcErr && rpcErr.code === "PGRST116") {
-        // RPC not found — fallback to spread (backward compat, deploy 037_jsonb_partial_update.sql)
-        console.warn("[Tickets/Use] update_profile_metadata_field RPC not found — using spread fallback");
-        const fallbackMeta = await readMetadata(user.id);
-        await sb.client
-          .from("profiles")
-          .update({ metadata: { ...fallbackMeta, last_ticket_used_at: new Date().toISOString() } })
-          .eq("id", user.id);
-      } else if (rpcErr) {
-        console.warn("[Tickets/Use] RPC update_profile_metadata_field failed:", rpcErr.code);
+    // H24-FIX: Metadata update with 1 retry + structured warning
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { error: rpcErr } = await sb.client.rpc("update_profile_metadata_field", {
+          p_user_id: user.id,
+          p_key: "last_ticket_used_at",
+          p_value: JSON.stringify(new Date().toISOString()),
+        });
+        if (rpcErr && rpcErr.code === "PGRST116") {
+          // RPC not found — fallback to spread (backward compat)
+          console.warn("[Tickets/Use] update_profile_metadata_field RPC not found — using spread fallback");
+          const fallbackMeta = await readMetadata(user.id);
+          await sb.client
+            .from("profiles")
+            .update({ metadata: { ...fallbackMeta, last_ticket_used_at: new Date().toISOString() } })
+            .eq("id", user.id);
+          break; // Fallback succeeded
+        } else if (rpcErr) {
+          if (attempt === 0) {
+            console.warn(`[Tickets/Use] Metadata update attempt 1 failed: ${rpcErr.code}, retrying...`);
+            continue; // Retry once
+          }
+          console.error(`[Tickets/Use] Metadata update failed after retry: code=${rpcErr.code} hint=${rpcErr.hint || "none"}`);
+        }
+        break; // Success or final failure
+      } catch (err) {
+        if (attempt === 0) continue; // Retry once
+        console.error("[Tickets/Use] Failed to record last_ticket_used_at after retry:", err instanceof Error ? err.message : String(err));
       }
-    } catch {
-      // Non-critical — story save verification will be slightly less reliable
-      console.warn("[Tickets/Use] Failed to record last_ticket_used_at");
     }
 
     return sb.applyCookies(NextResponse.json({
