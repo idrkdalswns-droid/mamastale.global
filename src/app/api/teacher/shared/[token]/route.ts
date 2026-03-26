@@ -53,26 +53,19 @@ export async function GET(
     cookies: { getAll() { return []; }, setAll() {} },
   });
 
-  // 4. Query by share_token
+  // 4. Query by share_token — R6: include expiry check in WHERE to avoid loading expired stories
   const { data: story, error } = await supabase
     .from("teacher_stories")
-    .select("id, title, spreads, metadata, brief_context, cover_image, created_at, share_expires_at")
+    .select("id, title, spreads, metadata, brief_context, cover_image, created_at")
     .eq("share_token", token)
     .is("deleted_at", null)
+    .gt("share_expires_at", new Date().toISOString())
     .single();
 
   if (error || !story) {
     return NextResponse.json(
       { error: "동화를 찾을 수 없거나 공유가 만료되었습니다." },
       { status: 404 }
-    );
-  }
-
-  // 5. Check expiration
-  if (story.share_expires_at && new Date(story.share_expires_at) < new Date()) {
-    return NextResponse.json(
-      { error: "공유 링크가 만료되었습니다." },
-      { status: 410 }
     );
   }
 

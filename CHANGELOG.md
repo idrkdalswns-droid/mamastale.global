@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.48.1] - 2026-03-26
+
+### Fixed
+- R1: teacher/generate/story에 rate limiter 추가 (5/min/user) — 비용 남용 방지
+- R2: TeacherPreview debounce 타이머 unmount 시 cleanup 추가
+- R3: TeacherCelebration 커버 폴링 unmount 시 누수 방지
+- R4: TeacherHome fetch에 AbortController signal 연결
+- R5: useTeacherStore에 cancelStreaming 노출 + TeacherChat unmount cleanup
+- R6: shared token API 쿼리에 만료 조건 WHERE절 추가 (불필요한 DB 로드 방지)
+- R7: teacher stories/session 라우트에 감사 로깅(logEvent) 추가
+
 ## [1.48.0] - 2026-03-26
 
 ### Added

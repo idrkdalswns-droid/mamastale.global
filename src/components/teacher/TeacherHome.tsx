@@ -71,18 +71,20 @@ export function TeacherHome({
     return () => { document.body.style.overflow = ""; };
   }, [confirmDeleteId]);
 
-  const fetchSharedStories = useCallback(async (retryCount = 0) => {
+  // R4: Pass AbortSignal to fetch for proper unmount cleanup
+  const fetchSharedStories = useCallback(async (retryCount = 0, signal?: AbortSignal) => {
     setSharedLoading(true);
     setSharedError(false);
     try {
-      const res = await fetch("/api/teacher/stories?scope=shared");
+      const res = await fetch("/api/teacher/stories?scope=shared", { signal });
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
       setSharedStories(data.stories || []);
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       if (retryCount < 2) {
         await new Promise(r => setTimeout(r, 1000));
-        return fetchSharedStories(retryCount + 1);
+        return fetchSharedStories(retryCount + 1, signal);
       }
       setSharedError(true);
     } finally {
@@ -90,10 +92,9 @@ export function TeacherHome({
     }
   }, []);
 
-  // Fix 2-19: AbortController to cancel fetch on unmount
   useEffect(() => {
     const controller = new AbortController();
-    fetchSharedStories(0);
+    fetchSharedStories(0, controller.signal);
     return () => controller.abort();
   }, [fetchSharedStories]);
 

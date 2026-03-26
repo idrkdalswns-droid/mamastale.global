@@ -16,6 +16,7 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { isValidUUID, containsProfanity, sanitizeSceneText } from "@/lib/utils/validation";
+import { logEvent } from "@/lib/utils/llm-logger";
 
 const limiter = createInMemoryLimiter("teacher_story_detail");
 
@@ -263,6 +264,16 @@ export async function DELETE(
       NextResponse.json({ error: "동화를 찾을 수 없거나 이미 삭제되었습니다." }, { status: 404 })
     );
   }
+
+  // R7: Audit log for story deletion
+  logEvent({
+    eventType: "teacher_story_deleted",
+    endpoint: `/api/teacher/stories/${id}`,
+    method: "DELETE",
+    statusCode: 200,
+    userId: user.id,
+    metadata: { storyId: id },
+  });
 
   return sb.applyCookies(NextResponse.json({ success: true }));
 }

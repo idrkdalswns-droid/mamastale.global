@@ -61,6 +61,7 @@ interface TeacherState {
   addSystemGreeting: (content: string) => void;
   persistToStorage: () => void;
   restoreFromStorage: () => boolean;
+  cancelStreaming: () => void;
   sendMessageStreaming: (text: string, forceGenerate?: boolean) => Promise<boolean>;
 }
 
@@ -143,6 +144,11 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
         phase: get().currentPhase,
       }],
     }));
+  },
+
+  // R5: Cancel ongoing streaming (e.g. on component unmount)
+  cancelStreaming: () => {
+    currentAbort?.abort();
   },
 
   reset: () => {

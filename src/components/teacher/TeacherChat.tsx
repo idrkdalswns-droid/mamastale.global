@@ -47,8 +47,11 @@ export function TeacherChat({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
 
-  // Cleanup generate timer on unmount
-  useEffect(() => () => clearTimeout(generateTimerRef.current), []);
+  // Cleanup generate timer + cancel streaming on unmount (R5)
+  useEffect(() => () => {
+    clearTimeout(generateTimerRef.current);
+    useTeacherStore.getState().cancelStreaming();
+  }, []);
 
   // 10턴 자동 생성: done.generateReady 플래그 감지
   useEffect(() => {

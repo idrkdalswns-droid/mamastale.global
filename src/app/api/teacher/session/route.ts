@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { logEvent } from "@/lib/utils/llm-logger";
 import { z } from "zod";
 
 const sessionDeleteLimiter = createInMemoryLimiter("teacher_session_delete", { maxEntries: 200 });
@@ -265,6 +266,16 @@ export async function DELETE(request: NextRequest) {
       NextResponse.json({ error: "세션 종료에 실패했습니다." }, { status: 500 })
     );
   }
+
+  // R7: Audit log for session termination
+  logEvent({
+    eventType: "teacher_session_ended",
+    endpoint: "/api/teacher/session",
+    method: "DELETE",
+    statusCode: 200,
+    userId: user.id,
+    metadata: { sessionId },
+  });
 
   return sb.applyCookies(
     NextResponse.json({ success: true })

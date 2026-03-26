@@ -48,6 +48,13 @@ export function TeacherPreview({
     setCurrentPage(0);
   }, [story.spreads]);
 
+  // R2: Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
+
   const metadata = story.metadata || {};
   const spreads = editedSpreads;
   const totalPages = Math.max(1, Math.ceil(spreads.length / 2));

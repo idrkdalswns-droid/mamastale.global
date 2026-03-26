@@ -26,7 +26,10 @@ import { parseTeacherStory, extractStoryTitle } from "@/lib/utils/teacher-story-
 import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
 import type { Scene } from "@/lib/types/story";
+import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
+
+const limiter = createInMemoryLimiter(RATE_KEYS.TEACHER_GENERATE_STORY);
 
 const requestSchema = z.object({
   sessionId: z.string().uuid(),
@@ -81,6 +84,14 @@ export async function POST(request: NextRequest) {
 
   const user = await resolveUser(sb.client, request);
   if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+
+  // R1: Rate limit — 5 requests per minute per user
+  if (!limiter.check(user.id, 5, 60_000)) {
+    return NextResponse.json(
+      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
 
   let body: z.infer<typeof requestSchema>;
   try {

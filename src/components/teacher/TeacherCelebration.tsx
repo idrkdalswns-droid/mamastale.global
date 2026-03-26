@@ -24,6 +24,7 @@ export function TeacherCelebration({
   const pollRef = useRef(0);
 
   // 표지 이미지 폴링 (3초 간격, 최대 30초)
+  // R3: Track all inner timeouts for proper cleanup on unmount
   useEffect(() => {
     if (coverImage || !sessionId) {
       setCoverLoading(false);
@@ -32,9 +33,11 @@ export function TeacherCelebration({
 
     const MAX_POLLS = 10;
     const INTERVAL = 3000;
+    let cancelled = false;
+    let activeTimer: ReturnType<typeof setTimeout>;
 
     const poll = async () => {
-      if (pollRef.current >= MAX_POLLS) {
+      if (cancelled || pollRef.current >= MAX_POLLS) {
         setCoverLoading(false);
         return;
       }
@@ -47,7 +50,7 @@ export function TeacherCelebration({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId }),
         });
-        if (res.ok) {
+        if (!cancelled && res.ok) {
           const data = await res.json();
           if (data.coverImage) {
             setCoverImage(data.coverImage);
@@ -59,11 +62,16 @@ export function TeacherCelebration({
         // 폴링 실패는 무시
       }
 
-      setTimeout(poll, INTERVAL);
+      if (!cancelled) {
+        activeTimer = setTimeout(poll, INTERVAL);
+      }
     };
 
-    const timer = setTimeout(poll, INTERVAL);
-    return () => clearTimeout(timer);
+    activeTimer = setTimeout(poll, INTERVAL);
+    return () => {
+      cancelled = true;
+      clearTimeout(activeTimer);
+    };
   }, [coverImage, sessionId]);
 
   return (

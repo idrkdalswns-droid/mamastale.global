@@ -15,6 +15,7 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID } from "@/lib/utils/validation";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { logEvent } from "@/lib/utils/llm-logger";
 
 const limiter = createInMemoryLimiter("teacher_story_share");
 
@@ -99,6 +100,16 @@ export async function POST(
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://mamastale-global.pages.dev";
+
+  // R7: Audit log for share token creation
+  logEvent({
+    eventType: "teacher_share_created",
+    endpoint: `/api/teacher/stories/${id}/share`,
+    method: "POST",
+    statusCode: 200,
+    userId: user.id,
+    metadata: { storyId: id, expiresAt },
+  });
 
   return sb.applyCookies(
     NextResponse.json({
