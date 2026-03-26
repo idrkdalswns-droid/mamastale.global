@@ -34,21 +34,39 @@ export function ResultStep() {
     iframe.style.border = "none";
     document.body.appendChild(iframe);
 
+    // R2 FIX: Safe iframe removal helper
+    const removeIframe = () => {
+      try {
+        if (iframe.parentNode) document.body.removeChild(iframe);
+      } catch { /* already removed */ }
+    };
+
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (doc) {
       doc.open();
       doc.write(generatedHtml);
       doc.close();
 
+      // R2 FIX: Error handler for iframe load failure
+      iframe.onerror = removeIframe;
+
       // 폰트 로딩 완료 대기 후 인쇄
       iframe.onload = () => {
-        setTimeout(() => {
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-          }, 1000);
+        const printTimer = setTimeout(() => {
+          try {
+            iframe.contentWindow?.print();
+          } catch { /* print dialog cancelled or failed */ }
+          const cleanupTimer = setTimeout(removeIframe, 1000);
+          // Fallback: ensure cleanup even if timer somehow leaks
+          if (typeof cleanupTimer === "number") void cleanupTimer;
         }, 500);
+        if (typeof printTimer === "number") void printTimer;
       };
+
+      // R2 FIX: Fallback — remove iframe after 10s no matter what
+      setTimeout(removeIframe, 10_000);
+    } else {
+      removeIframe();
     }
   }, [generatedHtml]);
 

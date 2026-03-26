@@ -8,11 +8,11 @@ import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { useTickets, invalidateTicketCache } from "@/lib/hooks/useTickets";
 
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { trackScreenView } from "@/lib/utils/analytics";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
 import { DIY_STORIES } from "@/lib/constants/diy-stories";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
@@ -360,17 +360,9 @@ export default function Home() {
     setEditedTitle(title);
     if (completedStoryId && completedStoryId.startsWith("story_") === false) {
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          if (supabase) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-        } catch { /* ignore */ }
-        const res = await fetch(`/api/stories/${completedStoryId}`, {
+        // C1 FIX: Use authFetchOnce for guaranteed auth (Bearer + cookie fallback)
+        const res = await authFetchOnce(`/api/stories/${completedStoryId}`, {
           method: "PATCH",
-          headers,
           body: JSON.stringify({ title, scenes: edited }),
         });
         if (!res.ok) setEditSaveError(true);
@@ -385,21 +377,17 @@ export default function Home() {
     setSelectedCover(coverPath);
     if (completedStoryId && !completedStoryId.startsWith("story_")) {
       try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        try {
-          const supabase = createClient();
-          if (supabase) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
-        } catch { /* ignore */ }
-        await fetch(`/api/stories/${completedStoryId}`, {
+        // C1 FIX: Use authFetchOnce for guaranteed auth (Bearer + cookie fallback)
+        // H8 FIX: Show toast on cover save failure
+        const res = await authFetchOnce(`/api/stories/${completedStoryId}`, {
           method: "PATCH",
-          headers,
           body: JSON.stringify({ coverImage: coverPath }),
         });
+        if (!res.ok) {
+          toast.error("표지 저장에 실패했어요. 서재에서 다시 설정할 수 있어요.");
+        }
       } catch {
-        console.warn("[CoverPicker] Failed to persist cover_image to DB");
+        toast.error("표지 저장에 실패했어요. 서재에서 다시 설정할 수 있어요.");
       }
     }
     // Freemium v2: first story → show preview notice before viewer

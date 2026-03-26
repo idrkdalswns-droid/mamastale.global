@@ -103,7 +103,9 @@ export async function POST(request: NextRequest) {
   // Bug Bounty 3-2 FIX: Verify ticket was recently deducted via /api/tickets/use
   // Prevents direct POST to /api/stories without paying a ticket
   // 1.4 FIX: Hoist lastTicketUse for CAS clear after successful save
+  // C2 FIX: Async verification pattern — save story on DB hiccup, flag for review
   let verifiedTicketTimestamp: string | undefined;
+  let ticketVerificationFailed = false;
   try {
     const { data: ticketProfile } = await sb.client
       .from("profiles")
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
     verifiedTicketTimestamp = lastTicketUse;
   } catch (ticketCheckErr) {
-    // Retry once before allowing save
+    // Retry once before flagging
     try {
       const { data: retryProfile } = await sb.client.from("profiles").select("metadata").eq("id", user.id).single();
       const retryMeta = (retryProfile?.metadata as Record<string, unknown>) || {};
@@ -132,7 +134,10 @@ export async function POST(request: NextRequest) {
       }
       verifiedTicketTimestamp = retryTicketUse;
     } catch {
-      console.warn("[Stories] Ticket verification retry also failed — allowing save");
+      // C2: DB hiccup — don't destroy user's 20-min conversation
+      // Save story with pending flag, alert for manual review
+      console.warn("[Stories] Ticket verification failed after retry — saving with pending flag");
+      ticketVerificationFailed = true;
     }
   }
 
@@ -327,6 +332,40 @@ export async function POST(request: NextRequest) {
     }
 
     const storyId = insertResult.data.id;
+
+    // C2: If ticket verification failed due to DB hiccup, flag story + alert
+    if (ticketVerificationFailed) {
+      // Fire-and-forget: update story metadata with pending flag
+      (async () => {
+        try {
+          await sb.client
+            .from("stories")
+            .update({
+              metadata: {
+                ...(metadata || {}),
+                ticket_verification_pending: true,
+                ticket_verification_failed_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", storyId);
+          console.warn("[Stories] Marked story as ticket_verification_pending:", storyId);
+        } catch (e) {
+          console.error("[Stories] Failed to mark pending flag:", e);
+        }
+      })();
+
+      // Slack alert for manual review
+      const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+      if (slackUrl) {
+        fetch(slackUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `⚠️ [Stories] 티켓 검증 실패 (DB 히컵) — storyId: ${storyId}, userId: ${user.id.slice(0, 8)}... — 수동 확인 필요`,
+          }),
+        }).catch(() => {});
+      }
+    }
 
     // 1.4 FIX: CAS-clear ticket timestamp to prevent reuse within 30min window
     // Only clears if the timestamp matches what we verified earlier (atomic)

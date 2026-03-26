@@ -48,10 +48,12 @@ export function TeacherPreview({
     setCurrentPage(0);
   }, [story.spreads]);
 
-  // R2: Cleanup debounce timer on unmount
+  // R2: Cleanup debounce timer + status reset timer on unmount
+  const statusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
     };
   }, []);
 
@@ -87,7 +89,8 @@ export function TeacherPreview({
             });
             if (res.ok) {
               setSaveStatus("saved");
-              setTimeout(() => setSaveStatus("idle"), 1500);
+              // R2 FIX: Track status reset timer for cleanup
+              statusTimerRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
             } else {
               setSaveStatus("error");
               toast.error("저장에 실패했습니다.");

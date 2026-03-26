@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.48.3] - 2026-03-26
+
+### Fixed
+- C2: 티켓 검증 DB 히컵 시 fail-open → 비동기 검증 패턴 (저장 보장 + pending 플래그 + Slack 알림)
+- C1: page.tsx PATCH 호출에 createAuthFetch 적용 — Bearer + cookie 이중 인증 보장
+- H8: 커버 저장 실패 시 사용자 toast 피드백 추가
+- R2: ResultStep/WorksheetHistory iframe cleanup 안전 패턴 (onerror + 10s fallback)
+- R3: TeacherPreview setSaveStatus 타이머 ref 추적 + unmount cleanup
+
+### Added
+- `src/lib/utils/auth-fetch.ts` — createAuthFetch() / authFetchOnce() 중앙 인증 wrapper
+
 ## [1.48.2] - 2026-03-26
 
 ### Fixed

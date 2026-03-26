@@ -110,7 +110,7 @@ export function WorksheetHistory({ storyId }: WorksheetHistoryProps) {
         return;
       }
 
-      // iframe print (same pattern as ResultStep)
+      // iframe print (R2 FIX: safe cleanup pattern)
       const iframe = document.createElement("iframe");
       iframe.style.position = "fixed";
       iframe.style.right = "0";
@@ -120,20 +120,31 @@ export function WorksheetHistory({ storyId }: WorksheetHistoryProps) {
       iframe.style.border = "none";
       document.body.appendChild(iframe);
 
+      const removeIframe = () => {
+        try {
+          if (iframe.parentNode) document.body.removeChild(iframe);
+        } catch { /* already removed */ }
+      };
+
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (doc) {
         doc.open();
         doc.write(data.html_content);
         doc.close();
 
+        iframe.onerror = removeIframe;
         iframe.onload = () => {
           setTimeout(() => {
-            iframe.contentWindow?.print();
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-            }, 1000);
+            try {
+              iframe.contentWindow?.print();
+            } catch { /* print cancelled */ }
+            setTimeout(removeIframe, 1000);
           }, 500);
         };
+        // Fallback: remove after 10s
+        setTimeout(removeIframe, 10_000);
+      } else {
+        removeIframe();
       }
     } catch {
       showRetryToast("인쇄에 실패했습니다.", () => handlePrint(worksheetId));
