@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.48.0] - 2026-03-26
+
+### Added
+- 교사→학부모 동화 공유 링크 (POST/DELETE /api/teacher/stories/[id]/share, 30일 만료)
+- 공유 동화 공개 뷰어 (/community/teacher/[token], 인증 불필요)
+- Toss 관리자 환불 API (POST /api/admin/refund) + 관리자 페이지 UI
+- 교사 동화 생성 2단계 분리 API (brief + story, Edge 30초 제한 대응)
+- SW 업데이트 배너 (SWUpdateBanner, skipWaiting:false 대응)
+- GA4 퍼널 트래킹 재활성화 (ConsentGatedScripts 쿠키 동의 연동)
+- 동화 완성 후 Web Share API 공유 버튼
+- checkPremiumStatus() 공유 함수 (환불 후 premium 해제 지원)
+
+### Changed
+- 교사 세션 만료 3시간 → 6시간 (수업 리듬 반영)
+- 교사 세션 연장 1시간 → 6시간 (생성 중 만료 방지)
+- CTA 서브텍스트 "심리학 기반 4단계 치유 대화 엔진" → "당신만을 위한 치유 이야기"
+- 환불 문구 "환불 불가" → "미사용 티켓은 고객센터를 통해 환불 가능"
+- 워크시트 결과 버튼 "인쇄하기 / PDF 저장" → "PDF로 저장하기" + 도움말
+- 커버 이미지 생성 동기→비동기 (fire-and-forget, 응답 속도 개선)
+- 에러 메시지 "DB not configured" 등 영문 → 한국어 통일
+- payments/confirm Toss 응답 any → Zod 검증 (BS4 타입 안전성)
+
+### Fixed
+- CTA 비로그인 무한 로딩 버그 (useAuth 5초 타임아웃 추가)
+- 서재 동화 카드 "0장면" 표시 버그 (scenes 필드 SELECT 누락)
+- 환불 후 premium 플래그 미초기화 (subscriptions 테이블 기반 조회)
+- 티켓 롤백 실패 시 복구 경로 추가 (재시도 + error_logs + Slack)
+- 모든 429 응답에 Retry-After 헤더 추가
+
 ## [1.47.1] - 2026-03-26
 
 ### Added
