@@ -13,12 +13,14 @@ import { WorksheetHistory } from "@/components/teacher/worksheet/WorksheetHistor
 import { SpreadEditor } from "@/components/teacher/preview/SpreadEditor";
 import { SpreadNavigation } from "@/components/teacher/preview/SpreadNavigation";
 import { TeacherActions } from "@/components/teacher/preview/TeacherActions";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 
 interface TeacherPreviewProps {
   story: TeacherStory;
   onNewStory: () => void;
   onBack?: () => void;
   onEditStory?: () => void;
+  onStoryDeleted?: (storyId: string) => void;
 }
 
 /** 스프레드 배경색 — 3막 구조에 따른 색상 */
@@ -33,6 +35,7 @@ export function TeacherPreview({
   onNewStory,
   onBack,
   onEditStory,
+  onStoryDeleted,
 }: TeacherPreviewProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [editingSpread, setEditingSpread] = useState<number | null>(null);
@@ -42,6 +45,8 @@ export function TeacherPreview({
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { ticketData } = useTickets();
 
   useEffect(() => {
@@ -248,6 +253,24 @@ export function TeacherPreview({
     useWorksheetStore.getState().open(story.id!, story.title || "동화");
   }, [story.id, story.title, ticketData.worksheetTicketsRemaining]);
 
+  // ─── 삭제 ───
+  const handleDelete = useCallback(async () => {
+    if (!story?.id || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/teacher/stories/${story.id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success("동화가 삭제되었습니다.");
+      setShowDeleteConfirm(false);
+      onStoryDeleted?.(story.id);
+      onBack?.();
+    } catch {
+      toast.error("삭제에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [story?.id, isDeleting, onStoryDeleted, onBack]);
+
   return (
     <div className="flex flex-col min-h-[60dvh]">
       {/* 헤더 */}
@@ -342,10 +365,31 @@ export function TeacherPreview({
         onShare={handleShare}
         onEditStory={onEditStory}
         onOpenWorksheet={handleOpenWorksheet}
+        onDelete={() => setShowDeleteConfirm(true)}
       />
 
       {/* ─── 활동지 히스토리 ─── */}
       {story.id && <WorksheetHistory storyId={story.id} />}
+
+      {/* ─── 삭제 확인 모달 ─── */}
+      <FocusTrapModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} label="동화 삭제 확인" role="alertdialog">
+        <div className="bg-white rounded-2xl p-5 mx-6 max-w-[320px] shadow-xl">
+          <h3 className="text-[15px] font-bold text-center mb-2" style={{ color: "rgb(var(--brown))" }}>
+            이 동화를 삭제할까요?
+          </h3>
+          <p className="text-[12px] text-center mb-4" style={{ color: "rgb(var(--brown-light))" }}>
+            삭제된 동화는 복구할 수 없습니다.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border" style={{ borderColor: "rgb(var(--brown-pale))", color: "rgb(var(--brown))" }}>
+              취소
+            </button>
+            <button onClick={handleDelete} disabled={isDeleting} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white" style={{ background: "#DC2626" }}>
+              {isDeleting ? "삭제 중..." : "삭제"}
+            </button>
+          </div>
+        </div>
+      </FocusTrapModal>
     </div>
   );
 }

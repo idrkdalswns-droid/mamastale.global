@@ -83,9 +83,11 @@ interface StoryViewerProps {
   onUnlock?: () => void;
   /** Freemium v2: Preview mode — full scenes shown but PDF/share/edit hidden */
   previewMode?: boolean;
+  /** Callback for delete button */
+  onDelete?: () => void;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode, onDelete }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -341,6 +343,18 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   aria-label="동화 수정"
                 >
                   수정
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  className="w-11 h-11 rounded-full active:scale-90 transition-transform ml-1 flex items-center justify-center text-brown-pale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
+                  aria-label="동화 삭제"
+                >
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h14M8 6V4a1 1 0 011-1h2a1 1 0 011 1v2M5 6v11a2 2 0 002 2h6a2 2 0 002-2V6" />
+                    <path d="M9 10v5M11 10v5" />
+                  </svg>
                 </button>
               )}
             </div>

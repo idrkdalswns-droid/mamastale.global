@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { PopupBookViewer } from "./PopupBookViewer";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useDIYStore } from "@/lib/hooks/useDIY";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
@@ -50,6 +51,8 @@ export function DIYComplete({
   const { savedStoryId, setSavedStoryId } = useDIYStore();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [showFreeWarning, setShowFreeWarning] = useState(false);
 
   // Community share state
   const [showShareForm, setShowShareForm] = useState(false);
@@ -212,7 +215,7 @@ export function DIYComplete({
         {!savedStoryId ? (
           user ? (
             <button
-              onClick={handleSaveToLibrary}
+              onClick={() => setShowFreeWarning(true)}
               disabled={saving}
               className="w-full py-3 rounded-full text-[13px] font-medium transition-all active:scale-[0.97] disabled:opacity-60"
               style={{
@@ -383,6 +386,30 @@ export function DIYComplete({
           다른 동화 고르기
         </Link>
       </motion.div>
+
+      {/* 무료 저장 안내 모달 */}
+      <FocusTrapModal isOpen={showFreeWarning} onClose={() => setShowFreeWarning(false)} label="무료 저장 안내" role="alertdialog">
+        <div className="bg-white rounded-2xl p-5 mx-6 max-w-[320px] shadow-xl">
+          <div className="text-center mb-3">
+            <span className="text-3xl">{String.fromCodePoint(0x1F4DA)}</span>
+          </div>
+          <h3 className="text-[15px] font-bold text-center mb-2" style={{ color: "rgb(var(--brown))" }}>
+            무료 저장 안내
+          </h3>
+          <p className="text-[13px] text-center mb-4 leading-relaxed" style={{ color: "rgb(var(--brown-light))" }}>
+            3일 동안 무료로 열람할 수 있어요.<br/>
+            이후에는 티켓 구매 후 다시 볼 수 있습니다.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowFreeWarning(false)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border" style={{ borderColor: "rgb(var(--brown-pale))", color: "rgb(var(--brown))" }}>
+              취소
+            </button>
+            <button onClick={() => { setShowFreeWarning(false); handleSaveToLibrary(); }} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white" style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}>
+              저장하기
+            </button>
+          </div>
+        </div>
+      </FocusTrapModal>
     </div>
   );
 }

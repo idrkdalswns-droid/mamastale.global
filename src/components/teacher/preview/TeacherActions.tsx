@@ -15,6 +15,7 @@ export interface TeacherActionsProps {
   onShare: () => void;
   onEditStory?: () => void;
   onOpenWorksheet: () => void;
+  onDelete?: () => void;
 }
 
 export function TeacherActions({
@@ -27,6 +28,7 @@ export function TeacherActions({
   onShare,
   onEditStory,
   onOpenWorksheet,
+  onDelete,
 }: TeacherActionsProps) {
   return (
     <>
@@ -136,6 +138,18 @@ export function TeacherActions({
           )}
         </div>
       </div>
+
+      {/* ─── 삭제 버튼 ─── */}
+      {onDelete && (
+        <div className="mt-8 pt-4 border-t border-brown-pale/20 flex justify-center">
+          <button
+            onClick={onDelete}
+            className="text-[12px] text-red-400 hover:text-red-500 transition-colors py-2 px-4"
+          >
+            이 동화 삭제하기
+          </button>
+        </div>
+      )}
     </>
   );
 }

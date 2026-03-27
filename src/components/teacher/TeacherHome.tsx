@@ -2,11 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import toast from "react-hot-toast";
-import { showRetryToast } from "@/components/ui/RetryableToast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getDefaultCover } from "@/lib/utils/default-cover";
-import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import type {
   TeacherOnboarding,
   TeacherMessage,
@@ -59,19 +56,6 @@ export function TeacherHome({
   const [sharedStories, setSharedStories] = useState<StoryListItem[] | null>(null);
   const [sharedLoading, setSharedLoading] = useState(false);
   const [sharedError, setSharedError] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  // H4: 삭제 모달 scroll lock + cleanup 복원
-  useEffect(() => {
-    if (confirmDeleteId) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [confirmDeleteId]);
-
   // R4: Pass AbortSignal to fetch for proper unmount cleanup
   const fetchSharedStories = useCallback(async (retryCount = 0, signal?: AbortSignal) => {
     setSharedLoading(true);
@@ -97,29 +81,6 @@ export function TeacherHome({
     const controller = new AbortController();
     fetchSharedStories(0, controller.signal);
     return () => controller.abort();
-  }, [fetchSharedStories]);
-
-  // 삭제 핸들러
-  const handleDelete = useCallback(async (storyId: string) => {
-    setDeletingId(storyId);
-    setConfirmDeleteId(null);
-
-    // 옵티미스틱 UI: 즉시 제거
-    setSharedStories(prev => prev ? prev.filter(s => s.id !== storyId) : prev);
-
-    try {
-      const res = await fetch(`/api/teacher/stories/${storyId}`, { method: "DELETE" });
-      if (!res.ok) {
-        throw new Error("delete failed");
-      }
-      toast.success("동화가 삭제되었습니다.");
-    } catch {
-      showRetryToast("삭제에 실패했습니다.", () => handleDelete(storyId));
-      // 롤백: 다시 불러오기
-      fetchSharedStories();
-    } finally {
-      setDeletingId(null);
-    }
   }, [fetchSharedStories]);
 
   const hasInProgressChat = messages.length > 0 && onboarding && currentPhase !== "DONE";
@@ -314,15 +275,11 @@ export function TeacherHome({
 
           {!sharedLoading && !sharedError && sharedStories && sharedStories.length > 0 && (
             <div className="grid grid-cols-2 gap-3" role="list">
-              {sharedStories.map((story) => {
-                const isDeleting = deletingId === story.id;
-
-                return (
+              {sharedStories.map((story) => (
                   <div
                     key={story.id}
                     role="listitem"
-                    className={`rounded-xl overflow-hidden transition-all relative
-                               ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
+                    className="rounded-xl overflow-hidden transition-all relative"
                     style={{
                       background: "rgba(255,255,255,0.7)",
                       border: "1px solid rgba(196,149,106,0.1)",
@@ -332,7 +289,6 @@ export function TeacherHome({
                     {/* 카드 클릭 영역 */}
                     <button
                       onClick={() => {
-                        if (isDeleting) return;
                         onViewStory({
                           id: story.id,
                           sessionId: story.session_id,
@@ -345,7 +301,6 @@ export function TeacherHome({
                           createdAt: story.created_at,
                         });
                       }}
-                      disabled={isDeleting}
                       className="w-full text-left active:scale-[0.97] transition-all"
                       aria-label={`${story.title || "제목 없는 동화"} 열기`}
                     >
@@ -386,64 +341,13 @@ export function TeacherHome({
                         </div>
                       </div>
                     </button>
-
-                    {/* 삭제 버튼 — 카드 button의 sibling (클릭 전파 없음) */}
-                    {story.is_mine !== false && (
-                      <button
-                        onClick={() => setConfirmDeleteId(story.id)}
-                        disabled={isDeleting}
-                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/30 backdrop-blur-sm
-                                   flex items-center justify-center text-white/80
-                                   active:scale-[0.9] transition-all"
-                        aria-label={isDeleting ? "삭제 중" : "삭제"}
-                        aria-busy={isDeleting}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    )}
                   </div>
-                );
-              })}
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* 삭제 확인 모달 — FocusTrapModal (T-F29) */}
-      <FocusTrapModal
-        isOpen={!!confirmDeleteId}
-        onClose={() => setConfirmDeleteId(null)}
-        label="동화 삭제 확인"
-        role="alertdialog"
-        overlayClassName="fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm"
-        className="w-full max-w-[430px]"
-      >
-        <div className="bg-paper rounded-t-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <p className="text-sm font-medium text-brown text-center mb-1">
-            이 동화를 삭제할까요?
-          </p>
-          <p className="text-xs text-brown-light text-center mb-5">
-            삭제된 동화는 복구할 수 없습니다.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setConfirmDeleteId(null)}
-              className="flex-1 py-3 rounded-xl text-sm font-medium text-brown
-                         border border-brown-pale/30 active:scale-[0.97] transition-all"
-            >
-              취소
-            </button>
-            <button
-              onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
-              className="flex-1 py-3 rounded-xl text-sm font-medium text-white
-                         active:scale-[0.97] transition-all"
-              style={{ background: "#DC2626" }}
-            >
-              삭제
-            </button>
-          </div>
-        </div>
-      </FocusTrapModal>
     </div>
   );
 }

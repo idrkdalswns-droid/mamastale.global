@@ -8,6 +8,7 @@ import { CoverPicker } from "@/components/story/CoverPicker";
 import { CoverPickerModal } from "@/components/story/CoverPickerModal";
 import { PopupBookViewer } from "@/components/diy/PopupBookViewer";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
@@ -34,6 +35,7 @@ interface StoryData {
   cover_image?: string;
   source?: string;
   is_unlocked?: boolean;
+  is_locked?: boolean;
   total_scenes?: number;
 }
 
@@ -52,6 +54,10 @@ export default function LibraryStoryPage() {
   const [publishing, setPublishing] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [showCoverPickerAfterEdit, setShowCoverPickerAfterEdit] = useState(false);
+  // Delete state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // DIY story states
   const [diyPage, setDiyPage] = useState(0);
   const [showDiyShareForm, setShowDiyShareForm] = useState(false);
@@ -181,6 +187,24 @@ export default function LibraryStoryPage() {
     [story, getHeaders]
   );
 
+  // Delete story
+  const handleDeleteStory = useCallback(async () => {
+    if (!story?.id || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`/api/stories/${story.id}`, { method: "DELETE", headers });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success("동화가 삭제되었습니다.");
+      setShowDeleteConfirm(false);
+      router.push("/library");
+    } catch {
+      toast.error("삭제에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [story?.id, isDeleting, getHeaders, router]);
+
   if (loading || saving) {
     return (
       <div className="min-h-dvh bg-cream flex items-center justify-center">
@@ -210,6 +234,37 @@ export default function LibraryStoryPage() {
             style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
           >
             내 서재로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If story is locked, show purchase prompt
+  if (story && story.is_locked) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6" style={{ background: "rgb(var(--cream))" }}>
+        <div className="text-center">
+          <span className="text-5xl mb-4 block">{String.fromCodePoint(0x1F49B)}</span>
+          <h2 className="text-[18px] font-bold mb-2" style={{ color: "rgb(var(--brown))" }}>
+            소중한 동화가 기다리고 있어요
+          </h2>
+          <p className="text-[13px] mb-6" style={{ color: "rgb(var(--brown-light))" }}>
+            티켓을 구매하면 언제든 다시 만날 수 있어요
+          </p>
+          <button
+            onClick={() => router.push("/pricing")}
+            className="px-6 py-3 rounded-full text-white text-[14px] font-medium"
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
+          >
+            티켓 구매하고 다시 만나기
+          </button>
+          <button
+            onClick={() => router.push("/library")}
+            className="block mx-auto mt-4 text-[12px] underline"
+            style={{ color: "rgb(var(--brown-pale))" }}
+          >
+            서재로 돌아가기
           </button>
         </div>
       </div>
@@ -280,7 +335,16 @@ export default function LibraryStoryPage() {
             <h2 className="text-[14px] font-serif font-bold text-brown truncate max-w-[200px]">
               {story.title || "DIY 동화"}
             </h2>
-            <div className="w-[44px]" />
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-brown-pale active:scale-[0.9] transition-transform"
+              aria-label="동화 삭제"
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h14M8 6V4a1 1 0 011-1h2a1 1 0 011 1v2M5 6v11a2 2 0 002 2h6a2 2 0 002-2V6" />
+                <path d="M9 10v5M11 10v5" />
+              </svg>
+            </button>
           </div>
 
           {/* PopupBookViewer read-only */}
@@ -363,6 +427,26 @@ export default function LibraryStoryPage() {
               </div>
             )}
           </div>
+
+          {/* 삭제 확인 모달 */}
+          <FocusTrapModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} label="동화 삭제 확인" role="alertdialog">
+            <div className="bg-white rounded-2xl p-5 mx-6 max-w-[320px] shadow-xl">
+              <h3 className="text-[15px] font-bold text-center mb-2" style={{ color: "rgb(var(--brown))" }}>
+                이 동화를 삭제할까요?
+              </h3>
+              <p className="text-[12px] text-center mb-4" style={{ color: "rgb(var(--brown-light))" }}>
+                삭제된 동화는 복구할 수 없습니다.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border" style={{ borderColor: "rgb(var(--brown-pale))", color: "rgb(var(--brown))" }}>
+                  취소
+                </button>
+                <button onClick={handleDeleteStory} disabled={isDeleting} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white" style={{ background: "#DC2626" }}>
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </button>
+              </div>
+            </div>
+          </FocusTrapModal>
         </div>
       </ErrorBoundary>
     );
@@ -387,6 +471,7 @@ export default function LibraryStoryPage() {
       isLocked={story.is_unlocked === false}
       totalScenes={story.total_scenes}
       onUnlock={() => router.push("/pricing")}
+      onDelete={() => setShowDeleteConfirm(true)}
     />
 
     {/* Cover picker modal (from viewer "표지" button) */}
@@ -398,6 +483,26 @@ export default function LibraryStoryPage() {
       onCoverChange={handleCoverChange}
       onClose={() => setShowCoverPicker(false)}
     />
+
+    {/* 삭제 확인 모달 */}
+    <FocusTrapModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} label="동화 삭제 확인" role="alertdialog">
+      <div className="bg-white rounded-2xl p-5 mx-6 max-w-[320px] shadow-xl">
+        <h3 className="text-[15px] font-bold text-center mb-2" style={{ color: "rgb(var(--brown))" }}>
+          이 동화를 삭제할까요?
+        </h3>
+        <p className="text-[12px] text-center mb-4" style={{ color: "rgb(var(--brown-light))" }}>
+          삭제된 동화는 복구할 수 없습니다.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium border" style={{ borderColor: "rgb(var(--brown-pale))", color: "rgb(var(--brown))" }}>
+            취소
+          </button>
+          <button onClick={handleDeleteStory} disabled={isDeleting} className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white" style={{ background: "#DC2626" }}>
+            {isDeleting ? "삭제 중..." : "삭제"}
+          </button>
+        </div>
+      </div>
+    </FocusTrapModal>
     </ErrorBoundary>
   );
 }
