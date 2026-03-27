@@ -1,9 +1,12 @@
 import type { MetadataRoute } from "next";
 import { createServerClient } from "@supabase/ssr";
 
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
 // Sprint 2-E: Dynamic sitemap with community stories
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = "https://mamastale-global.pages.dev";
+  const base = "https://mamastale.com";
   const now = new Date();
 
   // ── Static pages ──
@@ -39,18 +42,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
-      url: `${base}/about`,
-      lastModified: new Date("2026-03-08"),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/feature-requests`,
-      lastModified: new Date("2026-03-08"),
-      changeFrequency: "weekly",
-      priority: 0.4,
-    },
-    {
       url: `${base}/terms`,
       lastModified: new Date("2026-02-01"),
       changeFrequency: "yearly",
@@ -61,6 +52,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date("2026-02-01"),
       changeFrequency: "yearly",
       priority: 0.3,
+    },
+    {
+      url: `${base}/feature-requests`,
+      lastModified: new Date("2026-03-08"),
+      changeFrequency: "weekly",
+      priority: 0.4,
     },
     {
       url: `${base}/teacher`,

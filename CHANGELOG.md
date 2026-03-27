@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.49.3] - 2026-03-27
+
+### Fixed
+- Cloudflare Pages 빌드 실패 수정 — /community/teacher/[token] Edge Runtime 누락
+- sitemap.xml 빌드 시 DB 타임아웃 → force-dynamic 전환
+- sitemap base URL mamastale-global.pages.dev → mamastale.com 통일
+- sitemap에서 미존재 /about 페이지 제거
+
 ## [1.49.2] - 2026-03-27
 
 ### Added
