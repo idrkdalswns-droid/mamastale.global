@@ -6,6 +6,7 @@ import { generateCoverImage } from "@/lib/illustration/generate";
 import { uploadCoverToStorage } from "@/lib/illustration/upload";
 import { createInMemoryLimiter, RATE_KEYS, checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { getDIYStory } from "@/lib/constants/diy-stories";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -57,7 +58,8 @@ export async function GET(request: NextRequest) {
     // R7-F1: Include cover_image, topic, metadata (for source detection)
     // Freemium v2: include is_unlocked for lock badge
     // F5 Fix: Include scenes for accurate scene count in library grid
-    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, created_at", { count: "exact" })
+    // DIY free save: include expires_at for lock computation
+    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, expires_at, created_at", { count: "exact" })
     .eq("user_id", user.id)
     .eq("status", "completed")
     // B3: 빈 장면 스토리 필터링 (0장면/null 제외)
@@ -71,15 +73,42 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
   }
 
+  // DIY free save: query has_purchased flag for lock computation
+  let hasPurchased = false;
+  try {
+    const { data: profile } = await sb.client
+      .from("profiles")
+      .select("has_purchased")
+      .eq("id", user.id)
+      .single();
+    hasPurchased = profile?.has_purchased === true;
+  } catch {
+    // fallback: treat as not purchased (safer — shows locks)
+  }
+
+  const now = Date.now();
+
   // Extract source from metadata, compute scene count, don't expose raw metadata to client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const safeStories = (stories || []).map(({ metadata, scenes, ...s }: any) => ({
-    ...s,
-    // F5 Fix: Include scenes so library grid shows accurate scene count
-    scenes: Array.isArray(scenes) ? scenes : [],
-    is_unlocked: s.is_unlocked ?? true, // backward compat: missing = unlocked
-    source: (metadata as Record<string, unknown> | null)?.source || "ai",
-  }));
+  const safeStories = (stories || []).map(({ metadata, scenes, expires_at, ...s }: any) => {
+    // DIY free save: compute is_locked
+    let is_locked = false;
+    if (!hasPurchased && !s.is_public && expires_at) {
+      if (new Date(expires_at).getTime() < now) {
+        is_locked = true;
+      }
+    }
+
+    return {
+      ...s,
+      // F5 Fix: Include scenes so library grid shows accurate scene count
+      scenes: Array.isArray(scenes) ? scenes : [],
+      is_unlocked: s.is_unlocked ?? true, // backward compat: missing = unlocked
+      source: (metadata as Record<string, unknown> | null)?.source || "ai",
+      expires_at: expires_at || null,
+      is_locked,
+    };
+  });
 
   // M-B6: Include total count for pagination support (backward compatible)
   return sb.applyCookies(NextResponse.json({ stories: safeStories, total: count ?? safeStories.length }));
@@ -106,47 +135,6 @@ export async function POST(request: NextRequest) {
     ));
   }
 
-  // Bug Bounty 3-2 FIX: Verify ticket was recently deducted via /api/tickets/use
-  // Prevents direct POST to /api/stories without paying a ticket
-  // 1.4 FIX: Hoist lastTicketUse for CAS clear after successful save
-  // C2 FIX: Async verification pattern — save story on DB hiccup, flag for review
-  let verifiedTicketTimestamp: string | undefined;
-  let ticketVerificationFailed = false;
-  try {
-    const { data: ticketProfile } = await sb.client
-      .from("profiles")
-      .select("metadata")
-      .eq("id", user.id)
-      .single();
-    const ticketMeta = (ticketProfile?.metadata as Record<string, unknown>) || {};
-    const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
-    const TICKET_WINDOW_MS = 30 * 60 * 1000; // 30 min window
-    if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
-      return sb.applyCookies(NextResponse.json(
-        { error: "티켓 차감이 확인되지 않았습니다. 다시 시도해 주세요." },
-        { status: 403 }
-      ));
-    }
-    verifiedTicketTimestamp = lastTicketUse;
-  } catch (ticketCheckErr) {
-    // Retry once before flagging
-    try {
-      const { data: retryProfile } = await sb.client.from("profiles").select("metadata").eq("id", user.id).single();
-      const retryMeta = (retryProfile?.metadata as Record<string, unknown>) || {};
-      const retryTicketUse = retryMeta.last_ticket_used_at as string | undefined;
-      const TICKET_WINDOW_MS = 30 * 60 * 1000;
-      if (!retryTicketUse || Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
-        return sb.applyCookies(NextResponse.json({ error: "티켓 확인에 실패했습니다." }, { status: 500 }));
-      }
-      verifiedTicketTimestamp = retryTicketUse;
-    } catch {
-      // C2: DB hiccup — don't destroy user's 20-min conversation
-      // Save story with pending flag, alert for manual review
-      console.warn("[Stories] Ticket verification failed after retry — saving with pending flag");
-      ticketVerificationFailed = true;
-    }
-  }
-
   // P1-FIX(KR-2): Reject oversized request bodies to prevent memory exhaustion
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > MAX_BODY_SIZE) {
@@ -157,7 +145,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Safe JSON parsing
+    // Safe JSON parsing — moved BEFORE ticket check for DIY detection
     let body;
     try {
       body = await request.json();
@@ -183,6 +171,68 @@ export async function POST(request: NextRequest) {
     // Server-side input sanitization: enforce max lengths, strip HTML
     const title = typeof parsed.data.title === "string" ? sanitizeText(parsed.data.title.trim().slice(0, 200)) : "";
     const authorAlias = typeof parsed.data.authorAlias === "string" ? sanitizeText(parsed.data.authorAlias.trim().slice(0, 50)) : null;
+
+    // DIY free save: bypass ticket check for valid DIY stories
+    const isDIY = metadata?.source === "diy" && typeof metadata?.diyStoryId === "string" && !!getDIYStory(metadata.diyStoryId as string);
+
+    // Bug Bounty 3-2 FIX: Verify ticket was recently deducted via /api/tickets/use
+    // Prevents direct POST to /api/stories without paying a ticket
+    // 1.4 FIX: Hoist lastTicketUse for CAS clear after successful save
+    // C2 FIX: Async verification pattern — save story on DB hiccup, flag for review
+    let verifiedTicketTimestamp: string | undefined;
+    let ticketVerificationFailed = false;
+    if (!isDIY) {
+      try {
+        const { data: ticketProfile } = await sb.client
+          .from("profiles")
+          .select("metadata")
+          .eq("id", user.id)
+          .single();
+        const ticketMeta = (ticketProfile?.metadata as Record<string, unknown>) || {};
+        const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
+        const TICKET_WINDOW_MS = 30 * 60 * 1000; // 30 min window
+        if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
+          return sb.applyCookies(NextResponse.json(
+            { error: "티켓 차감이 확인되지 않았습니다. 다시 시도해 주세요." },
+            { status: 403 }
+          ));
+        }
+        verifiedTicketTimestamp = lastTicketUse;
+      } catch (ticketCheckErr) {
+        // Retry once before flagging
+        try {
+          const { data: retryProfile } = await sb.client.from("profiles").select("metadata").eq("id", user.id).single();
+          const retryMeta = (retryProfile?.metadata as Record<string, unknown>) || {};
+          const retryTicketUse = retryMeta.last_ticket_used_at as string | undefined;
+          const TICKET_WINDOW_MS = 30 * 60 * 1000;
+          if (!retryTicketUse || Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
+            return sb.applyCookies(NextResponse.json({ error: "티켓 확인에 실패했습니다." }, { status: 500 }));
+          }
+          verifiedTicketTimestamp = retryTicketUse;
+        } catch {
+          // C2: DB hiccup — don't destroy user's 20-min conversation
+          // Save story with pending flag, alert for manual review
+          console.warn("[Stories] Ticket verification failed after retry — saving with pending flag");
+          ticketVerificationFailed = true;
+        }
+      }
+    }
+
+    // DIY free save: check DIY story limit (max 3 for non-purchasers)
+    if (isDIY) {
+      const { count: diyCount } = await sb.client
+        .from("stories")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+        .not("expires_at", "is", null);
+      if (diyCount !== null && diyCount >= 3) {
+        return sb.applyCookies(NextResponse.json(
+          { error: "무료 DIY 동화는 최대 3개까지 저장할 수 있습니다. 티켓을 구매하면 더 많이 저장할 수 있어요." },
+          { status: 403 }
+        ));
+      }
+    }
 
     // UK-2/UK-3: Profanity check on title and alias (visible in community)
     if (title && containsProfanity(title)) {
@@ -219,19 +269,22 @@ export async function POST(request: NextRequest) {
 
     // Freemium v2: Determine if this is the user's first completed story
     // First story → is_unlocked=false (locked preview), subsequent → is_unlocked=true
+    // DIY free save: skip first-story logic for DIY (always not-first)
     let isFirstStory = false;
-    try {
-      const { count, error: countErr } = await sb.client
-        .from("stories")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("status", "completed");
-      if (!countErr && count !== null) {
-        isFirstStory = count === 0;
+    if (!isDIY) {
+      try {
+        const { count, error: countErr } = await sb.client
+          .from("stories")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "completed");
+        if (!countErr && count !== null) {
+          isFirstStory = count === 0;
+        }
+      } catch {
+        // fallback: treat as not-first (unlocked) — safer than locking paid content
+        isFirstStory = false;
       }
-    } catch {
-      // fallback: treat as not-first (unlocked) — safer than locking paid content
-      isFirstStory = false;
     }
 
     // Validate session_id: must be a valid UUID or null
@@ -247,8 +300,13 @@ export async function POST(request: NextRequest) {
       metadata: metadata || {},
       status: "completed",
       // Freemium v2: first story is locked (preview only), subsequent are unlocked
-      is_unlocked: !isFirstStory,
+      is_unlocked: isDIY ? true : !isFirstStory,
     };
+
+    // DIY free save: set expires_at (3-day lock)
+    if (isDIY) {
+      storyInsert.expires_at = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    }
 
     // DIY 동화: coverImage 저장 (공통 검증 함수 사용)
     if (typeof coverImage === "string" && coverImage.length > 0 && isValidCoverImage(coverImage)) {
@@ -290,47 +348,50 @@ export async function POST(request: NextRequest) {
 
     if (insertResult.error || !insertResult.data) {
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
-      // B2 Fix: 티켓 롤백 with retry + failure tracking
-      let rollbackSuccess = false;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const { incrementTickets } = await import("@/lib/supabase/tickets");
-          await incrementTickets(sb.client, user.id, 1);
-          console.log("[Stories] 티켓 롤백 성공 (저장 실패 복구, attempt:", attempt + 1, ")");
-          rollbackSuccess = true;
-          break;
-        } catch (rollbackErr) {
-          console.error(`[Stories] 티켓 롤백 실패 (attempt ${attempt + 1}):`, rollbackErr);
+      // DIY free save: skip ticket rollback for DIY stories
+      if (!isDIY) {
+        // B2 Fix: 티켓 롤백 with retry + failure tracking
+        let rollbackSuccess = false;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const { incrementTickets } = await import("@/lib/supabase/tickets");
+            await incrementTickets(sb.client, user.id, 1);
+            console.log("[Stories] 티켓 롤백 성공 (저장 실패 복구, attempt:", attempt + 1, ")");
+            rollbackSuccess = true;
+            break;
+          } catch (rollbackErr) {
+            console.error(`[Stories] 티켓 롤백 실패 (attempt ${attempt + 1}):`, rollbackErr);
+          }
         }
-      }
 
-      if (!rollbackSuccess) {
-        // B2: Record failed rollback for manual recovery + Slack alert
-        console.error("[Stories] 티켓 롤백 2회 실패 — 수동 복구 필요:", { userId: user.id.slice(0, 8) });
-        try {
-          await sb.client.from("error_logs").insert({
-            error_type: "ticket_rollback_failed",
-            error_message: `Story save failed + ticket rollback failed after 2 attempts`,
-            metadata: { user_id: user.id, insert_error: insertResult.error?.code },
-          });
-        } catch { /* best-effort logging */ }
-        // Slack notification (fire-and-forget)
-        const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
-        if (slackUrl) {
-          fetch(slackUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: `🚨 [Stories] 티켓 롤백 실패 — userId: ${user.id.slice(0, 8)}... 수동 복구 필요` }),
-          }).catch(() => {});
+        if (!rollbackSuccess) {
+          // B2: Record failed rollback for manual recovery + Slack alert
+          console.error("[Stories] 티켓 롤백 2회 실패 — 수동 복구 필요:", { userId: user.id.slice(0, 8) });
+          try {
+            await sb.client.from("error_logs").insert({
+              error_type: "ticket_rollback_failed",
+              error_message: `Story save failed + ticket rollback failed after 2 attempts`,
+              metadata: { user_id: user.id, insert_error: insertResult.error?.code },
+            });
+          } catch { /* best-effort logging */ }
+          // Slack notification (fire-and-forget)
+          const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+          if (slackUrl) {
+            fetch(slackUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: `🚨 [Stories] 티켓 롤백 실패 — userId: ${user.id.slice(0, 8)}... 수동 복구 필요` }),
+            }).catch(() => {});
+          }
+          return sb.applyCookies(NextResponse.json({
+            error: "동화 저장에 실패했습니다. 티켓이 복원되지 않았습니다. 고객센터에 문의해 주세요.",
+            code: "ticket_rollback_failed",
+          }, { status: 500 }));
         }
-        return sb.applyCookies(NextResponse.json({
-          error: "동화 저장에 실패했습니다. 티켓이 복원되지 않았습니다. 고객센터에 문의해 주세요.",
-          code: "ticket_rollback_failed",
-        }, { status: 500 }));
       }
 
       return sb.applyCookies(NextResponse.json({
-        error: "동화 저장에 실패했습니다. 티켓은 복원되었습니다. 다시 시도해 주세요.",
+        error: isDIY ? "동화 저장에 실패했습니다. 다시 시도해 주세요." : "동화 저장에 실패했습니다. 티켓은 복원되었습니다. 다시 시도해 주세요.",
       }, { status: 500 }));
     }
 
@@ -372,7 +433,8 @@ export async function POST(request: NextRequest) {
 
     // 1.4 FIX: CAS-clear ticket timestamp to prevent reuse within 30min window
     // Only clears if the timestamp matches what we verified earlier (atomic)
-    if (verifiedTicketTimestamp) {
+    // DIY free save: skip CAS ticket clear for DIY stories
+    if (!isDIY && verifiedTicketTimestamp) {
       try {
         const { data: currentProfile } = await sb.client
           .from("profiles")

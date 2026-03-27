@@ -38,7 +38,8 @@ export async function GET(
     .from("stories")
     // R10-2: Include metadata for source detection, but only expose source field to client
     // Freemium v2: include is_unlocked for lock filtering
-    .select("id, title, scenes, status, is_public, is_unlocked, author_alias, topic, cover_image, metadata, created_at")
+    // DIY free save: include expires_at for lock check
+    .select("id, title, scenes, status, is_public, is_unlocked, author_alias, topic, cover_image, metadata, expires_at, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -47,15 +48,45 @@ export async function GET(
     return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
   }
 
+  // DIY free save: check if story is expired and user hasn't purchased
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const storyAny = story as any;
+  let is_locked = false;
+  if (storyAny.expires_at && new Date(storyAny.expires_at).getTime() < Date.now()) {
+    // Check has_purchased
+    let hasPurchased = false;
+    try {
+      const { data: profile } = await sb.client
+        .from("profiles")
+        .select("has_purchased")
+        .eq("id", user.id)
+        .single();
+      hasPurchased = profile?.has_purchased === true;
+    } catch {
+      // fallback: not purchased
+    }
+    if (!hasPurchased && !storyAny.is_public) {
+      is_locked = true;
+    }
+  }
+
   // Extract source from metadata, don't expose raw metadata to client
-  const { metadata, ...storyFields } = story;
-  const isUnlocked = storyFields.is_unlocked ?? true; // backward compat: missing = unlocked
+  const { metadata, expires_at, ...storyFields } = story as Record<string, unknown>;
+  const isUnlocked = (storyFields.is_unlocked as boolean | null) ?? true; // backward compat: missing = unlocked
   const allScenes = Array.isArray(storyFields.scenes) ? storyFields.scenes : [];
   const totalScenes = allScenes.length;
 
+  // DIY free save: locked expired stories return empty scenes
   // Freemium v2: locked stories only expose first 6 scenes (server-side filtering)
   // Scenes 7-10 (RESOLUTION + WISDOM) are hidden until payment
-  const visibleScenes = isUnlocked ? allScenes : allScenes.slice(0, 6);
+  let visibleScenes;
+  if (is_locked) {
+    visibleScenes = [];
+  } else if (isUnlocked) {
+    visibleScenes = allScenes;
+  } else {
+    visibleScenes = allScenes.slice(0, 6);
+  }
 
   const safeStory = {
     ...storyFields,
@@ -63,6 +94,8 @@ export async function GET(
     total_scenes: totalScenes,
     is_unlocked: isUnlocked,
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
+    expires_at: expires_at || null,
+    is_locked,
   };
 
   return sb.applyCookies(NextResponse.json({ story: safeStory }));

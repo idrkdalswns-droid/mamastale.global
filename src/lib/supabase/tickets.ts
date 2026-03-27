@@ -20,7 +20,11 @@ export async function incrementTickets(
       p_user_id: userId,
       p_count: count,
     });
-    if (!error && typeof data === "number") return data;
+    if (!error && typeof data === "number") {
+      // Set has_purchased flag (idempotent, fire-and-forget)
+      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch(() => {});
+      return data;
+    }
     // V5-FIX #2: Differentiate RPC errors — only fall back to CAS for "function not found"
     if (error && error.code !== "PGRST116") {
       throw new Error(`RPC increment_tickets failed: ${error.code} ${error.message}`);
@@ -62,6 +66,8 @@ export async function incrementTickets(
       .single();
 
     if (!updateErr && updated) {
+      // Set has_purchased flag (idempotent, fire-and-forget)
+      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch(() => {});
       return updated.free_stories_remaining;
     }
 
