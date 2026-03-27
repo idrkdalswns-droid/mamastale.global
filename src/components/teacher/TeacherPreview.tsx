@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image";
 import toast from "react-hot-toast";
 import type {
   TeacherStory,
@@ -11,6 +10,9 @@ import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { useTickets } from "@/lib/hooks/useTickets";
 import { WorksheetHistory } from "@/components/teacher/worksheet/WorksheetHistory";
+import { SpreadEditor } from "@/components/teacher/preview/SpreadEditor";
+import { SpreadNavigation } from "@/components/teacher/preview/SpreadNavigation";
+import { TeacherActions } from "@/components/teacher/preview/TeacherActions";
 
 interface TeacherPreviewProps {
   story: TeacherStory;
@@ -236,6 +238,16 @@ export function TeacherPreview({
     }
   }, [story.id, story.title, shareLoading]);
 
+  // ─── 활동지 열기 ───
+  const handleOpenWorksheet = useCallback(() => {
+    const wsTickets = ticketData.worksheetTicketsRemaining;
+    if (wsTickets <= 0) {
+      toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
+      return;
+    }
+    useWorksheetStore.getState().open(story.id!, story.title || "동화");
+  }, [story.id, story.title, ticketData.worksheetTicketsRemaining]);
+
   return (
     <div className="flex flex-col min-h-[60dvh]">
       {/* 헤더 */}
@@ -317,122 +329,23 @@ export function TeacherPreview({
         )}
       </div>
 
-      {/* ─── AI 맞춤 활동지 CTA ─── */}
-      {story.id && (
-        <div className="px-4 pt-3">
-          <button
-            onClick={() => {
-              const wsTickets = ticketData.worksheetTicketsRemaining;
-              if (wsTickets <= 0) {
-                toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
-                return;
-              }
-              useWorksheetStore.getState().open(story.id!, story.title || "동화");
-            }}
-            className="w-full py-3 rounded-xl text-[14px] font-medium text-white transition-all active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(135deg, #8B6AAF, #7A5BA0)",
-              boxShadow: "0 4px 16px rgba(139,106,175,0.25)",
-            }}
-          >
-            <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>AI 맞춤 활동지 만들기
-          </button>
-        </div>
-      )}
+      {/* ─── 액션 버튼 영역 (활동지 CTA + 공유 + 다운로드) ─── */}
+      <TeacherActions
+        storyId={story.id}
+        storyTitle={story.title}
+        spreads={spreads}
+        pdfLoading={pdfLoading}
+        pdfError={pdfError}
+        shareLoading={shareLoading}
+        worksheetTicketsRemaining={ticketData.worksheetTicketsRemaining}
+        onDownload={handleDownload}
+        onShare={handleShare}
+        onEditStory={onEditStory}
+        onOpenWorksheet={handleOpenWorksheet}
+      />
 
       {/* ─── 활동지 히스토리 ─── */}
       {story.id && <WorksheetHistory storyId={story.id} />}
-
-      {/* ─── 학부모 공유 ─── */}
-      {story.id && (
-        <div className="px-4 pt-2">
-          <button
-            onClick={handleShare}
-            disabled={shareLoading || spreads.length === 0}
-            className="w-full py-2.5 rounded-xl text-[13px] font-medium text-brown
-                       border border-brown-pale/30 transition-all active:scale-[0.97]
-                       bg-paper/40 disabled:opacity-40"
-          >
-            {shareLoading ? (
-              <span className="animate-pulse">링크 생성 중...</span>
-            ) : (
-              <>🔗 학부모에게 공유하기</>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* ─── 하단 CTA 영역 ─── */}
-      <div className="px-4 pb-4 pt-2 border-t border-brown-pale/20 space-y-3
-                       pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
-
-        {/* 편집 CTA */}
-        {onEditStory && (
-          <button
-            onClick={onEditStory}
-            className="w-full py-2.5 rounded-xl text-xs font-medium text-brown
-                       border border-brown-pale/30 transition-all active:scale-[0.97]
-                       bg-paper/40"
-          >
-            <svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-            편집
-          </button>
-        )}
-
-        {/* 활동지 + 다운로드 */}
-        <div>
-          <p className="text-[11px] text-brown-pale text-center mb-2">
-            무료 활동지 다운로드
-          </p>
-          {pdfError && (
-            <p className="text-xs text-red-500 text-center break-keep mb-1">
-              {pdfError}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleDownload("free-activity", "html")}
-              disabled={!!pdfLoading || spreads.length === 0}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl
-                         text-sm font-medium text-white transition-all active:scale-[0.97]
-                         disabled:opacity-40"
-              style={{
-                background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-                boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
-              }}
-            >
-              {pdfLoading === "free-activity-html" ? (
-                <span className="animate-pulse">생성 중...</span>
-              ) : (
-                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>인쇄 / PDF 저장</>
-              )}
-            </button>
-            <button
-              onClick={() => handleDownload("free-activity", "doc")}
-              disabled={!!pdfLoading || spreads.length === 0}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl
-                         text-sm font-medium text-brown border border-brown-pale/30
-                         transition-all active:scale-[0.97] disabled:opacity-40
-                         bg-paper/60"
-            >
-              {pdfLoading === "free-activity-doc" ? (
-                <span className="animate-pulse text-brown-light">생성 중...</span>
-              ) : (
-                <><svg className="inline-block w-4 h-4 mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>DOCX 다운로드</>
-              )}
-            </button>
-          </div>
-          {/* C7: PDF/DOCX 형식 차이 안내 */}
-          <p className="text-[11px] text-brown-pale text-center mt-2">
-            PDF: 바로 인쇄 가능 · DOCX: 내용 편집 후 인쇄
-          </p>
-          {spreads.length === 0 && (
-            <p className="text-[10px] text-brown-pale text-center mt-1">
-              동화를 먼저 완성해주세요
-            </p>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -505,46 +418,13 @@ function SpreadsView({
       )}
 
       {/* 네비게이션 */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={onPrev}
-          disabled={currentPage === 0}
-          className="px-4 py-2 rounded-full text-xs font-medium text-brown-light
-                     border border-brown-pale/30 disabled:opacity-30
-                     active:scale-[0.97] transition-all"
-        >
-          ← 이전
-        </button>
-        <span className="text-xs text-brown-pale">
-          {currentPage + 1} / {totalPages}
-        </span>
-        <button
-          onClick={onNext}
-          disabled={currentPage === totalPages - 1}
-          className="px-4 py-2 rounded-full text-xs font-medium text-white
-                     disabled:opacity-30 active:scale-[0.97] transition-all"
-          style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-        >
-          다음 →
-        </button>
-      </div>
-
-      {/* 페이지 썸네일 */}
-      <div className="flex gap-1.5 justify-center py-1">
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => onSelectPage(i)}
-            className={`w-8 h-8 rounded-lg text-[10px] font-medium transition-all ${
-              i === currentPage
-                ? "bg-coral text-white scale-110"
-                : "bg-paper/60 text-brown-light"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
+      <SpreadNavigation
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onSelectPage={onSelectPage}
+        onNext={onNext}
+        onPrev={onPrev}
+      />
     </div>
   );
 }
@@ -618,66 +498,6 @@ function SpreadCard({
           {/* 편집하기 링크 삭제 — 하단 CTA로 이동 */}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── 스프레드 에디터 ───
-
-interface SpreadEditorProps {
-  text: string;
-  onSave: (text: string) => void;
-  onCancel: () => void;
-}
-
-function SpreadEditor({ text, onSave, onCancel }: SpreadEditorProps) {
-  const [editText, setEditText] = useState(text);
-  const taRef = React.useRef<HTMLTextAreaElement>(null);
-
-  const autoResize = useCallback(() => {
-    const el = taRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
-    }
-  }, []);
-
-  // Auto-resize on mount (initial content)
-  useEffect(() => {
-    autoResize();
-  }, [autoResize]);
-
-  return (
-    <div className="space-y-3">
-      <textarea
-        ref={taRef}
-        value={editText}
-        onChange={(e) => {
-          setEditText(e.target.value);
-          autoResize();
-        }}
-        rows={3}
-        className="w-full px-3 py-2 rounded-xl border border-brown-pale/30
-                   text-sm text-brown bg-white/60 resize-none overflow-hidden
-                   focus:outline-none focus:ring-2 focus:ring-coral/30"
-        style={{ fontSize: "14px" }}
-      />
-      <div className="flex gap-2 justify-end">
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 rounded-full text-xs text-brown-light
-                     border border-brown-pale/30"
-        >
-          취소
-        </button>
-        <button
-          onClick={() => onSave(editText)}
-          className="px-3 py-1.5 rounded-full text-xs text-white font-medium"
-          style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-        >
-          저장
-        </button>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.49.1] - 2026-03-27
+
+### Refactored (GOD 컴포넌트 분리)
+- M-F16: page.tsx 1060줄 → 576줄 + LandingSection.tsx 557줄 (랜딩 UI 추출)
+- T-F4: TeacherPreview.tsx 683줄 → 503줄 + SpreadEditor/SpreadNavigation/TeacherActions 3개 서브컴포넌트
+
 ## [1.49.0] - 2026-03-27
 
 ### Fixed (Sprint 4: MEDIUM 전체 25건 — 133건 코드 리뷰 완료)
