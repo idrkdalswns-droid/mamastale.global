@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.50.0] - 2026-03-27
+
+### Added
+- DIY 무료 저장 시스템: DIY 동화 무료 저장 (최대 3개), 3일 후 잠금, 티켓 구매 시 영구 해제
+- `expires_at` 컬럼 (stories) + `has_purchased` 플래그 (profiles) DB 마이그레이션
+- 내 서재 상세 페이지에 삭제 버튼 이동 (카드 → 상세)
+- 선생님 모드 상세 페이지에 삭제 기능 추가 (TeacherActions + TeacherPreview)
+- DIY 저장 시 3일 무료 열람 경고 모달 (FocusTrapModal)
+- 잠금 동화 오버레이 UI ("소중한 동화가 기다리고 있어요 💛")
+
+### Changed
+- 내 서재 카드에서 삭제 버튼, 공유 아이콘/배지 제거 → 깔끔한 카드 UI
+- 선생님 모드 카드에서 삭제 버튼 제거 → 상세 페이지로 이동
+- 잠금 동화 클릭 시 가격표 페이지로 이동
+
+### Fixed
+- `incrementTickets`에 `has_purchased` 자동 설정 (Stripe/Toss 결제 시 영구 잠금 해제)
+
 ## [1.49.3] - 2026-03-27
 
 ### Fixed

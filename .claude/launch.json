@@ -6,7 +6,7 @@
       "runtimeExecutable": "/Users/minjunekang/.nvm/versions/node/v20.20.0/bin/npx",
       "runtimeArgs": ["next", "dev"],
       "port": 3000,
-      "autoPort": true
+      "autoPort": false
     }
   ]
 }
