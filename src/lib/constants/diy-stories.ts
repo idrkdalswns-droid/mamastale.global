@@ -23,6 +23,14 @@ function makeImages(storyId: string): string[] {
 export const DIY_STORIES: DIYStory[] = [
   // 홈 랜딩에 표시 (처음 3개)
   {
+    id: "papa-magic",
+    title: "아빠는 마법이 서툴러!",
+    description: "서투르지만 따뜻한 아빠의 손이 만드는 세상에서 가장 예쁜 머리 묶기",
+    thumbnail: `${BASE}/papa-magic/1.jpeg`,
+    accent: "#E8C170",
+    images: makeImages("papa-magic"),
+  },
+  {
     id: "stone",
     title: "엄마, 여기 무거워?",
     description: "엄마 가슴 속 무거운 돌멩이를 금빛 조약돌로 바꿔주는 아이의 이야기",
