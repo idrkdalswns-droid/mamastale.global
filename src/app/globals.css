@@ -39,6 +39,18 @@
     --kakao: 254 229 0;
     --kakao-brown: 60 30 30;
     --surface: 255 255 255;
+
+    /* ── TQ (딸깍 동화) Phase colors ── */
+    --tq-p1-bg: 255 248 240;
+    --tq-p1-accent: 212 165 116;
+    --tq-p2-bg: 255 240 240;
+    --tq-p2-accent: 200 139 139;
+    --tq-p3-bg: 240 245 240;
+    --tq-p3-accent: 107 143 113;
+    --tq-p4-bg: 234 235 245;
+    --tq-p4-accent: 107 107 143;
+    --tq-p5-bg: 255 250 242;
+    --tq-p5-accent: 196 149 106;
   }
 
   html {
@@ -182,6 +194,21 @@
     opacity: 1 !important;
     transform: none !important;
   }
+}
+
+/* ── TQ Phase background transition (GPU-accelerated) ── */
+.tq-phase-bg {
+  background: rgb(var(--tq-p1-bg));
+  transition: background 400ms ease;
+}
+.tq-phase-bg[data-tq-phase="1"] { background: rgb(var(--tq-p1-bg)); }
+.tq-phase-bg[data-tq-phase="2"] { background: rgb(var(--tq-p2-bg)); }
+.tq-phase-bg[data-tq-phase="3"] { background: rgb(var(--tq-p3-bg)); }
+.tq-phase-bg[data-tq-phase="4"] { background: rgb(var(--tq-p4-bg)); }
+.tq-phase-bg[data-tq-phase="5"] { background: rgb(var(--tq-p5-bg)); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tq-phase-bg { transition-duration: 0ms; }
 }
 
 /* backdrop-filter 미지원 브라우저 폴백 (구형 Android/Firefox) */
