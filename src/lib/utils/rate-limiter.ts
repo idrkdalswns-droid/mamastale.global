@@ -193,4 +193,12 @@ export const RATE_KEYS = {
   TEACHER_WORKSHEET: "teacher:worksheet",
   STORY_DELETE: "story:delete",
   TEACHER_GENERATE_STORY: "teacher:generate:story",
+  // 딸깍 동화 (TQ)
+  TQ_START: "tq:start",
+  TQ_NEXT_PHASE: "tq:next-phase",
+  TQ_SUBMIT: "tq:submit",
+  TQ_GENERATE: "tq:generate",
+  TQ_EVENT: "tq:event",
+  TQ_SESSIONS: "tq:sessions",
+  TQ_DETAIL: "tq:detail",
 } as const;
