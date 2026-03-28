@@ -9,6 +9,8 @@ import { STORY_PRICE_DISPLAY } from "@/lib/constants/pricing";
 import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { SERVICES } from "@/lib/constants/services";
+import { ServiceCard } from "@/components/landing/ServiceCard";
 
 interface AuthUser {
   id: string;
@@ -72,7 +74,8 @@ export interface LandingSectionProps {
   show: boolean;
   screen: string;
   handleStartStory: () => void;
-  mainCtaRef: React.RefObject<HTMLButtonElement>;
+  onServiceClick: (serviceId: string) => void;
+  mainCtaRef: React.RefObject<HTMLDivElement | HTMLButtonElement>;
   draftInfo: { phase: number; messageCount: number; savedAt: number; source: string } | null;
   restoreDraft: () => boolean;
   clearStorage: () => void;
@@ -91,6 +94,7 @@ export function LandingSection({
   show,
   screen,
   handleStartStory,
+  onServiceClick,
   mainCtaRef,
   draftInfo,
   restoreDraft,
@@ -201,31 +205,32 @@ export function LandingSection({
               첫 동화는 무료
             </p>
           )}
-          {/* ⭐ CTA 1차 — Title 직후 (전환율 최적화) */}
-          <button
-            ref={mainCtaRef}
-            onClick={handleStartStory}
-            disabled={authLoading}
-            aria-busy={authLoading}
-            className="w-full py-3.5 rounded-full text-white text-base font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60 mb-2 flex flex-col items-center gap-1"
-            style={{
-              background: "linear-gradient(135deg, #E07A5F, #C96B52)",
-              boxShadow: "0 8px 28px rgba(224,122,95,0.3)",
-            }}
-          >
-            {authLoading ? (
-              <span className="inline-flex items-center gap-2" aria-label="요청 처리 중입니다">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
-                불러오는 중...
-              </span>
-            ) : (
-              <>
-                <span className="text-[15px]">{user ? "우리 아이 동화 만들기" : (process.env.NEXT_PUBLIC_CTA_TEXT || "무료로 체험하기")}</span>
-                <span className="text-[10px] font-light text-white/60">당신만을 위한 치유 이야기</span>
-              </>
-            )}
-          </button>
-          <div className="mb-5" />
+
+          {/* ⭐ 3대 서비스 CTA 그리드 — 히어로 직후 */}
+          <div ref={mainCtaRef as React.RefObject<HTMLDivElement>} className="mb-5 flex flex-col gap-2.5">
+            {/* 메인 서비스: full-width primary 카드 */}
+            <ServiceCard
+              service={SERVICES.main}
+              variant="primary"
+              onClick={() => onServiceClick("main")}
+              disabled={authLoading}
+            />
+            {/* DIY + 딸깍: 2열 compact 그리드 */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <ServiceCard
+                service={SERVICES.diy}
+                variant="compact"
+                onClick={() => onServiceClick("diy")}
+                disabled={authLoading}
+              />
+              <ServiceCard
+                service={SERVICES.tq}
+                variant="compact"
+                onClick={() => onServiceClick("tq")}
+                disabled={authLoading}
+              />
+            </div>
+          </div>
 
           {/* Draft resume card — positioned right below CTA for immediate visibility */}
           {draftInfo && (
@@ -337,7 +342,7 @@ export function LandingSection({
           {/* ════════════════════════════════════════
               DIY THUMBNAILS — Free stories preview (M1)
               ════════════════════════════════════════ */}
-          <ErrorBoundary fallback={null}><><div id="diy" className="mb-5">
+          <ErrorBoundary fallback={null}><div id="diy" className="mb-5">
             <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
               무료 DIY 동화
             </p>
@@ -360,20 +365,7 @@ export function LandingSection({
                 </Link>
               ))}
             </div>
-          </div>
-
-          {/* DIY 동화 만들기 CTA — outline 스타일 (주 CTA와 경쟁 완화) */}
-          <Link
-            href="/diy/guide"
-            className="w-full py-3 rounded-full text-[13px] font-light text-center no-underline transition-all active:scale-[0.97] min-h-[44px] flex items-center justify-center gap-2 mb-3"
-            style={{
-              background: "transparent",
-              color: "rgb(var(--brown-pale))",
-              border: "1.5px solid rgba(196,149,106,0.2)",
-            }}
-          >
-            아이와 함께 만드는 DIY 동화
-          </Link></></ErrorBoundary>
+          </div></ErrorBoundary>
 
           {/* HOW IT WORKS 섹션 삭제 */}
 
@@ -448,7 +440,7 @@ export function LandingSection({
           {/* ⭐ CTA 하단 반복 — 스크롤 완료 후 전환 유도 (E2E) */}
           <div className="mt-8 mb-4">
             <button
-              onClick={handleStartStory}
+              onClick={() => onServiceClick("main")}
               disabled={authLoading}
               aria-busy={authLoading}
               className="w-full py-3.5 rounded-full text-white text-[15px] font-sans font-medium cursor-pointer transition-transform active:scale-[0.97] disabled:opacity-60"
@@ -489,7 +481,7 @@ export function LandingSection({
         >
           <div className="max-w-[430px] mx-auto">
             <button
-              onClick={handleStartStory}
+              onClick={() => onServiceClick("main")}
               className="w-full py-3.5 rounded-full text-white text-[14px] font-medium transition-transform active:scale-[0.97]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 4px 16px rgba(224,122,95,0.3)" }}
             >
@@ -531,10 +523,7 @@ export function LandingSection({
           <button
             onClick={() => {
               closePaymentModal();
-              // CTO-FIX(CRITICAL): 결제 성공 후에도 반드시 TicketConfirmModal을 거쳐 티켓 차감
-              // 이전: setScreen("onboarding") → 티켓 차감 없이 스토리 시작 (매출 손실)
-              // 수정: handleStartStory() → TicketConfirmModal → /api/tickets/use → onboarding
-              handleStartStory();
+              onServiceClick("main");
             }}
             className="w-full py-3.5 rounded-full text-white text-sm font-medium transition-transform active:scale-[0.97] mb-3"
             style={{

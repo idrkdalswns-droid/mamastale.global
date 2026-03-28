@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useChatStore } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
@@ -11,6 +12,7 @@ import { trackScreenView } from "@/lib/utils/analytics";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
 import { LandingSection } from "@/components/landing/LandingSection";
+import { SERVICES, type ServiceId } from "@/lib/constants/services";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
@@ -109,9 +111,10 @@ export default function Home() {
   const [showStickyCta, setShowStickyCta] = useState(false);
   const [myStoryCount, setMyStoryCount] = useState<number | null>(null);
   const [communityCount, setCommunityCount] = useState<number | null>(null);
-  const mainCtaRef = useRef<HTMLButtonElement>(null);
+  const mainCtaRef = useRef<HTMLDivElement>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearDraft, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
+  const router = useRouter();
 
   // GA: Track screen view on every screen change
   useEffect(() => { trackScreenView(screen); }, [screen]);
@@ -163,7 +166,7 @@ export default function Home() {
         if (postLoginRedirect) {
           sessionStorage.removeItem("mamastale_post_login_redirect");
           try {
-            const ALLOWED_REDIRECT_PREFIXES = ["/pricing", "/library", "/settings", "/community", "/teacher", "/diy"];
+            const ALLOWED_REDIRECT_PREFIXES = ["/pricing", "/library", "/settings", "/community", "/teacher", "/diy", "/dalkkak", "/vending"];
             const normalized = new URL(postLoginRedirect, window.location.origin);
             if (normalized.origin === window.location.origin
                 && ALLOWED_REDIRECT_PREFIXES.some(p => normalized.pathname.startsWith(p))) {
@@ -294,6 +297,18 @@ export default function Home() {
     // Everyone goes straight to onboarding — ticket gate at turn 3 during chat
     setScreen("onboarding");
   };
+
+  // 3대 서비스 CTA 분기 핸들러
+  const onServiceClick = useCallback((serviceId: string) => {
+    if (serviceId === "main") {
+      handleStartStory();
+    } else {
+      const service = SERVICES[serviceId as ServiceId];
+      if (service) {
+        router.push(service.route);
+      }
+    }
+  }, [handleStartStory, router]);
 
   const closePaymentModal = useCallback(() => {
     setShowPaymentSuccess(false);
@@ -561,6 +576,7 @@ export default function Home() {
       show={show}
       screen={screen}
       handleStartStory={handleStartStory}
+      onServiceClick={onServiceClick}
       mainCtaRef={mainCtaRef}
       draftInfo={draftInfo}
       restoreDraft={restoreDraft}
