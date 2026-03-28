@@ -1,10 +1,18 @@
 export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logEvent } from "@/lib/utils/llm-logger";
+
+const verifyCodeSchema = z.object({
+  code: z.string({ required_error: "코드를 입력해주세요" })
+    .min(2, "코드가 너무 짧습니다")
+    .max(30, "코드가 너무 깁니다")
+    .transform(s => s.trim().toUpperCase()),
+});
 
 const SESSION_DURATION_HOURS = 6;
 
@@ -56,8 +64,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 4. 요청 본문 파싱
-  let body: { code?: string };
+  // 4. 요청 본문 파싱 + Zod 검증
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -66,12 +74,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const code = body.code?.trim().toUpperCase();
-  if (!code || code.length < 2 || code.length > 30) {
+  const parsed = verifyCodeSchema.safeParse(body);
+  if (!parsed.success) {
     return sb.applyCookies(
       NextResponse.json({ error: "올바른 코드를 입력해주세요." }, { status: 400 })
     );
   }
+  const { code } = parsed.data;
 
   // 5. 코드 유효성 검증
   const { data: codeData, error: codeError } = await sb.client

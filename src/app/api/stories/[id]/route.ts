@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, sanitizeSceneText, containsProfanity, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { calculateBlindStatus, applyBlindFilter } from "@/lib/utils/blind";
+
+const storyPatchSchema = z.object({
+  isPublic: z.boolean().optional(),
+  authorAlias: z.string().transform(s => s.trim().slice(0, 50)).optional(),
+  title: z.string().transform(s => s.trim().slice(0, 200)).optional(),
+  topic: z.string().optional(),
+  coverImage: z.string().optional(),
+  scenes: z.array(z.object({
+    sceneNumber: z.number(),
+    title: z.string().transform(s => s.slice(0, 200)),
+    text: z.string().transform(s => s.slice(0, 5000)),
+  })).min(1).max(20).optional(),
+}).strict();
 
 export const runtime = "edge";
 
@@ -154,58 +168,49 @@ export async function PATCH(
     } catch {
       return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
     }
+    // Zod 스키마로 입력 검증 (truncate 동작 유지)
+    const parsed = storyPatchSchema.safeParse(body);
+    if (!parsed.success) {
+      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+    }
+    const { isPublic, authorAlias, title, topic, coverImage, scenes } = parsed.data;
     const updates: Record<string, unknown> = {};
 
-    // Only allow specific fields to be updated
-    if (typeof body.isPublic === "boolean") updates.is_public = body.isPublic;
-    if (typeof body.authorAlias === "string") {
-      const safeAlias = sanitizeText(body.authorAlias.trim().slice(0, 50));
+    if (isPublic !== undefined) updates.is_public = isPublic;
+    if (authorAlias !== undefined) {
+      const safeAlias = sanitizeText(authorAlias);
       if (safeAlias && containsProfanity(safeAlias)) {
         return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
       }
       updates.author_alias = safeAlias || null;
     }
-    if (typeof body.title === "string") {
-      const safeTitle = sanitizeText(body.title.trim().slice(0, 200));
-      // SIM-FIX(S25): Profanity check on title updates (matches POST behavior)
+    if (title !== undefined) {
+      const safeTitle = sanitizeText(title);
       if (safeTitle && containsProfanity(safeTitle)) {
         return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 }));
       }
       updates.title = safeTitle;
     }
-    // R2-FIX(B1): Allow topic update for community categorization
-    if (typeof body.topic === "string") {
-      if (VALID_TOPICS.includes(body.topic)) {
-        updates.topic = body.topic;
-      } else if (body.topic === "") {
+    if (topic !== undefined) {
+      if ((VALID_TOPICS as readonly string[]).includes(topic)) {
+        updates.topic = topic;
+      } else if (topic === "") {
         updates.topic = null;
       }
     }
-    // Cover image selection — shared validation (static + AI-generated Supabase URLs)
-    if (typeof body.coverImage === "string" && isValidCoverImage(body.coverImage)) {
-      updates.cover_image = body.coverImage;
+    if (coverImage !== undefined && isValidCoverImage(coverImage)) {
+      updates.cover_image = coverImage;
     }
-    if (Array.isArray(body.scenes) && body.scenes.length > 0 && body.scenes.length <= 20) {
-      const validScenes = body.scenes.every(
-        (s: unknown) =>
-          typeof s === "object" && s !== null &&
-          typeof (s as Record<string, unknown>).sceneNumber === "number" &&
-          typeof (s as Record<string, unknown>).title === "string" &&
-          typeof (s as Record<string, unknown>).text === "string"
-      );
-      if (validScenes) {
-        // Sanitize scene content — lightweight sanitizer for AI text
-        for (const s of body.scenes as Array<{ title: string; text: string }>) {
-          s.title = sanitizeSceneText(s.title.slice(0, 200));
-          s.text = sanitizeSceneText(s.text.slice(0, 5000));
-        }
-        // P1-5: Profanity check on scene text (matches POST behavior)
-        const hasProfanity = (body.scenes as Array<{ text: string }>).some(s => containsProfanity(s.text));
-        if (hasProfanity) {
-          return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 내용입니다." }, { status: 400 }));
-        }
-        updates.scenes = body.scenes;
+    if (scenes !== undefined) {
+      const sanitizedScenes = scenes.map(s => ({
+        ...s,
+        title: sanitizeSceneText(s.title),
+        text: sanitizeSceneText(s.text),
+      }));
+      if (sanitizedScenes.some(s => containsProfanity(s.text))) {
+        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 내용입니다." }, { status: 400 }));
       }
+      updates.scenes = sanitizedScenes;
     }
 
     if (Object.keys(updates).length === 0) {

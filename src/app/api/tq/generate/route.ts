@@ -55,6 +55,13 @@ export async function GET(request: NextRequest) {
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
 
+  // UUID 형식 검증
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId))
+    return new Response(
+      JSON.stringify({ error: "잘못된 세션 ID입니다." }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+
   // 세션 확인
   const { data: session } = await sb.client
     .from("tq_sessions")

@@ -227,19 +227,26 @@ export async function POST(request: NextRequest) {
 
   // Retry logic (max 2 attempts)
   for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const aiTimeout = setTimeout(() => controller.abort(), 60_000);
     try {
       const client = getAnthropicClient();
-      const response = await client.messages.create({
-        model: modelSelection.model,
-        max_tokens: modelSelection.maxTokens,
-        system: prompt.system,
-        messages: [{ role: "user", content: prompt.user }],
-      });
+      const response = await client.messages.create(
+        {
+          model: modelSelection.model,
+          max_tokens: modelSelection.maxTokens,
+          system: prompt.system,
+          messages: [{ role: "user", content: prompt.user }],
+        },
+        { signal: controller.signal },
+      );
 
       claudeResponse = response.content[0].type === "text" ? response.content[0].text : "";
       tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+      clearTimeout(aiTimeout);
       break;
     } catch (error) {
+      clearTimeout(aiTimeout);
       if (attempt === 1) {
         console.error("[worksheet] Claude call failed after 2 attempts:", error);
         // 3.1 FIX: Refund ticket on Claude failure

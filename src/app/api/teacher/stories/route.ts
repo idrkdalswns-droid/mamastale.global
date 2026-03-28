@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 export const runtime = "edge";
 
@@ -16,6 +17,18 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { containsProfanity, sanitizeSceneText } from "@/lib/utils/validation";
+
+const teacherStoryPostSchema = z.object({
+  title: z.string({ required_error: "제목을 입력해주세요" })
+    .min(1, "제목을 입력해주세요")
+    .transform(s => s.trim().slice(0, 200)),
+  spreads: z.array(z.object({
+    spreadNumber: z.number().optional(),
+    title: z.string().transform(s => s.slice(0, 200)).optional(),
+    text: z.string({ required_error: "장면 내용을 입력해주세요" })
+      .transform(s => s.slice(0, 5000)),
+  })).min(1, "장면은 1개 이상 필요합니다").max(20, "장면은 최대 20개까지 가능합니다"),
+});
 
 const limiter = createInMemoryLimiter("teacher_stories");
 
@@ -135,7 +148,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -144,8 +157,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate title
-  const title = typeof body.title === "string" ? body.title.trim().slice(0, 200) : "";
+  const parsed = teacherStoryPostSchema.safeParse(body);
+  if (!parsed.success) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "올바른 형식으로 입력해주세요." }, { status: 400 })
+    );
+  }
+
+  const { title, spreads } = parsed.data;
+
   if (!title) {
     return sb.applyCookies(
       NextResponse.json({ error: "제목을 입력해주세요." }, { status: 400 })
@@ -157,30 +177,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate spreads
-  if (!Array.isArray(body.spreads) || body.spreads.length === 0 || body.spreads.length > 20) {
-    return sb.applyCookies(
-      NextResponse.json({ error: "장면은 1~20개 사이여야 합니다." }, { status: 400 })
-    );
-  }
-
   const sanitizedSpreads = [];
-  for (let i = 0; i < body.spreads.length; i++) {
-    const s = body.spreads[i] as Record<string, unknown>;
-    if (typeof s !== "object" || s === null || typeof s.text !== "string") {
-      return sb.applyCookies(
-        NextResponse.json({ error: `장면 ${i + 1}의 형식이 잘못되었습니다.` }, { status: 400 })
-      );
-    }
-    const text = sanitizeSceneText((s.text as string).slice(0, 5000));
+  for (let i = 0; i < spreads.length; i++) {
+    const s = spreads[i];
+    const text = sanitizeSceneText(s.text);
     if (containsProfanity(text)) {
       return sb.applyCookies(
         NextResponse.json({ error: `장면 ${i + 1}에 부적절한 표현이 포함되어 있습니다.` }, { status: 400 })
       );
     }
     sanitizedSpreads.push({
-      spreadNumber: typeof s.spreadNumber === "number" ? s.spreadNumber : i + 1,
-      title: typeof s.title === "string" ? sanitizeSceneText(s.title.slice(0, 200)) : undefined,
+      spreadNumber: s.spreadNumber ?? i + 1,
+      title: s.title ? sanitizeSceneText(s.title) : undefined,
       text,
     });
   }

@@ -206,7 +206,8 @@ async function generateStoryAsync(
   try {
     storyText = await callSonnet(apiKey, userMessage);
   } catch (err) {
-    console.warn("[TQ-Submit] Sonnet tier 1 failed:", err);
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    console.warn("[TQ-Submit] Sonnet tier 1 failed:", isTimeout ? "TIMEOUT" : err);
   }
 
   // Tier 2: Sonnet retry (lower temperature)
@@ -214,7 +215,8 @@ async function generateStoryAsync(
     try {
       storyText = await callSonnet(apiKey, userMessage, 0.75);
     } catch (err) {
-      console.warn("[TQ-Submit] Sonnet tier 2 failed:", err);
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      console.warn("[TQ-Submit] Sonnet tier 2 failed:", isTimeout ? "TIMEOUT" : err);
     }
   }
 
@@ -223,7 +225,8 @@ async function generateStoryAsync(
     try {
       storyText = await callHaikuFallback(apiKey, userMessage);
     } catch (err) {
-      console.warn("[TQ-Submit] Haiku tier 3 failed:", err);
+      const isTimeout = err instanceof Error && err.name === "AbortError";
+      console.warn("[TQ-Submit] Haiku tier 3 failed:", isTimeout ? "TIMEOUT" : err);
     }
   }
 
@@ -294,24 +297,35 @@ async function generateStoryAsync(
    AI 호출 헬퍼
    ═══════════════════════════════════════════════════════ */
 
+const AI_TIMEOUT_MS = 120_000; // 120s — 동화 생성은 긴 응답
+
 async function callSonnet(
   apiKey: string,
   userMessage: string,
   temperature: number = SONNET_CONFIG.temperature,
 ): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
-  const response = await anthropic.messages.create({
-    model: SONNET_CONFIG.model,
-    max_tokens: SONNET_CONFIG.maxTokens,
-    temperature,
-    system: ORCHESTRATOR_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const response = await anthropic.messages.create(
+      {
+        model: SONNET_CONFIG.model,
+        max_tokens: SONNET_CONFIG.maxTokens,
+        temperature,
+        system: ORCHESTRATOR_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      },
+      { signal: controller.signal },
+    );
 
-  const text =
-    response.content[0]?.type === "text" ? response.content[0].text : "";
-  if (!text) throw new Error("Empty Sonnet response");
-  return text;
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text : "";
+    if (!text) throw new Error("Empty Sonnet response");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function callHaikuFallback(
@@ -319,18 +333,27 @@ async function callHaikuFallback(
   userMessage: string,
 ): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
-  const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 6000,
-    temperature: 0.7,
-    system: ORCHESTRATOR_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const response = await anthropic.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 6000,
+        temperature: 0.7,
+        system: ORCHESTRATOR_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      },
+      { signal: controller.signal },
+    );
 
-  const text =
-    response.content[0]?.type === "text" ? response.content[0].text : "";
-  if (!text) throw new Error("Empty Haiku response");
-  return text;
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text : "";
+    if (!text) throw new Error("Empty Haiku response");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════

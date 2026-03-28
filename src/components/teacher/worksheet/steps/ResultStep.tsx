@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { AGE_PARAMS } from "@/lib/worksheet/age-params";
 import type { AgeGroup, ActivityType } from "@/lib/worksheet/types";
@@ -20,6 +21,12 @@ export function ResultStep() {
 
   const [docxLoading, setDocxLoading] = useState(false);
   const [docxError, setDocxError] = useState<string | null>(null);
+
+  // F-003: DOMPurify로 XSS 방어 (스크립트/이벤트 핸들러 제거, HTML 구조/CSS 보존)
+  const sanitizedHtml = useMemo(
+    () => generatedHtml ? DOMPurify.sanitize(generatedHtml) : "",
+    [generatedHtml],
+  );
 
   const handlePrint = useCallback(() => {
     if (!generatedHtml) return;
@@ -144,7 +151,7 @@ export function ResultStep() {
       <div className="mb-4 border border-brown-pale/30 rounded-xl overflow-hidden bg-white">
         <div
           className="transform scale-[0.5] origin-top-left w-[200%] h-[300px] overflow-auto pointer-events-none"
-          dangerouslySetInnerHTML={{ __html: generatedHtml }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       </div>
 
