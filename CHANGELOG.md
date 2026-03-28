@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.52.1] - 2026-03-29
+
+### Fixed
+- Nightwatch 야간 점검 HIGH 4건 + MEDIUM 핵심 수정 (건강 점수 78→90+ 목표)
+- API 입력 검증: stories PATCH, teacher verify-code, teacher stories POST에 Zod 스키마 도입
+- TQ generate session_id UUID 형식 검증 추가
+- Claude API 타임아웃: TQ submit (120s) + 워크시트 생성 (60s) AbortController 추가
+- XSS 방어: 활동지 미리보기에 DOMPurify 적용
+- DB 보안: site_settings 테이블 RLS 활성화 마이그레이션 추가
+- push/send API의 SUPABASE_SERVICE_ROLE_KEY 폴백 제거 (전용 PUSH_API_SECRET만 사용)
+
 ## [1.52.0] - 2026-03-28
 
 ### Added
