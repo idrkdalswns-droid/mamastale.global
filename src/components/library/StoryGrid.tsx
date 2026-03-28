@@ -108,8 +108,20 @@ const GridCard = memo(function GridCard({
           onError={() => { setImgErr(true); setImgLoaded(true); }}
         />
 
+        {/* Story type badge */}
+        {story.story_type === "tq" && (
+          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-medium text-white backdrop-blur-sm" style={{ background: "rgba(155,142,196,0.75)" }}>
+            딸깍
+          </div>
+        )}
+        {story.story_type === "diy" && (
+          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-medium text-white backdrop-blur-sm" style={{ background: "rgba(127,191,176,0.75)" }}>
+            DIY
+          </div>
+        )}
+
         {/* Lock badge */}
-        {story.is_unlocked === false && (
+        {story.is_unlocked === false && !story.story_type && (
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-medium text-white bg-brown/60 backdrop-blur-sm">
             미리보기
           </div>

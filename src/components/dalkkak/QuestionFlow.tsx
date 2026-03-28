@@ -8,6 +8,8 @@ import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import { TQ_PHASES } from "@/lib/constants/tq-phases";
 import { QuestionCard } from "./QuestionCard";
 import { PhaseTransition } from "./PhaseTransition";
+import { TextQuestion } from "./TextQuestion";
+import { GeneratingScreen } from "./GeneratingScreen";
 import type { TQQuestion } from "@/lib/hooks/tq/questionSlice";
 
 interface QuestionFlowProps {
@@ -17,9 +19,11 @@ interface QuestionFlowProps {
 export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
   const {
     sessionId,
+    status,
     currentPhase,
     questions,
     currentQuestionIndex,
+    q20Prompt,
     isTransitioning,
     isLoading,
     addResponse,
@@ -173,6 +177,24 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
     setTransitionReady(false);
     persist();
   }, [setTransitioning, persist]);
+
+  // Generating screen
+  if (status === "generating") {
+    return <GeneratingScreen />;
+  }
+
+  // Q20 text question (Phase 5, q20Prompt is set)
+  if (q20Prompt && currentPhase === 5 && !isTransitioning) {
+    return (
+      <TextQuestion
+        onSubmitted={() => {
+          setStatus("generating");
+          persist();
+          onGenerationStart();
+        }}
+      />
+    );
+  }
 
   // Phase transition interstitial
   if (isTransitioning && transitionToPhase > 0) {
