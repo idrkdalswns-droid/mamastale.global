@@ -23,8 +23,7 @@ import {
 } from "@/lib/tq/tq-orchestrator";
 import { getFallbackStory } from "@/lib/tq/tq-fallback-stories";
 
-export const runtime = "nodejs";
-export const maxDuration = 300;
+export const runtime = "edge";
 
 const limiter = createInMemoryLimiter("tq:submit", { maxEntries: 100 });
 
