@@ -73,11 +73,16 @@ export async function GET(request: NextRequest) {
     .eq("referrer_id", user.id)
     .eq("referrer_rewarded", true);
 
+  const MAX_REFERRALS = 2;
+  const referralCount = count || 0;
+
   return sb.applyCookies(
     NextResponse.json({
       code,
-      referralCount: count || 0,
-      ticketsEarned: count || 0,
+      referralCount,
+      ticketsEarned: referralCount,
+      maxReferrals: MAX_REFERRALS,
+      remainingReferrals: Math.max(0, MAX_REFERRALS - referralCount),
       shareUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://mamastale-global.pages.dev"}/?ref=${code}`,
     })
   );
@@ -147,6 +152,20 @@ export async function POST(request: NextRequest) {
   if (referrer.id === user.id) {
     return sb.applyCookies(
       NextResponse.json({ error: "자신의 코드는 사용할 수 없습니다." }, { status: 400 })
+    );
+  }
+
+  // Cap check: referrer can only reward up to 2 people
+  const MAX_REFERRALS = 2;
+  const { count: referrerRewardedCount } = await sb.client
+    .from("referrals")
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_id", referrer.id)
+    .eq("referrer_rewarded", true);
+
+  if ((referrerRewardedCount || 0) >= MAX_REFERRALS) {
+    return sb.applyCookies(
+      NextResponse.json({ error: "이 추천 코드는 최대 추천 횟수(2명)에 도달했습니다." }, { status: 409 })
     );
   }
 
