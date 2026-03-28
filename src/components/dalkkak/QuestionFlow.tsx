@@ -122,6 +122,10 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
           setTimeout(() => {
             setQuestions(newQuestions);
             setPhase(data.phase);
+            // Phase 5 includes q20_prompt alongside MCQ questions
+            if (data.q20_prompt) {
+              setQ20Prompt(data.q20_prompt);
+            }
             setTransitionReady(true);
           }, 500);
 
@@ -183,8 +187,8 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
     return <GeneratingScreen />;
   }
 
-  // Q20 text question (Phase 5, q20Prompt is set)
-  if (q20Prompt && currentPhase === 5 && !isTransitioning) {
+  // Q20 text question (Phase 5, all MCQs answered, q20Prompt is set)
+  if (q20Prompt && currentPhase === 5 && !isTransitioning && !currentQuestion) {
     return (
       <TextQuestion
         onSubmitted={() => {
@@ -227,7 +231,7 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-8">
+    <div className="flex-1 flex flex-col items-center justify-center py-4">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQuestion.id}

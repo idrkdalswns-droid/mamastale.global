@@ -194,8 +194,8 @@ export default function DalkkakPlayPage() {
   return (
     <div className="min-h-dvh flex flex-col tq-phase-bg" data-tq-phase={currentPhase}>
       {/* Header */}
-      <div className="shrink-0 pt-3 pb-2 px-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="shrink-0 pt-2 pb-1 px-4">
+        <div className="flex items-center justify-between mb-2">
           <BackButton />
           <div className="flex-1" />
         </div>

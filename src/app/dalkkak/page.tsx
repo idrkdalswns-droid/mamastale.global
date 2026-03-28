@@ -8,6 +8,7 @@ import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import { useTickets } from "@/lib/hooks/useTickets";
 import { useTQStore } from "@/lib/hooks/tq/useTQStore";
 import { TQ_PHASES } from "@/lib/constants/tq-phases";
+import { getIntroImagePath, getHeroImagePath } from "@/lib/utils/dalkkak-images";
 
 export default function DalkkakLandingPage() {
   const router = useRouter();
@@ -111,42 +112,127 @@ export default function DalkkakLandingPage() {
 
   return (
     <div className="min-h-dvh relative overflow-hidden" style={{ background: "rgb(var(--tq-p1-bg))" }}>
-      <div className="max-w-md mx-auto px-5 pt-12 pb-20">
+      <div className="max-w-md mx-auto px-5 pt-10 pb-16">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="text-center mb-10"
+          className="text-center mb-6"
         >
           <h1 className="font-serif text-[22px] font-bold text-brown leading-snug mb-3 break-keep">
             스무 개의 질문이<br />당신만의 동화를 만들어요
           </h1>
-          <p className="text-[13px] text-brown-light font-light">
+          <p className="text-[13px] text-brown-light font-light mb-5">
             약 10분 · 선택형 질문 19개 + 서술 1개
           </p>
+
+          {/* Hero illustration */}
+          <div className="mx-auto max-w-[280px] rounded-2xl overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(90,62,43,0.1)" }}>
+            <img
+              src={getHeroImagePath()}
+              alt="딸깍 동화 대표 이미지"
+              className="w-full h-[160px] object-cover"
+            />
+          </div>
         </motion.div>
 
-        {/* 5 Doors Preview */}
+        {/* Why This Exists */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="mb-10"
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="rounded-2xl p-5 mb-6"
+          style={{
+            background: "rgba(255,255,255,0.6)",
+            border: "1px solid rgba(196,149,106,0.1)",
+          }}
+        >
+          <p className="font-serif text-[15px] text-brown font-semibold text-center mb-3 break-keep leading-snug">
+            아이가 아닌, 엄마 당신을 위한 동화
+          </p>
+          <p className="text-[12px] text-brown-light font-light leading-relaxed mb-4 break-keep text-center">
+            바쁜 하루 속에서도 딸깍, 터치 몇 번이면 충분해요.<br />
+            작은 선택 하나하나에서 당신의 마음을 읽어내<br />
+            세상에 하나뿐인 맞춤 동화를 만들어 드려요.
+          </p>
+          <div className="space-y-2.5">
+            {[
+              {
+                accent: TQ_PHASES[1].accent,
+                title: "딸깍, 고르기만 하면 돼요",
+                desc: "객관식 19개 + 짧은 서술 1개, 약 10분이면 끝",
+              },
+              {
+                accent: TQ_PHASES[3].accent,
+                title: "작은 답변도 놓치지 않아요",
+                desc: "AI가 당신의 취향과 감정을 섬세하게 분석해요",
+              },
+              {
+                accent: TQ_PHASES[5].accent,
+                title: "나만의 동화가 탄생해요",
+                desc: "당신의 이야기가 담긴 세상에 하나뿐인 동화책",
+              },
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]"
+                  style={{ background: step.accent }}
+                />
+                <div>
+                  <p className="text-[13px] font-semibold text-brown leading-tight">
+                    {step.title}
+                  </p>
+                  <p className="text-[11px] text-brown-light font-light leading-snug mt-0.5 break-keep">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* 5 Doors Preview — illustration thumbnails */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mb-6"
         >
           <div className="flex items-center justify-center gap-3">
             {[1, 2, 3, 4, 5].map((phase) => {
               const p = TQ_PHASES[phase];
+              const imgPath = getIntroImagePath(phase);
               return (
                 <div key={phase} className="flex flex-col items-center gap-1.5">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-[13px] font-bold"
+                    className="w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center"
                     style={{
                       background: p.accent,
                       boxShadow: `0 2px 8px ${p.accent}33`,
                     }}
                   >
-                    {phase}
+                    {imgPath ? (
+                      <img
+                        src={imgPath}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to number badge
+                          const target = e.currentTarget;
+                          target.style.display = "none";
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const span = document.createElement("span");
+                            span.className = "text-white text-[15px] font-bold";
+                            span.textContent = String(phase);
+                            parent.appendChild(span);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="text-white text-[15px] font-bold">{phase}</span>
+                    )}
                   </div>
                   <span className="text-[10px] text-brown-pale font-light whitespace-nowrap">
                     {p.name}
@@ -192,7 +278,7 @@ export default function DalkkakLandingPage() {
                 className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white text-center transition-all active:scale-[0.97]"
                 style={{ background: "linear-gradient(135deg, #9B8EC4, #7B6FA0)" }}
               >
-                ��어하기
+                이어하기
               </button>
               <button
                 onClick={() => handleStart(true)}
@@ -210,7 +296,7 @@ export default function DalkkakLandingPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: existingSession ? 0.6 : 0.4, duration: 0.5 }}
+          transition={{ delay: existingSession ? 0.6 : 0.45, duration: 0.5 }}
         >
           {!existingSession && (
             <button
