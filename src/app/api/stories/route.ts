@@ -7,6 +7,7 @@ import { uploadCoverToStorage } from "@/lib/illustration/upload";
 import { createInMemoryLimiter, RATE_KEYS, checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { getDIYStory } from "@/lib/constants/diy-stories";
+import { calculateBlindStatus } from "@/lib/utils/blind";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Freemium v2: include is_unlocked for lock badge
     // F5 Fix: Include scenes for accurate scene count in library grid
     // DIY free save: include expires_at for lock computation
-    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, expires_at, created_at", { count: "exact" })
+    .select("id, title, scenes, status, is_public, is_unlocked, cover_image, topic, metadata, expires_at, blind_until, story_type, created_at", { count: "exact" })
     .eq("user_id", user.id)
     .eq("status", "completed")
     // B3: 빈 장면 스토리 필터링 (0장면/null 제외)
@@ -73,15 +74,17 @@ export async function GET(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
   }
 
-  // DIY free save: query has_purchased flag for lock computation
+  // DIY free save + blind system: query purchase flags
   let hasPurchased = false;
+  let hasEverPurchased = false;
   try {
     const { data: profile } = await sb.client
       .from("profiles")
-      .select("has_purchased")
+      .select("has_purchased, has_ever_purchased")
       .eq("id", user.id)
       .single();
     hasPurchased = profile?.has_purchased === true;
+    hasEverPurchased = profile?.has_ever_purchased === true;
   } catch {
     // fallback: treat as not purchased (safer — shows locks)
   }
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
 
   // Extract source from metadata, compute scene count, don't expose raw metadata to client
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const safeStories = (stories || []).map(({ metadata, scenes, expires_at, ...s }: any) => {
+  const safeStories = (stories || []).map(({ metadata, scenes, expires_at, blind_until, ...s }: any) => {
     // DIY free save: compute is_locked
     let is_locked = false;
     if (!hasPurchased && !s.is_public && expires_at) {
@@ -98,6 +101,12 @@ export async function GET(request: NextRequest) {
         is_locked = true;
       }
     }
+
+    // Blind system: compute is_blinded
+    const is_blinded = calculateBlindStatus(
+      { blind_until },
+      { has_ever_purchased: hasEverPurchased }
+    );
 
     return {
       ...s,
@@ -107,6 +116,7 @@ export async function GET(request: NextRequest) {
       source: (metadata as Record<string, unknown> | null)?.source || "ai",
       expires_at: expires_at || null,
       is_locked,
+      is_blinded,
     };
   });
 
@@ -306,6 +316,13 @@ export async function POST(request: NextRequest) {
     // DIY free save: set expires_at (3-day lock)
     if (isDIY) {
       storyInsert.expires_at = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      storyInsert.story_type = "diy";
+    }
+
+    // Blind system: first story gets blind_until (N-day window)
+    if (isFirstStory) {
+      const BLIND_DAYS = 3; // TODO: read from site_settings when blind enabled
+      storyInsert.blind_until = new Date(Date.now() + BLIND_DAYS * 24 * 60 * 60 * 1000).toISOString();
     }
 
     // DIY 동화: coverImage 저장 (공통 검증 함수 사용)

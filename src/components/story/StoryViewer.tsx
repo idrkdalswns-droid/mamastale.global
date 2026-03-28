@@ -85,9 +85,11 @@ interface StoryViewerProps {
   previewMode?: boolean;
   /** Callback for delete button */
   onDelete?: () => void;
+  /** Blind system: story is blinded (scenes 7+ have no text) */
+  isBlinded?: boolean;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode, onDelete }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode, onDelete, isBlinded }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -507,8 +509,45 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
             </div>
           )}
 
+          {/* Blind system: blur overlay on blinded scenes */}
+          {isBlinded && isLast && (
+            <div className="relative mt-6">
+              <div
+                className="absolute -top-16 left-0 right-0 h-16 pointer-events-none"
+                style={{ background: "linear-gradient(to bottom, transparent, rgba(251,245,236,0.95))" }}
+              />
+              <div
+                className="rounded-2xl p-6 text-center"
+                style={{
+                  background: "linear-gradient(180deg, rgb(var(--paper) / 0.95), rgb(var(--surface) / 0.98))",
+                  border: "1.5px solid rgb(var(--brown-pale) / 0.15)",
+                  boxShadow: "0 8px 32px rgba(90,62,43,0.06)",
+                }}
+                role="region"
+                aria-label="블라인드 처리된 콘텐츠"
+              >
+                <p className="font-serif text-base text-brown font-semibold mb-1 leading-snug">
+                  무료 열람 기간이 지났어요
+                </p>
+                <p className="text-xs text-brown-light font-light mb-4 break-keep">
+                  티켓을 구매하면 모든 동화를 영구적으로 읽을 수 있어요
+                </p>
+                <a
+                  href="/pricing"
+                  className="block w-full py-3.5 rounded-full text-sm font-medium text-white no-underline transition-all active:scale-[0.97]"
+                  style={{
+                    background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                    boxShadow: "0 6px 24px rgba(224,122,95,0.3)",
+                  }}
+                >
+                  전체 이야기 읽기
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Last page extras */}
-          {isLast && !isLocked && (
+          {isLast && !isLocked && !isBlinded && (
             <div className="mt-8 space-y-4">
               <div
                 className="rounded-2xl p-4"

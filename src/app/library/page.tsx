@@ -59,6 +59,8 @@ interface StoryItem {
   status: string;
   is_public?: boolean;
   is_unlocked?: boolean;
+  is_blinded?: boolean;
+  story_type?: string;
   cover_image?: string;
   topic?: string;
   created_at: string;

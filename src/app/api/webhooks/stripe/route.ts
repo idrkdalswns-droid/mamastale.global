@@ -209,6 +209,12 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "처리에 실패했습니다" }, { status: 500 });
         }
 
+        // Blind system: mark user as ever-purchased (permanent blind unlock)
+        await supabase
+          .from("profiles")
+          .update({ has_ever_purchased: true })
+          .eq("id", userId);
+
         // ─── Atomic ticket increment (only reached if INSERT succeeded) ───
         try {
           await incrementTickets(supabase, userId, ticketCount);

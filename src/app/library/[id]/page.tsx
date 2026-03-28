@@ -36,6 +36,8 @@ interface StoryData {
   source?: string;
   is_unlocked?: boolean;
   is_locked?: boolean;
+  is_blinded?: boolean;
+  story_type?: string;
   total_scenes?: number;
 }
 
@@ -234,6 +236,41 @@ export default function LibraryStoryPage() {
             style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
           >
             내 서재로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If story is blinded (free trial expired), show purchase prompt
+  if (story && story.is_blinded) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-6" style={{ background: "rgb(var(--cream))" }}>
+        <div className="text-center">
+          <svg className="w-12 h-12 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brown-pale))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+            <path d="M1 1l22 22" />
+          </svg>
+          <h2 className="text-[18px] font-bold mb-2" style={{ color: "rgb(var(--brown))" }}>
+            무료 열람 기간이 지났어요
+          </h2>
+          <p className="text-[13px] mb-6 break-keep" style={{ color: "rgb(var(--brown-light))" }}>
+            티켓을 구매하면 모든 동화를 영구적으로 읽을 수 있어요
+          </p>
+          <button
+            onClick={() => router.push("/pricing")}
+            className="px-6 py-3 rounded-full text-white text-[14px] font-medium transition-all active:scale-[0.97]"
+            style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)", boxShadow: "0 6px 20px rgba(224,122,95,0.3)" }}
+          >
+            전체 이야기 읽기
+          </button>
+          <button
+            onClick={() => router.push("/library")}
+            className="block mx-auto mt-4 text-[12px] underline"
+            style={{ color: "rgb(var(--brown-pale))" }}
+          >
+            서재로 돌아가기
           </button>
         </div>
       </div>

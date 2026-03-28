@@ -3,6 +3,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, sanitizeSceneText, containsProfanity, isValidCoverImage, VALID_TOPICS } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { calculateBlindStatus, applyBlindFilter } from "@/lib/utils/blind";
 
 export const runtime = "edge";
 
@@ -39,7 +40,7 @@ export async function GET(
     // R10-2: Include metadata for source detection, but only expose source field to client
     // Freemium v2: include is_unlocked for lock filtering
     // DIY free save: include expires_at for lock check
-    .select("id, title, scenes, status, is_public, is_unlocked, author_alias, topic, cover_image, metadata, expires_at, created_at")
+    .select("id, title, scenes, status, is_public, is_unlocked, author_alias, topic, cover_image, metadata, expires_at, blind_until, story_type, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
@@ -48,40 +49,50 @@ export async function GET(
     return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
   }
 
-  // DIY free save: check if story is expired and user hasn't purchased
+  // DIY free save + blind system: check purchase flags
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const storyAny = story as any;
+  let hasPurchased = false;
+  let hasEverPurchased = false;
+  try {
+    const { data: profile } = await sb.client
+      .from("profiles")
+      .select("has_purchased, has_ever_purchased")
+      .eq("id", user.id)
+      .single();
+    hasPurchased = profile?.has_purchased === true;
+    hasEverPurchased = profile?.has_ever_purchased === true;
+  } catch {
+    // fallback: not purchased
+  }
+
   let is_locked = false;
   if (storyAny.expires_at && new Date(storyAny.expires_at).getTime() < Date.now()) {
-    // Check has_purchased
-    let hasPurchased = false;
-    try {
-      const { data: profile } = await sb.client
-        .from("profiles")
-        .select("has_purchased")
-        .eq("id", user.id)
-        .single();
-      hasPurchased = profile?.has_purchased === true;
-    } catch {
-      // fallback: not purchased
-    }
     if (!hasPurchased && !storyAny.is_public) {
       is_locked = true;
     }
   }
 
+  // Blind system
+  const is_blinded = calculateBlindStatus(
+    { blind_until: storyAny.blind_until },
+    { has_ever_purchased: hasEverPurchased }
+  );
+
   // Extract source from metadata, don't expose raw metadata to client
-  const { metadata, expires_at, ...storyFields } = story as Record<string, unknown>;
+  const { metadata, expires_at, blind_until, ...storyFields } = story as Record<string, unknown>;
   const isUnlocked = (storyFields.is_unlocked as boolean | null) ?? true; // backward compat: missing = unlocked
   const allScenes = Array.isArray(storyFields.scenes) ? storyFields.scenes : [];
   const totalScenes = allScenes.length;
 
   // DIY free save: locked expired stories return empty scenes
   // Freemium v2: locked stories only expose first 6 scenes (server-side filtering)
-  // Scenes 7-10 (RESOLUTION + WISDOM) are hidden until payment
+  // Blind system: blinded stories show 6 scenes, text stripped from rest
   let visibleScenes;
   if (is_locked) {
     visibleScenes = [];
+  } else if (is_blinded) {
+    visibleScenes = applyBlindFilter(allScenes as { text: string }[], true);
   } else if (isUnlocked) {
     visibleScenes = allScenes;
   } else {
@@ -96,6 +107,7 @@ export async function GET(
     source: (metadata as Record<string, unknown> | null)?.source || "ai",
     expires_at: expires_at || null,
     is_locked,
+    is_blinded,
   };
 
   return sb.applyCookies(NextResponse.json({ story: safeStory }));

@@ -389,6 +389,16 @@ export async function POST(request: NextRequest) {
       console.warn("[Toss] metadata pre-claim failed — order_claims already protects");
     }
 
+    // Blind system: mark user as ever-purchased (permanent blind unlock)
+    try {
+      await sb.client
+        .from("profiles")
+        .update({ has_ever_purchased: true })
+        .eq("id", user.id);
+    } catch {
+      // non-fatal: blind unlock is secondary to ticket increment
+    }
+
     // ─── Atomic ticket increment (story or worksheet) ───
     let newTotal: number;
     try {

@@ -34,6 +34,8 @@ interface StoryItem {
   source?: string;
   expires_at?: string | null;
   is_locked?: boolean;
+  is_blinded?: boolean;
+  story_type?: string;
 }
 
 interface StoryGridProps {
@@ -69,7 +71,7 @@ const GridCard = memo(function GridCard({
   const topicLabel = story.topic ? TOPIC_LABELS[story.topic] : null;
 
   const handleClick = (e: React.MouseEvent) => {
-    if (story.is_locked) {
+    if (story.is_locked || story.is_blinded) {
       e.preventDefault();
       router.push("/pricing");
     }
@@ -77,7 +79,7 @@ const GridCard = memo(function GridCard({
 
   return (
     <Link
-      href={story.is_locked ? "/pricing" : `/library/${story.id}`}
+      href={story.is_locked || story.is_blinded ? "/pricing" : `/library/${story.id}`}
       role="listitem"
       aria-label={`동화: ${story.title || "나의 마음 동화"}, ${date}, ${sceneCount}장면`}
       className="block overflow-hidden rounded-xl transition-transform duration-150 active:scale-[0.97] no-underline"
@@ -118,6 +120,18 @@ const GridCard = memo(function GridCard({
           <div className="absolute inset-0 bg-cream/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1 rounded-xl">
             <span className="text-2xl">💛</span>
             <span className="text-[10px] text-brown font-medium text-center px-2">소중한 동화가<br/>기다리고 있어요</span>
+          </div>
+        )}
+
+        {/* Blind overlay for free-trial-expired stories */}
+        {story.is_blinded && !story.is_locked && (
+          <div className="absolute inset-0 bg-cream/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1 rounded-xl">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brown-pale))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+              <path d="M1 1l22 22" />
+            </svg>
+            <span className="text-[10px] text-brown-pale font-medium text-center px-2">무료 열람 기간 만료</span>
           </div>
         )}
 
