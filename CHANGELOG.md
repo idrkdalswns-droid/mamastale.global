@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.51.0] - 2026-03-28
+
+### Added
+- 3대 서비스 체계: 엄마엄마 동화 / DIY 동화 / 딸깍 동화 홈페이지 CTA 리디자인
+- 입소문 자판기 (/vending): 추천 코드 공유/입력, 최대 2명 제한
+- 블라인드 시스템: 무료 동화 3일 열람 후 자동 블라인드, 첫 구매 시 영구 해제
+- `has_ever_purchased` 이중 보장 (Stripe webhook + Toss confirm)
+- BlindUpsellModal 바텀시트 + StoryViewer/StoryGrid 블라인드 오버레이
+- 딸깍 동화 프론트엔드 전체 구현:
+  - TQ Phase CSS 변수 (5 Phase 배경/악센트)
+  - Zustand 3-slice store (session + question + generation)
+  - /dalkkak 랜딩: 5개의 문 프리뷰 + 기존 세션 복원
+  - QuestionCard: 4 선택지 radiogroup + 키보드 탐색 + 마이크로인터랙션
+  - DoorProgress: 5문 진행 표시 (완료 ✓ / 현재 펄스 / 대기)
+  - PhaseTransition: 인터스티셜 (최소 2초 + AI 대기)
+  - BackButton: Phase 경계 차단 + 토스트
+  - QuestionFlow: 상태 머신 오케스트레이터
+  - TextQuestion: Q20 서술형 편지지 UI + 넛지 + 스킵
+  - GeneratingScreen: SSE/폴링 실시간 진행 + 실패 3단계 UX
+  - EmotionDNACard: SVG 5축 레이더 차트 감정 시각화
+  - /dalkkak/result: StoryViewer 재사용 + Afterglow + DNA 카드 + 피드백
+- 딸깍 동화 백엔드 API: start, next-phase, submit, generate (SSE), sessions, event
+- TQ DB 마이그레이션: tq_sessions, tq_ticket_holds, tq_events 테이블 + RPC
+- 라이브러리 story_type 배지 (딸깍/DIY)
+
+### Changed
+- ServiceCard 컴포넌트: primary/compact 2가지 변형
+- LandingSection: 단일 CTA → 3대 서비스 카드 그리드
+- referral API: 추천 최대 2명 cap 추가
+- site_settings 테이블 + get_blind_config() RPC
+
 ## [1.50.0] - 2026-03-27
 
 ### Added
