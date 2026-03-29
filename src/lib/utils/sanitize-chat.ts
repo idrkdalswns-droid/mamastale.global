@@ -12,7 +12,7 @@
  */
 
 /** System prompt XML tags used internally — must not appear in user messages */
-const SYSTEM_TAG_PATTERN = /<\/?(crisis_context|phase_context|phase_turn_limit_exceeded|child_age_context|parent_context|current_phase_protocol|system_prompt|GENERATE_READY|phase_priority|premium_supplement|post_crisis_mode)[^>]*>/gi;
+const SYSTEM_TAG_PATTERN = /<\/?(crisis_context|phase_context|phase_turn_limit_exceeded|child_age_context|parent_context|current_phase_protocol|system_prompt|GENERATE_READY|phase_priority|premium_supplement|post_crisis_mode|system|instructions|admin|prompt|context|role|tool|function|user|assistant|human)[^>]*>/gi;
 
 /** Phase control bracket tags */
 const PHASE_TAG_PATTERN = /\[PHASE:\s*\d+\s*\]/gi;

@@ -41,10 +41,32 @@ export async function recordCrisisEvent(params: CrisisEventParams): Promise<void
     // R6-8: Log RPC failure — crisis events must have audit trail visibility
     if (error) {
       console.error(`[CrisisTracker] FAILED to record ${params.severity} event for session=${params.sessionId}:`, error.code, error.message);
+      // P1-6: Slack alert for crisis event recording failure
+      const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+      if (slackUrl) {
+        fetch(slackUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `🚨 [위기이벤트 기록 실패] severity=${params.severity} session=${params.sessionId.slice(0, 8)}... error=${error.code}`,
+          }),
+        }).catch(() => {});
+      }
     }
   } catch (err) {
     // R6-8: Fire-and-forget but always log failure for observability
     console.error("[CrisisTracker] record_crisis_event threw:", err instanceof Error ? err.message : "Unknown");
+    // P1-6: Slack alert for unexpected crisis tracker failure
+    const slackUrl = process.env.SLACK_CRISIS_WEBHOOK_URL;
+    if (slackUrl) {
+      fetch(slackUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: `🚨 [위기이벤트 기록 예외] severity=${params.severity} error=${err instanceof Error ? err.message : "Unknown"}`,
+        }),
+      }).catch(() => {});
+    }
   }
 }
 

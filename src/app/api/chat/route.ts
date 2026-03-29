@@ -472,6 +472,7 @@ export async function POST(request: NextRequest) {
       ...(storyComplete && scenes.length > 0 ? { scenes, title: storyTitle } : {}),
       ...(isPremiumUser && safePhase === 4 ? { isPremium: true } : {}),
       ...(suggestedTags.length > 0 ? { suggestedTags } : {}),
+      ...(wasFallback ? { modelDowngraded: true } : {}),
     });
   } catch (error: unknown) {
     // Log error message only (no PII, no full stack)

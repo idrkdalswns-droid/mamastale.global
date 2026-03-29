@@ -545,11 +545,77 @@ Ce service ne remplace pas l'aide professionnelle. Appelez maintenant, quelqu'un
  * Supports all 6 locales: ko, en, ja, zh, ar, fr
  * Includes false-positive filtering (mental-wellness-prompts inspired)
  */
+/**
+ * Convert Hangul Compatibility Jamo (U+3131-U+3163) to Hangul Jamo (U+1100-U+11FF)
+ * so that NFC normalization can compose them into syllables.
+ * e.g., "ㅈㅏ살" (U+3148 U+314F) → "자살" after NFC
+ */
+function normalizeCompatJamo(text: string): string {
+  // Mapping: Compatibility Jamo → Leading consonant (Choseong) or Vowel (Jungseong)
+  const COMPAT_TO_JAMO: Record<number, number> = {
+    // Consonants → Choseong (U+1100-U+1112)
+    0x3131: 0x1100, // ㄱ
+    0x3132: 0x1101, // ㄲ
+    0x3134: 0x1102, // ㄴ
+    0x3137: 0x1103, // ㄷ
+    0x3138: 0x1104, // ㄸ
+    0x3139: 0x1105, // ㄹ
+    0x3141: 0x1106, // ㅁ
+    0x3142: 0x1107, // ㅂ
+    0x3143: 0x1108, // ㅃ
+    0x3145: 0x1109, // ㅅ
+    0x3146: 0x110A, // ㅆ
+    0x3147: 0x110B, // ㅇ
+    0x3148: 0x110C, // ㅈ
+    0x3149: 0x110D, // ㅉ
+    0x314A: 0x110E, // ㅊ
+    0x314B: 0x110F, // ㅋ
+    0x314C: 0x1110, // ㅌ
+    0x314D: 0x1111, // ㅍ
+    0x314E: 0x1112, // ㅎ
+    // Vowels → Jungseong (U+1161-U+1175)
+    0x314F: 0x1161, // ㅏ
+    0x3150: 0x1162, // ㅐ
+    0x3151: 0x1163, // ㅑ
+    0x3152: 0x1164, // ㅒ
+    0x3153: 0x1165, // ㅓ
+    0x3154: 0x1166, // ㅔ
+    0x3155: 0x1167, // ㅕ
+    0x3156: 0x1168, // ㅖ
+    0x3157: 0x1169, // ㅗ
+    0x3158: 0x116A, // ㅘ
+    0x3159: 0x116B, // ㅙ
+    0x315A: 0x116C, // ㅚ
+    0x315B: 0x116D, // ㅛ
+    0x315C: 0x116E, // ㅜ
+    0x315D: 0x116F, // ㅝ
+    0x315E: 0x1170, // ㅞ
+    0x315F: 0x1171, // ㅟ
+    0x3160: 0x1172, // ㅠ
+    0x3161: 0x1173, // ㅡ
+    0x3162: 0x1174, // ㅢ
+    0x3163: 0x1175, // ㅣ
+  };
+
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    const mapped = COMPAT_TO_JAMO[code];
+    result += mapped ? String.fromCharCode(mapped) : text[i];
+  }
+  return result;
+}
+
 export function screenForCrisis(userMessage: string): CrisisScreenResult {
   // R6-F8: Apply NFC normalization + strip zero-width chars (matches profanity filter)
   const cleanMsg = userMessage.normalize("NFC").replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u00AD]/g, "");
   const lowerMsg = cleanMsg.toLowerCase();
   const normalizedMsg = cleanMsg.replace(/\s+/g, "");
+  // P0-1 FIX: For Korean keyword matching, normalize Compatibility Jamo → Jamo,
+  // strip non-Korean chars (emoji, special chars), then NFC-compose into syllables.
+  // This catches evasion like "ㅈㅏ살", "자☆살", "자 살".
+  const koreanOnly = cleanMsg.replace(/[^\uAC00-\uD7AF\u1100-\u11FF\u3131-\u3163]/g, "");
+  const normalizedKo = normalizeCompatJamo(koreanOnly).normalize("NFC");
 
   // ─── FALSE POSITIVE CHECK (Bug Bounty 7-3 FIX: 2-stage detection) ───
   // Stage 1: If FP pattern matches, don't return immediately — check HIGH keywords too.
@@ -559,7 +625,7 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
   const detected: string[] = [];
 
   // ─── HIGH severity check (6 languages, CSSRS 4-5) ───
-  const highAllKo = HIGH_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const highAllKo = HIGH_KO.filter(kw => normalizedKo.includes(kw.replace(/\s+/g, "")));
   const highAllEn = HIGH_EN.filter(kw => lowerMsg.includes(kw));
   const highAllJa = HIGH_JA.filter(kw => normalizedMsg.includes(kw));
   const highAllZh = HIGH_ZH.filter(kw => normalizedMsg.includes(kw));
@@ -596,7 +662,7 @@ export function screenForCrisis(userMessage: string): CrisisScreenResult {
   }
 
   // ─── MEDIUM severity check (6 languages, CSSRS 2-3) ───
-  const medAllKo = MEDIUM_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const medAllKo = MEDIUM_KO.filter(kw => normalizedKo.includes(kw.replace(/\s+/g, "")));
   const medAllEn = MEDIUM_EN.filter(kw => lowerMsg.includes(kw));
   const medAllJa = MEDIUM_JA.filter(kw => normalizedMsg.includes(kw));
   const medAllZh = MEDIUM_ZH.filter(kw => normalizedMsg.includes(kw));
@@ -635,7 +701,7 @@ CSSRS Level: ${cssrsLevel ?? "N/A"} | 감지 근거: ${medDetected.slice(0, 3).m
   }
 
   // ─── LOW severity check (6 languages, CSSRS 1 + behavioral risk) ───
-  const lowAllKo = LOW_KO.filter(kw => normalizedMsg.includes(kw.replace(/\s+/g, "")));
+  const lowAllKo = LOW_KO.filter(kw => normalizedKo.includes(kw.replace(/\s+/g, "")));
   const lowAllEn = LOW_EN.filter(kw => lowerMsg.includes(kw));
   const lowAllJa = LOW_JA.filter(kw => normalizedMsg.includes(kw));
   const lowAllZh = LOW_ZH.filter(kw => normalizedMsg.includes(kw));

@@ -22,7 +22,9 @@ export async function incrementTickets(
     });
     if (!error && typeof data === "number") {
       // Set has_purchased flag (idempotent, fire-and-forget)
-      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch(() => {});
+      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch((e: unknown) => {
+        console.error("[Tickets] has_purchased update failed:", e instanceof Error ? e.message : String(e));
+      });
       return data;
     }
     // V5-FIX #2: Differentiate RPC errors — only fall back to CAS for "function not found"
@@ -67,7 +69,9 @@ export async function incrementTickets(
 
     if (!updateErr && updated) {
       // Set has_purchased flag (idempotent, fire-and-forget)
-      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch(() => {});
+      supabase.from("profiles").update({ has_purchased: true }).eq("id", userId).then(() => {}).catch((e: unknown) => {
+        console.error("[Tickets] has_purchased update failed (CAS path):", e instanceof Error ? e.message : String(e));
+      });
       return updated.free_stories_remaining;
     }
 
