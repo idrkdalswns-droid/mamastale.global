@@ -63,6 +63,3 @@ export function getRecommendedActivity(spreads: Spread[]): ActivityType {
   return "post_reading";
 }
 
-export function getActivityLabel(type: ActivityType): string {
-  return ACTIVITY_LABELS[type] || "독후활동지";
-}

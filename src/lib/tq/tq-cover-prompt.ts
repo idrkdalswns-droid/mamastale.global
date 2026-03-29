@@ -59,11 +59,3 @@ const EMOTION_VISUAL_MAP: Record<EmotionCategory, string> = {
 
 /* ── 프롬프트 빌더 ── */
 
-export function buildTQCoverPrompt(primaryEmotion: EmotionCategory): string {
-  const visual = EMOTION_VISUAL_MAP[primaryEmotion];
-  return `${TQ_STYLE_PREFIX}\n\n${visual}\n\n${TQ_STYLE_SUFFIX}`;
-}
-
-export function getEmotionVisual(emotion: EmotionCategory): string {
-  return EMOTION_VISUAL_MAP[emotion];
-}

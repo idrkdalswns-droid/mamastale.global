@@ -200,22 +200,3 @@ export function resolveCover(
   return getDefaultCover(storyId, topic);
 }
 
-/**
- * Get all cover images organized by category (for CoverPicker UI).
- */
-export function getAllCovers() {
-  return {
-    classic: {
-      pink: Array.from({ length: 16 }, (_, i) =>
-        `/images/covers/cover_pink${String(i + 1).padStart(2, "0")}.png`
-      ),
-      green: Array.from({ length: 14 }, (_, i) =>
-        `/images/covers/cover_green${String(i + 1).padStart(2, "0")}.jpeg`
-      ),
-      blue: Array.from({ length: 15 }, (_, i) =>
-        `/images/covers/cover_blue${String(i).padStart(2, "0")}.jpeg`
-      ),
-    },
-    categories: CATEGORY_COVERS,
-  };
-}

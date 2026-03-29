@@ -27,10 +27,3 @@ export function validateTransition(
   return VALID_TRANSITIONS[current]?.includes(next) ?? false;
 }
 
-export function isTerminalState(status: TQSessionStatus): boolean {
-  return TERMINAL_STATES.includes(status);
-}
-
-export function getValidNextStates(current: TQSessionStatus): TQSessionStatus[] {
-  return VALID_TRANSITIONS[current] ?? [];
-}

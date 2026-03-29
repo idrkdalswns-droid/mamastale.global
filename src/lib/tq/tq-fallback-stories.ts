@@ -811,6 +811,3 @@ export function getFallbackStory(emotionCategory: EmotionCategory): FallbackStor
   return FALLBACK_STORIES.find((s) => s.emotion === emotionCategory);
 }
 
-export function getAllFallbackStories(): FallbackStory[] {
-  return FALLBACK_STORIES;
-}

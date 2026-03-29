@@ -127,10 +127,3 @@ export const EMOTION_METAPHORS: EmotionMetaphor[] = [
   },
 ];
 
-export function getMetaphorByEmotion(emotion: string): EmotionMetaphor | undefined {
-  return EMOTION_METAPHORS.find((m) => m.emotion === emotion);
-}
-
-export function getMetaphorByKoName(emotionKo: string): EmotionMetaphor | undefined {
-  return EMOTION_METAPHORS.find((m) => m.emotionKo === emotionKo);
-}

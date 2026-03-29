@@ -306,6 +306,3 @@ export function parseTQScenes(raw: string): TQScene[] {
   return scenes;
 }
 
-export function isTQStoryComplete(scenes: TQScene[]): boolean {
-  return scenes.length >= 9;
-}
