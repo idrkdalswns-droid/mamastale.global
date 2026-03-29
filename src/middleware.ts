@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { checkRequiredEnvVars } from "@/lib/utils/env-check";
+
+// P1-Phase3: Early env validation (warn-only, runs once per isolate)
+checkRequiredEnvVars();
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
