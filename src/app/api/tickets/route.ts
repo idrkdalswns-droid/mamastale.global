@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
-import { resolveUser } from "@/lib/supabase/resolve-user";
+import { withAuth } from "@/lib/api/with-auth";
 
 export const runtime = "edge";
 
@@ -10,7 +9,7 @@ export const runtime = "edge";
 const ticketCheckLimiter = createInMemoryLimiter(RATE_KEYS.TICKET_CHECK, { maxEntries: 300 });
 
 // GET: Check remaining tickets + first purchase eligibility
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user, sb }) => {
   // R2-FIX: Rate limit ticket balance checks
   const ip = getClientIP(request);
   if (!ticketCheckLimiter.check(ip, 15, 60_000)) {
@@ -18,17 +17,6 @@ export async function GET(request: NextRequest) {
       { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
       { status: 429, headers: { "Retry-After": "60" } }
     );
-  }
-
-  const sb = createApiSupabaseClient(request);
-  if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
-  }
-
-  const user = await resolveUser(sb.client, request, "Tickets");
-  if (!user) {
-    // CTO-FIX: applyCookies was missing on 401 response
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
   }
 
   const { data: profile, error } = await sb.client
@@ -39,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   if (error && error.code !== "PGRST116") {
     console.error("[Tickets] DB error: code=", error.code);
-    return sb.applyCookies(NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 }));
+    return NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 });
   }
 
   let remaining = 0;
@@ -58,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     if (upsertErr) {
       console.error("[Tickets] Profile create error:", upsertErr.code);
-      return sb.applyCookies(NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 }));
+      return NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 });
     }
 
     // Re-read actual value (insert may have been a no-op if profile already existed)
@@ -108,5 +96,5 @@ export async function GET(request: NextRequest) {
   // 활동지 티켓 잔여량
   const worksheetTickets = profile?.worksheet_tickets_remaining ?? 0;
 
-  return sb.applyCookies(NextResponse.json({ remaining, isFirstPurchase, storyCount, worksheet_tickets_remaining: worksheetTickets }));
-}
+  return NextResponse.json({ remaining, isFirstPurchase, storyCount, worksheet_tickets_remaining: worksheetTickets });
+});
