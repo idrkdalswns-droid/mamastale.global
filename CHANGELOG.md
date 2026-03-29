@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.53.0] - 2026-03-29
+
+### Removed
+- 미사용 export 14개 제거: parseStoryCharacters, getAllCovers, getActivityLabel, buildTQCoverPrompt, getEmotionVisual, getMetaphorByEmotion, getMetaphorByKoName, getAllFallbackStories, isTQStoryComplete, isTerminalState, getValidNextStates, getCrisisKeywords, getCrisisContacts, isSupportedLocale
+- 미사용 CSS 3개 제거: .shelf-plank, .shelf-plank-grain, .animate-book-entry
+
+### Added
+- API 구조개선: withAuth 인증 래퍼, parseRequestJSON 유틸, API_ERRORS 공유 상수
+- tickets, account/export 라우트 withAuth 마이그레이션 (보일러플레이트 ~20줄 → 1줄)
+
 ## [1.52.1] - 2026-03-29
 
 ### Fixed
