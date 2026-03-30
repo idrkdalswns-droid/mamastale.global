@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.57.0] - 2026-03-30
+
+### Added
+- 교사 공유 URL OG 메타데이터: Server Component 전환 + generateMetadata (카카오/SNS 미리보기)
+- `/?action=new` 분기: 이전 draft 무시하고 새 동화 시작 (DIY 페이지 "맞춤 동화 만들기" 연동)
+- middleware 경로 보호 로직 순수 함수 추출 (`protected-paths.ts`) + 41개 유닛 테스트
+
+### Fixed
+- retrySaveStory: 게스트 상태에서 불필요한 401 호출 방지 (`if (!user) return` 가드)
+- 결제 성공 후 `mamastale_payment_confirmed` sessionStorage 잔류 방지 (자동/수동 이동 모두 정리)
+
 ## [1.56.0] - 2026-03-30
 
 ### Security
