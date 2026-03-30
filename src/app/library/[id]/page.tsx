@@ -144,7 +144,7 @@ export default function LibraryStoryPage() {
       setPublishing(true);
       try {
         const headers = await getHeaders({ json: true });
-        const body: Record<string, unknown> = { isPublic: true, authorAlias };
+        const body: Record<string, unknown> = { isPublic: true, authorAlias: authorAlias.trim() };
         if (topic) body.topic = topic;
         const res = await fetch(`/api/stories/${story.id}`, {
           method: "PATCH",

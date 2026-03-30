@@ -277,7 +277,9 @@ function PaymentSuccessContent() {
 
   // Check if there's a saved chat to resume
   useEffect(() => {
-    try { setHasSavedChat(!!localStorage.getItem("mamastale_chat_state")); } catch { /* private browsing */ }
+    try {
+      setHasSavedChat(!!(localStorage.getItem("mamastale_chat_state") || localStorage.getItem("mamastale_chat_draft")));
+    } catch { /* private browsing */ }
   }, []);
 
   // Auto-redirect countdown after success (5s → 0s → redirect)
@@ -303,6 +305,8 @@ function PaymentSuccessContent() {
           autoRedirectRef.current = null;
           if (returnTo === "teacher") {
             router.push("/teacher");
+          } else if (hasSavedChat) {
+            router.push("/?action=start");
           } else {
             router.push("/library");
           }

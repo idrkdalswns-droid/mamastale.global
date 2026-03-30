@@ -47,7 +47,7 @@ export default function DIYPage() {
           AI가 만드는 맞춤 동화를 원하시나요?
         </p>
         <Link
-          href="/?action=start"
+          href="/"
           className="inline-block mt-1.5 text-[12px] font-medium no-underline transition-all"
           style={{ color: "#E07A5F" }}
         >

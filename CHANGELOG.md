@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.56.0] - 2026-03-30
+
+### Security
+- middleware: `/admin`, `/dalkkak/play` 보호 경로 추가 + `publicSubPaths` 예외 패턴
+- 리디렉트 검증 유틸(`validate-redirect.ts`) 추출 → middleware, page.tsx, callback, login 4곳 적용
+- ResultStep XSS 방어: regex → DOMPurify 전환
+- ConsentGatedScripts: `/auth/callback`에서 GA4 스크립트 차단 (토큰 파싱 간섭 방지)
+
+### Added
+- 멀티탭 세션 동시성 감지 (BroadcastChannel) — 다른 탭에서 대화 진행 중일 때 경고
+- 결제 후 채팅 1스텝 복귀 (저장된 드래프트 자동 감지)
+- auth callback polling 개선 (2s 고정 → 500ms×10 최대 5s)
+
+### Fixed
+- `freeTrialMode` null 체크 누락 (myStoryCount가 null일 때 잘못된 free trial 활성화)
+- GlobalNav가 `/dalkkak` 경로에서 표시되던 문제
+- 서비스 전환 시 stale 드래프트 미정리 문제 (clearDraft 호출 추가)
+- DIY → 메인 링크가 `/?action=start`로 드래프트 복원 유발하던 문제
+- `authorAlias` 공백 trim 누락
+- communityCount API 중복 호출 (5분 sessionStorage 캐시 추가)
+
 ## [1.55.1] - 2026-03-30
 
 ### Added

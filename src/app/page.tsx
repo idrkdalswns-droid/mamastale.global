@@ -13,6 +13,7 @@ import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
 import { LandingSection } from "@/components/landing/LandingSection";
 import { SERVICES, type ServiceId } from "@/lib/constants/services";
+import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
 // TicketConfirmModal removed — ticket deduction now happens inline during chat (C-1 + SV-3)
 
 // R1-PERF: Dynamic imports — reduce landing page First Load JS by ~80-100 kB
@@ -177,10 +178,9 @@ export default function Home() {
         if (postLoginRedirect) {
           sessionStorage.removeItem("mamastale_post_login_redirect");
           try {
-            const ALLOWED_REDIRECT_PREFIXES = ["/pricing", "/library", "/settings", "/community", "/teacher", "/diy", "/dalkkak", "/vending"];
             const normalized = new URL(postLoginRedirect, window.location.origin);
             if (normalized.origin === window.location.origin
-                && ALLOWED_REDIRECT_PREFIXES.some(p => normalized.pathname.startsWith(p))) {
+                && isAllowedRedirect(normalized.pathname)) {
               window.location.href = postLoginRedirect;
               return;
             }
@@ -277,14 +277,29 @@ export default function Home() {
     return () => observer.disconnect();
   }, [screen]);
 
-  // Social proof: fetch total story count for landing
+  // Social proof: fetch total story count for landing (cached 5min)
   // H9-FIX: AbortController for cleanup on unmount/screen change
   useEffect(() => {
     if (screen !== "landing") return;
+    try {
+      const cached = sessionStorage.getItem("mamastale_community_count");
+      if (cached) {
+        const { total, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 5 * 60 * 1000) {
+          setCommunityCount(total);
+          return;
+        }
+      }
+    } catch {}
     const controller = new AbortController();
     fetch("/api/community?limit=0", { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.total != null) setCommunityCount(d.total); })
+      .then(d => {
+        if (d?.total != null) {
+          setCommunityCount(d.total);
+          try { sessionStorage.setItem("mamastale_community_count", JSON.stringify({ total: d.total, ts: Date.now() })); } catch {}
+        }
+      })
       .catch(() => {});
     return () => controller.abort();
   }, [screen]);
@@ -314,12 +329,13 @@ export default function Home() {
     if (serviceId === "main") {
       handleStartStory();
     } else {
+      clearDraft();
       const service = SERVICES[serviceId as ServiceId];
       if (service) {
         router.push(service.route);
       }
     }
-  }, [handleStartStory, router]);
+  }, [handleStartStory, router, clearDraft]);
 
   const closePaymentModal = useCallback(() => {
     setShowPaymentSuccess(false);
@@ -463,7 +479,7 @@ export default function Home() {
         <ChatPage
           onComplete={() => setScreen("edit")}
           onGoHome={() => { clearTicketSession(); setShow(false); setScreen("landing"); }}
-          freeTrialMode={!ticketUsedForSession && myStoryCount !== 0}
+          freeTrialMode={!ticketUsedForSession && myStoryCount !== null && myStoryCount !== 0}
           ticketsRemaining={ticketsRemaining}
           onTicketUsed={() => {
             setTicketUsedForSession(true);

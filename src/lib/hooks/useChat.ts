@@ -129,6 +129,37 @@ export function abortCurrentRequest() {
   // Note: cleanup happens in each function's catch block (AbortError path)
 }
 
+// Route-Hunt Fix 5: BroadcastChannel for multi-tab session concurrency detection
+let chatBroadcast: BroadcastChannel | null = null;
+if (typeof window !== "undefined") {
+  try {
+    chatBroadcast = new BroadcastChannel("mamastale_chat_session");
+    chatBroadcast.onmessage = (ev) => {
+      if (ev.data?.type === "chat_active" && ev.data?.sessionId) {
+        const state = useChatStore.getState();
+        if (state.sessionId && state.sessionId === ev.data.sessionId && state.isLoading) {
+          // Another tab is sending on the same session — warn this tab
+          const warnMsg: Message = {
+            id: genId("warn"),
+            role: "assistant",
+            content: "다른 탭에서 대화가 진행 중이에요. 하나의 탭에서만 대화해 주세요.",
+            phase: state.currentPhase,
+            isError: true,
+          };
+          useChatStore.setState((s) => ({ messages: [...s.messages, warnMsg], isLoading: false }));
+        }
+      }
+    };
+  } catch {
+    // BroadcastChannel unsupported (iOS Safari <15.4) — graceful degradation
+  }
+}
+
+/** Broadcast a "chat_active" signal to other tabs before sending a message */
+function broadcastChatActive(sessionId: string) {
+  try { chatBroadcast?.postMessage({ type: "chat_active", sessionId }); } catch {}
+}
+
 // P1-FIX(KR-3): Module-level lock to prevent concurrent save/retry operations
 // R3-FIX: Add timeout fallback to prevent permanent lock on network failure
 let saveInFlight = false;
@@ -270,6 +301,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // CTO-FIX: Include Bearer token for premium detection in WebView/mobile
       const chatHeaders = await getAuthHeaders();
+
+      // Route-Hunt Fix 5: Notify other tabs before sending
+      broadcastChatActive(state.sessionId);
 
       // ROUND1-FIX: 90s timeout to prevent infinite hang when Claude API is slow
       // Route-Hunt 9-1: Use module-level controller for external abort support
@@ -485,6 +519,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       } catch (e) { console.warn("[useChat] sendMessageStreaming localStorage 접근 실패", e); }
 
       const chatHeaders = await getAuthHeaders();
+
+      // Route-Hunt Fix 5: Notify other tabs before sending
+      broadcastChatActive(state.sessionId);
 
       // Route-Hunt 9-1: Module-level AbortController for back-navigation abort
       currentAbortController = new AbortController();
