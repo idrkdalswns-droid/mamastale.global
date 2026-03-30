@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trackPdfDownload } from "@/lib/utils/analytics";
+import { tc } from "@/lib/i18n/client";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import type { Scene } from "@/lib/types/story";
 
@@ -99,7 +100,7 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
           : "1.5px solid rgba(196,149,106,0.2)",
       }}
     >
-      {error ? "저장 실패 · 다시 눌러주세요" : loading ? "동화 저장 중..." : "동화 저장하기"}
+      {error ? tc("UI.story.saveFailedRetry") : loading ? tc("UI.story.savingStory") : tc("UI.story.saveButton")}
     </button>
   );
 }

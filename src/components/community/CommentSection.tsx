@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { formatTime } from "@/lib/utils/format-time";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
+import { tc } from "@/lib/i18n/client";
 
 interface Comment {
   id: string;
@@ -88,7 +89,7 @@ export function CommentSection({ storyId, onCommentAdded }: CommentSectionProps)
 
       const data = await res.json();
       if (!res.ok) {
-        setSubmitError(data.error || "댓글 등록에 실패했습니다.");
+        setSubmitError(data.error || tc("UI.community.commentFailed"));
         return;
       }
 

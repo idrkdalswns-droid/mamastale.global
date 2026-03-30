@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import { tc } from "@/lib/i18n/client";
 import toast from "react-hot-toast";
 import type {
   TeacherStory,
@@ -111,11 +112,11 @@ export function TeacherPreview({
             statusTimerRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
           } else {
             setSaveStatus("error");
-            toast.error("저장에 실패했습니다.");
+            toast.error(tc("UI.common.saveFailed"));
           }
         } catch {
           setSaveStatus("error");
-          toast.error("저장에 실패했습니다.");
+          toast.error(tc("UI.common.saveFailed"));
         }
       }, 1000);
     }
@@ -221,7 +222,7 @@ export function TeacherPreview({
       const res = await fetch(`/api/teacher/stories/${story.id}/share`, { method: "POST" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        toast.error((data as { error?: string }).error || "공유 링크 생성에 실패했습니다.");
+        toast.error((data as { error?: string }).error || tc("UI.teacher.shareLinkFailed"));
         return;
       }
       const { shareUrl } = await res.json() as { shareUrl: string };
@@ -234,10 +235,10 @@ export function TeacherPreview({
         }).catch(() => {});
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success("공유 링크가 복사되었습니다!");
+        toast.success(tc("UI.teacher.shareLinkCopied"));
       }
     } catch {
-      toast.error("공유 링크 생성에 실패했습니다.");
+      toast.error(tc("UI.teacher.shareLinkFailed"));
     } finally {
       setShareLoading(false);
     }
@@ -247,7 +248,7 @@ export function TeacherPreview({
   const handleOpenWorksheet = useCallback(() => {
     const wsTickets = ticketData.worksheetTicketsRemaining;
     if (wsTickets <= 0) {
-      toast.error("활동지 티켓이 없습니다. 티켓을 구매해주세요.");
+      toast.error(tc("UI.teacher.noWorksheetTicket"));
       return;
     }
     useWorksheetStore.getState().open(story.id!, story.title || "동화");
@@ -260,12 +261,12 @@ export function TeacherPreview({
     try {
       const res = await fetch(`/api/teacher/stories/${story.id}`, { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Delete failed");
-      toast.success("동화가 삭제되었습니다.");
+      toast.success(tc("UI.common.deleteSuccess"));
       setShowDeleteConfirm(false);
       onStoryDeleted?.(story.id);
       onBack?.();
     } catch {
-      toast.error("삭제에 실패했습니다. 다시 시도해 주세요.");
+      toast.error(tc("UI.common.deleteFailed"));
     } finally {
       setIsDeleting(false);
     }

@@ -11,6 +11,7 @@ import { TeacherOnboarding } from "@/components/teacher/TeacherOnboarding";
 import { TeacherCelebration } from "@/components/teacher/TeacherCelebration";
 import { TeacherHome } from "@/components/teacher/TeacherHome";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { tc } from "@/lib/i18n/client";
 import dynamic from "next/dynamic";
 
 // P1-9: Dynamic imports for heavy components (reduce initial bundle)
@@ -123,11 +124,11 @@ export default function TeacherPage() {
       if (remainMs <= 0) {
         useTeacherStore.getState().reset();
         useTeacherStore.getState().setScreenState("CODE_ENTRY");
-        toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+        toast.error(tc("UI.teacher.sessionExpiredReenter"));
       } else if (remainMs <= 10 * 60 * 1000 && remainMs > 9.5 * 60 * 1000) {
-        toast("세션이 10분 후 만료됩니다. 작업을 저장해주세요.", { icon: "⏰", duration: 8000 });
+        toast(tc("UI.teacher.sessionExpiring10min"), { icon: "⏰", duration: 8000 });
       } else if (remainMs <= 5 * 60 * 1000 && remainMs > 4.5 * 60 * 1000) {
-        toast("세션이 5분 후 만료됩니다!", { icon: "⏰", duration: 8000 });
+        toast(tc("UI.teacher.sessionExpiring5min"), { icon: "⏰", duration: 8000 });
       }
     }, 30_000);
 
@@ -137,7 +138,7 @@ export default function TeacherPage() {
   // Route-Hunt 3-3: Auth session expired (401 from API) → redirect to login
   useEffect(() => {
     if (store.sessionExpired) {
-      toast.error("세션이 만료되었어요. 다시 로그인해주세요.");
+      toast.error(tc("UI.teacher.sessionExpiredLogin"));
       router.push("/login?redirect=/teacher");
     }
   }, [store.sessionExpired, router]);
@@ -284,7 +285,7 @@ export default function TeacherPage() {
     if (store.expiresAt && new Date(store.expiresAt).getTime() <= Date.now()) {
       store.reset();
       store.setScreenState("CODE_ENTRY");
-      toast.error("세션이 만료되었습니다. 코드를 다시 입력해주세요.");
+      toast.error(tc("UI.teacher.sessionExpiredReenter"));
       return;
     }
 
@@ -330,11 +331,11 @@ export default function TeacherPage() {
             });
             store.setScreenState("ONBOARDING");
           } else {
-            toast.error("오늘 동화 만들기 횟수를 초과했어요.");
+            toast.error(tc("UI.teacher.dailyLimitReached"));
             store.setScreenState("HOME");
           }
         } catch {
-          toast.error("네트워크 오류. 다시 시도해주세요.");
+          toast.error(tc("UI.common.networkErrorRetryShort"));
           store.setScreenState("HOME");
         }
       } else {

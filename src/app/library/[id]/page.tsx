@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { tc } from "@/lib/i18n/client";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import type { Scene } from "@/lib/types/story";
@@ -77,7 +78,7 @@ export default function LibraryStoryPage() {
         const data = await res.json();
         setStory(data.story);
       } catch {
-        setError("동화를 찾을 수 없습니다.");
+        setError(tc("UI.story.notFound"));
       } finally {
         setLoading(false);
       }
@@ -132,7 +133,7 @@ export default function LibraryStoryPage() {
       });
       if (!res.ok) throw new Error("PATCH failed");
     } catch {
-      toast.error("커버 저장에 실패했어요");
+      toast.error(tc("UI.common.coverSaveFailedShort"));
       throw new Error("cover_patch_failed");
     }
   }, [getHeaders]);
@@ -197,11 +198,11 @@ export default function LibraryStoryPage() {
       const headers = await getHeaders();
       const res = await fetch(`/api/stories/${story.id}`, { method: "DELETE", headers });
       if (!res.ok) throw new Error("Delete failed");
-      toast.success("동화가 삭제되었습니다.");
+      toast.success(tc("UI.common.deleteSuccess"));
       setShowDeleteConfirm(false);
       router.push("/library");
     } catch {
-      toast.error("삭제에 실패했습니다. 다시 시도해 주세요.");
+      toast.error(tc("UI.common.deleteFailed"));
     } finally {
       setIsDeleting(false);
     }

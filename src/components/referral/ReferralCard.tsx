@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { hapticLight, hapticSuccess } from "@/lib/utils/haptic";
 import { trackScreenView } from "@/lib/utils/analytics";
+import { tc } from "@/lib/i18n/client";
 
 interface ReferralData {
   code: string;
@@ -30,10 +31,10 @@ export function ReferralCard({ getHeaders }: ReferralCardProps) {
         if (res.ok) {
           setData(await res.json());
         } else {
-          setError("추천 코드를 불러올 수 없습니다.");
+          setError(tc("UI.referral.loadFailed"));
         }
       } catch {
-        setError("네트워크 오류");
+        setError(tc("UI.common.networkErrorShort"));
       } finally {
         setLoading(false);
       }

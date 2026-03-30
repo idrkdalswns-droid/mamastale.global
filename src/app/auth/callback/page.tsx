@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
+import { tc } from "@/lib/i18n/client";
 
 /** Attempt to claim a referral code stored in sessionStorage after login */
 async function claimReferralCode(accessToken: string | null) {
@@ -62,9 +63,9 @@ export default function AuthCallbackPage() {
       window.history.replaceState({}, "", "/auth/callback");
       // Google의 인앱 브라우저 차단 (403 disallowed_useragent) 또는 access_denied
       if (urlError.includes("disallowed_useragent") || urlError.includes("disallowed_user")) {
-        setErrorMsg("인앱 브라우저에서는 Google 로그인이 제한됩니다.\nSafari나 Chrome 브라우저에서 열어주세요.");
+        setErrorMsg(tc("UI.auth.inAppBrowserRestricted"));
       } else {
-        setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+        setErrorMsg(tc("UI.auth.loginFailed"));
       }
       setDebugInfo(urlError);
       setStatus("error");
@@ -74,7 +75,7 @@ export default function AuthCallbackPage() {
     // ─── 3. Create SSR Supabase client (for cookie-based session storage) ───
     const supabase = createClient();
     if (!supabase) {
-      setErrorMsg("서비스 연결에 실패했습니다.\n잠시 후 다시 시도해 주세요.");
+      setErrorMsg(tc("UI.auth.serviceConnectionFailed"));
       setStatus("error");
       return;
     }
@@ -121,7 +122,7 @@ export default function AuthCallbackPage() {
         }
 
         console.error("[AuthCallback] setSession error:", error.message);
-        setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+        setErrorMsg(tc("UI.auth.loginFailed"));
         setDebugInfo(`setSession: ${error.message}`);
         setStatus("error");
         return;
@@ -151,11 +152,11 @@ export default function AuthCallbackPage() {
           error.message.includes("both auth code and code verifier");
 
         if (isCodeVerifierError) {
-          setErrorMsg("이메일 인증은 완료되었습니다!\n인앱 브라우저에서 열린 것 같아요.\nSafari나 Chrome에서 로그인해 주세요.");
+          setErrorMsg(tc("UI.auth.emailVerifiedInApp"));
         } else if (error.message.includes("expired") || error.message.includes("invalid")) {
-          setErrorMsg("인증 링크가 만료되었습니다.\n로그인 페이지에서 다시 시도해 주세요.");
+          setErrorMsg(tc("UI.auth.authLinkExpired"));
         } else {
-          setErrorMsg("이메일 인증은 완료되었습니다.\n로그인 페이지에서 로그인해 주세요.");
+          setErrorMsg(tc("UI.auth.emailVerifiedLogin"));
         }
         setStatus("error");
         return;
@@ -187,7 +188,7 @@ export default function AuthCallbackPage() {
 
       console.error("[AuthCallback] All methods failed. Debug:", debug);
       setDebugInfo(debug);
-      setErrorMsg("로그인에 실패했습니다.\n다시 시도해 주세요.");
+      setErrorMsg(tc("UI.auth.loginFailed"));
       setStatus("error");
     };
 

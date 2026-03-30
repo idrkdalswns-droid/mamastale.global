@@ -10,6 +10,7 @@ import { CommentSection } from "@/components/community/CommentSection";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { cleanSceneText } from "@/lib/utils/story-parser";
 import type { Scene } from "@/lib/types/story";
+import { tc } from "@/lib/i18n/client";
 
 // R5-FIX: ErrorBoundary to catch rendering crashes gracefully
 class CommunityErrorBoundary extends Component<
@@ -109,7 +110,7 @@ function CommunityStoryContent() {
       })
       .then((data) => setStory(data.story))
       .catch((err) => {
-        if (err?.name !== "AbortError") setError("동화를 찾을 수 없습니다.");
+        if (err?.name !== "AbortError") setError(tc("UI.story.notFound"));
       })
       .finally(() => setLoading(false));
     return () => controller.abort();

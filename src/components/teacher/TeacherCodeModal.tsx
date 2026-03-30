@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
+import { tc } from "@/lib/i18n/client";
 
 interface TeacherCodeModalProps {
   onVerified: (data: {
@@ -35,7 +36,7 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
     e.preventDefault();
     const trimmed = code.trim();
     if (!trimmed) {
-      setError("코드를 입력해주세요.");
+      setError(tc("UI.teacher.codeRequired"));
       return;
     }
 
@@ -51,7 +52,7 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "코드 검증에 실패했습니다.");
+        setError(data.error || tc("UI.teacher.codeVerifyFailed"));
         return;
       }
 
@@ -65,7 +66,7 @@ export function TeacherCodeModal({ onVerified, onBack }: TeacherCodeModalProps) 
       }
       onVerified({ ...data, teacherCode: trimmed });
     } catch {
-      setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
+      setError(tc("UI.common.networkErrorRetry"));
     } finally {
       setIsSubmitting(false);
     }

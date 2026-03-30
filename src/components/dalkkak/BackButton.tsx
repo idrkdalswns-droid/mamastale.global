@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useTQStore } from "@/lib/hooks/tq/useTQStore";
 import { TQ_PHASES } from "@/lib/constants/tq-phases";
+import { tc } from "@/lib/i18n/client";
 
 export function BackButton() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function BackButton() {
       const firstQInPhase = `q${phaseRange[0]}`;
       const currentQ = questions[currentQuestionIndex];
       if (currentQ?.id === firstQInPhase) {
-        toast("이전 단계로 돌아갈 수 없어요", {
+        toast(tc("UI.dalkkak.cannotGoBack"), {
           icon: "🚪",
           style: {
             background: "rgb(var(--cream))",

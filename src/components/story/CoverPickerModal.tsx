@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CoverPicker } from "@/components/story/CoverPicker";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
+import { tc } from "@/lib/i18n/client";
 
 interface CoverPickerModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export function CoverPickerModal({
         });
 
         if (!res.ok) {
-          setError("표지 저장에 실패했습니다.");
+          setError(tc("UI.common.coverSaveFailedShort"));
           setSaving(false);
           return;
         }
@@ -48,7 +49,7 @@ export function CoverPickerModal({
         onCoverChange(coverPath);
         onClose();
       } catch {
-        setError("표지 저장에 실패했습니다.");
+        setError(tc("UI.common.coverSaveFailedShort"));
       } finally {
         setSaving(false);
       }

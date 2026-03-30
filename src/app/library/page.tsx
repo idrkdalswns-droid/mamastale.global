@@ -8,6 +8,7 @@ import StoryGrid from "@/components/library/StoryGrid";
 import EmptyLibrary from "@/components/library/EmptyLibrary";
 import TicketPrompt from "@/components/library/TicketPrompt";
 import { useChatStore } from "@/lib/hooks/useChat";
+import { tc } from "@/lib/i18n/client";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
@@ -115,7 +116,7 @@ function LibraryContent() {
         router.push("/login?redirect=/library");
         return;
       }
-      setError("동화 목록을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setError(tc("UI.library.loadFailed"));
     } finally {
       setLoading(false);
     }

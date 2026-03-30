@@ -5,6 +5,7 @@ import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { nameWithParticle } from "@/lib/utils/korean";
 import { STORY_PRICE_FROM_DISPLAY } from "@/lib/constants/pricing";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
+import { tc } from "@/lib/i18n/client";
 
 interface TurnFivePopupProps {
   /** Whether the user is logged in */
@@ -88,7 +89,7 @@ export default function TurnFivePopup({
         } else if (res.status === 401) {
           setTicketError("로그인이 만료되었습니다. 페이지를 새로고침해 주세요.");
         } else {
-          setTicketError(data.error || "오류가 발생했습니다. 다시 시도해 주세요.");
+          setTicketError(data.error || tc("UI.chat.turnFiveError"));
         }
         submittingRef.current = false;
       }

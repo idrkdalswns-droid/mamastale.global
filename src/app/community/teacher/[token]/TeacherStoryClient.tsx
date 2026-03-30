@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { tc } from "@/lib/i18n/client";
 
 interface SharedStory {
   id: string;
@@ -29,13 +30,13 @@ export default function TeacherStoryClient({ token }: TeacherStoryClientProps) {
         const res = await fetch(`/api/teacher/shared/${token}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          setError((data as { error?: string }).error || "동화를 불러올 수 없습니다.");
+          setError((data as { error?: string }).error || tc("UI.story.loadFailed"));
           return;
         }
         const data = await res.json();
         setStory(data as SharedStory);
       } catch {
-        setError("네트워크 오류가 발생했습니다.");
+        setError(tc("UI.common.networkError"));
       } finally {
         setLoading(false);
       }

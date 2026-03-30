@@ -1,5 +1,6 @@
 "use client";
 
+import { tc } from "@/lib/i18n/client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -143,7 +144,7 @@ function PaymentSuccessContent() {
 
         // --- Stage D: Nothing found → genuine error ---
         setStatus("error");
-        setErrorMsg("결제 정보가 올바르지 않습니다.");
+        setErrorMsg(tc("UI.payment.invalidInfo"));
         trackPaymentAbandon("missing_params");
         return;
       }
@@ -159,7 +160,7 @@ function PaymentSuccessContent() {
     const timeoutId = setTimeout(() => {
       if (mounted && statusRef.current === "confirming") {
         setStatus("error");
-        setErrorMsg("결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+        setErrorMsg(tc("UI.payment.confirmTimeout"));
         trackPaymentAbandon("timeout");
       }
     }, 15_000);
@@ -219,7 +220,7 @@ function PaymentSuccessContent() {
         }
         clearTimeout(timeoutId);
         setStatus("error");
-        setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        setErrorMsg(tc("UI.common.networkErrorRetry"));
       }
     };
 
@@ -266,12 +267,12 @@ function PaymentSuccessContent() {
           setStatus("success");
         } else {
           setStatus("error");
-          setErrorMsg("티켓 충전에 실패했습니다. 고객센터에 문의해 주세요.");
+          setErrorMsg(tc("UI.payment.ticketChargeFailed"));
         }
       }
     } catch {
       setRetrying(false);
-      setErrorMsg("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+      setErrorMsg(tc("UI.payment.networkErrorRetry"));
     }
   };
 

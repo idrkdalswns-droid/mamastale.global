@@ -11,6 +11,7 @@ import { useTickets, invalidateTicketCache } from "@/lib/hooks/useTickets";
 import { trackScreenView } from "@/lib/utils/analytics";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import toast from "react-hot-toast";
+import { tc } from "@/lib/i18n/client";
 import { LandingSection } from "@/components/landing/LandingSection";
 import { SERVICES, type ServiceId } from "@/lib/constants/services";
 import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
@@ -161,7 +162,7 @@ export default function Home() {
     if (refCode) {
       try {
         sessionStorage.setItem("mamastale_ref_code", refCode);
-        toast("추천 링크로 오셨네요! 가입하면 무료 티켓을 드려요 🎁", { duration: 4000 });
+        toast(tc("UI.referral.referralLinkToast"), { duration: 4000 });
       } catch {}
     }
     // Clean URL
@@ -385,10 +386,10 @@ export default function Home() {
           body: JSON.stringify({ coverImage: coverPath }),
         });
         if (!res.ok) {
-          toast.error("표지 저장에 실패했어요. 서재에서 다시 설정할 수 있어요.");
+          toast.error(tc("UI.common.coverSaveFailed"));
         }
       } catch {
-        toast.error("표지 저장에 실패했어요. 서재에서 다시 설정할 수 있어요.");
+        toast.error(tc("UI.common.coverSaveFailed"));
       }
     }
     // Freemium v2: first story → show preview notice before viewer

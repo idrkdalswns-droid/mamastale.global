@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.58.0] - 2026-03-31
+
+### Added
+- i18n 클라이언트 인프라: `resolve.ts` 공유 모듈 + `client.ts` tc() 함수 + MessageKey 타입
+- ko.json UI 네임스페이스 (60+ 키): common, referral, chat, story, payment, community, teacher, dalkkak, auth, library
+- 5개 다국어 JSON (en/ja/zh/ar/fr)에 빈 UI 스텁
+- i18n 테스트 7개 추가 (resolve, interpolate, fallback, t/tc 동등성)
+
+### Changed
+- API 잔여 5건 하드코딩 한국어 → t() 전환 (stripe webhook, admin/refund, payments/confirm, teacher/stories, referral)
+- 클라이언트 18개 컴포넌트/페이지 하드코딩 한국어 → tc() 전환 (에러/상태 메시지 100% i18n 커버리지)
+- errors.ts 리팩토링: resolve 로직을 resolve.ts로 추출, ErrorKey/MessageKey 타입 분리
+
 ## [1.57.0] - 2026-03-30
 
 ### Added

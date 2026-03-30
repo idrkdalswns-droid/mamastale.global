@@ -8,6 +8,7 @@ import { StoryCard } from "@/components/story/StoryCard";
 import { trackCommunityView } from "@/lib/utils/analytics";
 import type { Scene } from "@/lib/types/story";
 import { OfflineClassCTA } from "@/components/community/OfflineClassCTA";
+import { tc } from "@/lib/i18n/client";
 
 const PAGE_SIZE = 4; // 한 페이지당 4개
 
@@ -53,7 +54,7 @@ export default function CommunityBrowsePage() {
       setAllStories(data.stories || []);
       if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch {
-      setError("동화 목록을 불러올 수 없습니다.");
+      setError(tc("UI.community.loadFailed"));
     } finally {
       setLoading(false);
     }

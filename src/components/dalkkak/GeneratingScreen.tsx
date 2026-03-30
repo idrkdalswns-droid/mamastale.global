@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useTQStore } from "@/lib/hooks/tq/useTQStore";
 import { useSSEConnection } from "@/lib/hooks/tq/useSSEConnection";
 import { useTQEvents } from "@/lib/hooks/tq/useTQEvents";
+import { tc } from "@/lib/i18n/client";
 
 export function GeneratingScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export function GeneratingScreen() {
             동화 생성에 실패했어요
           </p>
           <p className="text-[13px] text-brown-light font-light mb-6 break-keep">
-            {errorMsg || "티켓이 환불되었어요. 다시 시도해 주세요."}
+            {errorMsg || tc("UI.dalkkak.ticketRefunded")}
           </p>
           <button
             onClick={handleRetry}

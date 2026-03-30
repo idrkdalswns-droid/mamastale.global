@@ -9,6 +9,7 @@ import { clearAllUserData } from "@/lib/hooks/useAuth";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import toast from "react-hot-toast";
+import { tc } from "@/lib/i18n/client";
 
 interface ProfileData {
   email: string;
@@ -85,7 +86,7 @@ export default function SettingsPage() {
   const handleClaimRef = async () => {
     const code = refCode.trim().toUpperCase();
     if (!code || code.length < 4 || code.length > 8) {
-      toast.error("추천 코드 4~8자리를 입력해 주세요.");
+      toast.error(tc("UI.referral.enterCode4to8"));
       return;
     }
     setClaimingRef(true);
@@ -102,20 +103,20 @@ export default function SettingsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast.success("추천 보상 지급! 양쪽 모두 티켓 1장 🎉");
+        toast.success(tc("UI.referral.rewardSuccess"));
         setRefCode("");
         setProfile(p => p ? { ...p, tickets: p.tickets + 1 } : p);
       } else if (res.status === 409) {
-        toast.error("이미 추천을 받으셨습니다.");
+        toast.error(tc("UI.referral.alreadyReferred"));
       } else if (res.status === 404) {
-        toast.error("존재하지 않는 추천 코드입니다.");
+        toast.error(tc("UI.referral.codeNotFound"));
       } else if (res.status === 400) {
-        toast.error(data.error || "유효하지 않은 코드입니다.");
+        toast.error(data.error || tc("UI.referral.invalidCode"));
       } else {
-        toast.error("일시적 오류입니다. 다시 시도해 주세요.");
+        toast.error(tc("UI.common.temporaryError"));
       }
     } catch {
-      toast.error("네트워크 오류입니다. 인터넷 연결을 확인해 주세요.");
+      toast.error(tc("UI.common.networkErrorConnection"));
     }
     setClaimingRef(false);
   };

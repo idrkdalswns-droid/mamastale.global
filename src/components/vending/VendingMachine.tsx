@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
+import { tc } from "@/lib/i18n/client";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
@@ -38,7 +39,7 @@ export function VendingMachine() {
   const handleClaim = async () => {
     const code = claimCode.trim().toUpperCase();
     if (!code || code.length < 4) {
-      toast.error("추천 코드를 입력해주세요.");
+      toast.error(tc("UI.referral.enterCode"));
       return;
     }
     setClaiming(true);
@@ -50,14 +51,14 @@ export function VendingMachine() {
       });
       const result = await res.json();
       if (res.ok) {
-        toast.success(result.message || "추천 보상이 지급되었습니다!");
+        toast.success(result.message || tc("UI.referral.rewardGrantedFallback"));
         setClaimCode("");
         fetchData(); // refresh stats
       } else {
-        toast.error(result.error || "오류가 발생했습니다.");
+        toast.error(result.error || tc("UI.common.genericError"));
       }
     } catch {
-      toast.error("네트워크 오류가 발생했습니다.");
+      toast.error(tc("UI.common.networkError"));
     } finally {
       setClaiming(false);
     }
@@ -67,10 +68,10 @@ export function VendingMachine() {
     if (!data) return;
     try {
       await navigator.clipboard.writeText(data.shareUrl);
-      toast.success("링크가 복사되었어요!");
+      toast.success(tc("UI.common.copySuccess"));
     } catch {
       // fallback
-      toast.error("복사에 실패했어요. 길게 눌러 복사해주세요.");
+      toast.error(tc("UI.common.copyFailed"));
     }
   };
 

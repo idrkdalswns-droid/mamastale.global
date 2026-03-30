@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
+import { tc } from "@/lib/i18n/client";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import type { TeacherSpread, TeacherStory } from "@/lib/types/teacher";
 
@@ -50,7 +51,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
           setTitle(draft.title);
           setSpreads(draft.spreads);
           setMode("edit");
-          toast("이전에 작성 중이던 동화를 불러왔습니다.", { icon: "📝", duration: 3000 });
+          toast(tc("UI.teacher.draftRestored"), { icon: "📝", duration: 3000 });
         }
       }
     } catch { /* ignore */ }
@@ -71,7 +72,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
         localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: titleRef.current, spreads: spreadsRef.current }));
       } catch (e) {
         if (e instanceof DOMException && e.name === "QuotaExceededError") {
-          toast.error("임시저장 공간이 부족합니다.");
+          toast.error(tc("UI.teacher.storageFull"));
         }
       }
     }, 30_000);
@@ -97,7 +98,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
   // 전체 붙여넣기 → 자동 분할
   const handlePasteSplit = useCallback(() => {
     if (!pasteText.trim()) {
-      toast.error("동화 내용을 붙여넣어주세요.");
+      toast.error(tc("UI.teacher.pasteContent"));
       return;
     }
 
@@ -109,7 +110,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
       .filter(p => p.length > 0);
 
     if (parts.length === 0) {
-      toast.error("분할할 내용이 없습니다.");
+      toast.error(tc("UI.teacher.noContentToSplit"));
       return;
     }
 
@@ -118,7 +119,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
     if (parts.length > 20) {
       finalParts = parts.slice(0, 19);
       finalParts.push(parts.slice(19).join("\n\n"));
-      toast("20장면을 초과하여 뒤쪽을 합쳤습니다.", { icon: "⚠️" });
+      toast(tc("UI.teacher.scenesMerged"), { icon: "⚠️" });
     }
 
     const preview = finalParts.map((text, i) => ({
@@ -140,7 +141,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
   // 장면 추가/삭제
   const addSpread = useCallback(() => {
     if (spreads.length >= 20) {
-      toast.error("최대 20장면까지 추가할 수 있습니다.");
+      toast.error(tc("UI.teacher.maxScenesReached"));
       return;
     }
     setSpreads(prev => [...prev, {
@@ -153,7 +154,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
 
   const removeSpread = useCallback((index: number) => {
     if (spreads.length <= 1) {
-      toast.error("최소 1장면은 필요합니다.");
+      toast.error(tc("UI.teacher.minSceneRequired"));
       return;
     }
     setSpreads(prev => {
@@ -175,13 +176,13 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
   // 저장
   const handleSave = useCallback(async () => {
     if (!title.trim()) {
-      toast.error("제목을 입력해주세요.");
+      toast.error(tc("UI.teacher.titleRequired"));
       return;
     }
 
     const nonEmptySpreads = spreads.filter(s => s.text.trim().length > 0);
     if (nonEmptySpreads.length === 0) {
-      toast.error("최소 1장면의 내용을 입력해주세요.");
+      toast.error(tc("UI.teacher.sceneContentRequired"));
       return;
     }
 
@@ -217,7 +218,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
       // 드래프트 삭제
       localStorage.removeItem(DRAFT_KEY);
 
-      toast.success(isEdit ? "수정되었습니다!" : "동화가 저장되었습니다!");
+      toast.success(isEdit ? tc("UI.teacher.editSuccess") : tc("UI.teacher.saveSuccess"));
 
       onSave({
         id: data.id,
@@ -229,7 +230,7 @@ export function TeacherStoryWriter({ onSave, onBack, editMode }: TeacherStoryWri
         createdAt: new Date().toISOString(),
       });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "저장에 실패했습니다.");
+      toast.error(err instanceof Error ? err.message : tc("UI.common.saveFailed"));
     } finally {
       setSaving(false);
     }
