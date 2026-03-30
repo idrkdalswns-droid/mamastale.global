@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.54.0] - 2026-03-30
+
+### Added
+- i18n 에러 카탈로그: messages/ko.json (120+ 키) + t() 함수로 46개 API 라우트 425건 하드코딩 교체
+- Playwright E2E 기반: 26개 스모크 테스트 (chromium + mobile-chrome), Page Object 모델, CI 자동화
+- i18n 단위 테스트 8개 (키 해석, 폴백, 변수 치환, ko.json 무결성)
+
+### Fixed
+- referral API 인증 사용자 에러 경로에 구조화 로깅 5건 추가
+- 워크시트 Word 다운로드 실패 시 재시도 안내 메시지 개선
+- 인앱 브라우저 감지: Samsung Internet은 full browser이므로 별도 감지 불필요함을 문서화
+
 ## [1.53.0] - 2026-03-29
 
 ### Removed
