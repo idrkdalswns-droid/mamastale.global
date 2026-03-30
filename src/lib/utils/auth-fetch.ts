@@ -2,11 +2,37 @@
 
 import { createClient } from "@/lib/supabase/client";
 
+// ─── 2-16: Auto-report 5xx fetch errors to /api/errors/report ───
+let lastFetchReport = 0;
+const FETCH_REPORT_INTERVAL = 5000; // 5s debounce, same as ErrorReporter
+const ERROR_REPORT_PATH = "/api/errors/report";
+
+function reportFetchError(fetchUrl: string, status: number, method: string) {
+  if (typeof window === "undefined") return;
+  const now = Date.now();
+  if (now - lastFetchReport < FETCH_REPORT_INTERVAL) return;
+  // Avoid recursive reporting
+  if (fetchUrl.includes(ERROR_REPORT_PATH)) return;
+  lastFetchReport = now;
+
+  fetch(ERROR_REPORT_PATH, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `Fetch ${method} ${status}: ${fetchUrl}`,
+      source: "auth-fetch",
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+    }),
+  }).catch(() => {});
+}
+
 /**
  * C1 FIX: Centralized auth fetch wrapper.
  * Ensures every API call includes:
  * 1. Authorization: Bearer token (when available)
  * 2. credentials: "include" (cookie fallback)
+ * 3. Auto-reports 5xx errors (2-16)
  *
  * Usage:
  *   const authFetch = createAuthFetch();
@@ -52,17 +78,24 @@ export function createAuthFetch() {
       headers.set("Content-Type", "application/json");
     }
 
-    return fetch(url, {
+    const res = await fetch(url, {
       ...init,
       headers,
       credentials: "include", // Cookie auth fallback
     });
+
+    // 2-16: Auto-report server errors
+    if (res.status >= 500) {
+      reportFetchError(url, res.status, init?.method || "GET");
+    }
+
+    return res;
   };
 }
 
 /**
  * One-shot version for cases where you don't need token caching.
- * Fetches fresh token each call.
+ * Fetches fresh token each call. Auto-reports 5xx errors (2-16).
  */
 export async function authFetchOnce(
   url: string,
@@ -88,9 +121,16 @@ export async function authFetchOnce(
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(url, {
+  const res = await fetch(url, {
     ...init,
     headers,
     credentials: "include",
   });
+
+  // 2-16: Auto-report server errors
+  if (res.status >= 500) {
+    reportFetchError(url, res.status, init?.method || "GET");
+  }
+
+  return res;
 }

@@ -6,12 +6,12 @@ import type { Scene } from "@/lib/types/story";
 import { createClient } from "@/lib/supabase/client";
 import { nameWithParticle } from "@/lib/utils/korean";
 import { trackChatPhaseEnter, trackStoryComplete } from "@/lib/utils/analytics";
+import { CHAT_STORAGE_KEY, CHAT_DRAFT_KEY } from "@/lib/constants/chat-storage";
+import { getDraftInfo as getDraftInfoUtil } from "@/lib/utils/draft-info";
 
-// ─── Two separate storage keys ───
-// AUTH: auto-consumed after login/signup redirect (destructive restore)
-const STORAGE_KEY = "mamastale_chat_state";
-// DRAFT: persistent manual save — NEVER deleted except by explicit user action or story completion
-const DRAFT_KEY = "mamastale_chat_draft";
+// ─── Two separate storage keys (aliased from constants for local use) ───
+const STORAGE_KEY = CHAT_STORAGE_KEY;
+const DRAFT_KEY = CHAT_DRAFT_KEY;
 
 /** Build headers with auth token for API calls (belt-and-suspenders for edge cookie issues) */
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -858,48 +858,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  // ─── getDraftInfo: checks draft first, then auth — read-only ───
-  getDraftInfo: () => {
-    try {
-      // Check persistent draft first
-      let raw = localStorage.getItem(DRAFT_KEY);
-      let source = "draft";
-
-      // Fallback to auth save
-      if (!raw) {
-        raw = localStorage.getItem(STORAGE_KEY);
-        source = "auth";
-      }
-
-      if (!raw) return null;
-      const snapshot = JSON.parse(raw);
-      if (typeof snapshot !== "object" || snapshot === null || typeof snapshot.savedAt !== "number") return null;
-
-      // CTO-FIX: Auth save expiry must match restoreFromStorage (24h), not 7d.
-      // Previous 7d caused getDraftInfo to show "이어서 대화하기" card even after
-      // restoreFromStorage would silently fail (>24h old), leading to dead button clicks.
-      const maxAge = source === "draft"
-        ? 30 * 24 * 60 * 60 * 1000
-        : 24 * 60 * 60 * 1000;
-      if (Date.now() - snapshot.savedAt > maxAge) {
-        localStorage.removeItem(source === "draft" ? DRAFT_KEY : STORAGE_KEY);
-        return null;
-      }
-
-      const userMsgCount = Array.isArray(snapshot.messages)
-        ? snapshot.messages.filter((m: { role: string }) => m.role === "user").length
-        : 0;
-      return {
-        phase: snapshot.currentPhase || 1,
-        messageCount: userMsgCount,
-        savedAt: snapshot.savedAt,
-        source,
-      };
-    } catch (e) {
-      console.warn("[useChat] getDraftInfo 실패", e);
-      return null;
-    }
-  },
+  // ─── getDraftInfo: delegates to lightweight utility (3-2 extraction) ───
+  getDraftInfo: () => getDraftInfoUtil(),
 
   // ─── Clear everything (both auth + draft + onboarding) — used by explicit "삭제" button ───
   clearStorage: () => {

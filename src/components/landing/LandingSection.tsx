@@ -9,6 +9,7 @@ import { STORY_PRICE_DISPLAY } from "@/lib/constants/pricing";
 import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { NAV_ITEMS_PUBLIC, NAV_ITEMS_AUTH } from "@/lib/constants/nav";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { DraftBanner } from "@/components/ui/DraftBanner";
 import { SERVICES } from "@/lib/constants/services";
 import { ServiceCard } from "@/components/landing/ServiceCard";
 
@@ -234,51 +235,19 @@ export function LandingSection({
 
           {/* Draft resume card — positioned right below CTA for immediate visibility */}
           {draftInfo && (
-            <div
-              className="rounded-2xl p-4 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
-              style={{ background: "rgba(224,122,95,0.06)", border: "1.5px solid rgba(224,122,95,0.15)" }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-brown">진행 중인 대화가 있어요</p>
-                  <p className="text-[11px] text-brown-pale font-light">
-                    {draftInfo.phase}단계 · {draftInfo.messageCount}개의 메시지
-                    {draftInfo.savedAt > 0 && <> · {(() => {
-                      const mins = Math.floor((Date.now() - draftInfo.savedAt) / 60000);
-                      if (mins < 1) return "방금 전";
-                      if (mins < 60) return `${mins}분 전`;
-                      const hrs = Math.floor(mins / 60);
-                      if (hrs < 24) return `${hrs}시간 전`;
-                      return `${Math.floor(hrs / 24)}일 전`;
-                    })()}</>}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const restored = restoreDraft();
-                    if (restored) {
-                      setDraftInfo(null);
-                      setScreen("chat");
-                    }
-                  }}
-                  className="flex-1 py-2.5 min-h-[44px] rounded-full text-sm font-medium text-white transition-all active:scale-[0.97]"
-                  style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
-                >
-                  이어서 대화하기
-                </button>
-                {/* Fix 2-1: Replace native confirm() with inline confirmation */}
-                <button
-                  onClick={() => { clearStorage(); setDraftInfo(null); }}
-                  className="px-4 py-2.5 min-h-[44px] rounded-full text-xs font-light text-red-400 transition-all"
-                  style={{ border: "1px solid rgba(224,122,95,0.2)" }}
-                  aria-label="저장된 대화 삭제"
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
+            <DraftBanner
+              phase={draftInfo.phase}
+              messageCount={draftInfo.messageCount}
+              savedAt={draftInfo.savedAt}
+              onRestore={() => {
+                const restored = restoreDraft();
+                if (restored) {
+                  setDraftInfo(null);
+                  setScreen("chat");
+                }
+              }}
+              onDelete={() => { clearStorage(); setDraftInfo(null); }}
+            />
           )}
 
           {/* ════════════════════════════════════════

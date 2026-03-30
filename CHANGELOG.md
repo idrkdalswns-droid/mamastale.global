@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.55.0] - 2026-03-30
+
+### Added
+- 커뮤니티 스토리 동적 OG 이미지 자동 생성 (SNS 공유 미리보기)
+- auth-fetch 5xx 에러 자동 리포팅 (throttle + 재귀 방지)
+- Sentry 클라이언트 에러 추적 (lazy init, DSN 설정 시 활성화)
+- getDraftInfo 경량 유틸 (Zustand 없이 localStorage 직접 읽기)
+- chat-storage 상수 분리 (키 불일치 방지)
+
+### Changed
+- StoryViewer에서 PublishModal 컴포넌트 분리 (945→849줄)
+- LandingSection에서 DraftBanner 컴포넌트 분리 (546→514줄)
+- ErrorReporter에 Sentry 연동 (lazy dynamic import)
+
 ## [1.54.0] - 2026-03-30
 
 ### Added

@@ -20,23 +20,31 @@ export function ErrorReporter() {
       message: string;
       source: string;
       stack?: string;
+      error?: Error;
     }) {
       const now = Date.now();
       if (now - lastReport < MIN_INTERVAL) return;
       lastReport = now;
 
-      // Fire-and-forget
+      // Fire-and-forget to Supabase
       fetch("/api/errors/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...data,
+          message: data.message,
+          source: data.source,
+          stack: data.stack,
           url: window.location.href,
           userAgent: navigator.userAgent,
         }),
       }).catch(() => {
         // Silently fail — error reporting should never break the app
       });
+
+      // Lazy-load Sentry and forward the error (if DSN configured)
+      if (data.error) {
+        import("@/lib/sentry").then((m) => m.captureError(data.error!)).catch(() => {});
+      }
     }
 
     // ─── Global error handler ───
@@ -45,6 +53,7 @@ export function ErrorReporter() {
         message: event.message || "Unknown error",
         source: "window.onerror",
         stack: event.error?.stack,
+        error: event.error instanceof Error ? event.error : undefined,
       });
     }
 
@@ -55,6 +64,7 @@ export function ErrorReporter() {
         message: reason instanceof Error ? reason.message : String(reason),
         source: "unhandledrejection",
         stack: reason instanceof Error ? reason.stack : undefined,
+        error: reason instanceof Error ? reason : undefined,
       });
     }
 
