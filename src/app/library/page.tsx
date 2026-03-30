@@ -123,7 +123,7 @@ function LibraryContent() {
 
   return (
     <div className="min-h-dvh bg-cream pb-20 relative overflow-hidden">
-      <div className="relative z-[1] max-w-2xl mx-auto px-4 pt-6">
+      <div className="relative z-[1] max-w-md mx-auto px-4 pt-6">
         {/* ── Header ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}

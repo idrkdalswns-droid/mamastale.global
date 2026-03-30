@@ -760,6 +760,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
         source: "auth",
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      // Route-Hunt 9-2: 동기화 — draft도 함께 갱신하여 두 키 간 상태 불일치 방지
+      get().saveDraft();
     } catch (e) {
       console.warn("[useChat] persistToStorage 실패", e);
     }
@@ -782,6 +784,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
         localStorage.removeItem(STORAGE_KEY);
         return false;
       }
+
+      // Route-Hunt 9-2: draft가 auth save보다 새로우면 draft 우선
+      try {
+        const draftRaw = localStorage.getItem(DRAFT_KEY);
+        if (draftRaw) {
+          const draftSnap = JSON.parse(draftRaw);
+          if (isValidSnapshot(draftSnap) && (draftSnap.savedAt as number) > (snapshot.savedAt as number)) {
+            set({ ...snapshotToState(draftSnap), isFromDraft: true });
+            localStorage.removeItem(STORAGE_KEY);
+            return true;
+          }
+        }
+      } catch { /* draft 비교 실패 시 auth save 사용 */ }
 
       set(snapshotToState(snapshot));
       // Auth saves are consumed (one-time use)
