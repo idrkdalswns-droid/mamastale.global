@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (myProfile?.referred_by) {
+    console.warn("[Referral] Already referred user attempted again", { userId: user.id.slice(0, 8) });
     return sb.applyCookies(
       NextResponse.json({ error: t("Errors.referral.alreadyReferred") }, { status: 409 })
     );
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
 
   // Can't refer yourself
   if (referrer.id === user.id) {
+    console.warn("[Referral] Self-referral attempted", { userId: user.id.slice(0, 8), code });
     return sb.applyCookies(
       NextResponse.json({ error: t("Errors.referral.selfReferral") }, { status: 400 })
     );
@@ -165,6 +167,7 @@ export async function POST(request: NextRequest) {
     .eq("referrer_rewarded", true);
 
   if ((referrerRewardedCount || 0) >= MAX_REFERRALS) {
+    console.warn("[Referral] Max referrals reached", { referrerId: referrer.id.slice(0, 8), count: referrerRewardedCount });
     return sb.applyCookies(
       NextResponse.json({ error: t("Errors.referral.maxReached") }, { status: 409 })
     );
@@ -196,10 +199,12 @@ export async function POST(request: NextRequest) {
 
   if (insertErr) {
     if (insertErr.code === "23505") {
+      console.warn("[Referral] Duplicate referral insert", { userId: user.id.slice(0, 8), referrerId: referrer.id.slice(0, 8) });
       return sb.applyCookies(
         NextResponse.json({ error: t("Errors.referral.alreadyReferred") }, { status: 409 })
       );
     }
+    console.error("[Referral] Insert failed", { userId: user.id.slice(0, 8), error: insertErr.message });
     return sb.applyCookies(
       NextResponse.json({ error: t("Errors.referral.processingError") }, { status: 500 })
     );

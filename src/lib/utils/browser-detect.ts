@@ -25,7 +25,8 @@ export function detectInAppBrowser(): InAppBrowser {
   if (/FBAN|FBAV/i.test(ua)) return "facebook";
   if (/Line\//i.test(ua)) return "line";
   if (/TikTok/i.test(ua)) return "tiktok";
-  // Android WebView (generic)
+  // Android WebView (generic) — covers Samsung/other apps opening links in WebView
+  // Note: Samsung Internet browser is a full browser that supports OAuth, not a WebView
   if (/wv\)/.test(ua) && /Android/.test(ua)) return "generic";
   return null;
 }

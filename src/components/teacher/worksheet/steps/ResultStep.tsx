@@ -113,7 +113,7 @@ export function ResultStep() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("[worksheet] DOCX generation failed:", err);
-      setDocxError("Word 다운로드에 실패했어요. 인쇄 기능을 이용해 주세요.");
+      setDocxError("Word 다운로드에 실패했어요. 위 버튼을 눌러 다시 시도하거나, PDF로 저장해 주세요.");
     } finally {
       setDocxLoading(false);
     }
