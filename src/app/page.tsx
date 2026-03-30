@@ -39,6 +39,17 @@ const ALLOWED_TRANSITIONS: Record<ScreenState, ScreenState[]> = {
   community: ["landing"],
 };
 
+// Route-Hunt 2-1: popstate 데이터 가드 — 뒤로/앞으로 시 데이터 없는 화면 진입 방지
+// 치료 맥락에서 빈 화면 = 재외상 위험이므로 CRITICAL
+const SCREEN_DATA_GUARDS: Partial<Record<ScreenState, () => boolean>> = {
+  chat: () => useChatStore.getState().messages.length > 1,
+  edit: () => useChatStore.getState().completedScenes.length > 0,
+  coverPick: () => useChatStore.getState().completedScenes.length > 0,
+  previewNotice: () => useChatStore.getState().completedScenes.length > 0,
+  story: () => useChatStore.getState().completedScenes.length > 0,
+  feedback: () => !!useChatStore.getState().sessionId,
+};
+
 export default function Home() {
   const [screen, setScreenRaw] = useState<ScreenState>("landing");
   const screenRef = useRef<ScreenState>("landing");
@@ -382,17 +393,21 @@ export default function Home() {
     }
   }, [screen]);
 
-  // Bug Bounty Fix 2-11: Validate screen data before restoring from popstate
+  // Bug Bounty Fix 2-11 + Route-Hunt 2-1: Validate screen data before restoring from popstate
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       isPopstateRef.current = true; // P0-4: 뒤로가기는 전이 가드 비적용
       const prev = e.state?.screen as ScreenState | undefined;
-      // Validate: don't restore "chat" if no chat data exists
-      if (prev === "chat" && useChatStore.getState().messages.length <= 1) {
-        setShow(false);
-        setScreen("landing");
-      } else if (prev) {
-        setScreen(prev);
+      if (prev) {
+        // Route-Hunt 2-1: Check data guard for the target screen
+        const guard = SCREEN_DATA_GUARDS[prev];
+        if (guard && !guard()) {
+          // Data missing for this screen → fall back to landing
+          setShow(false);
+          setScreen("landing");
+        } else {
+          setScreen(prev);
+        }
       } else {
         // No prior state → go to landing
         setShow(false);

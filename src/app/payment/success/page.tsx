@@ -52,68 +52,110 @@ function PaymentSuccessContent() {
   // Store payment params for retry (URL is cleaned before fetch)
   const paymentParamsRef = useRef<{ paymentKey: string; orderId: string; amount: number; mode: string } | null>(null);
 
-  // Restore receipt info from sessionStorage on refresh (URL params already cleaned)
+  // Route-Hunt 7-1+8-1+8-2: 3-stage payment state machine
+  // Stage A: URL params → save to sessionStorage as "pending" → clean URL → confirm
+  // Stage B: No URL params → check pending → auto-retry
+  // Stage C: No pending → check confirmed → show "already completed"
+  // Stage D: Nothing → genuine error
+
+  // Restore receipt info from sessionStorage (pending or confirmed)
   useEffect(() => {
     try {
-      const cached = sessionStorage.getItem("mamastale_receipt");
-      if (cached) {
-        const { amount, orderId } = JSON.parse(cached);
+      const confirmed = sessionStorage.getItem("mamastale_payment_confirmed");
+      if (confirmed) {
+        const { amount, orderId } = JSON.parse(confirmed);
+        if (amount) setReceiptAmount(amount);
+        if (orderId) setReceiptOrderId(orderId);
+      }
+      const pending = sessionStorage.getItem("mamastale_payment_pending");
+      if (pending) {
+        const { amount, orderId } = JSON.parse(pending);
         if (amount) setReceiptAmount(amount);
         if (orderId) setReceiptOrderId(orderId);
       }
     } catch { /* private browsing or parse error */ }
   }, []);
 
+  // CTO-FIX: Include Bearer token for cookie fallback (mobile browsers)
+  const callConfirm = useRef(async (p: { paymentKey: string; orderId: string; amount: number; mode: string }) => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+    } catch { /* ignore */ }
+    return fetch("/api/payments/confirm", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(p),
+    });
+  }).current;
+
   useEffect(() => {
-    // Idempotency guard: prevent double-confirm on re-render or refresh
+    // Idempotency guard: prevent double-confirm on re-render
     if (confirmedRef.current) return;
 
+    // --- Stage A: Fresh redirect from Toss with URL params ---
     const paymentKey = searchParams.get("paymentKey");
     const orderId = searchParams.get("orderId");
     const amount = searchParams.get("amount");
-    // mode: "widget" or "standard" — tells backend which secret key to use
     const mode = searchParams.get("mode") || "widget";
+    const returnTo = searchParams.get("returnTo") || "";
 
-    if (!paymentKey || !orderId || !amount) {
-      setStatus("error");
-      setErrorMsg("결제 정보가 올바르지 않습니다.");
-      trackPaymentAbandon("missing_params");
-      return;
-    }
+    let params: { paymentKey: string; orderId: string; amount: number; mode: string; returnTo?: string } | null = null;
 
-    // Store params for potential retry BEFORE cleaning URL
-    const params = { paymentKey, orderId, amount: Number(amount), mode };
-    paymentParamsRef.current = params;
-    // T-3: Save receipt info before URL cleaning
-    setReceiptOrderId(orderId);
-    setReceiptAmount(Number(amount));
-
-    // Mark as confirmed and clean URL BEFORE the fetch to prevent race
-    confirmedRef.current = true;
-    window.history.replaceState({}, "", "/payment/success");
-
-    // CTO-FIX: Include Bearer token for cookie fallback (mobile browsers)
-    const callConfirm = async (p: typeof params) => {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (paymentKey && orderId && amount) {
+      params = { paymentKey, orderId, amount: Number(amount), mode, returnTo };
+      // Save to sessionStorage BEFORE cleaning URL (survives refresh)
+      try { sessionStorage.setItem("mamastale_payment_pending", JSON.stringify(params)); } catch {}
+      setReceiptOrderId(orderId);
+      setReceiptAmount(Number(amount));
+      confirmedRef.current = true;
+      window.history.replaceState({}, "", "/payment/success");
+    } else {
+      // --- Stage B: No URL params → check pending (refresh/back-forward) ---
       try {
-        const supabase = createClient();
-        if (supabase) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+        const pending = sessionStorage.getItem("mamastale_payment_pending");
+        if (pending) {
+          params = JSON.parse(pending);
+          // Check if pending is too old (Toss auto-cancels ~15min)
+          confirmedRef.current = true;
         }
       } catch { /* ignore */ }
-      return fetch("/api/payments/confirm", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(p),
-      });
-    };
 
-    // R7-4: Track mounted state for cleanup (prevent setState on unmounted)
+      if (!params) {
+        // --- Stage C: Check if already confirmed (back/forward after success) ---
+        try {
+          const confirmed = sessionStorage.getItem("mamastale_payment_confirmed");
+          if (confirmed) {
+            const data = JSON.parse(confirmed);
+            confirmedRef.current = true;
+            setTicketsAdded(data.ticketsAdded || 0);
+            setReceiptAmount(data.amount || 0);
+            setReceiptOrderId(data.orderId || "");
+            if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
+            setStatus("success");
+            return;
+          }
+        } catch { /* ignore */ }
+
+        // --- Stage D: Nothing found → genuine error ---
+        setStatus("error");
+        setErrorMsg("결제 정보가 올바르지 않습니다.");
+        trackPaymentAbandon("missing_params");
+        return;
+      }
+    }
+
+    // Store params in ref for retry handler
+    paymentParamsRef.current = params;
+
+    // R7-4: Track mounted state for cleanup
     let mounted = true;
 
-    // R7-FIX: 15s timeout fallback — prevents infinite spinner on slow/hung networks
-    // R5-CRIT2: Use statusRef.current to avoid stale closure
+    // R7-FIX: 15s timeout fallback
     const timeoutId = setTimeout(() => {
       if (mounted && statusRef.current === "confirming") {
         setStatus("error");
@@ -122,11 +164,10 @@ function PaymentSuccessContent() {
       }
     }, 15_000);
 
-    // D1: Retry confirm call with exponential backoff on network failure
-    // Backend has triple-layer idempotency (in-memory, order_claims, processed_orders),
-    // so re-sending the same orderId is always safe.
+    // D1: Retry with exponential backoff. Backend is idempotent.
     const MAX_RETRIES = 3;
     const confirmWithRetry = async (attempt: number): Promise<void> => {
+      if (!params) return;
       try {
         const res = await callConfirm(params);
         clearTimeout(timeoutId);
@@ -134,11 +175,20 @@ function PaymentSuccessContent() {
         const data = await res.json();
         if (res.ok && data.success) {
           const derivedTickets = ticketsForAmount(params.amount) ?? 1;
-          setTicketsAdded(data.ticketsAdded || derivedTickets);
+          const ticketsResult = data.ticketsAdded || derivedTickets;
+          setTicketsAdded(ticketsResult);
           if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
           setReceiptAmount(params.amount);
           setReceiptOrderId(params.orderId);
-          try { sessionStorage.setItem("mamastale_receipt", JSON.stringify({ amount: params.amount, orderId: params.orderId })); } catch {}
+          // Transition: pending → confirmed
+          try {
+            sessionStorage.removeItem("mamastale_payment_pending");
+            sessionStorage.setItem("mamastale_payment_confirmed", JSON.stringify({
+              amount: params.amount, orderId: params.orderId,
+              ticketsAdded: ticketsResult, paymentMethod: data.paymentMethod || "",
+              returnTo: params.returnTo || "",
+            }));
+          } catch {}
           setStatus("success");
           try {
             if (typeof window !== "undefined" && typeof window.gtag === "function") {
@@ -161,14 +211,12 @@ function PaymentSuccessContent() {
           router.replace(`/payment/fail?code=${encodeURIComponent(errorCode)}`);
         }
       } catch {
-        // Network error — retry with exponential backoff
         if (!mounted) return;
         if (attempt < MAX_RETRIES) {
-          const delay = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+          const delay = 1000 * Math.pow(2, attempt);
           await new Promise(r => setTimeout(r, delay));
           if (mounted) return confirmWithRetry(attempt + 1);
         }
-        // All retries exhausted
         clearTimeout(timeoutId);
         setStatus("error");
         setErrorMsg("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
@@ -177,7 +225,6 @@ function PaymentSuccessContent() {
 
     confirmWithRetry(0);
 
-    // R7-4: Cleanup on unmount
     return () => {
       mounted = false;
       clearTimeout(timeoutId);
@@ -239,8 +286,15 @@ function PaymentSuccessContent() {
     // Set flag so page.tsx auto-starts onboarding
     try { sessionStorage.setItem("mamastale_post_payment", "start"); } catch { /* ignore */ }
 
-    // returnTo=teacher → 선생님 모드로 복귀
-    const returnTo = searchParams.get("returnTo");
+    // Route-Hunt 8-2: Read returnTo from sessionStorage (URL already cleaned)
+    let returnTo: string | null = null;
+    try {
+      const confirmed = sessionStorage.getItem("mamastale_payment_confirmed");
+      if (confirmed) {
+        const data = JSON.parse(confirmed);
+        returnTo = data.returnTo || null;
+      }
+    } catch { /* ignore */ }
 
     const interval = setInterval(() => {
       setAutoRedirectCount((prev) => {

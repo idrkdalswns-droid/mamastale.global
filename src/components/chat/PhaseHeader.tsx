@@ -33,7 +33,7 @@ export default memo(function PhaseHeader({
   turnCountInPhase = 0,
   freeTrialMode,
   userMsgCount = 0,
-  freeTurnLimit = 7,
+  freeTurnLimit = 5,
   storyDone,
 }: PhaseHeaderProps) {
   const p = PHASES[currentPhase];

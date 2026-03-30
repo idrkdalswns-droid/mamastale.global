@@ -12,6 +12,25 @@ interface AuthUser {
   };
 }
 
+/**
+ * Route-Hunt 3-1: Clear all mamastale user data from browser storage.
+ * Called on signOut and account deletion to prevent PII/therapy data leakage on shared devices.
+ * Must be synchronous — called before window.location.href which interrupts JS execution.
+ */
+export function clearAllUserData() {
+  const cleared: string[] = [];
+  Object.keys(localStorage).forEach((k) => {
+    if (k.startsWith("mamastale_") || k.startsWith("mamastale-")) {
+      localStorage.removeItem(k);
+      cleared.push(k);
+    }
+  });
+  sessionStorage.clear();
+  if (cleared.length > 0) {
+    console.debug("[Auth] Cleared user data:", cleared);
+  }
+}
+
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,6 +89,9 @@ export function useAuth() {
     const supabase = createClient();
     if (supabase) {
       setUser(null); // Optimistic UI update
+      // Route-Hunt 3-1: Clear all user data from localStorage/sessionStorage
+      // before navigation to prevent PII leakage on shared devices
+      clearAllUserData();
       try {
         await supabase.auth.signOut();
       } catch {

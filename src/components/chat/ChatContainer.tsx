@@ -17,8 +17,10 @@ import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 
-// UX-1: 5→7 free turns (2단계 첫 AI 응답까지 무료 체험)
-const FREE_TURN_LIMIT = 7;
+// Route-Hunt 7pass-1: Single source of truth for guest turn limit
+// Previously hardcoded as 7 while server enforced 5 → user confusion ("5/7 but blocked")
+import { GUEST_TURN_LIMIT } from "@/lib/constants/chat";
+const FREE_TURN_LIMIT = GUEST_TURN_LIMIT;
 
 interface ChatPageProps {
   onComplete: () => void;

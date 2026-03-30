@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
+import { clearAllUserData } from "@/lib/hooks/useAuth";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
 import toast from "react-hot-toast";
@@ -72,6 +73,8 @@ export default function SettingsPage() {
         body: JSON.stringify({ confirm: "탈퇴합니다" }),
       });
       if (!res.ok) throw new Error();
+      // Route-Hunt 3-4: Clear localStorage/sessionStorage before redirect
+      clearAllUserData();
       router.push("/");
     } catch {
       alert("계정 삭제에 실패했습니다. 다시 시도해주세요.");

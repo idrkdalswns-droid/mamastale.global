@@ -53,7 +53,7 @@ export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
 export const GUEST_RATE_LIMIT = 10;
 export const AUTH_RATE_LIMIT = 30;
-export const GUEST_TURN_LIMIT = 5;
+export { GUEST_TURN_LIMIT } from "@/lib/constants/chat";
 export const AUTH_TURN_LIMIT = 30;
 
 export const MAX_TURNS_PER_PHASE: Record<number, number> = { 1: 7, 2: 10, 3: 10, 4: 999 };
