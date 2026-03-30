@@ -143,9 +143,9 @@ function armSendInFlight(): number {
     if (sendInFlightId === id) {
       sendInFlightId = 0;
       sendInFlightTimer = null;
-      console.warn("[useChat] sendInFlight 30s 타임아웃 해제");
+      console.warn("[useChat] sendInFlight 90s 타임아웃 해제");
     }
-  }, 30_000);
+  }, 90_000);
   return id;
 }
 function disarmSendInFlight(id: number) {

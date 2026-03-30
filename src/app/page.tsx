@@ -382,6 +382,12 @@ export default function Home() {
   // ─── Browser history integration (JP-Y12) ───
   // Bug Bounty Fix 2-10: Only pushState for key screens (chat, story, community).
   // Other screens use replaceState to avoid excessive back-button presses (was 8+, now 3 max).
+  //
+  // Route-Hunt 2-2: SPA History 전략 (의도적 설계)
+  // pushState: chat, story, community — 핵심 화면만 히스토리 생성
+  // replaceState: onboarding, edit, coverPick, previewNotice, feedback 등
+  // 이유: 치료적 대화 중 뒤로가기 과다 사용은 사용자 혼란 유발.
+  // 핵심 전환점만 히스토리에 남겨 뒤로가기 3회 이내로 제한.
   useEffect(() => {
     if (screen !== "landing") {
       const pushScreens: ScreenState[] = ["chat", "story", "community"];

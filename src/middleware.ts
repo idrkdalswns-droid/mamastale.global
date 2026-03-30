@@ -116,7 +116,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher"];
+  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher", "/vending"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   const authPaths = ["/login", "/signup", "/reset-password"];

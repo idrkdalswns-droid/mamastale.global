@@ -184,6 +184,11 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
       if (!raw) return false;
       const data = JSON.parse(raw);
       if (data.sessionId) {
+        // Route-Hunt 4-2: 만료된 세션 복원 방지
+        if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+          sessionStorage.removeItem(STORAGE_KEY);
+          return false;
+        }
         set({
           sessionId: data.sessionId,
           currentPhase: data.currentPhase || "A",
