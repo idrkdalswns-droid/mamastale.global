@@ -61,7 +61,8 @@
       "tossConfigMissing": "Toss 결제 설정이 없습니다.",
       "tossTimeout": "Toss API 응답 시간 초과 (10초)",
       "tossCallFailed": "Toss API 호출에 실패했습니다.",
-      "tossRefundFailed": "Toss 환불 실패: {detail}"
+      "tossRefundFailed": "Toss 환불 실패: {detail}",
+      "ticketIncrementDelayed": "결제가 완료되었으나 티켓 반영이 지연되고 있습니다. 보통 몇 분 내에 자동으로 반영됩니다. 10분 후에도 반영되지 않으면 고객센터에 문의해 주세요. (주문번호: {orderId})"
     },
     "ticket": {
       "insufficient": "티켓이 부족합니다.",
@@ -169,7 +170,8 @@
       "selfReferral": "자신의 코드는 사용할 수 없습니다.",
       "maxReached": "이 추천 코드는 최대 추천 횟수(2명)에 도달했습니다.",
       "processingError": "추천 처리 중 오류가 발생했습니다.",
-      "serviceConfigError": "서비스 설정 오류입니다."
+      "serviceConfigError": "서비스 설정 오류입니다.",
+      "rewardGranted": "추천 보상이 지급되었습니다! 양쪽 모두 티켓 1장을 받았습니다."
     },
     "system": {
       "configError": "시스템 설정 오류입니다.",
@@ -180,7 +182,8 @@
       "recordFailed": "기록에 실패했습니다.",
       "updateFailed": "업데이트에 실패했습니다.",
       "logQueryFailed": "로그 조회 실패",
-      "aggregationError": "집계 중 오류 발생"
+      "aggregationError": "집계 중 오류 발생",
+      "processingFailed": "처리에 실패했습니다."
     },
     "account": {
       "dataCleanupError": "계정 데이터 정리 중 오류가 발생했습니다. 다시 시도해 주세요.",
@@ -192,6 +195,110 @@
     },
     "push": {
       "subscribeFailed": "구독 저장에 실패했습니다."
+    }
+  },
+  "UI": {
+    "common": {
+      "networkError": "네트워크 오류가 발생했습니다.",
+      "networkErrorRetry": "네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      "networkErrorShort": "네트워크 오류",
+      "networkErrorConnection": "네트워크 오류입니다. 인터넷 연결을 확인해 주세요.",
+      "networkErrorRetryShort": "네트워크 오류. 다시 시도해주세요.",
+      "retryLater": "잠시 후 다시 시도해 주세요.",
+      "temporaryError": "일시적 오류입니다. 다시 시도해 주세요.",
+      "genericError": "오류가 발생했습니다.",
+      "genericErrorRetry": "오류가 발생했습니다. 다시 시도해 주세요.",
+      "copySuccess": "링크가 복사되었어요!",
+      "copyFailed": "복사에 실패했어요. 길게 눌러 복사해주세요.",
+      "saveFailed": "저장에 실패했습니다.",
+      "deleteSuccess": "동화가 삭제되었습니다.",
+      "deleteFailed": "삭제에 실패했습니다. 다시 시도해 주세요.",
+      "dataLoadFailed": "데이터 로딩 실패",
+      "coverSaveFailed": "표지 저장에 실패했어요. 서재에서 다시 설정할 수 있어요.",
+      "coverSaveFailedShort": "표지 저장에 실패했습니다."
+    },
+    "referral": {
+      "rewardSuccess": "추천 보상 지급! 양쪽 모두 티켓 1장 🎉",
+      "rewardGrantedFallback": "추천 보상이 지급되었습니다!",
+      "enterCode": "추천 코드를 입력해주세요.",
+      "enterCode4to8": "추천 코드 4~8자리를 입력해 주세요.",
+      "loadFailed": "추천 코드를 불러올 수 없습니다.",
+      "alreadyReferred": "이미 추천을 받으셨습니다.",
+      "codeNotFound": "존재하지 않는 추천 코드입니다.",
+      "invalidCode": "유효하지 않은 코드입니다.",
+      "referralLinkToast": "추천 링크로 오셨네요! 가입하면 무료 티켓을 드려요 🎁"
+    },
+    "chat": {
+      "checkConnection": "인터넷 연결을 확인해 주세요",
+      "dataSafe": "대화 내용은 안전하게 보관됩니다",
+      "loginToSave": "동화 저장을 위해 로그인이 필요해요",
+      "noTicketsToSave": "티켓이 부족하여 저장할 수 없어요",
+      "confirmingSave": "저장을 확인하고 있어요...",
+      "chatSaved": "대화가 저장되었어요",
+      "turnFiveError": "오류가 발생했습니다. 다시 시도해 주세요."
+    },
+    "story": {
+      "pdfFailed": "PDF 생성에 실패했습니다.",
+      "savingStory": "동화 저장 중...",
+      "saveFailedRetry": "저장 실패 · 다시 눌러주세요",
+      "saveButton": "동화 저장하기",
+      "notFound": "동화를 찾을 수 없습니다.",
+      "loadFailed": "동화를 불러올 수 없습니다."
+    },
+    "payment": {
+      "invalidInfo": "결제 정보가 올바르지 않습니다.",
+      "confirmTimeout": "결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+      "ticketChargeFailed": "티켓 충전에 실패했습니다. 고객센터에 문의해 주세요.",
+      "networkErrorRetry": "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
+    },
+    "community": {
+      "loginToComment": "댓글을 작성하려면 로그인이 필요합니다.",
+      "commentFailed": "댓글 등록에 실패했습니다.",
+      "loadFailed": "동화 목록을 불러올 수 없습니다."
+    },
+    "teacher": {
+      "draftRestored": "이전에 작성 중이던 동화를 불러왔습니다.",
+      "storageFull": "임시저장 공간이 부족합니다.",
+      "pasteContent": "동화 내용을 붙여넣어주세요.",
+      "noContentToSplit": "분할할 내용이 없습니다.",
+      "scenesMerged": "20장면을 초과하여 뒤쪽을 합쳤습니다.",
+      "maxScenesReached": "최대 20장면까지 추가할 수 있습니다.",
+      "minSceneRequired": "최소 1장면은 필요합니다.",
+      "titleRequired": "제목을 입력해주세요.",
+      "sceneContentRequired": "최소 1장면의 내용을 입력해주세요.",
+      "editSuccess": "수정되었습니다!",
+      "saveSuccess": "동화가 저장되었습니다!",
+      "shareLinkFailed": "공유 링크 생성에 실패했습니다.",
+      "shareLinkCopied": "공유 링크가 복사되었습니다!",
+      "noWorksheetTicket": "활동지 티켓이 없습니다. 티켓을 구매해주세요.",
+      "codeRequired": "코드를 입력해주세요.",
+      "codeVerifyFailed": "코드 검증에 실패했습니다.",
+      "sessionExpiredReenter": "세션이 만료되었습니다. 코드를 다시 입력해주세요.",
+      "sessionExpiredLogin": "세션이 만료되었어요. 다시 로그인해주세요.",
+      "sessionExpiring10min": "세션이 10분 후 만료됩니다. 작업을 저장해주세요.",
+      "sessionExpiring5min": "세션이 5분 후 만료됩니다!",
+      "dailyLimitReached": "오늘 동화 만들기 횟수를 초과했어요."
+    },
+    "dalkkak": {
+      "cannotGoBack": "이전 단계로 돌아갈 수 없어요",
+      "generateFailed": "동화 생성에 실패했어요",
+      "ticketRefunded": "티켓이 환불되었어요. 다시 시도해 주세요."
+    },
+    "auth": {
+      "inAppBrowserRestricted": "인앱 브라우저에서는 Google 로그인이 제한됩니다.\nSafari나 Chrome 브라우저에서 열어주세요.",
+      "loginFailed": "로그인에 실패했습니다.\n다시 시도해 주세요.",
+      "serviceConnectionFailed": "서비스 연결에 실패했습니다.\n잠시 후 다시 시도해 주세요.",
+      "emailVerifiedInApp": "이메일 인증은 완료되었습니다!\n인앱 브라우저에서 열린 것 같아요.\nSafari나 Chrome에서 로그인해 주세요.",
+      "authLinkExpired": "인증 링크가 만료되었습니다.\n로그인 페이지에서 다시 시도해 주세요.",
+      "emailVerifiedLogin": "이메일 인증은 완료되었습니다.\n로그인 페이지에서 로그인해 주세요.",
+      "urlCopied": "URL이 복사되었습니다.\nSafari나 Chrome에서 붙여넣기 해주세요.",
+      "useExternalBrowser": "Safari나 Chrome에서\nmamastale.com 을 직접 입력해주세요."
+    },
+    "library": {
+      "loadFailed": "동화 목록을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+    },
+    "settings": {
+      "networkErrorConnection": "네트워크 오류입니다. 인터넷 연결을 확인해 주세요."
     }
   }
 }

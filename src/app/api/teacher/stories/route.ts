@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     const text = sanitizeSceneText(s.text);
     if (containsProfanity(text)) {
       return sb.applyCookies(
-        NextResponse.json({ error: `장면 ${i + 1}에 부적절한 표현이 포함되어 있습니다.` }, { status: 400 })
+        NextResponse.json({ error: t("Errors.teacher.sceneProfanity", { sceneNumber: i + 1 }) }, { status: 400 })
       );
     }
     sanitizedSpreads.push({

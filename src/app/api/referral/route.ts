@@ -247,6 +247,6 @@ export async function POST(request: NextRequest) {
   }
 
   return sb.applyCookies(
-    NextResponse.json({ success: true, message: "추천 보상이 지급되었습니다! 양쪽 모두 티켓 1장을 받았습니다." })
+    NextResponse.json({ success: true, message: t("Errors.referral.rewardGranted") })
   );
 }

@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const errBody = await tossResponse.json().catch(() => ({}));
     console.error("[Admin Refund] Toss API error:", tossResponse.status, errBody);
     return NextResponse.json({
-      error: `Toss 환불 실패: ${(errBody as { message?: string }).message || tossResponse.statusText}`,
+      error: t("Errors.payment.tossRefundFailed", { detail: (errBody as { message?: string }).message || tossResponse.statusText }),
       code: (errBody as { code?: string }).code || "TOSS_CANCEL_FAILED",
       tossStatus: tossResponse.status,
     }, { status: 422 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { incrementTickets } from "@/lib/supabase/tickets";
+import { t } from "@/lib/i18n";
 // Bug Bounty Fix 2-4: Centralized pricing constants
 import { STORY_PRICES, ALLOWED_CURRENCIES } from "@/lib/constants/pricing";
 
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
           }
           console.error("[Stripe] Subscription insert failed:", subInsertErr.code, subInsertErr.message);
           // Non-unique error → allow Stripe to retry
-          return NextResponse.json({ error: "처리에 실패했습니다" }, { status: 500 });
+          return NextResponse.json({ error: t("Errors.system.processingFailed") }, { status: 500 });
         }
 
         // Blind system: mark user as ever-purchased (permanent blind unlock)

@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
       }
       // Do NOT mark in-memory as processed — allow retry
       return sb.applyCookies(NextResponse.json(
-        { error: `결제가 완료되었으나 티켓 반영이 지연되고 있습니다. 보통 몇 분 내에 자동으로 반영됩니다. 10분 후에도 반영되지 않으면 고객센터에 문의해 주세요. (주문번호: ${orderId})`, code: "TICKET_INCREMENT_FAILED", orderId },
+        { error: t("Errors.payment.ticketIncrementDelayed", { orderId }), code: "TICKET_INCREMENT_FAILED", orderId },
         { status: 500 }
       ));
     }
