@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import { useChatStore } from "@/lib/hooks/useChat";
+import { useChatStore, abortCurrentRequest } from "@/lib/hooks/useChat";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useTickets, invalidateTicketCache } from "@/lib/hooks/useTickets";
 
@@ -397,6 +397,12 @@ export default function Home() {
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       isPopstateRef.current = true; // P0-4: 뒤로가기는 전이 가드 비적용
+
+      // Route-Hunt 9-1: Abort streaming if leaving chat screen (7pass 2-2: abort BEFORE screen transition)
+      if (screenRef.current === "chat") {
+        abortCurrentRequest();
+      }
+
       const prev = e.state?.screen as ScreenState | undefined;
       if (prev) {
         // Route-Hunt 2-1: Check data guard for the target screen

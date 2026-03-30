@@ -114,6 +114,21 @@ interface ChatState {
 let msgCounter = 0;
 const genId = (prefix: string) => `${prefix}_${Date.now()}_${++msgCounter}`;
 
+// Route-Hunt 9-1: Module-level AbortController for streaming/fetch cancellation on back-navigation
+// Pattern copied from useTeacherStore.ts (line 87) — proven stable in production
+let currentAbortController: AbortController | null = null;
+let streamRafId: number = 0; // rAF handle for streaming flush cancellation
+
+/**
+ * Route-Hunt 9-1: Abort any in-flight chat request (streaming or non-streaming).
+ * Called from page.tsx popstate handler when leaving chat screen.
+ * cleanupAfterAbort is triggered automatically in the catch block.
+ */
+export function abortCurrentRequest() {
+  currentAbortController?.abort();
+  // Note: cleanup happens in each function's catch block (AbortError path)
+}
+
 // P1-FIX(KR-3): Module-level lock to prevent concurrent save/retry operations
 // R3-FIX: Add timeout fallback to prevent permanent lock on network failure
 let saveInFlight = false;
@@ -257,13 +272,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const chatHeaders = await getAuthHeaders();
 
       // ROUND1-FIX: 90s timeout to prevent infinite hang when Claude API is slow
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90_000);
+      // Route-Hunt 9-1: Use module-level controller for external abort support
+      currentAbortController = new AbortController();
+      const timeoutId = setTimeout(() => {
+        // Mark as timeout abort (vs manual abort from popstate)
+        if (currentAbortController) currentAbortController.abort();
+      }, 90_000);
 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: chatHeaders,
-        signal: controller.signal,
+        signal: currentAbortController.signal,
         body: JSON.stringify({
           messages: apiMessages,
           sessionId: state.sessionId,
@@ -393,6 +412,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (err) {
+      // Route-Hunt 9-1: Manual abort (popstate back-navigation) — rollback silently, no error message
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // Rollback: remove user message + turn count (assistant placeholder not added in non-streaming)
+        set((s) => ({
+          messages: s.messages.filter(m => m.id !== userMsg.id),
+          turnCountInCurrentPhase: Math.max(0, s.turnCountInCurrentPhase - 1),
+          isLoading: false,
+        }));
+        disarmSendInFlight(reqId);
+        currentAbortController = null;
+        return; // Silent abort — no error message shown
+      }
       // Y3-FIX: Rollback user message + turn count on auth errors (pattern matches sendMessageStreaming:460-466)
       // BugBounty-FIX: Use functional updater to remove only the failed message (not stale snapshot)
       if (resStatus === 401 || resStatus === 403) {
@@ -419,6 +450,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } finally {
       set({ isLoading: false });
       disarmSendInFlight(reqId); // Fix 2: Release counter-based lock
+      currentAbortController = null; // Route-Hunt 9-1: Clear controller reference
     }
   },
 
@@ -454,9 +486,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const chatHeaders = await getAuthHeaders();
 
+      // Route-Hunt 9-1: Module-level AbortController for back-navigation abort
+      currentAbortController = new AbortController();
+
       const res = await fetch("/api/chat/stream", {
         method: "POST",
         headers: chatHeaders,
+        signal: currentAbortController.signal,
         body: JSON.stringify({
           messages: apiMessages,
           sessionId: state.sessionId,
@@ -500,7 +536,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const decoder = new TextDecoder();
       let assistantContent = "";
       let buffer = "";
-      let rafId = 0; // E2E: rAF batching handle
+      streamRafId = 0; // Route-Hunt 9-1: Module-level rAF handle for abort cleanup
 
       while (true) {
         const { done, value } = await reader.read();
@@ -520,16 +556,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           // rAF is paused when tab is inactive, causing streaming to freeze until tab refocus.
           if (event.type === "text" && event.text) {
             assistantContent += event.text;
-            if (!rafId) {
+            if (!streamRafId) {
               const flush = () => {
-                rafId = 0;
+                streamRafId = 0;
                 set((s) => ({
                   messages: s.messages.map((m) =>
                     m.id === assistantMsgId ? { ...m, content: assistantContent } : m
                   ),
                 }));
               };
-              rafId = document.hidden
+              streamRafId = document.hidden
                 ? (setTimeout(flush, 16) as unknown as number)
                 : requestAnimationFrame(flush);
             }
@@ -538,7 +574,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           // P1-4: Append warm redirect message when medical advice is detected
           if (event.type === "safety_redirect" && event.message) {
             // E2E: flush pending rAF before safety message
-            if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+            if (streamRafId) { cancelAnimationFrame(streamRafId); streamRafId = 0; }
             assistantContent += "\n\n" + event.message;
             set((s) => ({
               messages: s.messages.map((m) =>
@@ -549,9 +585,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           if (event.type === "done") {
             // E2E: flush pending rAF before done processing (레이스 컨디션 방지)
-            if (rafId) {
-              cancelAnimationFrame(rafId);
-              rafId = 0;
+            if (streamRafId) {
+              cancelAnimationFrame(streamRafId);
+              streamRafId = 0;
               set((s) => ({
                 messages: s.messages.map((m) =>
                   m.id === assistantMsgId ? { ...m, content: assistantContent } : m
@@ -659,6 +695,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       }
     } catch (err) {
+      // Route-Hunt 9-1: Manual abort (popstate back-navigation) — rollback silently
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // Cancel pending rAF flush
+        if (streamRafId) { cancelAnimationFrame(streamRafId); streamRafId = 0; }
+        // Rollback: remove incomplete assistant message + user message + turn count
+        // (7pass 2-1+3-2: prevent half-finished AI message in therapeutic context)
+        set((s) => {
+          const msgs = s.messages;
+          // If last message is the empty/partial assistant placeholder, remove it + user msg
+          if (msgs.length >= 2 && msgs[msgs.length - 1]?.role === "assistant") {
+            return {
+              messages: msgs.slice(0, -2),
+              turnCountInCurrentPhase: Math.max(0, s.turnCountInCurrentPhase - 1),
+              isLoading: false,
+            };
+          }
+          // If assistant not yet added, just remove user message
+          return {
+            messages: msgs.filter(m => m.id !== userMsg.id),
+            turnCountInCurrentPhase: Math.max(0, s.turnCountInCurrentPhase - 1),
+            isLoading: false,
+          };
+        });
+        disarmSendInFlight(reqId);
+        currentAbortController = null;
+        return; // Silent abort — no error message shown
+      }
       const errMessage =
         err instanceof Error && err.message && /[가-힣]/.test(err.message)
           ? err.message
@@ -674,6 +737,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } finally {
       set({ isLoading: false });
       disarmSendInFlight(reqId); // Fix 2: Release counter-based lock
+      currentAbortController = null; // Route-Hunt 9-1: Clear controller reference
     }
   },
 
@@ -920,6 +984,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // ─── Reset: clears in-memory state + auth save + onboarding, but NEVER touches DRAFT_KEY ───
   reset: () => {
+    // Route-Hunt 9-1: Abort any in-flight request on reset (TeacherStore pattern)
+    currentAbortController?.abort();
+    currentAbortController = null;
+    if (streamRafId) { cancelAnimationFrame(streamRafId); streamRafId = 0; }
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* */ }
     // B2: 온보딩 키 정리 — 새 채팅 시 이전 아이 이름/연령 잔류 방지
     try { localStorage.removeItem("mamastale_child_name"); } catch {}

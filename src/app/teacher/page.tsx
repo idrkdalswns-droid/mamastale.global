@@ -134,6 +134,14 @@ export default function TeacherPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Route-Hunt 3-3: Auth session expired (401 from API) → redirect to login
+  useEffect(() => {
+    if (store.sessionExpired) {
+      toast.error("세션이 만료되었어요. 다시 로그인해주세요.");
+      router.push("/login?redirect=/teacher");
+    }
+  }, [store.sessionExpired, router]);
+
   // 코드 검증 완료
   const handleCodeVerified = useCallback(
     (data: {

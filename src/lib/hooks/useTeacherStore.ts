@@ -37,6 +37,8 @@ interface TeacherState {
 
   // Internal flags
   _generateReady: boolean;
+  /** Route-Hunt 3-3: Set to true when API returns 401 (auth session expired) */
+  sessionExpired: boolean;
 
   // Actions
   setScreenState: (state: TeacherScreenState) => void;
@@ -79,6 +81,7 @@ const initialState = {
   generatedStory: null as TeacherStory | null,
   screenState: "CODE_ENTRY" as TeacherScreenState,
   _generateReady: false,
+  sessionExpired: false,
 };
 
 // Module-level mutex to prevent concurrent sends
@@ -246,9 +249,13 @@ export const useTeacherStore = create<TeacherState>((set, get) => ({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        // 401 세션 만료 별도 처리
+        // Route-Hunt 3-3: 401 auth session expired → set flag + return silently
+        // (7pass 2-3: throw 제거 → finally 블록 정상 실행 보장)
         if (res.status === 401) {
-          throw new Error("세션이 만료되었어요. 다시 접속해주세요.");
+          currentAbort = null;
+          sendInFlight = false;
+          set({ sessionExpired: true, isLoading: false });
+          return false;
         }
         const apiError = (errorData as { error?: string }).error;
         const isKorean = apiError && /[가-힣]/.test(apiError);
