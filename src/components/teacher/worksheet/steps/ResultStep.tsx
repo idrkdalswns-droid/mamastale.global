@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import DOMPurify from "dompurify";
 import { useWorksheetStore } from "@/lib/hooks/useWorksheetStore";
 import { AGE_PARAMS } from "@/lib/worksheet/age-params";
 import type { AgeGroup, ActivityType } from "@/lib/worksheet/types";
@@ -21,13 +22,11 @@ export function ResultStep() {
   const [docxLoading, setDocxLoading] = useState(false);
   const [docxError, setDocxError] = useState<string | null>(null);
 
-  // F-003: XSS 방어 — 스크립트 태그 및 이벤트 핸들러 제거
-  const sanitizedHtml = generatedHtml
-    ? generatedHtml
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-        .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, "")
-        .replace(/javascript\s*:/gi, "")
-    : "";
+  // F-003: XSS 방어 — DOMPurify로 안전한 HTML만 허용
+  const sanitizedHtml = useMemo(
+    () => generatedHtml ? DOMPurify.sanitize(generatedHtml) : "",
+    [generatedHtml],
+  );
 
   const handlePrint = useCallback(() => {
     if (!generatedHtml) return;

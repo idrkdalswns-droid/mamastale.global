@@ -1,6 +1,6 @@
 {
   "name": "mamastale",
-  "version": "1.55.1",
+  "version": "1.56.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -21,9 +21,11 @@
     "@supabase/supabase-js": "^2.98.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
+    "@types/dompurify": "^3.0.5",
     "autoprefixer": "^10.4.27",
     "clsx": "^2.1.1",
     "docx": "^9.6.1",
+    "dompurify": "^3.3.3",
     "framer-motion": "^12.34.3",
     "lottie-react": "^2.4.1",
     "next": "^14.2.35",

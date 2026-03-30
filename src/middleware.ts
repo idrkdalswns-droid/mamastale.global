@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkRequiredEnvVars } from "@/lib/utils/env-check";
+import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
 
 // P1-Phase3: Early env validation (warn-only, runs once per isolate)
 checkRequiredEnvVars();
@@ -116,8 +117,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher", "/vending"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher", "/vending", "/admin", "/dalkkak/play"];
+  const publicSubPaths = ["/dalkkak/result"];
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p))
+                      && !publicSubPaths.some((p) => pathname.startsWith(p));
 
   const authPaths = ["/login", "/signup", "/reset-password"];
   const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
@@ -153,10 +156,7 @@ export async function middleware(request: NextRequest) {
     // Protected routes — redirect to login if not authenticated
     if (isProtected && !user) {
       const loginUrl = new URL("/login", request.url);
-      // Strict redirect validation: only allow known local paths (prevent open redirect)
-      // Defense-in-depth: whitelist + protocol-relative URL rejection
-      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
-      if (!pathname.startsWith("//") && ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (isAllowedRedirect(pathname)) {
         loginUrl.searchParams.set("redirect", pathname);
       }
       return NextResponse.redirect(loginUrl);
@@ -171,8 +171,7 @@ export async function middleware(request: NextRequest) {
     // Fail-closed for protected routes
     if (isProtected) {
       const loginUrl = new URL("/login", request.url);
-      const ALLOWED_REDIRECT_PREFIXES = ["/library", "/dashboard", "/settings", "/community", "/pricing", "/feature-requests", "/teacher"];
-      if (!pathname.startsWith("//") && ALLOWED_REDIRECT_PREFIXES.some((p) => pathname.startsWith(p))) {
+      if (isAllowedRedirect(pathname)) {
         loginUrl.searchParams.set("redirect", pathname);
       }
       return NextResponse.redirect(loginUrl);

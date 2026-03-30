@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 /**
  * S1: GA4 Funnel Analytics 재활성화.
@@ -8,6 +9,7 @@ import { useEffect, useState } from "react";
  */
 export function ConsentGatedScripts() {
   const [consented, setConsented] = useState(false);
+  const pathname = usePathname();
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   useEffect(() => {
@@ -35,7 +37,8 @@ export function ConsentGatedScripts() {
     };
   }, []);
 
-  if (!consented || !gaId) return null;
+  // Skip analytics on auth callback to prevent interference with token parsing
+  if (!consented || !gaId || pathname === "/auth/callback") return null;
 
   return (
     <>

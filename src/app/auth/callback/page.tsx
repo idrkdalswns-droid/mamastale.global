@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
 
 /** Attempt to claim a referral code stored in sessionStorage after login */
 async function claimReferralCode(accessToken: string | null) {
@@ -96,7 +97,9 @@ export default function AuthCallbackPage() {
           return r;
         } catch { return null; }
       })();
-      const redirectUrl = savedRedirect || (hasSavedChat ? "/?action=start" : "/");
+      const redirectUrl = (savedRedirect && isAllowedRedirect(savedRedirect))
+        ? savedRedirect
+        : (hasSavedChat ? "/?action=start" : "/");
 
       // ─── 4A. Implicit flow: hash tokens from OAuth ───
       // OAuth uses implicit flow (see oauth.ts), so tokens arrive in hash fragment.
@@ -159,16 +162,20 @@ export default function AuthCallbackPage() {
       }
 
       // ─── 4C. Fallback: auto-detection or existing session ───
-      // Wait for Supabase client's _initialize() auto-detection to complete
-      // No code or hash tokens — waiting for auto-detection
-      await new Promise((r) => setTimeout(r, 2000));
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: { session } } = await supabase.auth.getSession();
-        await claimReferralCode(session?.access_token ?? null);
-        router.push(redirectUrl);
-        return;
+      // Poll for Supabase client's _initialize() auto-detection (up to 5s)
+      // Route-Hunt Fix 12: Replace fixed 2s wait with polling for slow networks
+      {
+        const MAX_ATTEMPTS = 10;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          await new Promise((r) => setTimeout(r, 500));
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: { session } } = await supabase.auth.getSession();
+            await claimReferralCode(session?.access_token ?? null);
+            router.push(redirectUrl);
+            return;
+          }
+        }
       }
 
       // Nothing worked — show error with debug info

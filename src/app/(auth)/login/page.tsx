@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
+import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 
 function LoginForm() {
@@ -15,7 +16,7 @@ function LoginForm() {
       <OAuthButtons
         disabled={false}
         onBeforeRedirect={() => {
-          if (redirect) {
+          if (redirect && isAllowedRedirect(redirect)) {
             try { sessionStorage.setItem("mamastale_redirect", redirect); } catch {}
           }
         }}
