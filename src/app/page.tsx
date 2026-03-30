@@ -138,7 +138,12 @@ export default function Home() {
     if (params.get("payment") === "success") {
       setShowPaymentSuccess(true);
     }
-    if (params.get("action") === "start") {
+    const action = params.get("action");
+    if (action === "new") {
+      clearDraft();
+      window.history.replaceState({}, "", "/");
+      setActionStart(true);
+    } else if (action === "start") {
       window.history.replaceState({}, "", "/");
       setActionStart(true);
     }
@@ -197,6 +202,7 @@ export default function Home() {
       if (restored) {
         setScreen("chat");
         setTimeout(() => {
+          if (!user) return; // 게스트는 저장 불가
           const s = useChatStore.getState();
           if (s.completedScenes.length > 0 && !s.storySaved) {
             retrySaveStory().catch(e => console.error("[retrySaveStory] auto-retry failed:", e));

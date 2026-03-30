@@ -303,6 +303,7 @@ function PaymentSuccessContent() {
         if (prev <= 1) {
           clearInterval(interval);
           autoRedirectRef.current = null;
+          try { sessionStorage.removeItem("mamastale_payment_confirmed"); } catch {}
           if (returnTo === "teacher") {
             router.push("/teacher");
           } else if (hasSavedChat) {
@@ -474,6 +475,7 @@ function PaymentSuccessContent() {
           onClick={() => {
             // Cancel auto-redirect when user clicks
             if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
+            try { sessionStorage.removeItem("mamastale_payment_confirmed"); } catch {}
             // Freemium v2: GA event for first purchase unlock
             window.gtag?.("event", "freemium_unlock_success", {
               tickets_added: ticketsAdded,
@@ -492,6 +494,7 @@ function PaymentSuccessContent() {
         <button
           onClick={() => {
             if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
+            try { sessionStorage.removeItem("mamastale_payment_confirmed"); } catch {}
             router.push(hasSavedChat ? "/?action=start&payment=success" : "/?payment=success");
           }}
           className="w-full py-3 rounded-full text-sm font-medium text-brown-mid transition-all active:scale-[0.97] mb-2"
@@ -507,6 +510,7 @@ function PaymentSuccessContent() {
         <button
           onClick={() => {
             if (autoRedirectRef.current) { clearInterval(autoRedirectRef.current); autoRedirectRef.current = null; setAutoRedirectCount(0); }
+            try { sessionStorage.removeItem("mamastale_payment_confirmed"); } catch {}
             router.push("/");
           }}
           className="w-full py-3 rounded-full text-sm font-light text-brown-pale transition-all"

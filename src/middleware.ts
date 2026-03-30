@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkRequiredEnvVars } from "@/lib/utils/env-check";
 import { isAllowedRedirect } from "@/lib/utils/validate-redirect";
+import { isProtectedPath, isAuthPath } from "@/lib/utils/protected-paths";
 
 // P1-Phase3: Early env validation (warn-only, runs once per isolate)
 checkRequiredEnvVars();
@@ -117,13 +118,8 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const protectedPaths = ["/dashboard", "/library", "/settings", "/teacher", "/vending", "/admin", "/dalkkak/play"];
-  const publicSubPaths = ["/dalkkak/result"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p))
-                      && !publicSubPaths.some((p) => pathname.startsWith(p));
-
-  const authPaths = ["/login", "/signup", "/reset-password"];
-  const isAuthPage = authPaths.some((p) => pathname.startsWith(p));
+  const isProtected = isProtectedPath(pathname);
+  const isAuthPage = isAuthPath(pathname);
 
   // LAUNCH-FIX: Only call getUser() for protected/auth pages to avoid
   // unnecessary Supabase Auth API calls on every public page request.
