@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -31,16 +32,16 @@ export async function GET(
   // R2-FIX: Rate limit detail GET (30/min per IP)
   const ip = getClientIP(request);
   if (!communityDetailLimiter.check(ip, 30, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   const supabase = createAnonClient();
   if (!supabase) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const { data: story, error } = await supabase
@@ -51,7 +52,7 @@ export async function GET(
     .single();
 
   if (error || !story) {
-    return NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 });
   }
 
   // Atomic view count increment — deduplicated per IP per story (5min window)

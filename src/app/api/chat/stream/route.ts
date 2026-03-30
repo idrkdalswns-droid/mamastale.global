@@ -47,6 +47,7 @@ import {
   checkPremiumStatus,
 } from "@/lib/anthropic/chat-shared";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
+import { t } from "@/lib/i18n";
 
 export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
@@ -84,25 +85,25 @@ export async function POST(request: NextRequest) {
   // ─── Rate limiting ───
   const withinLimit = await checkRateLimitPersistent(rateKey, rateLimit, 60);
   if (!withinLimit) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // ─── Body size check ───
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   // F-009 FIX: Align with /api/chat body size limit (was 1MB, now 95KB)
   if (contentLength > 95_000) {
-    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+    return NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 });
   }
 
   // ─── Parse request ───
   let body;
   try { body = await request.json(); } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const parsed = chatRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const { messages, childAge, parentRole, parentAge, currentPhase: clientPhase, turnCountInCurrentPhase, storySeed } = parsed.data;
@@ -113,19 +114,19 @@ export async function POST(request: NextRequest) {
     // Quick client-side count check (fast rejection)
     const totalTurns = Math.ceil(messages.length / 2);
     if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
-      return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
+      return NextResponse.json({ error: "guest_limit", message: t("Errors.chat.guestLimitReached") }, { status: 403 });
     }
     // Fix 1-3: Use shared buildGuestRateLimitKey (IP + UA hash, synced with chat/route.ts)
     const guestKey = await buildGuestRateLimitKey(request, ip);
     const guestTurnAllowed = await checkRateLimitPersistent(guestKey, GUEST_TURN_LIMIT, 86400);
     if (!guestTurnAllowed) {
-      return NextResponse.json({ error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." }, { status: 403 });
+      return NextResponse.json({ error: "guest_limit", message: t("Errors.chat.guestLimitReached") }, { status: 403 });
     }
   }
   // Freemium v2: Authenticated users capped at 30 turns per story
   if (isAuthenticated && userMsgCount > AUTH_TURN_LIMIT) {
     return NextResponse.json(
-      { error: "동화를 완성해 주세요. 대화 횟수가 상한에 도달했습니다." },
+      { error: t("Errors.chat.turnLimitReached") },
       { status: 403 }
     );
   }
@@ -507,8 +508,8 @@ export async function POST(request: NextRequest) {
         // R2-FIX: Distinguish timeout errors from other stream failures
         const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"));
         const errorMessage = isAbort
-          ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
-          : "스트리밍 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.";
+          ? t("Errors.chat.responseTimeout")
+          : t("Errors.chat.streamError");
         console.error("[Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
         // V5-FIX #14: Atomic close in error handler
         if (!closed) {

@@ -22,6 +22,7 @@ import { generateActivitySheetHtml } from "@/lib/pdf/teacher-activity-sheet";
 import { generateReadingGuideHtml } from "@/lib/pdf/teacher-reading-guide";
 import { generateFreeActivityHtml } from "@/lib/pdf/teacher-free-activity";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 // ─── Rate Limiter ───
 const pdfLimiter = createInMemoryLimiter(RATE_KEYS.TEACHER_PDF, { maxEntries: 300 });
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!pdfLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다." },
+      { error: t("Errors.rateLimit.tooManyRequestsShort") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
   );
   if (contentLength > MAX_BODY_SIZE) {
     return NextResponse.json(
-      { error: "요청 데이터가 너무 큽니다." },
+      { error: t("Errors.validation.requestTooLarge") },
       { status: 413 }
     );
   }
@@ -83,13 +84,13 @@ export async function POST(request: NextRequest) {
   // 3. Auth
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 }
       )
     );
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
       if (error || !story) {
         return sb.applyCookies(
           NextResponse.json(
-            { error: "동화를 찾을 수 없습니다." },
+            { error: t("Errors.story.notFound") },
             { status: 404 }
           )
         );
@@ -155,7 +156,7 @@ export async function POST(request: NextRequest) {
     } else {
       return sb.applyCookies(
         NextResponse.json(
-          { error: "storyId 또는 story 데이터가 필요합니다." },
+          { error: t("Errors.validation.storyIdOrDataRequired") },
           { status: 400 }
         )
       );
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
     if (spreads.length === 0) {
       return sb.applyCookies(
         NextResponse.json(
-          { error: "스프레드 데이터가 없습니다." },
+          { error: t("Errors.validation.noSpreadData") },
           { status: 400 }
         )
       );
@@ -231,7 +232,7 @@ export async function POST(request: NextRequest) {
     );
     return sb.applyCookies(
       NextResponse.json(
-        { error: "PDF 생성에 실패했습니다." },
+        { error: t("Errors.teacher.pdfFailed") },
         { status: 500 }
       )
     );

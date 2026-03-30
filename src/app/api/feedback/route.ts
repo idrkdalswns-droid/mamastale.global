@@ -4,6 +4,7 @@ import { z } from "zod";
 // CA-7: Import shared isValidUUID instead of inline regex
 import { getClientIP, isValidUUID, sanitizeText } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -20,7 +21,7 @@ const feedbackSchema = z.object({
   sessionId: z.string().optional(),
 }).refine(
   (d) => d.empathy || d.insight || d.metaphor || d.story || d.overall || d.free?.trim(),
-  { message: "최소 하나의 평가 또는 의견이 필요합니다." }
+  { message: t("Errors.validation.feedbackRequired") }
 );
 
 export async function POST(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!feedbackLimiter.check(ip, 5, 300_000)) {
     return NextResponse.json(
-      { error: "피드백은 5분에 5건까지 등록 가능합니다." },
+      { error: t("Errors.rateLimit.feedbackLimit") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     // LAUNCH-FIX: Body size limit (feedback payloads are small, 16KB max)
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > 16_000) {
-      return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+      return NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 });
     }
 
     // Safe JSON parsing
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       return NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 }
       );
     }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "잘못된 피드백 형식입니다." },
+        { error: t("Errors.validation.invalidFeedbackFormat") },
         { status: 400 }
       );
     }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json(
-      { error: "일시적인 오류가 발생했습니다." },
+      { error: t("Errors.system.temporaryError") },
       { status: 500 }
     );
   }

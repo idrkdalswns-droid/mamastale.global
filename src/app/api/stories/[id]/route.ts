@@ -5,6 +5,7 @@ import { isValidUUID, sanitizeText, sanitizeSceneText, containsProfanity, isVali
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { calculateBlindStatus, applyBlindFilter } from "@/lib/utils/blind";
+import { t } from "@/lib/i18n";
 
 const storyPatchSchema = z.object({
   isPublic: z.boolean().optional(),
@@ -30,23 +31,23 @@ export async function GET(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   // T-2: Persistent rate limit (30/min per user, survives across Edge isolates)
   const getAllowed = await checkRateLimitPersistent(`story_get:${user.id}`, 30, 60);
   if (!getAllowed) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   const { data: story, error } = await sb.client
@@ -60,7 +61,7 @@ export async function GET(
     .single();
 
   if (error || !story) {
-    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
   }
 
   // DIY free save + blind system: check purchase flags
@@ -135,30 +136,30 @@ export async function PATCH(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   // T-2: Persistent rate limit (10 PATCH/min per user)
   const patchAllowed = await checkRateLimitPersistent(`story_patch:${user.id}`, 10, 60);
   if (!patchAllowed) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   try {
     // P1-FIX: Body size limit on PATCH (parity with POST endpoint)
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > 512_000) {
-      return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 }));
     }
 
     // Safe JSON parsing (KR-T1 fix)
@@ -166,12 +167,12 @@ export async function PATCH(
     try {
       body = await request.json();
     } catch {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
     // Zod 스키마로 입력 검증 (truncate 동작 유지)
     const parsed = storyPatchSchema.safeParse(body);
     if (!parsed.success) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
     const { isPublic, authorAlias, title, topic, coverImage, scenes } = parsed.data;
     const updates: Record<string, unknown> = {};
@@ -180,14 +181,14 @@ export async function PATCH(
     if (authorAlias !== undefined) {
       const safeAlias = sanitizeText(authorAlias);
       if (safeAlias && containsProfanity(safeAlias)) {
-        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
+        return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.alias") }, { status: 400 }));
       }
       updates.author_alias = safeAlias || null;
     }
     if (title !== undefined) {
       const safeTitle = sanitizeText(title);
       if (safeTitle && containsProfanity(safeTitle)) {
-        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 }));
+        return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.title") }, { status: 400 }));
       }
       updates.title = safeTitle;
     }
@@ -208,13 +209,13 @@ export async function PATCH(
         text: sanitizeSceneText(s.text),
       }));
       if (sanitizedScenes.some(s => containsProfanity(s.text))) {
-        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 내용입니다." }, { status: 400 }));
+        return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.content") }, { status: 400 }));
       }
       updates.scenes = sanitizedScenes;
     }
 
     if (Object.keys(updates).length === 0) {
-      return sb.applyCookies(NextResponse.json({ error: "수정할 항목이 없습니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.story.noChanges") }, { status: 400 }));
     }
 
     // Bug Bounty: CAS guard — publishing requires is_unlocked=true (atomic, no TOCTOU)
@@ -230,20 +231,20 @@ export async function PATCH(
 
     if (error) {
       console.error("[Stories] Update error: code=", error.code);
-      return sb.applyCookies(NextResponse.json({ error: "수정에 실패했습니다." }, { status: 500 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.story.updateFailed") }, { status: 500 }));
     }
 
     if (!updated) {
       // If publishing a locked story, CAS guard returns 0 rows → 403
       if (body.isPublic === true) {
-        return sb.applyCookies(NextResponse.json({ error: "잠금 해제 후 공유할 수 있습니다." }, { status: 403 }));
+        return sb.applyCookies(NextResponse.json({ error: t("Errors.story.unlockRequired") }, { status: 403 }));
       }
-      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 }));
   }
 }
 
@@ -255,23 +256,23 @@ export async function DELETE(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   // H1-FIX: Rate limit with persistent limiter (data destruction = persistent, not in-memory)
   const deleteAllowed = await checkRateLimitPersistent(`story_delete:${user.id}`, 5, 60);
   if (!deleteAllowed) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   // Soft delete: set status='deleted' and hide from community
@@ -285,11 +286,11 @@ export async function DELETE(
 
   if (error) {
     console.error("[Stories] Delete error: code=", error.code, "hint=", error.hint);
-    return sb.applyCookies(NextResponse.json({ error: "삭제에 실패했습니다." }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.story.deleteFailed") }, { status: 500 }));
   }
 
   if (!deleted) {
-    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
   }
 
   return sb.applyCookies(NextResponse.json({ success: true }));

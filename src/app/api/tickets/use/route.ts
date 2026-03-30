@@ -4,6 +4,7 @@ import { getClientIP } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { checkPremiumStatus } from "@/lib/anthropic/chat-shared";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -22,14 +23,14 @@ export async function POST(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`ticket_use:${ip}`, 5, 60);
   if (!allowed) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.tooManyRequests") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Tickets/Use");
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     // a session refresh during getUser(), and dropping those cookies breaks
     // the client's session permanently.
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     // ROOT-CAUSE FIX: Query ONLY free_stories_remaining first.
     // The previous code selected "free_stories_remaining, metadata" in a single query.
     // If the "metadata" column doesn't exist in profiles, PostgREST returns a column-not-found
-    // error (code !== PGRST116), which triggered the "프로필 정보를 불러올 수 없습니다." error.
+    // error (code !== PGRST116), which triggered the t("Errors.ticket.profileReadFailed") error.
     const { data: profile, error: readError } = await sb.client
       .from("profiles")
       .select("free_stories_remaining")
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       // Real DB error (not "no rows found")
       console.error("[Tickets/Use] Profile read error:", readError.code, readError.message);
       return sb.applyCookies(NextResponse.json(
-        { error: "프로필 정보를 불러올 수 없습니다." },
+        { error: t("Errors.ticket.profileReadFailed") },
         { status: 500 }
       ));
     }
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       if (insertErr) {
         console.error("[Tickets/Use] Profile create error:", insertErr.code);
         return sb.applyCookies(NextResponse.json(
-          { error: "프로필 생성에 실패했습니다. 다시 시도해 주세요." },
+          { error: t("Errors.ticket.profileCreateFailed") },
           { status: 500 }
         ));
       }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       const actualRemaining = actualProfile?.free_stories_remaining ?? 0;
       if (actualRemaining <= 0) {
         return sb.applyCookies(NextResponse.json(
-          { error: "no_tickets", message: "티켓이 부족합니다." },
+          { error: "no_tickets", message: t("Errors.ticket.insufficient") },
           { status: 403 }
         ));
       }
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
         if (rpcErr) {
           if (rpcErr.message?.includes("insufficient_tickets")) {
             return sb.applyCookies(NextResponse.json(
-              { error: "no_tickets", message: "티켓이 부족합니다." },
+              { error: "no_tickets", message: t("Errors.ticket.insufficient") },
               { status: 403 }
             ));
           }
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
               .single();
             if (deductError || !casResult) {
               return sb.applyCookies(NextResponse.json(
-                { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
+                { error: "concurrent_conflict", message: t("Errors.ticket.concurrentConflict") },
                 { status: 409 }
               ));
             }
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
         const errMsg = rpcCatchErr instanceof Error ? rpcCatchErr.message : String(rpcCatchErr);
         if (errMsg.includes("insufficient_tickets")) {
           return sb.applyCookies(NextResponse.json(
-            { error: "no_tickets", message: "티켓이 부족합니다." },
+            { error: "no_tickets", message: t("Errors.ticket.insufficient") },
             { status: 403 }
           ));
         }
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
     const remaining = profile.free_stories_remaining ?? 0;
     if (remaining <= 0) {
       return sb.applyCookies(NextResponse.json(
-        { error: "no_tickets", message: "티켓이 부족합니다." },
+        { error: "no_tickets", message: t("Errors.ticket.insufficient") },
         { status: 403 }
       ));
     }
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
         // Check for specific error types from the RPC
         if (rpcErr.message?.includes("insufficient_tickets")) {
           return sb.applyCookies(NextResponse.json(
-            { error: "no_tickets", message: "티켓이 부족합니다." },
+            { error: "no_tickets", message: t("Errors.ticket.insufficient") },
             { status: 403 }
           ));
         }
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
             .single();
           if (deductError || !casResult) {
             return sb.applyCookies(NextResponse.json(
-              { error: "concurrent_conflict", message: "일시적인 충돌이 발생했습니다. 다시 시도해 주세요." },
+              { error: "concurrent_conflict", message: t("Errors.ticket.concurrentConflict") },
               { status: 409 }
             ));
           }
@@ -227,7 +228,7 @@ export async function POST(request: NextRequest) {
       const errMsg = rpcCatchErr instanceof Error ? rpcCatchErr.message : String(rpcCatchErr);
       if (errMsg.includes("insufficient_tickets")) {
         return sb.applyCookies(NextResponse.json(
-          { error: "no_tickets", message: "티켓이 부족합니다." },
+          { error: "no_tickets", message: t("Errors.ticket.insufficient") },
           { status: 403 }
         ));
       }
@@ -283,7 +284,7 @@ export async function POST(request: NextRequest) {
     // R4-FIX: Log error.name instead of error.message to avoid PII leakage
     console.error("[Tickets/Use] Error:", error instanceof Error ? error.name : "Unknown");
     return sb.applyCookies(NextResponse.json(
-      { error: "티켓 사용 중 오류가 발생했습니다." },
+      { error: t("Errors.ticket.usageError") },
       { status: 500 }
     ));
   }

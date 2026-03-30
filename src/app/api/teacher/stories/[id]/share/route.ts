@@ -16,6 +16,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID } from "@/lib/utils/validation";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { logEvent } from "@/lib/utils/llm-logger";
+import { t } from "@/lib/i18n";
 
 const limiter = createInMemoryLimiter("teacher_story_share");
 
@@ -30,24 +31,24 @@ export async function POST(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 });
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
   if (!limiter.check(`share:${user.id}`, 10, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
+      NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -62,7 +63,7 @@ export async function POST(
 
   if (error || !story) {
     return sb.applyCookies(
-      NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 })
+      NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 })
     );
   }
 
@@ -95,7 +96,7 @@ export async function POST(
   if (updateError) {
     console.error("[Teacher Share] Token update failed:", updateError.message);
     return sb.applyCookies(
-      NextResponse.json({ error: "공유 링크 생성에 실패했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.teacher.shareLinkFailed") }, { status: 500 })
     );
   }
 
@@ -129,18 +130,18 @@ export async function DELETE(
   const { id } = await params;
 
   if (!isValidUUID(id)) {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 });
   }
 
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -153,7 +154,7 @@ export async function DELETE(
   if (error) {
     console.error("[Teacher Share] Unshare failed:", error.message);
     return sb.applyCookies(
-      NextResponse.json({ error: "공유 해제에 실패했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.teacher.unshareFailed") }, { status: 500 })
     );
   }
 

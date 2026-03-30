@@ -54,6 +54,7 @@ import type {
   SpeechBubbleWorksheetOutput,
   RoleplayScriptWorksheetOutput,
 } from "@/lib/worksheet/schemas";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -100,14 +101,14 @@ export async function POST(request: NextRequest) {
   // 1. Supabase client
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB를 사용할 수 없습니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.dbUnavailable") }, { status: 503 });
   }
 
   // 2. Auth
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
   if (!worksheetLimiter.check(`ws:${user.id}`, 20, 3600_000)) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+        { error: t("Errors.rateLimit.tooManyRequests") },
         { status: 429, headers: { "Retry-After": "3600" } }
       )
     );
@@ -127,14 +128,14 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
 
   if (storyErr || !story) {
     return sb.applyCookies(
-      NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 })
+      NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 })
     );
   }
 
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
 
   if (!storyText.trim()) {
     return sb.applyCookies(
-      NextResponse.json({ error: "동화 내용을 찾을 수 없습니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.story.contentNotFound") }, { status: 400 })
     );
   }
 
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
   const adminClient = createServiceRoleClient();
   if (!adminClient) {
     return sb.applyCookies(
-      NextResponse.json({ error: "서버 설정 오류입니다." }, { status: 503 })
+      NextResponse.json({ error: t("Errors.teacher.serverConfigError") }, { status: 503 })
     );
   }
 
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
     if (!ticketOk) {
       return sb.applyCookies(
         NextResponse.json(
-          { error: "활동지 티켓이 부족합니다. 티켓을 구매해 주세요.", code: "INSUFFICIENT_TICKETS" },
+          { error: t("Errors.ticket.worksheetInsufficient"), code: "INSUFFICIENT_TICKETS" },
           { status: 403 }
         )
       );
@@ -255,7 +256,7 @@ export async function POST(request: NextRequest) {
         }
         return sb.applyCookies(
           NextResponse.json(
-            { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
+            { error: t("Errors.teacher.worksheetGenerateFailed") },
             { status: 502 }
           )
         );
@@ -302,7 +303,7 @@ export async function POST(request: NextRequest) {
     }
     return sb.applyCookies(
       NextResponse.json(
-        { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
+        { error: t("Errors.teacher.worksheetGenerateFailed") },
         { status: 502 }
       )
     );
@@ -369,7 +370,7 @@ export async function POST(request: NextRequest) {
     }
     return sb.applyCookies(
       NextResponse.json(
-        { error: "활동지 생성에 실패했어요. 다시 시도해 주세요." },
+        { error: t("Errors.teacher.worksheetGenerateFailed") },
         { status: 502 }
       )
     );
@@ -382,7 +383,7 @@ export async function POST(request: NextRequest) {
   const renderer = RENDERERS[params.activity_type];
   if (!renderer) {
     return sb.applyCookies(
-      NextResponse.json({ error: "지원하지 않는 활동지 유형입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.teacher.worksheetTypeNotSupported") }, { status: 400 })
     );
   }
   html = renderer(validated.data, derivedParams);

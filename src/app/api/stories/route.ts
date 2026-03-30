@@ -8,6 +8,7 @@ import { createInMemoryLimiter, RATE_KEYS, checkRateLimitPersistent } from "@/li
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { getDIYStory } from "@/lib/constants/diy-stories";
 import { calculateBlindStatus } from "@/lib/utils/blind";
+import { t } from "@/lib/i18n";
 
 const storyPostSchema = z.object({
   title: z.string().max(200).optional().nullable(),
@@ -37,16 +38,16 @@ const storyListLimiter = createInMemoryLimiter(RATE_KEYS.STORY_LIST, { maxEntrie
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   if (!storyListLimiter.check(user.id, 15, 60_000)) {
-    return sb.applyCookies(NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } }));
   }
 
   // M-B6: Support pagination via query params (backward compatible — defaults to limit=100)
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[Stories] List error: code=", error.code);
-    return sb.applyCookies(NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.story.listFailed") }, { status: 500 }));
   }
 
   // DIY free save + blind system: query purchase flags
@@ -128,19 +129,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request, "Stories");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   // P0-5: Persistent rate limit (survives Edge multi-instance)
   const allowed = await checkRateLimitPersistent(`story_save:${user.id}`, 5, 60);
   if (!allowed) {
     return sb.applyCookies(NextResponse.json(
-      { error: "요청이 너무 많습니다. 1분 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.retryAfterMinute") },
       { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > MAX_BODY_SIZE) {
     return sb.applyCookies(NextResponse.json(
-      { error: "요청 데이터가 너무 큽니다." },
+      { error: t("Errors.validation.requestTooLarge") },
       { status: 413 }
     ));
   }
@@ -160,21 +161,21 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
     // P1-FIX(KR-2): Double-check parsed body size (content-length can be spoofed)
     const bodyStr = JSON.stringify(body);
     if (bodyStr.length > MAX_BODY_SIZE) {
       return sb.applyCookies(NextResponse.json(
-        { error: "요청 데이터가 너무 큽니다." },
+        { error: t("Errors.validation.requestTooLarge") },
         { status: 413 }
       ));
     }
 
     const parsed = storyPostSchema.safeParse(body);
     if (!parsed.success) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
     const { scenes, sessionId, metadata, isPublic, coverImage } = parsed.data;
@@ -203,7 +204,7 @@ export async function POST(request: NextRequest) {
         const TICKET_WINDOW_MS = 30 * 60 * 1000; // 30 min window
         if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
           return sb.applyCookies(NextResponse.json(
-            { error: "티켓 차감이 확인되지 않았습니다. 다시 시도해 주세요." },
+            { error: t("Errors.ticket.deductionNotConfirmed") },
             { status: 403 }
           ));
         }
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
           const retryTicketUse = retryMeta.last_ticket_used_at as string | undefined;
           const TICKET_WINDOW_MS = 30 * 60 * 1000;
           if (!retryTicketUse || Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
-            return sb.applyCookies(NextResponse.json({ error: "티켓 확인에 실패했습니다." }, { status: 500 }));
+            return sb.applyCookies(NextResponse.json({ error: t("Errors.ticket.verificationFailed") }, { status: 500 }));
           }
           verifiedTicketTimestamp = retryTicketUse;
         } catch {
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
         .not("expires_at", "is", null);
       if (diyCount !== null && diyCount >= 3) {
         return sb.applyCookies(NextResponse.json(
-          { error: "무료 DIY 동화는 최대 3개까지 저장할 수 있습니다. 티켓을 구매하면 더 많이 저장할 수 있어요." },
+          { error: t("Errors.ticket.freeDiyLimit") },
           { status: 403 }
         ));
       }
@@ -246,19 +247,19 @@ export async function POST(request: NextRequest) {
 
     // UK-2/UK-3: Profanity check on title and alias (visible in community)
     if (title && containsProfanity(title)) {
-      return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.title") }, { status: 400 }));
     }
     if (authorAlias && containsProfanity(authorAlias)) {
-      return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함된 별명입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.alias") }, { status: 400 }));
     }
 
     // LAUNCH-FIX: Validate metadata is an object (not string/number/array)
     if (metadata !== undefined && metadata !== null && (typeof metadata !== "object" || Array.isArray(metadata))) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 메타데이터 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidMetadataFormat") }, { status: 400 }));
     }
     // UK-5: Limit metadata size to prevent DB bloat
     if (metadata && JSON.stringify(metadata).length > 10_000) {
-      return sb.applyCookies(NextResponse.json({ error: "메타데이터가 너무 큽니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.metadataTooLarge") }, { status: 400 }));
     }
 
     // Sanitize scene content — use lightweight sanitizer for AI text
@@ -268,7 +269,7 @@ export async function POST(request: NextRequest) {
     // H18-FIX: Removed duplicate title profanity check (already done at line 182)
     for (const s of scenes as Array<{ sceneNumber: number; title: string; text: string }>) {
       if (containsProfanity(s.title) || containsProfanity(s.text)) {
-        return sb.applyCookies(NextResponse.json({ error: "부적절한 표현이 포함되어 있습니다." }, { status: 400 }));
+        return sb.applyCookies(NextResponse.json({ error: t("Errors.profanity.detected") }, { status: 400 }));
       }
       s.title = sanitizeSceneText(s.title.slice(0, 200));
       s.text = sanitizeSceneText(s.text.slice(0, 5000));
@@ -401,14 +402,14 @@ export async function POST(request: NextRequest) {
             }).catch(() => {});
           }
           return sb.applyCookies(NextResponse.json({
-            error: "동화 저장에 실패했습니다. 티켓이 복원되지 않았습니다. 고객센터에 문의해 주세요.",
+            error: t("Errors.story.saveFailedNoRestore"),
             code: "ticket_rollback_failed",
           }, { status: 500 }));
         }
       }
 
       return sb.applyCookies(NextResponse.json({
-        error: isDIY ? "동화 저장에 실패했습니다. 다시 시도해 주세요." : "동화 저장에 실패했습니다. 티켓은 복원되었습니다. 다시 시도해 주세요.",
+        error: isDIY ? t("Errors.story.saveFailedRetry") : t("Errors.story.saveFailedTicketRestored"),
       }, { status: 500 }));
     }
 
@@ -490,6 +491,6 @@ export async function POST(request: NextRequest) {
 
     return sb.applyCookies(NextResponse.json({ id: storyId, coverGenerated: false }));
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 }));
   }
 }

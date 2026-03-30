@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -14,17 +15,17 @@ const deleteLimiter = createInMemoryLimiter(RATE_KEYS.ACCOUNT_DELETE, { maxEntri
 export async function DELETE(request: NextRequest) {
   const ip = getClientIP(request);
   if (!deleteLimiter.check(ip, 3, 3_600_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "3600" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "3600" } });
   }
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // LAUNCH-FIX: Body size limit (delete confirmation is tiny, 4KB max)
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > 4_000) {
-    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+    return NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 });
   }
 
   // JP-06: Require explicit confirmation in request body
@@ -32,20 +33,20 @@ export async function DELETE(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "확인 정보가 필요합니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.confirmationRequired") }, { status: 400 });
   }
   if (body?.confirm !== "탈퇴합니다") {
-    return NextResponse.json({ error: "'탈퇴합니다'를 입력해 주세요." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.confirmationText") }, { status: 400 });
   }
 
   const user = await resolveUser(sb.client, request, "Account/Delete");
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   const serviceClient = createServiceRoleClient();
   if (!serviceClient) {
-    return sb.applyCookies(NextResponse.json({ error: "서비스를 사용할 수 없습니다." }, { status: 503 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.system.serviceUnavailable") }, { status: 503 }));
   }
 
   const userId = user.id;
@@ -68,7 +69,7 @@ export async function DELETE(request: NextRequest) {
       }
       console.error(`[Account] Cascade delete failed for user=${maskedId}:`, rpcErr.code, rpcErr.message);
       return sb.applyCookies(NextResponse.json(
-        { error: "계정 데이터 정리 중 오류가 발생했습니다. 다시 시도해 주세요." },
+        { error: t("Errors.account.dataCleanupError") },
         { status: 500 }
       ));
     }
@@ -77,17 +78,17 @@ export async function DELETE(request: NextRequest) {
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
     if (deleteError) {
       console.error("[Account] Delete auth error:", deleteError.name, "user=", maskedId);
-      return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.account.deleteFailed") }, { status: 500 }));
     }
 
     // Fire-and-forget: decrement community counters (non-critical)
     decrementCommunityCounters(serviceClient, userId).catch(() => {});
 
     console.info(`[Account] Successfully deleted user=${maskedId}`);
-    return sb.applyCookies(NextResponse.json({ success: true, message: "계정이 삭제되었습니다." }));
+    return sb.applyCookies(NextResponse.json({ success: true, message: t("Errors.account.deleted") }));
   } catch (e) {
     console.error("[Account] Delete error:", e instanceof Error ? e.name : "Unknown");
-    return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.account.deleteFailed") }, { status: 500 }));
   }
 }
 
@@ -132,11 +133,11 @@ async function legacyDeleteUser(serviceClient: any, userId: string, maskedId: st
   const { error: deleteError } = await serviceClient.auth.admin.deleteUser(userId);
   if (deleteError) {
     console.error("[Account] Legacy: Delete auth error:", deleteError.name);
-    return sb.applyCookies(NextResponse.json({ error: "계정 삭제에 실패했습니다." }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.account.deleteFailed") }, { status: 500 }));
   }
 
   console.info(`[Account] Legacy: Successfully deleted user=${maskedId}`);
-  return sb.applyCookies(NextResponse.json({ success: true, message: "계정이 삭제되었습니다." }));
+  return sb.applyCookies(NextResponse.json({ success: true, message: t("Errors.account.deleted") }));
 }
 
 // ─── Community counter decrement (fire-and-forget) ───

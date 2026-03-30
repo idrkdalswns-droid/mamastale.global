@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -19,7 +20,7 @@ export async function GET(
   const sb = createApiSupabaseClient(request);
   if (!sb)
     return NextResponse.json(
-      { error: "시스템 설정 오류입니다." },
+      { error: t("Errors.system.configError") },
       { status: 503 },
     );
 
@@ -27,7 +28,7 @@ export async function GET(
   if (!user)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "로그인이 필요합니다." },
+        { error: t("Errors.auth.loginRequired") },
         { status: 401 },
       ),
     );
@@ -35,7 +36,7 @@ export async function GET(
   if (!limiter.check(user.id, 30, 60_000))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다." },
+        { error: t("Errors.rateLimit.tooManyRequestsShort") },
         { status: 429, headers: { "Retry-After": "60" } },
       ),
     );
@@ -47,7 +48,7 @@ export async function GET(
   if (!uuidRegex.test(id))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 세션 ID입니다." },
+        { error: t("Errors.validation.invalidSessionId") },
         { status: 400 },
       ),
     );
@@ -64,7 +65,7 @@ export async function GET(
   if (error || !session)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "세션을 찾을 수 없습니다." },
+        { error: t("Errors.teacher.sessionNotFound") },
         { status: 404 },
       ),
     );

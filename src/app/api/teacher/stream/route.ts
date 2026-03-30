@@ -30,6 +30,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logLLMCall, logEvent } from "@/lib/utils/llm-logger";
 import { z } from "zod";
+import { t } from "@/lib/i18n";
 
 const requestSchema = z.object({
   sessionId: z.string().uuid(),
@@ -43,14 +44,14 @@ export async function POST(request: NextRequest) {
   // 1. Supabase 클라이언트
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // 2. 인증
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return NextResponse.json(
-      { error: "로그인이 필요합니다." },
+      { error: t("Errors.auth.loginRequired") },
       { status: 401 }
     );
   }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   const withinLimit = await checkRateLimitPersistent(rateKey, 30, 60);
   if (!withinLimit) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+      { error: t("Errors.rateLimit.tooManyRequests") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     body = requestSchema.parse(raw);
   } catch {
     return NextResponse.json(
-      { error: "잘못된 요청 형식입니다." },
+      { error: t("Errors.validation.invalidRequestFormat") },
       { status: 400 }
     );
   }
@@ -89,14 +90,14 @@ export async function POST(request: NextRequest) {
 
   if (sessionError || !session) {
     return NextResponse.json(
-      { error: "세션을 찾을 수 없습니다." },
+      { error: t("Errors.teacher.sessionNotFound") },
       { status: 404 }
     );
   }
 
   if (new Date(session.expires_at) < new Date()) {
     return NextResponse.json(
-      { error: "세션이 만료되었습니다. 코드를 다시 입력해주세요." },
+      { error: t("Errors.teacher.sessionExpiredReenter") },
       { status: 401 }
     );
   }
@@ -324,8 +325,8 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"));
         const errorMessage = isAbort
-          ? "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요."
-          : "AI 응답 생성 중 오류가 발생했습니다.";
+          ? t("Errors.chat.responseTimeout")
+          : t("Errors.chat.aiResponseError");
         console.error("[Teacher Stream] Error:", err instanceof Error ? err.name : "Unknown", isAbort ? "(timeout)" : "");
         try {
           controller.enqueue(

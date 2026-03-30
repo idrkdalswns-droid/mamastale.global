@@ -22,6 +22,7 @@ import {
   parseTQScenes,
 } from "@/lib/tq/tq-orchestrator";
 import { getFallbackStory } from "@/lib/tq/tq-fallback-stories";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb)
     return NextResponse.json(
-      { error: "시스템 설정 오류입니다." },
+      { error: t("Errors.system.configError") },
       { status: 503 },
     );
 
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   if (!user)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "로그인이 필요합니다." },
+        { error: t("Errors.auth.loginRequired") },
         { status: 401 },
       ),
     );
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   if (!limiter.check(user.id, 3, 60_000))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다." },
+        { error: t("Errors.rateLimit.tooManyRequestsShort") },
         { status: 429, headers: { "Retry-After": "60" } },
       ),
     );
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
   if (sessionError || !session)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "세션을 찾을 수 없습니다." },
+        { error: t("Errors.teacher.sessionNotFound") },
         { status: 404 },
       ),
     );
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
   if (session.status === "generating" || session.status === "completed")
     return sb.applyCookies(
       NextResponse.json(
-        { error: "이미 처리 중이거나 완료된 세션입니다.", code: "ALREADY_PROCESSING" },
+        { error: t("Errors.teacher.alreadyProcessing"), code: "ALREADY_PROCESSING" },
         { status: 409 },
       ),
     );
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
   if (!validateTransition(session.status, "generating"))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "현재 상태에서 제출할 수 없습니다." },
+        { error: t("Errors.teacher.cannotSubmitInCurrentState") },
         { status: 409 },
       ),
     );

@@ -6,6 +6,7 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { logEvent } from "@/lib/utils/llm-logger";
 import { z } from "zod";
+import { t } from "@/lib/i18n";
 
 const sessionDeleteLimiter = createInMemoryLimiter("teacher_session_delete", { maxEntries: 200 });
 
@@ -33,13 +34,13 @@ const onboardingSchema = z
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -87,13 +88,13 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -102,7 +103,7 @@ export async function PATCH(request: NextRequest) {
     raw = await request.json();
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
@@ -111,7 +112,7 @@ export async function PATCH(request: NextRequest) {
   if (!sessionId) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "sessionId가 필요합니다." },
+        { error: t("Errors.validation.sessionIdRequired") },
         { status: 400 }
       )
     );
@@ -132,7 +133,7 @@ export async function PATCH(request: NextRequest) {
       );
       return sb.applyCookies(
         NextResponse.json(
-          { error: "온보딩 데이터 형식이 올바르지 않습니다." },
+          { error: t("Errors.validation.invalidOnboardingFormat") },
           { status: 400 }
         )
       );
@@ -150,7 +151,7 @@ export async function PATCH(request: NextRequest) {
     if (new Date(raw.expiresAt) > new Date()) {
       return sb.applyCookies(
         NextResponse.json(
-          { error: "세션 연장은 허용되지 않습니다." },
+          { error: t("Errors.teacher.sessionExtendNotAllowed") },
           { status: 400 }
         )
       );
@@ -161,7 +162,7 @@ export async function PATCH(request: NextRequest) {
   if (Object.keys(updatePayload).length === 0) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "업데이트할 데이터가 필요합니다." },
+        { error: t("Errors.validation.updateDataRequired") },
         { status: 400 }
       )
     );
@@ -177,14 +178,14 @@ export async function PATCH(request: NextRequest) {
 
   if (!session) {
     return sb.applyCookies(
-      NextResponse.json({ error: "세션을 찾을 수 없습니다." }, { status: 404 })
+      NextResponse.json({ error: t("Errors.teacher.sessionNotFound") }, { status: 404 })
     );
   }
 
   // T-B1: 만료 확인 — expiresAt 업데이트(강제 만료) 시에는 스킵
   if (!updatePayload.expires_at && new Date(session.expires_at) < new Date()) {
     return sb.applyCookies(
-      NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 410 })
+      NextResponse.json({ error: t("Errors.teacher.sessionExpired") }, { status: 410 })
     );
   }
 
@@ -199,7 +200,7 @@ export async function PATCH(request: NextRequest) {
     console.error("[Teacher] Session update failed:", updateError.message);
     return sb.applyCookies(
       NextResponse.json(
-        { error: "업데이트에 실패했습니다." },
+        { error: t("Errors.system.updateFailed") },
         { status: 500 }
       )
     );
@@ -217,13 +218,13 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -231,7 +232,7 @@ export async function DELETE(request: NextRequest) {
   if (!sessionDeleteLimiter.check(user.id, 5, 60_000)) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다. 1분 후 다시 시도해주세요." },
+        { error: t("Errors.rateLimit.retryAfterMinute") },
         { status: 429, headers: { "Retry-After": "60" } }
       )
     );
@@ -242,14 +243,14 @@ export async function DELETE(request: NextRequest) {
     body = await request.json();
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
   const sessionId = body.sessionId;
   if (!sessionId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "유효한 sessionId가 필요합니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.validSessionIdRequired") }, { status: 400 })
     );
   }
 
@@ -263,7 +264,7 @@ export async function DELETE(request: NextRequest) {
   if (updateError) {
     console.error("[Teacher] Session delete failed:", updateError.message);
     return sb.applyCookies(
-      NextResponse.json({ error: "세션 종료에 실패했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.teacher.sessionEndFailed") }, { status: 500 })
     );
   }
 

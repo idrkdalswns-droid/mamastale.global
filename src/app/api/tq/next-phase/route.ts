@@ -27,6 +27,7 @@ import type {
   GeneratedQuestion,
   Phase5Output,
 } from "@/lib/tq/tq-phase-transition";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb)
     return NextResponse.json(
-      { error: "시스템 설정 오류입니다." },
+      { error: t("Errors.system.configError") },
       { status: 503 },
     );
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
   if (!user)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "로그인이 필요합니다." },
+        { error: t("Errors.auth.loginRequired") },
         { status: 401 },
       ),
     );
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
   if (!limiter.check(user.id, 10, 60_000))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다." },
+        { error: t("Errors.rateLimit.tooManyRequestsShort") },
         { status: 429, headers: { "Retry-After": "60" } },
       ),
     );
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
   if (sessionError || !session)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "세션을 찾을 수 없습니다." },
+        { error: t("Errors.teacher.sessionNotFound") },
         { status: 404 },
       ),
     );
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
   if (session.status !== "in_progress")
     return sb.applyCookies(
       NextResponse.json(
-        { error: "이미 완료된 세션입니다." },
+        { error: t("Errors.teacher.alreadyCompleted") },
         { status: 409 },
       ),
     );

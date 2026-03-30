@@ -5,6 +5,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { isValidUUID, sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -89,7 +90,7 @@ export async function POST(
   const ip = getClientIP(request);
   if (!commentPostLimiter.check(ip, 5, 60_000)) {
     return NextResponse.json(
-      { error: "댓글은 1분에 5개까지 등록 가능합니다." },
+      { error: t("Errors.rateLimit.commentLimit") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -97,13 +98,13 @@ export async function POST(
   const { id: storyId } = await params;
 
   if (!isValidUUID(storyId)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   // Use createApiSupabaseClient to preserve session cookies on auth refresh
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -116,13 +117,13 @@ export async function POST(
     }
   }
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   // R2-3: Rate limit by userId (prevents IP rotation bypass)
   if (!commentPostLimiter.check(`user:${user.id}`, 5, 60_000)) {
     return sb.applyCookies(NextResponse.json(
-      { error: "댓글은 1분에 5개까지 등록 가능합니다." },
+      { error: t("Errors.rateLimit.commentLimit") },
       { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
@@ -137,7 +138,7 @@ export async function POST(
       .eq("is_public", true)
       .single();
     if (!story) {
-      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
     }
   }
 
@@ -145,7 +146,7 @@ export async function POST(
     // LAUNCH-FIX: Body size limit (comments are small text, 8KB max)
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > 8_000) {
-      return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 }));
     }
 
     // Safe JSON parsing
@@ -153,12 +154,12 @@ export async function POST(
     try {
       body = await request.json();
     } catch {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
     const parsed = commentSchema.safeParse(body);
     if (!parsed.success) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
     const { content, authorAlias } = parsed.data;
@@ -172,7 +173,7 @@ export async function POST(
     // Profanity check
     if (containsProfanity(safeContent) || containsProfanity(safeAlias)) {
       return sb.applyCookies(NextResponse.json(
-        { error: "부적절한 표현이 포함되어 있습니다." },
+        { error: t("Errors.profanity.detected") },
         { status: 400 }
       ));
     }
@@ -190,7 +191,7 @@ export async function POST(
 
     if (error) {
       console.error("[Comments] Insert error: code=", error.code);
-      return sb.applyCookies(NextResponse.json({ error: "댓글 등록에 실패했습니다." }, { status: 500 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.community.commentFailed") }, { status: 500 }));
     }
 
     // IN-6: Atomic comment count increment with error logging
@@ -210,6 +211,6 @@ export async function POST(
   } catch (unknownErr) {
     // R8-5: Log unexpected errors for production debugging (was silently swallowed)
     console.error("[Comments] Unexpected error:", unknownErr instanceof Error ? unknownErr.message : String(unknownErr));
-    return sb.applyCookies(NextResponse.json({ error: "댓글 처리 중 오류가 발생했습니다." }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.community.commentError") }, { status: 500 }));
   }
 }

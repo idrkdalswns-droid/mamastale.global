@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -17,32 +18,32 @@ const presenceSchema = z.object({
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!presenceLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // LAUNCH-FIX: Body size limit (presence payloads are tiny, 4KB max)
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > 4_000) {
-    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+    return NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const parsed = presenceSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "잘못된 데이터입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidData") }, { status: 400 });
   }
 
   const { anonymous_id, page } = parsed.data;
 
   const supabase = createServiceRoleClient();
   if (!supabase) {
-    return NextResponse.json({ error: "서비스를 사용할 수 없습니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.serviceUnavailable") }, { status: 503 });
   }
 
   // Upsert presence (ON CONFLICT anonymous_id DO UPDATE)

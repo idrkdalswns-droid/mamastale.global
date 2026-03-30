@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { sanitizeSearchQuery, parsePagination } from "@/lib/utils/search";
 import { getClientIP } from "@/lib/utils/validation";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -22,12 +23,12 @@ export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
   const allowed = await checkRateLimitPersistent(`community:${ip}`, 30, 60);
   if (!allowed) {
-    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   const supabase = createAnonClient();
   if (!supabase) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("[Community] List error: code=", error.code);
-    return NextResponse.json({ error: "동화 목록을 불러올 수 없습니다." }, { status: 500 });
+    return NextResponse.json({ error: t("Errors.story.listFailed") }, { status: 500 });
   }
 
   const total = count || 0;

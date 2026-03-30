@@ -6,11 +6,12 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logEvent } from "@/lib/utils/llm-logger";
+import { t } from "@/lib/i18n";
 
 const verifyCodeSchema = z.object({
-  code: z.string({ required_error: "코드를 입력해주세요" })
-    .min(2, "코드가 너무 짧습니다")
-    .max(30, "코드가 너무 깁니다")
+  code: z.string({ required_error: t("Errors.teacher.codeRequired") })
+    .min(2, t("Errors.teacher.codeTooShort"))
+    .max(30, t("Errors.teacher.codeTooLong"))
     .transform(s => s.trim().toUpperCase()),
 });
 
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
     return NextResponse.json(
-      { error: "시스템 설정 오류입니다." },
+      { error: t("Errors.system.configError") },
       { status: 503 }
     );
   }
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
   if (!ipWithinLimit) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "너무 많은 시도입니다. 1분 후 다시 시도해주세요." },
+        { error: t("Errors.rateLimit.tooManyAttempts") },
         { status: 429, headers: { "Retry-After": "60" } }
       )
     );
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
   if (!userWithinLimit) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "인증 시도가 너무 많습니다. 5분 후 다시 시도해주세요." },
+        { error: t("Errors.rateLimit.authTooManyAttempts") },
         { status: 429, headers: { "Retry-After": "60" } }
       )
     );
@@ -70,14 +71,14 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
   const parsed = verifyCodeSchema.safeParse(body);
   if (!parsed.success) {
     return sb.applyCookies(
-      NextResponse.json({ error: "올바른 코드를 입력해주세요." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.teacher.invalidCode") }, { status: 400 })
     );
   }
   const { code } = parsed.data;
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
     return sb.applyCookies(
       NextResponse.json(
-        { error: "유효하지 않은 코드입니다." },
+        { error: t("Errors.teacher.codeNotValid") },
         { status: 400 }
       )
     );
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
   if (count !== null && count >= codeData.daily_session_limit) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "오늘 이 코드의 사용 한도에 도달했습니다. 내일 다시 시도해주세요." },
+        { error: t("Errors.rateLimit.codeDailyLimit") },
         { status: 429, headers: { "Retry-After": "60" } }
       )
     );
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
     console.error("[Teacher] Session creation failed:", sessionError?.message);
     return sb.applyCookies(
       NextResponse.json(
-        { error: "세션 생성에 실패했습니다. 다시 시도해주세요." },
+        { error: t("Errors.teacher.sessionCreateFailed") },
         { status: 500 }
       )
     );

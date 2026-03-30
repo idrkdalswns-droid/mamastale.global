@@ -9,6 +9,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { getQ1Question } from "@/lib/tq/tq-phase1-questions";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb)
     return NextResponse.json(
-      { error: "시스템 설정 오류입니다." },
+      { error: t("Errors.system.configError") },
       { status: 503 },
     );
 
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
   if (!user)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "로그인이 필요합니다." },
+        { error: t("Errors.auth.loginRequired") },
         { status: 401 },
       ),
     );
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (!limiter.check(user.id, 10, 60_000))
     return sb.applyCookies(
       NextResponse.json(
-        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+        { error: t("Errors.rateLimit.tooManyRequests") },
         { status: 429, headers: { "Retry-After": "60" } },
       ),
     );
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success)
     return sb.applyCookies(
       NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 },
       ),
     );
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
           phase: existingSession.phase,
           created_at: existingSession.created_at,
         },
-        message: "진행 중인 세션이 있습니다.",
+        message: t("Errors.teacher.existingSession"),
       }),
     );
   }
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
   if (!hasTickets && !isFreeTrialAvailable) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "이용권이 부족합니다.", code: "NO_TICKETS" },
+        { error: t("Errors.ticket.passInsufficient"), code: "NO_TICKETS" },
         { status: 402 },
       ),
     );
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
           NextResponse.json({
             session_id: dupSession.id,
             status: dupSession.status,
-            message: "이미 생성된 세션입니다.",
+            message: t("Errors.teacher.duplicateSession"),
           }),
         );
       }
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.error("[TQ-Start] Session creation failed:", sessionError.message);
     return sb.applyCookies(
       NextResponse.json(
-        { error: "세션 생성에 실패했습니다." },
+        { error: t("Errors.teacher.sessionCreateFailedShort") },
         { status: 500 },
       ),
     );
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
       await sb.client.from("tq_sessions").delete().eq("id", session.id);
       return sb.applyCookies(
         NextResponse.json(
-          { error: "이용권이 부족합니다.", code: "NO_TICKETS" },
+          { error: t("Errors.ticket.passInsufficient"), code: "NO_TICKETS" },
           { status: 402 },
         ),
       );

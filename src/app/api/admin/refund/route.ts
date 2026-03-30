@@ -15,6 +15,7 @@ import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { z } from "zod";
+import { t } from "@/lib/i18n";
 
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
 const adminLimiter = createInMemoryLimiter(RATE_KEYS.ADMIN, { maxEntries: 50 });
@@ -29,7 +30,7 @@ const refundSchema = z.object({
 export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!adminLimiter.check(ip, 5, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // ─── Auth check (same pattern as admin/observability) ───
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey || !serviceKey) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
@@ -64,19 +65,19 @@ export async function POST(request: NextRequest) {
   }
 
   if (!adminUserId) {
-    return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+    return NextResponse.json({ error: t("Errors.auth.adminRequired") }, { status: 403 });
   }
 
   // ─── Parse request ───
   let body;
   try { body = await request.json(); } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const parsed = refundSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({
-      error: "입력값이 올바르지 않습니다.",
+      error: t("Errors.validation.invalidInputValues"),
       details: parsed.error.flatten().fieldErrors,
     }, { status: 400 });
   }
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
   // ─── Call Toss Payments Cancel API ───
   const tossSecretKey = process.env.TOSS_SECRET_KEY;
   if (!tossSecretKey) {
-    return NextResponse.json({ error: "Toss 결제 설정이 없습니다.", code: "MISSING_TOSS_KEY" }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.payment.tossConfigMissing"), code: "MISSING_TOSS_KEY" }, { status: 503 });
   }
 
   const basicAuth = btoa(String.fromCharCode(
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
     const isAbort = err instanceof Error && err.name === "AbortError";
     console.error("[Admin Refund] Toss API call failed:", isAbort ? "timeout" : err);
     return NextResponse.json({
-      error: isAbort ? "Toss API 응답 시간 초과 (10초)" : "Toss API 호출에 실패했습니다.",
+      error: isAbort ? t("Errors.payment.tossTimeout") : t("Errors.payment.tossCallFailed"),
       code: isAbort ? "TOSS_TIMEOUT" : "TOSS_ERROR",
     }, { status: 502 });
   }

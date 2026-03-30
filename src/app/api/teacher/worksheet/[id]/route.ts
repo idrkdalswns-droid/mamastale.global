@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -20,14 +21,14 @@ export async function GET(
   // 1. Supabase client
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "DB를 사용할 수 없습니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.dbUnavailable") }, { status: 503 });
   }
 
   // 2. Auth
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -36,7 +37,7 @@ export async function GET(
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!id || !uuidRegex.test(id)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 활동지 ID입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.teacher.worksheetIdInvalid") }, { status: 400 })
     );
   }
 
@@ -49,7 +50,7 @@ export async function GET(
 
   if (error || !data) {
     return sb.applyCookies(
-      NextResponse.json({ error: "활동지를 찾을 수 없습니다." }, { status: 404 })
+      NextResponse.json({ error: t("Errors.teacher.worksheetNotFound") }, { status: 404 })
     );
   }
 

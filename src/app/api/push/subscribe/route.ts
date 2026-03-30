@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -19,13 +20,13 @@ const unsubscribeSchema = z.object({ endpoint: z.string().url().max(2048) });
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const { data: { user }, error: authError } = await sb.client.auth.getUser();
   if (authError || !user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`push_sub:${user.id}`, 10, 60);
   if (!allowed) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
+      NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     const parsed = subscribeSchema.safeParse(raw);
     if (!parsed.success) {
       return sb.applyCookies(
-        NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+        NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
       );
     }
 
@@ -65,14 +66,14 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("[Push] Subscribe error:", error.code, error.message);
       return sb.applyCookies(
-        NextResponse.json({ error: "구독 저장에 실패했습니다." }, { status: 500 })
+        NextResponse.json({ error: t("Errors.push.subscribeFailed") }, { status: 500 })
       );
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 })
     );
   }
 }
@@ -80,13 +81,13 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const { data: { user }, error: authError } = await sb.client.auth.getUser();
   if (authError || !user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -94,7 +95,7 @@ export async function DELETE(request: NextRequest) {
   const allowed = await checkRateLimitPersistent(`push_unsub:${user.id}`, 10, 60);
   if (!allowed) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
+      NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -103,7 +104,7 @@ export async function DELETE(request: NextRequest) {
     const parsed = unsubscribeSchema.safeParse(body);
     if (!parsed.success) {
       return sb.applyCookies(
-        NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+        NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
       );
     }
 
@@ -118,7 +119,7 @@ export async function DELETE(request: NextRequest) {
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 })
     );
   }
 }

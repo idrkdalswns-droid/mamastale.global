@@ -8,6 +8,7 @@ import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 // Bug Bounty Fix 2-4: Centralized pricing constants (single source of truth)
 import { ALL_PRICES, resolveTicketType } from "@/lib/constants/pricing";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!paymentLimiter.check(ip, 10, 60_000)) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.tooManyRequests") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
   const apiSecretKey = process.env.TOSS_SECRET_KEY;
   if (!widgetSecretKey && !apiSecretKey) {
     return NextResponse.json(
-      { error: "결제 시스템이 설정되지 않았습니다." },
+      { error: t("Errors.payment.systemNotConfigured") },
       { status: 503 }
     );
   }
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
   // Authenticate user
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     // CRITICAL: Apply cookies even on auth failure to preserve session refresh
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > MAX_BODY_SIZE) {
       return sb.applyCookies(NextResponse.json(
-        { error: "요청 데이터가 너무 큽니다." },
+        { error: t("Errors.validation.requestTooLarge") },
         { status: 413 }
       ));
     }
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       return sb.applyCookies(NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 }
       ));
     }
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     const parsed = confirmRequestSchema.safeParse(body);
     if (!parsed.success) {
       return sb.applyCookies(NextResponse.json(
-        { error: "유효하지 않은 결제 데이터입니다." },
+        { error: t("Errors.payment.invalidData") },
         { status: 400 }
       ));
     }
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
     if (!tossSecretKey) {
       console.error(`[Toss] Missing secret key for mode="${mode}"`);
       return sb.applyCookies(NextResponse.json(
-        { error: "결제 시스템 설정 오류입니다.", code: "MISSING_SECRET_KEY" },
+        { error: t("Errors.payment.systemConfigError"), code: "MISSING_SECRET_KEY" },
         { status: 503 }
       ));
     }
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
     const numericAmount = Number(amount);
     if (!VALID_PRICES[numericAmount]) {
       return sb.applyCookies(NextResponse.json(
-        { error: "유효하지 않은 결제 금액입니다." },
+        { error: t("Errors.payment.invalidAmount") },
         { status: 400 }
       ));
     }
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       if (fetchErr instanceof Error && fetchErr.name === "AbortError") {
         console.error("[Toss] Payment confirmation timed out for order:", orderId);
         return sb.applyCookies(NextResponse.json(
-          { error: "결제 확인 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요." },
+          { error: t("Errors.payment.confirmTimeout") },
           { status: 504 }
         ));
       }
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
     } catch {
       console.error("[Toss] Non-JSON or invalid response from Toss API, status:", confirmRes.status);
       return sb.applyCookies(NextResponse.json(
-        { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요.", code: "PROVIDER_ERROR" },
+        { error: t("Errors.payment.providerError"), code: "PROVIDER_ERROR" },
         { status: 502 }
       ));
     }
@@ -232,7 +233,7 @@ export async function POST(request: NextRequest) {
       // Only forward the error code (safe), not the message (may contain internal info)
       // R4-FIX: Never forward provider error codes to client (information disclosure)
       return sb.applyCookies(NextResponse.json(
-        { error: "결제 확인에 실패했습니다." },
+        { error: t("Errors.payment.confirmFailed") },
         { status: 400 }
       ));
     }
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
     if (confirmData.totalAmount == null) {
       console.error("[Toss] Missing totalAmount in success response:", Object.keys(confirmData));
       return sb.applyCookies(NextResponse.json(
-        { error: "결제 서버 응답 오류입니다. 잠시 후 다시 시도해 주세요.", code: "PROVIDER_ERROR" },
+        { error: t("Errors.payment.providerError"), code: "PROVIDER_ERROR" },
         { status: 502 }
       ));
     }
@@ -272,7 +273,7 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       console.error("[Toss] Unexpected confirmed amount:", confirmedAmount);
       return sb.applyCookies(NextResponse.json(
-        { error: "결제 금액이 유효하지 않습니다." },
+        { error: t("Errors.payment.priceInvalid") },
         { status: 400 }
       ));
     }
@@ -508,7 +509,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[Toss] Confirm error:", error instanceof Error ? error.name : "Unknown");
     return sb.applyCookies(NextResponse.json(
-      { error: "결제 확인 중 오류가 발생했습니다." },
+      { error: t("Errors.payment.confirmError") },
       { status: 500 }
     ));
   }

@@ -4,6 +4,7 @@ import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -23,13 +24,13 @@ export async function POST(
 
   // Validate storyId is a UUID (KR-T2: use shared validator)
   if (!isValidUUID(storyId)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   // Use createApiSupabaseClient to preserve session cookies on auth refresh
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -45,7 +46,7 @@ export async function POST(
   // R2-1: Rate limit authenticated like toggles (15/min per user)
   if (user && !authLimiter.check(user.id, 15, 60_000)) {
     return sb.applyCookies(NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.tooManyRequests") },
       { status: 429, headers: { "Retry-After": "60" } }
     ));
   }
@@ -56,7 +57,7 @@ export async function POST(
     // Guest burst rate (2 per 5min) + daily cap (10 per 24h)
     if (!guestBurstLimiter.check(ip, 2, 300_000) || !guestDailyLimiter.check(ip, 10, 86_400_000)) {
       return sb.applyCookies(NextResponse.json(
-        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+        { error: t("Errors.rateLimit.tooManyRequests") },
         { status: 429, headers: { "Retry-After": "60" } }
       ));
     }
@@ -76,7 +77,7 @@ export async function POST(
       .eq("is_public", true)
       .maybeSingle();
     if (!publicStory) {
-      return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
     }
 
     const serviceClient = createServiceRoleClient();
@@ -91,7 +92,7 @@ export async function POST(
         console.error("[Like] Guest increment failed:", rpcError.code);
         dedupLimiter.reset(`${ip}:${storyId}`);
         return sb.applyCookies(NextResponse.json(
-          { error: "좋아요 처리에 실패했습니다." },
+          { error: t("Errors.community.likeFailed") },
           { status: 500 }
         ));
       }
@@ -107,7 +108,7 @@ export async function POST(
     .eq("is_public", true)
     .maybeSingle();
   if (!authPublicStory) {
-    return sb.applyCookies(NextResponse.json({ error: "동화를 찾을 수 없습니다." }, { status: 404 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.story.notFound") }, { status: 404 }));
   }
 
   // Authenticated user — toggle like

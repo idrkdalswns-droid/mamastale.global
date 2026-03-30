@@ -8,6 +8,7 @@ import { NextRequest } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -31,34 +32,34 @@ export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb)
     return new Response(
-      JSON.stringify({ error: "시스템 설정 오류입니다." }),
+      JSON.stringify({ error: t("Errors.system.configError") }),
       { status: 503, headers: { "Content-Type": "application/json" } },
     );
 
   const user = await resolveUser(sb.client, request, "TQ-Generate");
   if (!user)
     return new Response(
-      JSON.stringify({ error: "로그인이 필요합니다." }),
+      JSON.stringify({ error: t("Errors.auth.loginRequired") }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
 
   if (!limiter.check(user.id, 3, 60_000))
     return new Response(
-      JSON.stringify({ error: "요청이 너무 많습니다." }),
+      JSON.stringify({ error: t("Errors.rateLimit.tooManyRequestsShort") }),
       { status: 429, headers: { "Content-Type": "application/json", "Retry-After": "60" } },
     );
 
   const sessionId = request.nextUrl.searchParams.get("session_id");
   if (!sessionId)
     return new Response(
-      JSON.stringify({ error: "session_id가 필요합니다." }),
+      JSON.stringify({ error: t("Errors.validation.sessionIdFieldRequired") }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
 
   // UUID 형식 검증
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId))
     return new Response(
-      JSON.stringify({ error: "잘못된 세션 ID입니다." }),
+      JSON.stringify({ error: t("Errors.validation.invalidSessionId") }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 
   if (!session)
     return new Response(
-      JSON.stringify({ error: "세션을 찾을 수 없습니다." }),
+      JSON.stringify({ error: t("Errors.teacher.sessionNotFound") }),
       { status: 404, headers: { "Content-Type": "application/json" } },
     );
 
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (!current) {
-          send({ type: "error", message: "세션을 찾을 수 없습니다." });
+          send({ type: "error", message: t("Errors.teacher.sessionNotFound") });
           break;
         }
 
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (current.status === "failed") {
-          send({ type: "error", message: "동화 생성에 실패했습니다." });
+          send({ type: "error", message: t("Errors.story.createFailed") });
           break;
         }
 

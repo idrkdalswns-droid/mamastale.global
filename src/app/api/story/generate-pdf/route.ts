@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getClientIP } from "@/lib/utils/validation";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -77,19 +78,19 @@ export async function POST(request: NextRequest) {
   // Rate limiting (10 per minute per IP)
   const ip = getClientIP(request);
   if (!pdfLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   // LAUNCH-FIX: Reject oversized bodies before parsing
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > MAX_PDF_BODY_SIZE) {
-    return NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 });
+    return NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 });
   }
 
   // IL-01: Proper Supabase session validation (not just cookie existence)
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
   let user = (await sb.client.auth.getUser()).data.user;
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
   }
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   try {
@@ -110,13 +111,13 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
     const parsed = pdfRequestSchema.safeParse(body);
 
     if (!parsed.success) {
       return sb.applyCookies(NextResponse.json(
-        { error: "잘못된 동화 데이터입니다." },
+        { error: t("Errors.validation.invalidStoryData") },
         { status: 400 }
       ));
     }
@@ -261,7 +262,7 @@ ${sceneHtml}
   } catch (error) {
     console.error("PDF generation error:", error instanceof Error ? error.name : "Unknown");
     return sb.applyCookies(NextResponse.json(
-      { error: "PDF 생성에 실패했습니다." },
+      { error: t("Errors.teacher.pdfFailed") },
       { status: 500 }
     ));
   }

@@ -22,6 +22,7 @@ import { checkRateLimitPersistent } from "@/lib/utils/rate-limiter";
 import { logLLMCall } from "@/lib/utils/llm-logger";
 import { sanitizeUserInput } from "@/lib/utils/teacher-sanitize";
 import { z } from "zod";
+import { t } from "@/lib/i18n";
 
 const requestSchema = z.object({
   sessionId: z.string().uuid(),
@@ -57,22 +58,22 @@ export async function POST(request: NextRequest) {
   const requestStartTime = Date.now();
 
   const sb = createApiSupabaseClient(request);
-  if (!sb) return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
 
   const user = await resolveUser(sb.client, request);
-  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 });
 
   const rateKey = `teacher:gen:${user.id}`;
   const withinLimit = await checkRateLimitPersistent(rateKey, 5, 60);
   if (!withinLimit) {
-    return NextResponse.json({ error: "생성 요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.generateLimit") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   let body: z.infer<typeof requestSchema>;
   try {
     body = requestSchema.parse(await request.json());
   } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const { sessionId } = body;
@@ -86,11 +87,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (sessionError || !session) {
-    return NextResponse.json({ error: "세션을 찾을 수 없습니다." }, { status: 404 });
+    return NextResponse.json({ error: t("Errors.teacher.sessionNotFound") }, { status: 404 });
   }
 
   if (new Date(session.expires_at) < new Date()) {
-    return NextResponse.json({ error: "세션이 만료되었습니다." }, { status: 401 });
+    return NextResponse.json({ error: t("Errors.teacher.sessionExpired") }, { status: 401 });
   }
 
   // T1+TB2 Fix: Extend session TTL on generation start
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
   }));
 
   if (messages.length === 0) {
-    return NextResponse.json({ error: "대화 히스토리가 없습니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.chat.historyEmpty") }, { status: 400 });
   }
 
   const onboarding = session.onboarding || {};

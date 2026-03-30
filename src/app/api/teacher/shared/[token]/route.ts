@@ -15,6 +15,7 @@ export const runtime = "edge";
 
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { getClientIP } from "@/lib/utils/validation";
+import { t } from "@/lib/i18n";
 
 const limiter = createInMemoryLimiter("teacher_shared");
 
@@ -29,14 +30,14 @@ export async function GET(
 
   // 1. Validate token format
   if (!UUID_RE.test(token)) {
-    return NextResponse.json({ error: "잘못된 링크입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidLink") }, { status: 400 });
   }
 
   // 2. Rate limiting (IP-based, public endpoint)
   const ip = getClientIP(request);
   if (!limiter.check(ip, 30, 60_000)) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다." },
+      { error: t("Errors.rateLimit.tooManyRequestsShort") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -46,7 +47,7 @@ export async function GET(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceKey) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const supabase = createServerClient(supabaseUrl, serviceKey, {
@@ -64,7 +65,7 @@ export async function GET(
 
   if (error || !story) {
     return NextResponse.json(
-      { error: "동화를 찾을 수 없거나 공유가 만료되었습니다." },
+      { error: t("Errors.story.notFoundOrExpired") },
       { status: 404 }
     );
   }

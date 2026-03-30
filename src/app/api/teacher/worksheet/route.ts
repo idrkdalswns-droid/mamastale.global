@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -21,21 +22,21 @@ export async function GET(request: NextRequest) {
   // 1. Supabase client
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "서비스를 일시적으로 이용할 수 없습니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.serviceTemporarilyUnavailable") }, { status: 503 });
   }
 
   // 2. Auth
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
   // 2.5 Rate limit
   if (!listLimiter.check(user.id, 100, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429, headers: { "Retry-After": "60" } })
+      NextResponse.json({ error: t("Errors.rateLimit.tooManyRequests") }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
   const storyId = request.nextUrl.searchParams.get("story_id");
   if (!storyId) {
     return sb.applyCookies(
-      NextResponse.json({ error: "story_id가 필요합니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.storyIdRequired") }, { status: 400 })
     );
   }
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(storyId)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 story_id 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidStoryIdFormat") }, { status: 400 })
     );
   }
 
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("[worksheet/list] Query failed:", error.message);
     return sb.applyCookies(
-      NextResponse.json({ error: "활동지 목록을 불러올 수 없습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.teacher.worksheetListFailed") }, { status: 500 })
     );
   }
 

@@ -6,6 +6,7 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { resolveUser } from "@/lib/supabase/resolve-user";
+import { t } from "@/lib/i18n";
 
 const referralSchema = z.object({
   code: z.string().min(4).max(8).transform(s => s.trim().toUpperCase()),
@@ -29,14 +30,14 @@ function generateCode(): string {
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
   if (!referralLimiter.check(ip, 15, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   const sb = createApiSupabaseClient(request);
-  if (!sb) return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
 
   const user = await resolveUser(sb!.client, request, "Referral");
-  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 });
 
   // Get or create referral code
   const { data: profile } = await sb.client
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     if (!code) {
       console.error("[Referral] Code generation exhausted after 5 attempts", { userId: user.id.slice(0, 8) });
       return sb.applyCookies(
-        NextResponse.json({ error: "코드 생성 실패. 다시 시도해주세요." }, { status: 500 })
+        NextResponse.json({ error: t("Errors.referral.codeGenerationFailed") }, { status: 500 })
       );
     }
   }
@@ -93,32 +94,32 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   // Bug Bounty: 3/min (was 5) to slow enumeration attacks
   if (!referralLimiter.check(ip, 3, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
 
   const sb = createApiSupabaseClient(request);
-  if (!sb) return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
 
   const user = await resolveUser(sb!.client, request, "Referral");
-  if (!user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  if (!user) return NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 });
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const parsed = referralSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 });
   }
 
   const code = parsed.data.code;
 
   // Bug Bounty: Reject invalid format before DB query (prevents blind enumeration)
   if (!/^[A-Z0-9]{6}$/.test(code)) {
-    return NextResponse.json({ error: "잘못된 코드 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.referral.invalidCodeFormat") }, { status: 400 });
   }
 
   // Check if already referred
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
 
   if (myProfile?.referred_by) {
     return sb.applyCookies(
-      NextResponse.json({ error: "이미 추천을 받으셨습니다." }, { status: 409 })
+      NextResponse.json({ error: t("Errors.referral.alreadyReferred") }, { status: 409 })
     );
   }
 
@@ -144,14 +145,14 @@ export async function POST(request: NextRequest) {
   if (!referrer) {
     console.error("[Referral] Invalid code attempted", { code, userId: user.id.slice(0, 8) });
     return sb.applyCookies(
-      NextResponse.json({ error: "존재하지 않는 추천 코드입니다." }, { status: 404 })
+      NextResponse.json({ error: t("Errors.referral.codeNotFound") }, { status: 404 })
     );
   }
 
   // Can't refer yourself
   if (referrer.id === user.id) {
     return sb.applyCookies(
-      NextResponse.json({ error: "자신의 코드는 사용할 수 없습니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.referral.selfReferral") }, { status: 400 })
     );
   }
 
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
 
   if ((referrerRewardedCount || 0) >= MAX_REFERRALS) {
     return sb.applyCookies(
-      NextResponse.json({ error: "이 추천 코드는 최대 추천 횟수(2명)에 도달했습니다." }, { status: 409 })
+      NextResponse.json({ error: t("Errors.referral.maxReached") }, { status: 409 })
     );
   }
 
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!serviceKey || !supabaseUrl) {
     return sb.applyCookies(
-      NextResponse.json({ error: "서비스 설정 오류입니다." }, { status: 503 })
+      NextResponse.json({ error: t("Errors.referral.serviceConfigError") }, { status: 503 })
     );
   }
 
@@ -196,11 +197,11 @@ export async function POST(request: NextRequest) {
   if (insertErr) {
     if (insertErr.code === "23505") {
       return sb.applyCookies(
-        NextResponse.json({ error: "이미 추천을 받으셨습니다." }, { status: 409 })
+        NextResponse.json({ error: t("Errors.referral.alreadyReferred") }, { status: 409 })
       );
     }
     return sb.applyCookies(
-      NextResponse.json({ error: "추천 처리 중 오류가 발생했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.referral.processingError") }, { status: 500 })
     );
   }
 
@@ -236,7 +237,7 @@ export async function POST(request: NextRequest) {
     await admin.from("referrals").delete().eq("id", refRecord.id);
     await admin.from("profiles").update({ referred_by: null }).eq("id", user.id);
     return sb.applyCookies(
-      NextResponse.json({ error: "티켓 지급에 실패했습니다. 다시 시도해 주세요." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.ticket.grantFailed") }, { status: 500 })
     );
   }
 

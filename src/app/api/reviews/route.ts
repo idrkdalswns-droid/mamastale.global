@@ -6,6 +6,7 @@ import { sanitizeText, containsProfanity, getClientIP } from "@/lib/utils/valida
 // HIGH #4 FIX: Use authenticated client to require login for review submission
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIP(request);
   if (!reviewPostLimiter.check(ip, 3, 300_000)) {
     return NextResponse.json(
-      { error: "후기는 5분에 3건까지 등록 가능합니다." },
+      { error: t("Errors.rateLimit.reviewLimit") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   // HIGH #4 FIX: Authenticate user — only logged-in users can submit reviews
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   let user = (await sb.client.auth.getUser()).data.user;
@@ -78,14 +79,14 @@ export async function POST(request: NextRequest) {
   }
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인 후 후기를 작성할 수 있습니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginForReview") }, { status: 401 })
     );
   }
 
   // LAUNCH-FIX: Body size limit (reviews are small text, 16KB max)
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > 16_000) {
-    return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 }));
   }
 
   // Safe JSON parsing
@@ -93,12 +94,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
   }
 
   const parsed = reviewSchema.safeParse(body);
   if (!parsed.success) {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
   }
 
   try {
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     // LAUNCH-FIX: Check childInfo for profanity too (visible in community)
     if (containsProfanity(safeContent) || containsProfanity(safeAlias) || (safeChildInfo && containsProfanity(safeChildInfo))) {
       return sb.applyCookies(NextResponse.json(
-        { error: "부적절한 표현이 포함되어 있습니다." },
+        { error: t("Errors.profanity.detected") },
         { status: 400 }
       ));
     }
@@ -133,11 +134,11 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("[Reviews] Insert error: code=", error.code);
-      return sb.applyCookies(NextResponse.json({ error: "후기 등록에 실패했습니다." }, { status: 500 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.review.registrationFailed") }, { status: 500 }));
     }
 
     return sb.applyCookies(NextResponse.json({ review: data }));
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 }));
   }
 }

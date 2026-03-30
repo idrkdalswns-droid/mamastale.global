@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { withAuth } from "@/lib/api/with-auth";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -11,7 +12,7 @@ export const GET = withAuth(async (_request: NextRequest, { user, sb }) => {
   // JP-05: Rate limit exports (3 per hour per user)
   if (!exportLimiter.check(user.id, 3, 3_600_000)) {
     return NextResponse.json(
-      { error: "데이터 내보내기는 1시간에 3회까지 가능합니다." },
+      { error: t("Errors.rateLimit.exportLimit") },
       { status: 429, headers: { "Retry-After": "3600" } },
     );
   }

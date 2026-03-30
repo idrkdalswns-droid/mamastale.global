@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
 import { withAuth } from "@/lib/api/with-auth";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -14,7 +15,7 @@ export const GET = withAuth(async (request: NextRequest, { user, sb }) => {
   const ip = getClientIP(request);
   if (!ticketCheckLimiter.check(ip, 15, 60_000)) {
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.tooManyRequests") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -27,7 +28,7 @@ export const GET = withAuth(async (request: NextRequest, { user, sb }) => {
 
   if (error && error.code !== "PGRST116") {
     console.error("[Tickets] DB error: code=", error.code);
-    return NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 });
+    return NextResponse.json({ error: t("Errors.ticket.infoLoadFailed") }, { status: 500 });
   }
 
   let remaining = 0;
@@ -46,7 +47,7 @@ export const GET = withAuth(async (request: NextRequest, { user, sb }) => {
 
     if (upsertErr) {
       console.error("[Tickets] Profile create error:", upsertErr.code);
-      return NextResponse.json({ error: "티켓 정보를 불러올 수 없습니다." }, { status: 500 });
+      return NextResponse.json({ error: t("Errors.ticket.infoLoadFailed") }, { status: 500 });
     }
 
     // Re-read actual value (insert may have been a no-op if profile already existed)

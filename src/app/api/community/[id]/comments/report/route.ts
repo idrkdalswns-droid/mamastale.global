@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isValidUUID, getClientIP } from "@/lib/utils/validation";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
 
@@ -22,19 +23,19 @@ export async function POST(
   const ip = getClientIP(request);
   if (!reportLimiter.check(ip, 10, 300_000)) {
     return NextResponse.json(
-      { error: "신고 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.reportLimit") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
   if (!isValidUUID(storyId)) {
-    return NextResponse.json({ error: "잘못된 ID 형식입니다." }, { status: 400 });
+    return NextResponse.json({ error: t("Errors.validation.invalidIdFormat") }, { status: 400 });
   }
 
   // Use createApiSupabaseClient to preserve session cookies on auth refresh
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // CTO-FIX: Bearer token fallback for mobile/WebView compatibility
@@ -47,26 +48,26 @@ export async function POST(
     }
   }
   if (!user) {
-    return sb.applyCookies(NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 }));
   }
 
   try {
     // LAUNCH-FIX: Body size limit (report payloads are tiny, 4KB max)
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > 4_000) {
-      return sb.applyCookies(NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 }));
     }
 
     let body;
     try {
       body = await request.json();
     } catch {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequest") }, { status: 400 }));
     }
 
     const parsed = reportSchema.safeParse(body);
     if (!parsed.success) {
-      return sb.applyCookies(NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
     const { commentId } = parsed.data;
@@ -80,7 +81,7 @@ export async function POST(
       .maybeSingle();
 
     if (!comment) {
-      return sb.applyCookies(NextResponse.json({ error: "댓글을 찾을 수 없습니다." }, { status: 404 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.community.commentNotFound") }, { status: 404 }));
     }
 
     // CTO-FIX: Check insert result and handle duplicates gracefully
@@ -95,11 +96,11 @@ export async function POST(
     // 23505 = unique constraint violation (already reported) — treat as success
     if (insertErr && insertErr.code !== "23505") {
       console.error("[Report] Insert error:", insertErr.code);
-      return sb.applyCookies(NextResponse.json({ error: "신고 처리에 실패했습니다." }, { status: 500 }));
+      return sb.applyCookies(NextResponse.json({ error: t("Errors.community.reportFailed") }, { status: 500 }));
     }
 
     return sb.applyCookies(NextResponse.json({ success: true }));
   } catch {
-    return sb.applyCookies(NextResponse.json({ error: "신고 처리 실패" }, { status: 500 }));
+    return sb.applyCookies(NextResponse.json({ error: t("Errors.community.reportError") }, { status: 500 }));
   }
 }

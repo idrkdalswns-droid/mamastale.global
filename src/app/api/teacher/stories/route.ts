@@ -17,17 +17,18 @@ import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { containsProfanity, sanitizeSceneText } from "@/lib/utils/validation";
+import { t } from "@/lib/i18n";
 
 const teacherStoryPostSchema = z.object({
-  title: z.string({ required_error: "제목을 입력해주세요" })
-    .min(1, "제목을 입력해주세요")
+  title: z.string({ required_error: t("Errors.teacher.titleRequired") })
+    .min(1, t("Errors.teacher.titleRequired"))
     .transform(s => s.trim().slice(0, 200)),
   spreads: z.array(z.object({
     spreadNumber: z.number().optional(),
     title: z.string().transform(s => s.slice(0, 200)).optional(),
-    text: z.string({ required_error: "장면 내용을 입력해주세요" })
+    text: z.string({ required_error: t("Errors.teacher.sceneContentRequired") })
       .transform(s => s.slice(0, 5000)),
-  })).min(1, "장면은 1개 이상 필요합니다").max(20, "장면은 최대 20개까지 가능합니다"),
+  })).min(1, t("Errors.teacher.sceneMinRequired")).max(20, t("Errors.teacher.sceneMaxExceeded")),
 });
 
 const limiter = createInMemoryLimiter("teacher_stories");
@@ -36,14 +37,14 @@ export async function GET(request: NextRequest) {
   // 1. Supabase 클라이언트
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   // 2. 인증
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return NextResponse.json(
-      { error: "로그인이 필요합니다." },
+      { error: t("Errors.auth.loginRequired") },
       { status: 401 }
     );
   }
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("[Teacher Stories] Shared query failed:", error);
       return sb.applyCookies(
-        NextResponse.json({ error: "공유 동화를 불러오지 못했습니다." }, { status: 500 })
+        NextResponse.json({ error: t("Errors.story.sharedListFailed") }, { status: 500 })
       );
     }
 
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("[Teacher Stories] Query failed:", error);
     return sb.applyCookies(
-      NextResponse.json({ error: "동화 목록을 불러오지 못했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.story.listLoadFailed") }, { status: 500 })
     );
   }
 
@@ -124,19 +125,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const user = await resolveUser(sb.client, request);
   if (!user) {
     return sb.applyCookies(
-      NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 })
+      NextResponse.json({ error: t("Errors.auth.loginRequired") }, { status: 401 })
     );
   }
 
   if (!limiter.check(`post:${user.id}`, 10, 60_000)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } })
+      NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } })
     );
   }
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > 512_000) {
     return sb.applyCookies(
-      NextResponse.json({ error: "요청 데이터가 너무 큽니다." }, { status: 413 })
+      NextResponse.json({ error: t("Errors.validation.requestTooLarge") }, { status: 413 })
     );
   }
 
@@ -153,14 +154,14 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return sb.applyCookies(
-      NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 })
     );
   }
 
   const parsed = teacherStoryPostSchema.safeParse(body);
   if (!parsed.success) {
     return sb.applyCookies(
-      NextResponse.json({ error: "올바른 형식으로 입력해주세요." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.validation.invalidFormat") }, { status: 400 })
     );
   }
 
@@ -168,12 +169,12 @@ export async function POST(request: NextRequest) {
 
   if (!title) {
     return sb.applyCookies(
-      NextResponse.json({ error: "제목을 입력해주세요." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.teacher.titleRequiredDot") }, { status: 400 })
     );
   }
   if (containsProfanity(title)) {
     return sb.applyCookies(
-      NextResponse.json({ error: "부적절한 표현이 포함된 제목입니다." }, { status: 400 })
+      NextResponse.json({ error: t("Errors.profanity.title") }, { status: 400 })
     );
   }
 
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
   if (!latestSession) {
     return sb.applyCookies(
       NextResponse.json(
-        { error: "선생님 세션이 필요합니다. 선생님 모드에서 코드를 먼저 입력해주세요." },
+        { error: t("Errors.teacher.sessionRequired") },
         { status: 400 }
       )
     );
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("[Teacher Story POST] Insert error:", error.code, error.message);
     return sb.applyCookies(
-      NextResponse.json({ error: "동화 저장에 실패했습니다." }, { status: 500 })
+      NextResponse.json({ error: t("Errors.story.saveFailed") }, { status: 500 })
     );
   }
 

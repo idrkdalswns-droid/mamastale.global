@@ -37,6 +37,7 @@ import {
   checkPremiumStatus,
 } from "@/lib/anthropic/chat-shared";
 import { createServerClient } from "@supabase/ssr";
+import { t } from "@/lib/i18n";
 
 // P0-FIX(US-5): Per-request timeout to prevent hung connections
 const API_TIMEOUT_MS = 60_000; // 60 seconds max per Anthropic API call
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
   if (!withinLimit) {
     logEvent({ eventType: "rate_limit_hit", endpoint: "/api/chat", userId }).catch(() => {});
     return NextResponse.json(
-      { error: "요청이 너무 많습니다. 1분 후 다시 시도해 주세요." },
+      { error: t("Errors.rateLimit.retryAfterMinute") },
       { status: 429, headers: { "Retry-After": "60" } }
     );
   }
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
     const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
     if (contentLength > 95_000) { // v1.22.2 Bug Bounty #11: CF Pages 100KB 제한에 맞춤 (95KB 마진)
       return NextResponse.json(
-        { error: "요청 데이터가 너무 큽니다." },
+        { error: t("Errors.validation.requestTooLarge") },
         { status: 413 }
       );
     }
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     } catch {
       return NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 }
       );
     }
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
       // R6-FIX: Log only field paths and error codes — not messages which may contain user input
       console.error("[Chat] Zod validation failed:", parsed.error.issues.map(i => `${i.path.join(".")}:${i.code}`).join(", "));
       return NextResponse.json(
-        { error: "잘못된 요청 형식입니다." },
+        { error: t("Errors.validation.invalidRequestFormat") },
         { status: 400 }
       );
     }
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
       const totalTurns = Math.ceil(messages.length / 2);
       if (userMsgCount > GUEST_TURN_LIMIT || totalTurns > GUEST_TURN_LIMIT + 1) {
         return NextResponse.json(
-          { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
+          { error: "guest_limit", message: t("Errors.chat.guestLimitReached") },
           { status: 403 }
         );
       }
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
       const guestTurnAllowed = await checkRateLimitPersistent(guestKey, GUEST_TURN_LIMIT, 86400);
       if (!guestTurnAllowed) {
         return NextResponse.json(
-          { error: "guest_limit", message: "무료 체험이 끝났어요. 로그인하면 이어서 대화할 수 있어요." },
+          { error: "guest_limit", message: t("Errors.chat.guestLimitReached") },
           { status: 403 }
         );
       }
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
     // (generous limit — refresh resets messages array, but context loss deters abuse)
     if (isAuthenticated && userMsgCount > AUTH_TURN_LIMIT) {
       return NextResponse.json(
-        { error: "동화를 완성해 주세요. 대화 횟수가 상한에 도달했습니다." },
+        { error: t("Errors.chat.turnLimitReached") },
         { status: 403 }
       );
     }
@@ -490,7 +491,7 @@ export async function POST(request: NextRequest) {
     // P2-FIX(DE-2): Specific error messages for different failure modes
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json(
-        { error: "응답 시간이 초과되었어요. 잠시 후 다시 시도해 주세요." },
+        { error: t("Errors.chat.responseTimeout") },
         { status: 504 }
       );
     }
@@ -499,7 +500,7 @@ export async function POST(request: NextRequest) {
       const status = (error as { status: number }).status;
       if (status === 429) {
         return NextResponse.json(
-          { error: "잠시 후 다시 시도해 주세요. (요청이 너무 많습니다)" },
+          { error: t("Errors.chat.rateLimitHint") },
           { status: 429, headers: { "Retry-After": "60" } }
         );
       }
@@ -507,14 +508,14 @@ export async function POST(request: NextRequest) {
         // R6-FIX: Return 502 for upstream Anthropic auth failure — not 401 which
         // confuses the client into thinking the *user's* session expired
         return NextResponse.json(
-          { error: "AI 서비스 연결에 실패했습니다. 잠시 후 다시 시도해 주세요." },
+          { error: t("Errors.chat.aiServiceFailed") },
           { status: 502 }
         );
       }
     }
 
     return NextResponse.json(
-      { error: "일시적인 오류가 발생했어요. 잠시 후 다시 시도해 주세요." },
+      { error: t("Errors.chat.temporaryError") },
       { status: 500 }
     );
   }

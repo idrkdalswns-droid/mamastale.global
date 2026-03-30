@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getClientIP } from "@/lib/utils/validation";
 import { createInMemoryLimiter, RATE_KEYS } from "@/lib/utils/rate-limiter";
+import { t } from "@/lib/i18n";
 
 // Admin user IDs (hardcoded for now — move to env/DB later)
 const ADMIN_USER_IDS = (process.env.ADMIN_USER_IDS || "").split(",").filter(Boolean);
@@ -25,14 +26,14 @@ const adminLimiter = createInMemoryLimiter(RATE_KEYS.ADMIN, { maxEntries: 50 });
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
   if (!adminLimiter.check(ip, 10, 60_000)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다." }, { status: 429, headers: { "Retry-After": "60" } });
+    return NextResponse.json({ error: t("Errors.rateLimit.tooManyRequestsShort") }, { status: 429, headers: { "Retry-After": "60" } });
   }
   // ─── Auth check ───
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.json({ error: "시스템 설정 오류입니다." }, { status: 503 });
+    return NextResponse.json({ error: t("Errors.system.configError") }, { status: 503 });
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
@@ -47,14 +48,14 @@ export async function GET(request: NextRequest) {
     // Try Bearer token
     const authHeader = request.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+      return NextResponse.json({ error: t("Errors.auth.authRequired") }, { status: 401 });
     }
     const { data: tokenData } = await supabase.auth.getUser(authHeader.slice(7));
     if (!tokenData.user || !ADMIN_USER_IDS.includes(tokenData.user.id)) {
-      return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+      return NextResponse.json({ error: t("Errors.auth.adminRequired") }, { status: 403 });
     }
   } else if (!ADMIN_USER_IDS.includes(user.id)) {
-    return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+    return NextResponse.json({ error: t("Errors.auth.adminRequired") }, { status: 403 });
   }
 
   // ─── Service role client for reading logs ───
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       .limit(5000);
 
     if (logsError) {
-      return NextResponse.json({ error: "로그 조회 실패" }, { status: 500 });
+      return NextResponse.json({ error: t("Errors.system.logQueryFailed") }, { status: 500 });
     }
 
     const safeData = logs || [];
@@ -175,6 +176,6 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     // R10-FIX: Use err.name (not err.message) to prevent internal detail leakage in logs
     console.error("[Admin] Observability aggregation failed:", err instanceof Error ? err.name : "Unknown");
-    return NextResponse.json({ error: "집계 중 오류 발생" }, { status: 500 });
+    return NextResponse.json({ error: t("Errors.system.aggregationError") }, { status: 500 });
   }
 }
