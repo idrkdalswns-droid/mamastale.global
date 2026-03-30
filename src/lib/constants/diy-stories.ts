@@ -23,6 +23,14 @@ function makeImages(storyId: string): string[] {
 export const DIY_STORIES: DIYStory[] = [
   // 홈 랜딩에 표시 (처음 3개)
   {
+    id: "bell-mama",
+    title: "엄마 귀에 울린 작은 종소리",
+    description: "산후우울의 안개 속에서 아기의 웃음이 울려 퍼진 금빛 종소리 이야기",
+    thumbnail: `${BASE}/bell-mama/1.jpeg`,
+    accent: "#D4B896",
+    images: makeImages("bell-mama"),
+  },
+  {
     id: "papa-magic",
     title: "아빠는 마법이 서툴러!",
     description: "서투르지만 따뜻한 아빠의 손이 만드는 세상에서 가장 예쁜 머리 묶기",
