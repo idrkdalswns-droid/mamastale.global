@@ -35,23 +35,25 @@ export default function CommunityBrowsePage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | "showcase" | "class">(""); // "" = all, "showcase" = showcase only, "class" = 오프라인 클래스 소개
 
-  // API는 12개/page 고정. 클라이언트에서 4개씩 슬라이스
-  const [allStories, setAllStories] = useState<CommunityStory[]>([]);
-  const totalPages = allStories.length > 0 ? Math.ceil(allStories.length / PAGE_SIZE) : 1;
+  const [stories, setStories] = useState<CommunityStory[]>([]);
+  const totalPages = totalCount !== null ? Math.max(1, Math.ceil(totalCount / PAGE_SIZE)) : 1;
 
-  const fetchAllStories = async (searchQuery = "", type = "") => {
+  const fetchStories = async (p: number, searchQuery = "", type = "") => {
     try {
       setLoading(true);
       setError("");
-      // 충분한 데이터를 한 번에 로드 (API는 12개/page)
-      const params = new URLSearchParams({ sort: "recent", page: "1" });
+      const params = new URLSearchParams({
+        sort: "recent",
+        page: String(p),
+        limit: String(PAGE_SIZE),
+      });
       if (searchQuery) params.set("search", searchQuery);
       if (type === "showcase") params.set("type", "showcase");
-      else params.set("type", "all"); // 전체 탭: showcase 포함
+      else params.set("type", "all");
       const res = await fetch(`/api/community?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setAllStories(data.stories || []);
+      setStories(data.stories || []);
       if (data.totalCount !== undefined) setTotalCount(data.totalCount);
     } catch {
       setError(tc("UI.community.loadFailed"));
@@ -60,11 +62,7 @@ export default function CommunityBrowsePage() {
     }
   };
 
-  // 현재 페이지의 4개만 표시
-  const startIdx = (page - 1) * PAGE_SIZE;
-  const currentStories = allStories.slice(startIdx, startIdx + PAGE_SIZE);
-  // stories를 currentStories로 사용
-  const displayStories = currentStories;
+  const displayStories = stories;
 
   useEffect(() => {
     trackCommunityView("community_page");
@@ -72,10 +70,17 @@ export default function CommunityBrowsePage() {
 
   useEffect(() => {
     if (typeFilter !== "class") {
-      fetchAllStories(search, typeFilter);
+      fetchStories(1, search, typeFilter);
     }
     setPage(1);
   }, [search, typeFilter]);
+
+  // 페이지 변경 시 서버에서 다시 fetch
+  useEffect(() => {
+    if (typeFilter !== "class" && page > 0) {
+      fetchStories(page, search, typeFilter);
+    }
+  }, [page]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,6 +165,7 @@ export default function CommunityBrowsePage() {
                 key={t}
                 onClick={() => { setTypeFilter(t); setPage(1); }}
                 className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all min-h-[32px] whitespace-nowrap"
+                aria-current={typeFilter === t ? "page" : undefined}
                 style={{
                   background: typeFilter === t ? "rgb(var(--brown))" : "rgba(196,149,106,0.1)",
                   color: typeFilter === t ? "rgb(var(--cream))" : "rgb(var(--brown-light))",
@@ -205,7 +211,7 @@ export default function CommunityBrowsePage() {
           <div className="text-center py-20">
             <p className="text-sm text-brown-light font-light mb-4">{error}</p>
             <button
-              onClick={() => fetchAllStories(search)}
+              onClick={() => fetchStories(page, search, typeFilter)}
               className="px-6 py-2.5 rounded-full text-sm font-medium text-brown-mid min-h-[44px]"
               style={{ border: "1.5px solid rgba(196,149,106,0.25)" }}
             >

@@ -191,8 +191,8 @@ export function ReviewSection() {
           />
 
           <div className="flex justify-between items-center mb-3">
-            <span className="text-[10px] text-brown-pale">{content.length}/500</span>
-            {submitError && <span id="review-error" role="alert" className="text-[10px] text-red-500">{submitError}</span>}
+            <span className="text-xs text-brown-pale">{content.length}/500</span>
+            {submitError && <span id="review-error" role="alert" className="text-xs text-red-500">{submitError}</span>}
           </div>
 
           <div className="flex gap-2">
@@ -236,9 +236,9 @@ export function ReviewSection() {
                   <p className="text-sm font-medium text-brown">{r.author_alias}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {r.child_info && (
-                      <span className="text-[10px] text-brown-pale font-light">{r.child_info}</span>
+                      <span className="text-xs text-brown-pale font-light">{r.child_info}</span>
                     )}
-                    <span className="text-[10px] text-brown-pale font-light">{formatTime(r.created_at)}</span>
+                    <span className="text-xs text-brown-pale font-light">{formatTime(r.created_at)}</span>
                   </div>
                 </div>
                 <StarDisplay count={r.stars} />

@@ -70,7 +70,7 @@ export default function PhaseTransition({
 
             {/* Phase indicator */}
             <div
-              className="inline-block px-3 py-1 rounded-full text-[10px] font-medium tracking-wider mb-3"
+              className="inline-block px-3 py-1 rounded-full text-xs font-medium tracking-wider mb-3"
               style={{
                 background: `${p?.accent}15`,
                 color: p?.accent,

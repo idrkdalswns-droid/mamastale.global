@@ -12,6 +12,7 @@ import { shareToKakao } from "@/lib/share/kakao";
 import { trackStoryShare } from "@/lib/utils/analytics";
 import { hapticLight } from "@/lib/utils/haptic";
 import { useSettingsStore, FONT_SIZE_MAP } from "@/lib/hooks/useSettings";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 /**
  * B-2: Detect AI-generated closing/celebration text patterns.
@@ -120,7 +121,7 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/referral", { credentials: "include" });
+        const res = await authFetchOnce("/api/referral");
         if (res.ok) {
           const data = await res.json();
           if (data.code) setReferralCode(data.code);

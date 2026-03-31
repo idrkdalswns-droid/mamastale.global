@@ -12,6 +12,7 @@ import { tc } from "@/lib/i18n/client";
 import { PHASES } from "@/lib/constants/phases";
 import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import type { Scene } from "@/lib/types/story";
 import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 
@@ -84,26 +85,10 @@ function LibraryContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchData and getDraftInfo are stable (never change), safe to omit
   }, []);
 
-  const getAuthHeaders = async (): Promise<Record<string, string>> => {
-    const headers: Record<string, string> = {};
-    try {
-      const supabase = createClient();
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      }
-    } catch { /* ignore */ }
-    return headers;
-  };
-
   const fetchData = async () => {
     try {
-      const headers = await getAuthHeaders();
-
       // Tickets are now handled by useTickets hook (singleton cache)
-      const res = await fetch("/api/stories", { headers, credentials: "include" });
+      const res = await authFetchOnce("/api/stories");
       if (!res.ok) {
         if (res.status === 401) { router.push("/login?redirect=/library"); return; }
         throw new Error("Failed to fetch");

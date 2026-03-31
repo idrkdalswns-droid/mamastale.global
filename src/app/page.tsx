@@ -124,6 +124,7 @@ export default function Home() {
   const [showStickyCta, setShowStickyCta] = useState(false);
   const [myStoryCount, setMyStoryCount] = useState<number | null>(null);
   const [communityCount, setCommunityCount] = useState<number | null>(null);
+  const [showcaseStories, setShowcaseStories] = useState<Array<{ id: string; title: string; scenes: Array<{ text: string }>; cover_image: string | null; author_alias: string | null; like_count: number; illustration_urls?: string[] | null }> | null>(null);
   const mainCtaRef = useRef<HTMLDivElement>(null);
   const { completedScenes, completedStoryId, sessionId: chatSessionId, reset, restoreFromStorage, restoreDraft, updateScenes, retrySaveStory, storySaved, getDraftInfo, clearDraft, clearStorage, isPremiumStory } = useChatStore();
   const { user, loading: authLoading, signOut } = useAuth();
@@ -307,6 +308,11 @@ export default function Home() {
           try { sessionStorage.setItem("mamastale_community_count", JSON.stringify({ total: d.total, ts: Date.now() })); } catch {}
         }
       })
+      .catch(() => {});
+    // Showcase stories for "결과물 미리보기"
+    fetch("/api/community?type=showcase&limit=5&sort=popular", { signal: controller.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.stories?.length) setShowcaseStories(d.stories); })
       .catch(() => {});
     return () => controller.abort();
   }, [screen]);
@@ -634,6 +640,7 @@ export default function Home() {
       setDraftInfo={setDraftInfo}
       setScreen={setScreen}
       communityCount={communityCount}
+      showcaseStories={showcaseStories}
       showStickyCta={showStickyCta}
       showPaymentSuccess={showPaymentSuccess}
       closePaymentModal={closePaymentModal}

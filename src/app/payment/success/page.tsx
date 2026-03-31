@@ -44,7 +44,7 @@ function PaymentSuccessContent() {
   const [hasSavedChat, setHasSavedChat] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
-  const [autoRedirectCount, setAutoRedirectCount] = useState(8); // Fix 2-4: 15→8초 (이탈 방지)
+  const [autoRedirectCount, setAutoRedirectCount] = useState(15); // PR4-#3: 8→15초 (충분한 확인 시간)
   const autoRedirectRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const confirmedRef = useRef(false);
   // R5-CRIT2: Track status in ref to avoid stale closure in setTimeout
@@ -364,7 +364,7 @@ function PaymentSuccessContent() {
           {errorMsg && (
             <p className="text-xs text-coral mb-3">{errorMsg}</p>
           )}
-          <p className="text-[11px] text-brown-pale font-light mt-4">
+          <p className="text-xs text-brown-pale font-light mt-4">
             문제가 계속되면{" "}
             <a
               href="mailto:idrkdalswns@gmail.com"
@@ -414,7 +414,7 @@ function PaymentSuccessContent() {
           결제가 완료되었어요
         </h2>
         <p className="text-sm text-brown-light font-light leading-relaxed mb-4 break-keep">
-          티켓 <span className="text-coral font-semibold">{ticketsAdded}장</span> 구매가 완료되었어요.
+          티켓 <span className="font-semibold" style={{ color: "#7FBFB0" }}>{ticketsAdded}장</span> 구매가 완료되었어요.
         </p>
 
         {/* T-3: Receipt card */}
@@ -422,12 +422,12 @@ function PaymentSuccessContent() {
           className="rounded-xl p-4 mb-5 text-left"
           style={{ background: "rgba(196,149,106,0.06)", border: "1px solid rgba(196,149,106,0.1)" }}
         >
-          <p className="text-[10px] text-brown-pale font-medium mb-2 text-center tracking-wider">영수증</p>
-          <div className="space-y-1.5 text-[12px]">
+          <p className="text-caption-sm text-brown-pale font-medium mb-2 text-center tracking-wider">영수증</p>
+          <div className="space-y-2 text-[12px]">
             {receiptOrderId && (
               <div className="flex justify-between">
                 <span className="text-brown-pale font-light">주문번호</span>
-                <span className="text-brown font-medium text-[11px]">{(() => { const id = receiptOrderId.replace("order_", ""); return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id; })()}</span>
+                <span className="text-brown font-medium text-sub">{(() => { const id = receiptOrderId.replace("order_", ""); return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id; })()}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -442,7 +442,7 @@ function PaymentSuccessContent() {
             )}
             <div className="flex justify-between">
               <span className="text-brown-pale font-light">티켓 수량</span>
-              <span className="text-coral font-semibold">{ticketsAdded}장</span>
+              <span className="font-semibold" style={{ color: "#7FBFB0" }}>{ticketsAdded}장</span>
             </div>
             {paymentMethod && PAYMENT_METHOD_LABELS[paymentMethod] && (
               <div className="flex justify-between">
@@ -461,7 +461,7 @@ function PaymentSuccessContent() {
           <p className="text-[13px] text-brown font-medium mb-1 break-keep">
             동화가 온전히 당신의 것이 되었어요.
           </p>
-          <p className="text-[11px] text-brown-light font-light break-keep">
+          <p className="text-xs text-brown-light font-light break-keep">
             티켓 {ticketsAdded}장으로 새로운 동화도 만들 수 있어요.
           </p>
         </div>
@@ -504,7 +504,7 @@ function PaymentSuccessContent() {
           {hasSavedChat ? "대화 이어서 동화 만들기" : "새 동화 만들기"}
         </button>
         {autoRedirectCount > 0 && (
-          <p className="text-[11px] text-brown-pale font-light mb-2">
+          <p className="text-xs text-brown-pale font-light mb-2">
             {autoRedirectCount}초 후 자동으로 이동합니다
           </p>
         )}

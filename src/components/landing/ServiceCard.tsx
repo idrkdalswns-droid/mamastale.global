@@ -24,7 +24,7 @@ export function ServiceCard({ service, onClick, variant, disabled }: ServiceCard
         <p className="text-white text-[15px] font-medium leading-snug mb-0.5">
           {service.label}
         </p>
-        <p className="text-white/70 text-[11px] font-light">
+        <p className="text-white text-xs font-normal">
           {service.desc} · {service.duration}
         </p>
         <div className="mt-3 inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-white/20 text-white text-[12px] font-medium">
@@ -46,14 +46,14 @@ export function ServiceCard({ service, onClick, variant, disabled }: ServiceCard
         border: "1.5px solid rgba(196,168,130,0.15)",
       }}
     >
-      <p className="text-brown text-[13px] font-medium leading-snug mb-0.5">
+      <p className="text-brown text-sub font-medium leading-snug mb-1.5">
         {service.name}
       </p>
-      <p className="text-brown-pale text-[10px] font-light leading-tight">
+      <p className="text-brown-pale text-xs font-light leading-snug">
         {service.desc}
       </p>
       <p
-        className="mt-2 text-[11px] font-medium"
+        className="mt-3 text-caption-sm font-medium"
         style={{ color: service.gradient.includes("#7FBFB0") ? "#5EA89A" : "#7B6FA0" }}
       >
         시작하기 →

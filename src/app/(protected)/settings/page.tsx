@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useTickets } from "@/lib/hooks/useTickets";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { clearAllUserData } from "@/lib/hooks/useAuth";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { WatercolorBlob } from "@/components/ui/WatercolorBlob";
@@ -48,7 +49,7 @@ export default function SettingsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch("/api/account/export", { credentials: "include" });
+      const res = await authFetchOnce("/api/account/export");
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -67,9 +68,8 @@ export default function SettingsPage() {
     if (deleteConfirm.trim() !== "탈퇴합니다") return;
     setDeleting(true);
     try {
-      const res = await fetch("/api/account/delete", {
+      const res = await authFetchOnce("/api/account/delete", {
         method: "DELETE",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ confirm: "탈퇴합니다" }),
       });
@@ -91,14 +91,9 @@ export default function SettingsPage() {
     }
     setClaimingRef(true);
     try {
-      const supabase = createClient();
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-      }
-      const res = await fetch("/api/referral", {
-        method: "POST", headers, credentials: "include",
+      const res = await authFetchOnce("/api/referral", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
       const data = await res.json().catch(() => ({}));

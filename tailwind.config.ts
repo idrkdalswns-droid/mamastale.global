@@ -27,6 +27,14 @@ const config: Config = {
         kakao: "rgb(var(--kakao) / <alpha-value>)",
         "kakao-brown": "rgb(var(--kakao-brown) / <alpha-value>)",
       },
+      fontSize: {
+        "caption-sm": ["11px", { lineHeight: "16px" }],  // 네비/배지/인디케이터 전용
+        "caption": ["12px", { lineHeight: "16px" }],      // 캡션/타임스탬프 (= text-xs)
+        "sub": ["13px", { lineHeight: "20px" }],           // 보조 텍스트
+        "body": ["14px", { lineHeight: "22px" }],          // 본문 기본 (= text-sm)
+        "cta": ["15px", { lineHeight: "22px" }],           // CTA/강조
+        "hero": ["36px", { lineHeight: "1.15" }],          // 히어로 타이틀
+      },
       fontFamily: {
         serif: ["'Nanum Myeongjo'", "'Noto Serif KR'", "Georgia", "serif"],
         sans: ["'Noto Sans KR'", "'Apple SD Gothic Neo'", "sans-serif"],

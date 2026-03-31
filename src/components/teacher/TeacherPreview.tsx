@@ -259,7 +259,7 @@ export function TeacherPreview({
     if (!story?.id || isDeleting) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/teacher/stories/${story.id}`, { method: "DELETE", credentials: "include" });
+      const res = await authFetchOnce(`/api/teacher/stories/${story.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
       toast.success(tc("UI.common.deleteSuccess"));
       setShowDeleteConfirm(false);

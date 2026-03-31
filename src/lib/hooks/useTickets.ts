@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { authFetchOnce } from "@/lib/utils/auth-fetch";
 
 /**
  * B5: 티켓 API 중복 호출 방지 훅
@@ -73,7 +74,7 @@ async function fetchTicketsOnce(): Promise<TicketData> {
           return { ...EMPTY_DATA };
         }
       }
-      const res = await fetch("/api/tickets", { credentials: "include" });
+      const res = await authFetchOnce("/api/tickets");
       if (!res.ok) return cache.data; // 실패 시 이전 값 유지
       const raw = await res.json();
       const data: TicketData = {

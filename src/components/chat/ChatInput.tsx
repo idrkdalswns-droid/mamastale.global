@@ -42,7 +42,9 @@ export default memo(function ChatInput({
     if (!isLoading) return;
     loadingStartRef.current = Date.now();
 
-    const t5 = setTimeout(() => setLoadingHint("AI가 생각하고 있어요..."), 5_000);
+    // PR4-#1: 0초부터 즉시 피드백 (i18n: UI.chat.loadingHints)
+    setLoadingHint("마음을 읽고 있어요...");
+    const t5 = setTimeout(() => setLoadingHint("조금 더 깊이 생각하고 있어요..."), 5_000);
     const t15 = setTimeout(() => setLoadingHint("응답이 지연되고 있어요."), 15_000);
 
     return () => {
@@ -109,7 +111,7 @@ export default memo(function ChatInput({
   const placeholder = disabled
     ? "체험이 종료되었습니다"
     : isLoading
-      ? loadingHint || "보내는 중..."
+      ? loadingHint || "마음을 읽고 있어요..."
       : PHASE_PLACEHOLDERS[phase] || "이야기를 들려주세요...";
 
   return (
@@ -124,7 +126,7 @@ export default memo(function ChatInput({
       }}
     >
       <div
-        className="max-w-[430px] mx-auto flex gap-2 items-end px-3 pt-2"
+        className="max-w-[430px] mx-auto flex gap-2.5 items-end px-3 pt-2"
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom, 8px) + 8px)",
         }}
@@ -148,7 +150,7 @@ export default memo(function ChatInput({
           placeholder={placeholder}
           rows={1}
           maxLength={2000}
-          className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#bbb]"
+          className="flex-1 resize-none rounded-[22px] px-4 py-3 text-base font-light leading-[1.55] outline-none placeholder:text-[#888]"
           style={{
             border: `1.5px solid ${isLoading ? `${p.accent}44` : `${p.accent}22`}`,
             background: "rgb(var(--surface) / 0.5)",
@@ -163,7 +165,7 @@ export default memo(function ChatInput({
           {/* Route-Hunt 5-1: Character counter (visible at 1500+) */}
           {input.length > 1500 && (
             <span
-              className={`absolute -top-5 right-0 text-[10px] tabular-nums ${
+              className={`absolute -top-5 right-0 text-xs tabular-nums ${
                 input.length > 1900 ? "text-coral" : "text-brown-pale"
               }`}
             >

@@ -26,7 +26,7 @@ const particles = Array.from({ length: 12 }, (_, i) => ({
 
 // CSS Confetti pieces (40 colored pieces falling with rotation)
 const CONFETTI_COLORS = ["#E07A5F", "#7FBFB0", "#8B6AAF", "#C4956A", "#FEE500", "#B8D8D0", "#C8B8D8"];
-const confettiPieces = Array.from({ length: 40 }, (_, i) => ({
+const confettiPieces = Array.from({ length: 20 }, (_, i) => ({
   id: i,
   color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
   left: `${Math.random() * 100}%`,
@@ -53,7 +53,7 @@ export default function StoryCompleteCTA({
     incrementStoryCount();
     hapticSuccess();
     // Hide confetti after animation completes
-    const timer = setTimeout(() => setShowConfetti(false), 3500);
+    const timer = setTimeout(() => setShowConfetti(false), 8000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -68,6 +68,7 @@ export default function StoryCompleteCTA({
       aria-label="동화 완성"
       tabIndex={-1}
       onKeyDown={(e) => { if (e.key === "Escape") onViewStory(); }}
+      onClick={() => setShowConfetti(false)}
       style={{ background: "rgb(var(--cream) / 0.88)", backdropFilter: "blur(14px)" }}
     >
       {/* Confetti burst */}
@@ -166,9 +167,9 @@ export default function StoryCompleteCTA({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.9 }}
-          className="text-[11px] text-brown-pale font-normal mb-8"
+          className="text-xs text-brown-pale font-normal mb-8"
         >
-          오늘의 여정, 정말 수고하셨어요
+          용기를 내어 주셔서 고마워요
         </motion.p>
 
         <motion.button

@@ -54,6 +54,7 @@
   }
 
   html {
+    font-size: 100%;
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -61,8 +62,9 @@
 
   /* C5: Global focus-visible ring for keyboard navigation */
   :focus-visible {
-    outline: 2px solid rgb(var(--coral));
+    outline: 2px solid rgb(var(--coral) / 0.6);
     outline-offset: 2px;
+    border-radius: 4px;
   }
   /* Exclude inputs from outline-offset (looks odd on text fields) */
   input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -92,17 +94,7 @@
     font-family: inherit;
   }
 
-  /* Accessibility: visible focus ring for keyboard navigation */
-  :focus-visible {
-    outline: 2px solid rgb(var(--coral) / 0.6);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-  button:focus-visible,
-  a:focus-visible {
-    outline: 2px solid rgb(var(--coral) / 0.6);
-    outline-offset: 2px;
-  }
+  /* button/a focus-visible inherits from global :focus-visible above */
 
   textarea::placeholder {
     color: #bbb;

@@ -48,7 +48,7 @@ export function LikeButton({ storyId, initialCount }: LikeButtonProps) {
 
     // Check authenticated like status
     const controller = new AbortController();
-    fetch(`/api/community/${storyId}/like`, { signal: controller.signal })
+    authFetchOnce(`/api/community/${storyId}/like`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setLiked(data.liked);

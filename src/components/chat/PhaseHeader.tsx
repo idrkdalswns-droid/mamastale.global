@@ -5,6 +5,7 @@ import Image from "next/image";
 import { PHASES } from "@/lib/constants/phases";
 import { useSettingsStore, useSettingsHydration, FONT_SIZE_LABELS } from "@/lib/hooks/useSettings";
 import type { FontSize } from "@/lib/hooks/useSettings";
+import { useChatPage } from "@/lib/contexts/ChatPageContext";
 
 interface PhaseHeaderProps {
   currentPhase: number;
@@ -14,12 +15,6 @@ interface PhaseHeaderProps {
   onSaveDraft?: () => void;
   /** Current turn count in this phase (0-indexed) */
   turnCountInPhase?: number;
-  /** Free trial mode — show turn counter in subtitle */
-  freeTrialMode?: boolean;
-  /** User message count (for turn counter display) */
-  userMsgCount?: number;
-  /** Free trial turn limit */
-  freeTurnLimit?: number;
   /** Whether story generation is complete */
   storyDone?: boolean;
 }
@@ -31,11 +26,10 @@ export default memo(function PhaseHeader({
   onGoHome,
   onSaveDraft,
   turnCountInPhase = 0,
-  freeTrialMode,
-  userMsgCount = 0,
-  freeTurnLimit = 5,
   storyDone,
 }: PhaseHeaderProps) {
+  // PR3: Read cross-cutting state from context instead of props
+  const { freeTrialMode, userMsgCount, freeTurnLimit } = useChatPage();
   const p = PHASES[currentPhase];
 
   // Overall progress: 4 phases × ~10 turns = 40 total turns
@@ -104,7 +98,7 @@ export default memo(function PhaseHeader({
               }}
             />
           ))}
-          <span className="text-[9px] font-medium ml-1.5" style={{ color: p.accent }}>
+          <span className="text-caption-sm font-medium ml-1.5" style={{ color: p.accent }}>
             {totalProgress}%
           </span>
         </div>
@@ -128,7 +122,7 @@ export default memo(function PhaseHeader({
               {p.id}단계 · {p.name}
             </div>
             <div
-              className="text-[10px] font-light opacity-50 flex items-center gap-1.5 truncate"
+              className="text-xs font-light opacity-50 flex items-center gap-1.5 truncate"
               style={{ color: p.text }}
             >
               <span className="truncate">{p.theory}</span>

@@ -6,18 +6,13 @@ import { nameWithParticle } from "@/lib/utils/korean";
 import { STORY_PRICE_FROM_DISPLAY } from "@/lib/constants/pricing";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
 import { tc } from "@/lib/i18n/client";
+import { useChatPage } from "@/lib/contexts/ChatPageContext";
 
 interface TurnFivePopupProps {
   /** Whether the user is logged in */
   isLoggedIn: boolean;
-  /** Current ticket balance (null = not loaded yet) */
-  ticketsRemaining?: number | null;
   /** Save chat state before redirecting */
   onPersistChat: () => void;
-  /** Navigate back to home (escape hatch) */
-  onGoHome?: () => void;
-  /** Called after inline ticket deduction succeeds (lifts free trial limit) */
-  onTicketUsed?: () => void;
   /** Progress percentage for the story (default 25) */
   progressPercent?: number;
 }
@@ -30,12 +25,11 @@ interface TurnFivePopupProps {
  */
 export default function TurnFivePopup({
   isLoggedIn,
-  ticketsRemaining,
   onPersistChat,
-  onGoHome,
-  onTicketUsed,
   progressPercent = 25,
 }: TurnFivePopupProps) {
+  // PR3: Read cross-cutting state from context instead of props
+  const { ticketsRemaining, onGoHome, onTicketUsed } = useChatPage();
   // Read child name for personalized messaging
   const childName = (() => {
     try { return localStorage.getItem("mamastale_child_name") || ""; } catch { return ""; }
@@ -205,7 +199,7 @@ export default function TurnFivePopup({
                 )}
               </button>
 
-              <p className="text-[10px] text-brown-pale font-light text-center">
+              <p className="text-xs text-brown-pale font-light text-center">
                 완성된 동화는 서재에 영구 보관됩니다
               </p>
               {onGoHome && (
@@ -237,7 +231,7 @@ export default function TurnFivePopup({
                 구매하고 이어서 만들기
               </button>
 
-              <p className="text-[10px] text-brown-pale font-light text-center">
+              <p className="text-xs text-brown-pale font-light text-center">
                 결제 후 대화가 그대로 이어집니다 · 완성된 동화는 서재에 영구 보관
               </p>
               {onGoHome && (
@@ -275,7 +269,7 @@ export default function TurnFivePopup({
 
             <OAuthButtons disabled={false} onBeforeRedirect={onPersistChat} />
 
-            <p className="text-[10px] text-brown-pale font-light text-center mt-3">
+            <p className="text-xs text-brown-pale font-light text-center mt-3">
               대화 내용은 안전하게 보관됩니다
             </p>
             {onGoHome && (

@@ -36,7 +36,12 @@ export async function GET(request: NextRequest) {
   const topic = searchParams.get("topic") || "";
   const search = searchParams.get("search") || "";
   const type = searchParams.get("type") || ""; // 'showcase' | 'all' | '' (default: user only)
-  const { page, limit, offset } = parsePagination(searchParams.get("page"));
+  const customLimit = parseInt(searchParams.get("limit") || "0", 10);
+  const { page, limit, offset } = parsePagination(
+    searchParams.get("page"),
+    100,
+    customLimit > 0 && customLimit <= 50 ? customLimit : 12
+  );
 
   let query = supabase
     .from("stories")

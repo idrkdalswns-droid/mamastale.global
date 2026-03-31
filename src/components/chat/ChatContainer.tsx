@@ -16,6 +16,7 @@ import TurnFivePopup from "./TurnFivePopup";
 import { FocusTrapModal } from "@/components/ui/FocusTrapModal";
 import { usePresence } from "@/lib/hooks/usePresence";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
+import { ChatPageProvider, type ChatPageContextValue } from "@/lib/contexts/ChatPageContext";
 
 // Route-Hunt 7pass-1: Single source of truth for guest turn limit
 // Previously hardcoded as 7 while server enforced 5 → user confusion ("5/7 but blocked")
@@ -268,20 +269,31 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
 
   const p = PHASES[currentPhase];
 
+  // PR3: ChatPageContext — cross-cutting state for child components
+  const chatPageCtx = useMemo<ChatPageContextValue>(() => ({
+    onComplete,
+    onGoHome,
+    onTicketUsed,
+    freeTrialMode,
+    ticketsRemaining: ticketsRemaining ?? null,
+    userMsgCount,
+    freeTurnLimit: FREE_TURN_LIMIT,
+    isGuest,
+  }), [onComplete, onGoHome, onTicketUsed, freeTrialMode, ticketsRemaining, userMsgCount, isGuest]);
+
   return (
+    <ChatPageProvider value={chatPageCtx}>
     <div
       className="fixed inset-0 z-[30] flex flex-col font-sans transition-colors duration-700"
       style={{ background: p.bg }}
     >
       {/* Header */}
+      {/* PR3: freeTrialMode, userMsgCount, freeTurnLimit now from ChatPageContext */}
       <PhaseHeader
         currentPhase={currentPhase}
         visitedPhases={visitedPhases}
         isTransitioning={isTransitioning}
         turnCountInPhase={turnCountInCurrentPhase}
-        freeTrialMode={freeTrialMode}
-        userMsgCount={userMsgCount}
-        freeTurnLimit={FREE_TURN_LIMIT}
         storyDone={storyDone}
         onGoHome={handleGoHome}
         onSaveDraft={handleSaveDraft}
@@ -289,7 +301,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
 
       {/* Offline banner */}
       {isOffline && (
-        <div className="text-center py-1.5 text-[11px] font-medium" style={{ background: "rgba(224,122,95,0.12)", color: "#C96B52" }}>
+        <div className="text-center py-1.5 text-xs font-medium" style={{ background: "rgba(224,122,95,0.12)", color: "#C96B52" }}>
           📡 인터넷 연결을 확인해 주세요
         </div>
       )}
@@ -310,8 +322,8 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-full mx-auto w-fit mb-4"
               style={{ background: "rgba(127,191,176,0.08)", border: "1px solid rgba(127,191,176,0.12)" }}
             >
-              <span className="text-[11px]" aria-hidden="true">🔒</span>
-              <span className="text-[11px] text-brown-light font-light">대화 내용은 안전하게 보관됩니다</span>
+              <span className="text-xs" aria-hidden="true">🔒</span>
+              <span className="text-xs text-brown-light font-light">대화 내용은 안전하게 보관됩니다</span>
             </div>
           )}
           {messages.map((m, idx) => (
@@ -328,12 +340,10 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
       {/* Turn-3 conversion popup — shown after 1.5s delay when free trial limit reached */}
       {turnFiveReady && freeLimitReached && !storyDone && (
         <FocusTrapModal isOpen={true} onClose={onGoHome} label="무료 체험 안내">
+          {/* PR3: ticketsRemaining, onGoHome, onTicketUsed now from ChatPageContext */}
           <TurnFivePopup
             isLoggedIn={!!user}
-            ticketsRemaining={ticketsRemaining}
             onPersistChat={() => { persistToStorage(); saveDraft(); }}
-            onGoHome={onGoHome}
-            onTicketUsed={onTicketUsed}
           />
         </FocusTrapModal>
       )}
@@ -487,7 +497,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
               />
             ))}
           </div>
-          <span className="text-[10px] text-brown-pale font-light whitespace-nowrap">
+          <span className="text-xs text-brown-pale font-light whitespace-nowrap">
             무료 대화 {userMsgCount}/{FREE_TURN_LIMIT}
           </span>
         </div>
@@ -536,6 +546,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             <p className="text-xs text-brown-light font-light mb-5 leading-relaxed">
               저장하지 않으면 대화 내용이 사라져요.
             </p>
+            {/* PR4-#8: 2버튼으로 단순화 (임시저장하고 나가기 + 저장하지 않고 나가기) */}
             <button
               onClick={() => {
                 saveDraft();
@@ -545,24 +556,19 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
               className="w-full py-3 rounded-full text-sm font-medium text-white mb-2 transition-all active:scale-[0.97]"
               style={{ background: "linear-gradient(135deg, #E07A5F, #C96B52)" }}
             >
-              저장하고 나가기
+              임시저장하고 나가기
             </button>
             <button
               onClick={() => { setShowHomeConfirm(false); onGoHome(); }}
               className="w-full py-2.5 text-xs font-light text-brown-pale min-h-[44px]"
             >
-              저장 없이 나가기
-            </button>
-            <button
-              onClick={() => setShowHomeConfirm(false)}
-              className="w-full py-2 text-xs font-light text-brown-pale mt-1 min-h-[44px]"
-            >
-              계속 대화하기
+              저장하지 않고 나가기
             </button>
           </div>
         </div>
       )}
 
     </div>
+    </ChatPageProvider>
   );
 }

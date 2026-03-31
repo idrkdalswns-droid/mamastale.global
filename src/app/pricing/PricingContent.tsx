@@ -498,6 +498,8 @@ function PricingContent() {
               ? "결제 페이지로 이동 중..."
               : "동화 한 편 만들기"}
           </button>
+          {/* PR4-#9: 보안 신호 */}
+          <p className="text-caption-sm text-brown-pale/60 font-light text-center mt-2">🔒 토스 안전결제 · 미사용 전액 환불</p>
         </div>
 
         {/* ════════════════════════════════════════
@@ -931,7 +933,7 @@ function PricingContent() {
                 >
                   <div className="overflow-hidden">
                     <div className="px-4 pb-3">
-                      <p className="text-[11px] text-brown-light font-light leading-relaxed">
+                      <p className="text-xs text-brown-light font-light leading-relaxed">
                         {faq.a}
                       </p>
                     </div>
@@ -971,7 +973,7 @@ function PricingContent() {
           background: "linear-gradient(180deg, transparent 0%, rgb(var(--cream)) 25%)",
         }}
       >
-        <p className="text-[10px] text-brown-pale font-light text-center mb-1 max-w-lg mx-auto">
+        <p className="text-xs text-brown-pale font-light text-center mb-1 max-w-lg mx-auto">
           동화 1편 15분 완성 · 영구 보관 · PDF 다운로드
         </p>
         <div className="max-w-lg mx-auto flex gap-2">

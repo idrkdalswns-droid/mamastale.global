@@ -35,7 +35,7 @@ const notoSerifKr = Noto_Serif_KR({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mamastale-global.pages.dev"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://mamastale.com"),
   title: "mamastale — AI로 만드는 나만의 동화 | 엄마의 이야기가 아이의 동화가 되다",
   description:
     "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요. 산후우울증, 양육 번아웃을 아이에게 들려줄 아름다운 이야기로 바꿔드립니다.",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     siteName: "mamastale",
     images: [
       {
-        url: "https://mamastale-global.pages.dev/images/hero.jpg",
+        url: "/images/hero.jpg",
         width: 1200,
         height: 630,
         alt: "mamastale - 엄마의 삶이 아이의 동화가 되다",
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "mamastale — AI로 만드는 나만의 동화",
     description: "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요.",
-    images: ["https://mamastale-global.pages.dev/images/hero.jpg"],
+    images: ["/images/hero.jpg"],
   },
   icons: {
     icon: "/icons/icon-192x192.png",
@@ -107,7 +107,7 @@ export default async function RootLayout({
               "@type": "WebApplication",
               "name": "mamastale",
               "alternateName": "엄마엄마동화",
-              "url": "https://mamastale-global.pages.dev",
+              "url": process.env.NEXT_PUBLIC_APP_URL || "https://mamastale.com",
               "description": "엄마의 이야기를 AI와 15분 대화하며 세상에 하나뿐인 동화로 만들어 보세요. 산후우울증, 양육 번아웃을 아이에게 들려줄 아름다운 이야기로 바꿔드립니다.",
               "applicationCategory": "HealthApplication",
               "operatingSystem": "Web",
@@ -118,7 +118,7 @@ export default async function RootLayout({
                 "priceCurrency": "KRW",
                 "description": "무료 체험 후 동화 1편 4,900원",
                 "availability": "https://schema.org/InStock",
-                "url": "https://mamastale-global.pages.dev/pricing"
+                "url": `${process.env.NEXT_PUBLIC_APP_URL || "https://mamastale.com"}/pricing`
               },
             }),
           }}

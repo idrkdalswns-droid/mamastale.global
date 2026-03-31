@@ -93,7 +93,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   <div className="w-7 h-7 rounded-full overflow-hidden relative">
                     <Image src={step.icon} alt={step.label} fill className="object-cover" sizes="28px" />
                   </div>
-                  <span className="text-[9px] font-light" style={{ color: step.accent }}>{step.label}</span>
+                  <span className="text-caption-sm font-light" style={{ color: step.accent }}>{step.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <span className="text-[10px] text-brown-light/60 -mt-2.5">→</span>
@@ -101,16 +101,17 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-brown-pale font-light mb-7">약 15분이면 충분해요</p>
+          <p className="text-xs text-brown-pale font-light mb-7">약 15분이면 충분해요</p>
 
           {/* Child name input */}
           <h2
             className="text-[20px] font-semibold mb-4 text-center leading-snug"
             style={{ color: "rgb(var(--brown))", fontFamily: "var(--font-nanum), serif" }}
           >
-            아이 이름을 알려주세요
+            <label htmlFor="onboarding-child-name">아이 이름을 알려주세요</label>
           </h2>
           <input
+            id="onboarding-child-name"
             type="text"
             value={childName}
             onChange={(e) => {
@@ -124,7 +125,6 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
               background: "rgba(255,255,255,0.7)",
               border: "1.5px solid rgba(196,149,106,0.15)",
             }}
-            aria-label="아이 이름 (선택)"
           />
           <p className="text-[10px] text-brown-pale font-light mt-1.5 mb-6">선택사항이에요</p>
 
@@ -170,7 +170,7 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
                   />
                 </div>
                 <span
-                  className="text-[11px] tracking-wide"
+                  className="text-xs tracking-wide"
                   style={{
                     fontFamily: "var(--font-nanum), serif",
                     color: childAge === o.value ? "#5FA89A" : "rgb(var(--brown-light))",
@@ -187,25 +187,25 @@ export function OnboardingSlides({ onDone, onGoHome }: OnboardingSlidesProps) {
           <div className="h-8 flex items-center justify-center mt-2">
             {selectedAgeOption ? (
               <p
-                className="text-[11px] text-brown-light font-light text-center transition-opacity duration-300"
+                className="text-xs text-brown-light font-light text-center transition-opacity duration-300"
                 style={{ opacity: 1 }}
               >
                 {selectedAgeOption.desc}
               </p>
             ) : (
-              <p className="text-[11px] text-brown-light/70 font-light text-center">
+              <p className="text-xs text-brown-light/70 font-light text-center">
                 선택하지 않아도 시작할 수 있어요
               </p>
             )}
           </div>
 
           {/* Freemium v2: First story free notice */}
-          <p className="text-[11px] text-mint-deep font-medium text-center mt-3 mb-1">
+          <p className="text-xs text-mint-deep font-medium text-center mt-3 mb-1">
             첫 동화는 무료로 완성할 수 있어요
           </p>
 
           {/* Testimonial */}
-          <p className="text-[11px] text-brown-light/60 italic text-center mt-1 mb-2">
+          <p className="text-xs text-brown-light/60 italic text-center mt-1 mb-2">
             &ldquo;아이가 매일 읽어달라고 해요&rdquo;
             <span className="not-italic text-brown-pale"> — 준우맘</span>
           </p>

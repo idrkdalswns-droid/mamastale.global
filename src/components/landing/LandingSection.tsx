@@ -83,6 +83,7 @@ export interface LandingSectionProps {
   setDraftInfo: (info: { phase: number; messageCount: number; savedAt: number; source: string } | null) => void;
   setScreen: (screen: "landing" | "onboarding" | "chat" | "edit" | "coverPick" | "previewNotice" | "story" | "feedback" | "community") => void;
   communityCount: number | null;
+  showcaseStories: Array<{ id: string; title: string; scenes: Array<{ text: string }>; cover_image: string | null; author_alias: string | null; like_count: number; illustration_urls?: string[] | null }> | null;
   showStickyCta: boolean;
   showPaymentSuccess: boolean;
   closePaymentModal: () => void;
@@ -103,6 +104,7 @@ export function LandingSection({
   setDraftInfo,
   setScreen,
   communityCount,
+  showcaseStories,
   showStickyCta,
   showPaymentSuccess,
   closePaymentModal,
@@ -149,7 +151,7 @@ export function LandingSection({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-[11px] whitespace-nowrap no-underline transition-colors min-h-[44px] justify-center px-1 sm:px-2 flex items-center text-brown-mid font-light"
+                className="text-xs whitespace-nowrap no-underline transition-colors min-h-[44px] justify-center px-1 sm:px-2 flex items-center text-brown-mid font-light"
               >
                 {item.label}
               </Link>
@@ -157,14 +159,14 @@ export function LandingSection({
             {!authLoading && (user ? (
               <button
                 onClick={signOut}
-                className="text-[11px] whitespace-nowrap text-brown-pale font-light min-h-[44px] flex items-center"
+                className="text-xs whitespace-nowrap text-brown-pale font-light min-h-[44px] flex items-center"
               >
                 로그아웃
               </button>
             ) : (
               <Link
                 href="/login"
-                className="text-[11px] whitespace-nowrap text-brown-light font-medium no-underline min-h-[44px] flex items-center"
+                className="text-xs whitespace-nowrap text-brown-light font-medium no-underline min-h-[44px] flex items-center"
               >
                 로그인
               </Link>
@@ -294,12 +296,12 @@ export function LandingSection({
                     }}
                   >
                     <p
-                      className="font-serif text-[11.5px] leading-[1.85] break-keep"
+                      className="font-serif text-xs leading-[1.75] break-keep"
                       style={{ color: "#5A3E2B" }}
                     >
                       {text}
                     </p>
-                    <p className="text-[10px] text-brown-pale font-light mt-1.5 text-right">
+                    <p className="text-xs text-brown-pale font-light mt-1.5 text-right">
                       {i + 1} / 10
                     </p>
                   </div>
@@ -312,9 +314,9 @@ export function LandingSection({
               DIY THUMBNAILS — Free stories preview (M1)
               ════════════════════════════════════════ */}
           <ErrorBoundary fallback={null}><div id="diy" className="mb-5">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-1">
+            <h2 className="font-serif text-sm text-brown font-semibold text-center mb-1">
               무료 DIY 동화
-            </p>
+            </h2>
             <div className="grid grid-cols-3 gap-2">
               {DIY_STORIES.slice(0, 3).map((story) => (
                 <Link key={story.id} href={`/diy/${story.id}`} className="no-underline group">
@@ -328,7 +330,7 @@ export function LandingSection({
                       loading="lazy"
                     />
                     <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 pt-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5), transparent)" }}>
-                      <p className="text-[10px] text-white font-medium leading-tight">{story.title}</p>
+                      <p className="text-xs text-white font-medium leading-tight">{story.title}</p>
                     </div>
                   </div>
                 </Link>
@@ -336,7 +338,51 @@ export function LandingSection({
             </div>
           </div></ErrorBoundary>
 
-          {/* HOW IT WORKS 섹션 삭제 */}
+          {/* ════════════════════════════════════════
+              COMPLETED STORY PREVIEW — 결과물 미리보기
+              ════════════════════════════════════════ */}
+          {showcaseStories && showcaseStories.length > 0 && (
+            <ErrorBoundary fallback={null}><div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-serif text-sm text-brown font-semibold">
+                  이런 동화가 완성됩니다
+                </h2>
+                <Link href="/community?type=showcase" className="text-[11px] text-coral font-light no-underline">
+                  더보기 →
+                </Link>
+              </div>
+              <GalleryScroller initialIndex={0}>
+                {showcaseStories.map((story) => (
+                  <Link key={story.id} href={`/community/${story.id}`} className="no-underline group flex-shrink-0 snap-center">
+                    <div
+                      className="rounded-xl overflow-hidden relative"
+                      style={{ width: "220px", boxShadow: "0 4px 16px rgba(0,0,0,0.10)" }}
+                    >
+                      <Image
+                        src={story.illustration_urls?.[0] || story.cover_image || "/images/hero.jpg"}
+                        alt={story.title}
+                        width={220}
+                        height={293}
+                        className="w-full aspect-[3/4] object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div
+                        className="absolute inset-x-0 bottom-0 px-3 pt-10 pb-3 flex flex-col justify-end"
+                        style={{ background: "linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)" }}
+                      >
+                        <p className="font-serif text-xs leading-relaxed break-keep text-brown line-clamp-2">
+                          {story.title}
+                        </p>
+                        <p className="text-xs text-brown-pale font-light mt-1">
+                          {story.author_alias || "익명"} · ♥ {story.like_count || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </GalleryScroller>
+            </div></ErrorBoundary>
+          )}
 
           {/* ════════════════════════════════════════
               SOCIAL PROOF — Story Counter
@@ -352,10 +398,10 @@ export function LandingSection({
               SOCIAL PROOF — Reviews (N3)
               ════════════════════════════════════════ */}
           <div id="reviews" className="mb-5">
-            <p className="font-serif text-sm text-brown font-semibold text-center mb-0.5">
+            <h2 className="font-serif text-sm text-brown font-semibold text-center mb-2">
               엄마들의 후기
-            </p>
-            <p className="text-[11px] text-center mb-3">
+            </h2>
+            <p className="text-xs text-center mb-3">
               <span className="text-coral font-medium">★ 4.8</span>
               <span className="text-brown-pale font-light"> · 17개의 리뷰</span>
             </p>
@@ -367,10 +413,10 @@ export function LandingSection({
               ].map((review, i) => (
                 <div key={i} className="px-4 py-3 rounded-xl" style={{ background: "rgba(224,122,95,0.04)", border: "1px solid rgba(224,122,95,0.08)" }}>
                   <div className="flex items-center gap-1 mb-1">
-                    <span className="text-[10px] text-coral">{"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}</span>
+                    <span className="text-xs text-coral">{"★".repeat(review.stars)}{"☆".repeat(5 - review.stars)}</span>
                   </div>
-                  <p className="text-[11px] text-brown font-light leading-relaxed break-keep">&ldquo;{review.text}&rdquo;</p>
-                  <p className="text-[10px] text-brown-pale font-light mt-1">— {review.name}</p>
+                  <p className="text-xs text-brown font-light leading-relaxed break-keep">&ldquo;{review.text}&rdquo;</p>
+                  <p className="text-xs text-brown-pale font-light mt-1">— {review.name}</p>
                 </div>
               ))}
             </div>
@@ -387,22 +433,24 @@ export function LandingSection({
         <div>
           {/* M2: Founder story — brand trust */}
           <div className="mt-4 mb-4 px-4 py-4 rounded-2xl" style={{ background: "rgba(196,149,106,0.05)", border: "1px solid rgba(196,149,106,0.1)" }}>
-            <p className="font-serif text-[13px] text-brown font-semibold mb-2">mamastale 대표의 이야기</p>
-            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep">
-              20대 시절, 자전거 한 대에 침낭을 싣고 3개월간 동유럽 10개국을 횡단했습니다. 그중 두 달은 인적조차 드문 낯선 노지에 작은 텐트를 치고 밤을 지새워야 했습니다. 별빛 한 점 스며들지 않는 캄캄한 텐트 안. 그 완벽한 단절 속에서 저는 인간 존재의 밑바닥에 도사린 극심한 외로움과 고독을 마주했습니다.
-            </p>
-            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
-              그 순간 저는 태어나서 해 본 적 없는 행동을 하는데요. 그게 바로 글쓰기였습니다.
-            </p>
-            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
-              누군가에게 보여주기 위한 훌륭한 문장이 아니었습니다. 그저 내 안의 두려움, 슬픔, 그리고 날것의 감정들을 토해냈습니다.
-            </p>
-            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
-              그리고 기적이 일어났습니다.
-            </p>
-            <p className="text-[11px] text-brown-light font-light leading-relaxed break-keep mt-2">
-              그 기적이 지금은 마마스테일로 표현되고 있습니다.
-            </p>
+            <h2 className="font-serif text-sub text-brown font-semibold mb-2">mamastale 대표의 이야기</h2>
+            <div className="space-y-3">
+              <p className="text-xs text-brown-light font-light leading-relaxed break-keep">
+                20대 시절, 자전거 한 대에 침낭을 싣고 3개월간 동유럽 10개국을 횡단했습니다. 그중 두 달은 인적조차 드문 낯선 노지에 작은 텐트를 치고 밤을 지새워야 했습니다. 별빛 한 점 스며들지 않는 캄캄한 텐트 안. 그 완벽한 단절 속에서 저는 인간 존재의 밑바닥에 도사린 극심한 외로움과 고독을 마주했습니다.
+              </p>
+              <p className="text-xs text-brown-light font-light leading-relaxed break-keep">
+                그 순간 저는 태어나서 해 본 적 없는 행동을 하는데요. 그게 바로 글쓰기였습니다.
+              </p>
+              <p className="text-xs text-brown-light font-light leading-relaxed break-keep">
+                누군가에게 보여주기 위한 훌륭한 문장이 아니었습니다. 그저 내 안의 두려움, 슬픔, 그리고 날것의 감정들을 토해냈습니다.
+              </p>
+              <p className="text-xs text-brown-light font-light leading-relaxed break-keep">
+                그리고 기적이 일어났습니다.
+              </p>
+              <p className="text-xs text-brown-light font-light leading-relaxed break-keep">
+                그 기적이 지금은 마마스테일로 표현되고 있습니다.
+              </p>
+            </div>
             {/* 서명 삭제 */}
           </div>
 
@@ -433,8 +481,8 @@ export function LandingSection({
           </div>
 
           {/* Medical disclaimer */}
-          <div className="mt-2">
-            <p className="text-[10px] text-brown-pale leading-relaxed font-sans font-light text-center">
+          <div className="mt-6 pt-4 border-t border-brown-pale/10">
+            <p className="text-xs text-brown-pale leading-relaxed font-sans font-light text-center">
               본 서비스는 실제 의료 행위를 대체하지 않습니다
             </p>
           </div>
