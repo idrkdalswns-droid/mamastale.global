@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.59.0] - 2026-03-31
+
+### Added
+- ChatPageContext: 채팅 페이지 cross-cutting 상태를 Context로 분리하여 prop drilling 제거
+- 랜딩 섹션 헤딩을 시맨틱 `<h2>` 태그로 변환 (SEO/접근성)
+- 결제 CTA 하단에 보안 신뢰 배지 ("🔒 토스 안전결제 · 미사용 전액 환불")
+- 온보딩 이름 입력에 `<label htmlFor>` + `<input id>` 연결 (접근성)
+- 커뮤니티 필터 탭에 `aria-current="page"` 추가 (접근성)
+
+### Changed
+- 타이포그래피 전면 수정 (37건): 최소 폰트 12px 원칙, tailwind.config.ts 시맨틱 fontSize 스케일 도입
+- 단락/섹션 간격 개선 (5건): 본문 여백 확보, 면책 텍스트 구분 강화
+- 나가기 다이얼로그 3→2 버튼 간소화 ("임시저장하고 나가기" + "저장하지 않고 나가기")
+- 로딩 힌트 0초부터 표시 ("마음을 읽고 있어요..." → 5초 "조금 더 깊이..." → 15초 지연 안내)
+- 자동 리디렉트 카운트다운 8초→15초 (결제 성공 페이지)
+- 티켓 수량 색상 coral→mint (#7FBFB0) (결제 성공 페이지)
+- 축하 카피 "수고하셨어요"→"용기를 내어 주셔서 고마워요"
+- Confetti 최적화: 파티클 40→20개, 지속 8초, 탭 dismiss
+- focus-visible CSS 중복 규칙 통합 (globals.css)
+- authFetchOnce 통일: 8개 파일의 raw credentials:include fetch를 래퍼로 마이그레이션
+
+### Fixed
+- 플레이스홀더 대비 개선 (#bbb→#888, WCAG AA 4.5:1 이상)
+- 서비스카드 설명 텍스트 white/70→white (WCAG AA 대비)
+
 ## [1.58.0] - 2026-03-31
 
 ### Added
