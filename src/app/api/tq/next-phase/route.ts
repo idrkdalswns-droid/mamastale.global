@@ -250,13 +250,23 @@ export async function POST(request: NextRequest) {
 
       // 폴백: 반개인화 질문 세트
       const fallbackQuestions = getFallbackQuestions(targetPhase, accScores);
+      const fallbackResponse: Record<string, unknown> = {
+        questions: fallbackQuestions,
+        phase: targetPhase,
+        ai_generated: false,
+        fallback: true,
+      };
+      // Phase 5 폴백 시에도 q20_prompt 필수 포함
+      if (targetPhase === 5) {
+        fallbackResponse.q20_prompt = {
+          title: "마지막 이야기",
+          instruction: "지금까지의 여정을 돌아보며, 당신이 하고 싶은 이야기를 자유롭게 적어주세요.",
+          placeholder: "한 줄이라도 좋아요. 당신의 이야기를 들려주세요.",
+          skip_text: "건너뛰기",
+        };
+      }
       return sb.applyCookies(
-        NextResponse.json({
-          questions: fallbackQuestions,
-          phase: targetPhase,
-          ai_generated: false,
-          fallback: true,
-        }),
+        NextResponse.json(fallbackResponse),
       );
     }
   }

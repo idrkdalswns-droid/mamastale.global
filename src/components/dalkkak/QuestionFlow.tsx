@@ -197,8 +197,16 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
     return <GeneratingScreen />;
   }
 
-  // Q20 text question (Phase 5, all MCQs answered, q20Prompt is set)
-  if (q20Prompt && currentPhase === 5 && !isTransitioning && !currentQuestion) {
+  // Q20 text question (Phase 5, all MCQs answered)
+  // q20Prompt가 없어도 Phase 5 MCQ 완료 시 기본값으로 표시
+  if (currentPhase === 5 && !isTransitioning && !currentQuestion) {
+    if (!q20Prompt) {
+      setQ20Prompt({
+        title: "마지막 이야기",
+        instruction: "지금까지의 여정을 돌아보며, 당신이 하고 싶은 이야기를 자유롭게 적어주세요.",
+        placeholder: "한 줄이라도 좋아요. 당신의 이야기를 들려주세요.",
+      });
+    }
     return (
       <TextQuestion
         onSubmitted={() => {
