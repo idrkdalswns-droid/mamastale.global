@@ -81,8 +81,18 @@ export default function DalkkakPlayPage() {
           }
           return;
         }
-        if (data.current_questions) {
+        if (data.current_questions && Array.isArray(data.current_questions) && data.current_questions.length > 0) {
           setQuestions(data.current_questions);
+          // Restore question index within current phase based on server responses
+          const serverResponses = data.session?.responses ?? [];
+          const serverPhase = data.session?.phase ?? 1;
+          const phaseResponses = serverResponses.filter(
+            (r: { phase: number }) => r.phase === serverPhase,
+          );
+          if (phaseResponses.length > 0 && phaseResponses.length < data.current_questions.length) {
+            // Jump to next unanswered question in this phase
+            useTQStore.setState({ currentQuestionIndex: phaseResponses.length });
+          }
         }
       } catch {
         router.replace("/dalkkak");

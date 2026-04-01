@@ -8,6 +8,10 @@ import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
 import { t } from "@/lib/i18n";
+import { getQ1Question, getBranchQuestions } from "@/lib/tq/tq-phase1-questions";
+import type { BranchTag } from "@/lib/tq/tq-phase1-questions";
+import { getFallbackQuestions } from "@/lib/tq/tq-fallback-questions";
+import { accumulateScores } from "@/lib/tq/tq-emotion-scoring";
 
 export const runtime = "edge";
 
@@ -56,7 +60,7 @@ export async function GET(
   const { data: session, error } = await sb.client
     .from("tq_sessions")
     .select(
-      "id, user_id, status, phase, responses, generated_story, q20_text, primary_emotion, secondary_emotion, emotion_scores, story_id, cover_url, cover_status, crisis_severity, user_rating, created_at, completed_at",
+      "id, user_id, status, phase, responses, generated_questions, generated_story, q20_text, primary_emotion, secondary_emotion, emotion_scores, story_id, cover_url, cover_status, crisis_severity, user_rating, created_at, completed_at",
     )
     .eq("id", id)
     .eq("user_id", user.id)
@@ -70,5 +74,51 @@ export async function GET(
       ),
     );
 
-  return sb.applyCookies(NextResponse.json({ session }));
+  // ── 세션 복구용: 현재 phase의 질문 재생성 ──
+  let current_questions = null;
+  if (session.status === "in_progress") {
+    const responses = Array.isArray(session.responses) ? session.responses : [];
+    const gq = typeof session.generated_questions === "object" && session.generated_questions
+      ? (session.generated_questions as Record<string, unknown>)
+      : {};
+
+    if (session.phase === 1) {
+      // Phase 1: 정적 질문
+      const { count: visitCount } = await sb.client
+        .from("tq_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      const vc = visitCount ?? 1;
+
+      if (responses.length === 0) {
+        // Q1도 안 답함 → Q1 반환
+        current_questions = [getQ1Question(vc)];
+      } else {
+        // Q1은 답함 → branch questions (Q2-Q4) 반환
+        const branchTag = (gq.phase1_branch as BranchTag) ?? "warmth";
+        current_questions = getBranchQuestions(branchTag, vc);
+      }
+    } else {
+      // Phase 2-5: generated_questions에서 저장된 질문 반환
+      const phaseKey = `phase${session.phase}`;
+      const phaseQuestions = gq[phaseKey];
+      if (phaseQuestions && typeof phaseQuestions === "object" && "questions" in (phaseQuestions as Record<string, unknown>)) {
+        current_questions = (phaseQuestions as { questions: unknown[] }).questions;
+      } else if (Array.isArray(phaseQuestions)) {
+        current_questions = phaseQuestions;
+      } else {
+        // 폴백: 감정 스코어 기반 질문 생성
+        const accScores = accumulateScores(responses);
+        current_questions = getFallbackQuestions(session.phase, accScores);
+      }
+    }
+  }
+
+  // generated_questions는 내부 데이터이므로 응답에서 제외
+  const { generated_questions: _gq, ...sessionData } = session;
+  void _gq;
+
+  return sb.applyCookies(
+    NextResponse.json({ session: sessionData, current_questions }),
+  );
 }
