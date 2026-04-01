@@ -17,6 +17,7 @@ const limiter = createInMemoryLimiter("tq:start", { maxEntries: 200 });
 
 const requestSchema = z.object({
   idempotency_key: z.string().uuid(),
+  force_new: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       ),
     );
 
-  const { idempotency_key } = parsed.data;
+  const { idempotency_key, force_new } = parsed.data;
 
   // 기존 진행 중 세션 확인
   const { data: existingSession } = await sb.client
@@ -79,16 +80,34 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existingSession) {
-    return sb.applyCookies(
-      NextResponse.json({
-        existing_session: {
-          id: existingSession.id,
-          phase: existingSession.phase,
-          created_at: existingSession.created_at,
-        },
-        message: t("Errors.teacher.existingSession"),
-      }),
-    );
+    if (force_new) {
+      // 기존 세션 취소 + 티켓 환불
+      await sb.client
+        .from("tq_sessions")
+        .update({ status: "cancelled" })
+        .eq("id", existingSession.id);
+
+      // hold된 티켓 환불 (RPC 있으면 사용, 없으면 직접 증가)
+      try {
+        await sb.client.rpc("tq_refund_ticket", {
+          p_session_id: existingSession.id,
+          p_user_id: user.id,
+        });
+      } catch {
+        // RPC 실패 시 무시 — 세션 취소는 완료됨
+      }
+    } else {
+      return sb.applyCookies(
+        NextResponse.json({
+          existing_session: {
+            id: existingSession.id,
+            phase: existingSession.phase,
+            created_at: existingSession.created_at,
+          },
+          message: t("Errors.teacher.existingSession"),
+        }),
+      );
+    }
   }
 
   // 무료 체험 확인

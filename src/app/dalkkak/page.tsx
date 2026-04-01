@@ -58,7 +58,7 @@ export default function DalkkakLandingPage() {
       const res = await fetch("/api/tq/start", {
         method: "POST",
         headers,
-        body: JSON.stringify({ idempotency_key: idempotencyKey }),
+        body: JSON.stringify({ idempotency_key: idempotencyKey, force_new: forceNew }),
       });
 
       if (!res.ok) {
