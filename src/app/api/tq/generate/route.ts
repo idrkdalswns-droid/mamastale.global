@@ -1,13 +1,30 @@
 /**
- * GET /api/tq/generate — 딸깍 동화 SSE 표시 전용
- * DB 폴링으로 생성된 장면을 실시간 스트리밍
- * 인앱 브라우저 감지 시 JSON 폴링 모드 자동 전환
+ * GET /api/tq/generate — 딸깍 동화 AI 생성 + SSE 스트리밍
+ *
+ * submit(202) 후 클라이언트가 SSE 연결 → 이 라우트에서:
+ * 1. generated_story가 비어있으면 → AI 생성 시작 (4-tier 폴백)
+ * 2. 장면별로 DB 저장 + SSE 전송
+ * 3. 완료 시 tq_complete_session RPC 호출
+ * 4. 재접속 시 기존 장면 먼저 전송 후 나머지 생성
+ *
+ * 인앱 브라우저 → JSON 폴링 모드 자동 전환
  */
 
 import { NextRequest } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { createApiSupabaseClient } from "@/lib/supabase/server-api";
 import { resolveUser } from "@/lib/supabase/resolve-user";
 import { createInMemoryLimiter } from "@/lib/utils/rate-limiter";
+import { calculatePhaseScores, classifyEmotionProfile } from "@/lib/tq/tq-emotion-scoring";
+import type { ResponseItem } from "@/lib/tq/tq-emotion-scoring";
+import {
+  SONNET_CONFIG,
+  ORCHESTRATOR_SYSTEM_PROMPT,
+  buildOrchestratorUserMessage,
+  parseTQScenes,
+} from "@/lib/tq/tq-orchestrator";
+import type { TQScene } from "@/lib/tq/tq-orchestrator";
+import { getFallbackStory } from "@/lib/tq/tq-fallback-stories";
 import { t } from "@/lib/i18n";
 
 export const runtime = "edge";
@@ -27,6 +44,8 @@ const IN_APP_PATTERNS = [
 function isInAppBrowser(ua: string): boolean {
   return IN_APP_PATTERNS.some((p) => p.test(ua));
 }
+
+const AI_TIMEOUT_MS = 120_000; // 120s per AI call
 
 export async function GET(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
@@ -66,7 +85,7 @@ export async function GET(request: NextRequest) {
   // 세션 확인
   const { data: session } = await sb.client
     .from("tq_sessions")
-    .select("id, user_id, status, generated_story, primary_emotion")
+    .select("id, user_id, status, generated_story, primary_emotion, secondary_emotion, emotion_scores, responses, q20_text, crisis_severity")
     .eq("id", sessionId)
     .eq("user_id", user.id)
     .single();
@@ -75,6 +94,22 @@ export async function GET(request: NextRequest) {
     return new Response(
       JSON.stringify({ error: t("Errors.teacher.sessionNotFound") }),
       { status: 404, headers: { "Content-Type": "application/json" } },
+    );
+
+  // 이미 완료된 세션 → 결과 반환
+  if (session.status === "completed") {
+    const scenes = Array.isArray(session.generated_story) ? session.generated_story : [];
+    return new Response(
+      JSON.stringify({ scenes, status: "completed", primary_emotion: session.primary_emotion }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // generating이 아니면 에러
+  if (session.status !== "generating")
+    return new Response(
+      JSON.stringify({ error: t("Errors.teacher.cannotSubmitInCurrentState") }),
+      { status: 409, headers: { "Content-Type": "application/json" } },
     );
 
   // 인앱 브라우저 → JSON 폴링 모드
@@ -93,75 +128,166 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // SSE 스트리밍
+  // SSE 스트리밍 + AI 생성
   const cookieHeaders = sb.getCookieHeaders();
   const encoder = new TextEncoder();
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Controller closed (client disconnected)
+        }
       };
 
       // 메타 이벤트
       send({ type: "meta", sessionId, source: "tq" });
 
-      let lastSceneCount = 0;
-      const maxPolls = 300; // 최대 5분 (1초 간격)
+      // 환경변수 체크
+      if (!serviceKey || !supabaseUrl || !apiKey) {
+        send({ type: "error", message: t("Errors.story.createFailed") });
+        await updateSessionStatus(supabaseUrl!, serviceKey!, sessionId, "failed");
+        controller.close();
+        return;
+      }
 
-      for (let i = 0; i < maxPolls; i++) {
-        // DB 폴링
-        const { data: current } = await sb.client
-          .from("tq_sessions")
-          .select("status, generated_story, primary_emotion")
-          .eq("id", sessionId)
-          .single();
+      const existingScenes: TQScene[] = Array.isArray(session.generated_story)
+        ? session.generated_story
+        : [];
 
-        if (!current) {
-          send({ type: "error", message: t("Errors.teacher.sessionNotFound") });
-          break;
-        }
+      // 재접속: 기존 장면 먼저 전송
+      for (let i = 0; i < existingScenes.length; i++) {
+        const scene = existingScenes[i];
+        send({ type: "scene", number: scene.sceneNumber, title: scene.title });
+        send({ type: "text", text: scene.text });
+        send({ type: "progress", scene: scene.sceneNumber, total: 9 });
+      }
 
-        const scenes = Array.isArray(current.generated_story)
-          ? current.generated_story
-          : [];
-
-        // 새 장면 감지 → SSE 이벤트 전송
-        if (scenes.length > lastSceneCount) {
-          for (let s = lastSceneCount; s < scenes.length; s++) {
-            const scene = scenes[s] as { sceneNumber: number; title: string; text: string };
-            send({
-              type: "scene",
-              number: scene.sceneNumber,
-              title: scene.title,
-            });
-            send({ type: "text", text: scene.text });
-            send({
-              type: "progress",
-              scene: scene.sceneNumber,
-              total: 9,
-            });
-          }
-          lastSceneCount = scenes.length;
-        }
-
-        // 완료/실패 감지
-        if (current.status === "completed") {
-          send({
-            type: "done",
-            scenes: scenes.length,
-            primaryEmotion: current.primary_emotion,
-          });
-          break;
-        }
-
-        if (current.status === "failed") {
+      // 이미 9장면 이상 ���으면 → 완료 처리만
+      if (existingScenes.length >= 9) {
+        // RPC가 아직 안 됐을 수 있으므로 완료 처리
+        const rpcOk = await completeSession(
+          supabaseUrl, serviceKey, sessionId, existingScenes,
+          session.primary_emotion, session.secondary_emotion, session.emotion_scores,
+        );
+        if (rpcOk) {
+          send({ type: "done", scenes: existingScenes.length, primaryEmotion: session.primary_emotion });
+        } else {
           send({ type: "error", message: t("Errors.story.createFailed") });
-          break;
+          await updateSessionStatus(supabaseUrl, serviceKey, sessionId, "failed");
+          await refundTicket(supabaseUrl, serviceKey, sessionId);
         }
+        controller.close();
+        return;
+      }
 
-        // 1초 대기
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      // AI 생성 ���요
+      const responses: ResponseItem[] = Array.isArray(session.responses)
+        ? session.responses
+        : [];
+      const scores = session.emotion_scores ?? calculatePhaseScores(responses);
+      const primaryEmotion = session.primary_emotion ?? classifyEmotionProfile(scores).primary;
+      const secondaryEmotion = session.secondary_emotion ?? classifyEmotionProfile(scores).secondary;
+
+      const allResponses = responses.map((r) => ({
+        questionId: r.question_id,
+        choiceText: "",
+        phase: r.phase,
+      }));
+
+      const userMessage = buildOrchestratorUserMessage({
+        scores,
+        primaryEmotion: primaryEmotion as Parameters<typeof buildOrchestratorUserMessage>[0]["primaryEmotion"],
+        secondaryEmotion: (secondaryEmotion ?? null) as Parameters<typeof buildOrchestratorUserMessage>[0]["secondaryEmotion"],
+        allResponses,
+        q20Text: session.q20_text ?? null,
+        crisisSeverity: (session.crisis_severity ?? "NONE") as "NONE" | "LOW" | "MEDIUM",
+      });
+
+      // 4-tier 폴백
+      let storyText: string | null = null;
+
+      // Tier 1: Sonnet
+      try {
+        send({ type: "progress", scene: 0, total: 9 });
+        storyText = await callSonnet(apiKey, userMessage);
+      } catch (err) {
+        console.warn("[TQ-Generate] Sonnet tier 1 failed:", err instanceof Error ? err.message : err);
+      }
+
+      // Tier 2: Sonnet retry (lower temperature)
+      if (!storyText) {
+        try {
+          storyText = await callSonnet(apiKey, userMessage, 0.75);
+        } catch (err) {
+          console.warn("[TQ-Generate] Sonnet tier 2 failed:", err instanceof Error ? err.message : err);
+        }
+      }
+
+      // Tier 3: Haiku downgrade
+      if (!storyText) {
+        try {
+          storyText = await callHaikuFallback(apiKey, userMessage);
+        } catch (err) {
+          console.warn("[TQ-Generate] Haiku tier 3 failed:", err instanceof Error ? err.message : err);
+        }
+      }
+
+      // 장면 파싱
+      let scenes: TQScene[] = storyText ? parseTQScenes(storyText) : [];
+
+      // Tier 4: 사전 생성 폴백 동화
+      if (scenes.length < 9) {
+        const fallback = getFallbackStory(
+          primaryEmotion as Parameters<typeof getFallbackStory>[0],
+        );
+        if (fallback) {
+          scenes = fallback.scenes.map((s) => ({
+            sceneNumber: s.sceneNumber,
+            title: s.title,
+            text: s.text,
+          }));
+          console.warn("[TQ-Generate] Using pre-generated fallback story for:", primaryEmotion);
+        }
+      }
+
+      // 완전 실패 → failed + refund
+      if (scenes.length < 9) {
+        send({ type: "error", message: t("Errors.story.createFailed") });
+        await updateSessionStatus(supabaseUrl, serviceKey, sessionId, "failed");
+        await refundTicket(supabaseUrl, serviceKey, sessionId);
+        controller.close();
+        return;
+      }
+
+      // 장면별 DB 저장 + SSE 전송
+      for (let i = 0; i < scenes.length; i++) {
+        const scene = scenes[i];
+        await updateGeneratedStory(supabaseUrl, serviceKey, sessionId, scenes.slice(0, i + 1));
+        send({ type: "scene", number: scene.sceneNumber, title: scene.title });
+        send({ type: "text", text: scene.text });
+        send({ type: "progress", scene: scene.sceneNumber, total: 9 });
+      }
+
+      // tq_complete_session RPC (원자적: story 저장 + 티켓 확정 + 상태 완료)
+      const rpcOk = await completeSession(
+        supabaseUrl, serviceKey, sessionId, scenes,
+        primaryEmotion, secondaryEmotion, scores,
+      );
+
+      if (rpcOk) {
+        send({ type: "done", scenes: scenes.length, primaryEmotion });
+      } else {
+        console.error("[TQ-Generate] tq_complete_session RPC failed");
+        send({ type: "error", message: t("Errors.story.createFailed") });
+        await updateSessionStatus(supabaseUrl, serviceKey, sessionId, "failed");
+        await refundTicket(supabaseUrl, serviceKey, sessionId);
       }
 
       controller.close();
@@ -174,10 +300,200 @@ export async function GET(request: NextRequest) {
     Connection: "keep-alive",
   };
 
-  // 인증 쿠키 적용
   for (const cookie of cookieHeaders) {
     headers["Set-Cookie"] = cookie;
   }
 
   return new Response(stream, { headers });
+}
+
+/* ═══════════════════════════════════════════════════════
+   AI 호출 헬퍼
+   ═══════════════════════════════════════════════════════ */
+
+async function callSonnet(
+  apiKey: string,
+  userMessage: string,
+  temperature: number = SONNET_CONFIG.temperature,
+): Promise<string> {
+  const anthropic = new Anthropic({ apiKey });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const response = await anthropic.messages.create(
+      {
+        model: SONNET_CONFIG.model,
+        max_tokens: SONNET_CONFIG.maxTokens,
+        temperature,
+        system: ORCHESTRATOR_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      },
+      { signal: controller.signal },
+    );
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text : "";
+    if (!text) throw new Error("Empty Sonnet response");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function callHaikuFallback(
+  apiKey: string,
+  userMessage: string,
+): Promise<string> {
+  const anthropic = new Anthropic({ apiKey });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const response = await anthropic.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 6000,
+        temperature: 0.7,
+        system: ORCHESTRATOR_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      },
+      { signal: controller.signal },
+    );
+    const text =
+      response.content[0]?.type === "text" ? response.content[0].text : "";
+    if (!text) throw new Error("Empty Haiku response");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Supabase 서비스 헬퍼 (service role key 직접 사용)
+   모든 fetch에 .ok 체크 포함 (C3+C4)
+   ═══════════════════════════════════════════════════════ */
+
+async function completeSession(
+  supabaseUrl: string,
+  serviceKey: string,
+  sessionId: string,
+  scenes: TQScene[],
+  primaryEmotion: string,
+  secondaryEmotion: string | null,
+  scores: Record<string, number>,
+): Promise<boolean> {
+  const storyTitle = scenes[0]?.title ?? "나의 딸깍 동화";
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/tq_complete_session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        p_session_id: sessionId,
+        p_generated_story: scenes,
+        p_story_title: storyTitle,
+        p_primary_emotion: primaryEmotion,
+        p_secondary_emotion: secondaryEmotion,
+        p_emotion_scores: scores,
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.error("[TQ-Generate] RPC tq_complete_session HTTP error:", res.status, errBody);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[TQ-Generate] RPC tq_complete_session network error:", err);
+    return false;
+  }
+}
+
+async function updateSessionStatus(
+  supabaseUrl: string,
+  serviceKey: string,
+  sessionId: string,
+  status: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/tq_sessions?id=eq.${sessionId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ status }),
+      },
+    );
+    if (!res.ok) {
+      console.error("[TQ-Generate] updateSessionStatus failed:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[TQ-Generate] updateSessionStatus error:", err);
+    return false;
+  }
+}
+
+async function updateGeneratedStory(
+  supabaseUrl: string,
+  serviceKey: string,
+  sessionId: string,
+  scenes: TQScene[],
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/tq_sessions?id=eq.${sessionId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ generated_story: scenes }),
+      },
+    );
+    if (!res.ok) {
+      console.error("[TQ-Generate] updateGeneratedStory failed:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[TQ-Generate] updateGeneratedStory error:", err);
+    return false;
+  }
+}
+
+async function refundTicket(
+  supabaseUrl: string,
+  serviceKey: string,
+  sessionId: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/tq_refund_ticket`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ p_session_id: sessionId }),
+    });
+    if (!res.ok) {
+      console.error("[TQ-Generate] refundTicket failed:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[TQ-Generate] refundTicket error:", err);
+    return false;
+  }
 }

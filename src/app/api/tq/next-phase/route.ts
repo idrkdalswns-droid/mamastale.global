@@ -35,7 +35,7 @@ const limiter = createInMemoryLimiter("tq:next-phase", { maxEntries: 200 });
 
 const requestSchema = z.object({
   session_id: z.string().uuid(),
-  question_id: z.string().regex(/^q\d{1,2}$/),
+  question_id: z.string().regex(/^(?:p[2-5])?q\d{1,2}$/),
   choice_id: z.number().int().min(1).max(4),
   choice_text: z.string().max(100),
   scores: z.object({
