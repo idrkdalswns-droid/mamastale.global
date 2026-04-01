@@ -145,7 +145,9 @@ export default function DalkkakPlayPage() {
   // (handles Phase 1 Q1→branch split where question sets change)
   const phaseResponseCount = responses.filter(
     (r) => {
-      const qNum = parseInt(r.questionId.replace("q", ""), 10);
+      // ID 형식: "q1"-"q4" (Phase 1 정적) 또는 "p2q5" (AI 생성)
+      const match = r.questionId.match(/q(\d+)$/);
+      const qNum = match ? parseInt(match[1], 10) : 0;
       return qNum >= phaseRange[0] && qNum <= phaseRange[1];
     },
   ).length;

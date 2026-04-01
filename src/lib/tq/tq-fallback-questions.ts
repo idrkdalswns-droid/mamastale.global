@@ -39,7 +39,7 @@ function determineFallbackDirection(scores: EmotionScores): FallbackDirection {
 const PHASE2_BURNOUT: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q5', text: '혼자만의 시간이 생기면, 가장 먼저 하고 싶은 건 뭔가요?',
+      id: 'p2q5', text: '혼자만의 시간이 생기면, 가장 먼저 하고 싶은 건 뭔가요?',
       choices: [
         { id: 1, text: '아무것도 안 하고 조용히 누워 있고 싶어요', feedback: '쉬고 싶다는 마음, 당연한 거예요', emotionLabel: 'rest_need', scores: { burnout: 55, guilt: 10, identity_loss: 20, loneliness: 25, hope: 35 } },
         { id: 2, text: '예전에 좋아하던 걸 다시 해보고 싶어요', feedback: '그리운 나를 찾고 싶은 마음이네요', emotionLabel: 'self_recovery', scores: { burnout: 25, guilt: 10, identity_loss: 50, loneliness: 20, hope: 45 } },
@@ -48,7 +48,7 @@ const PHASE2_BURNOUT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q6', text: '하루 중 가장 힘든 시간대는 언제인가요?',
+      id: 'p2q6', text: '하루 중 가장 힘든 시간대는 언제인가요?',
       choices: [
         { id: 1, text: '아침 — 눈 뜨자마자 전쟁이 시작돼요', feedback: '하루의 시작부터 에너지를 쏟는 거죠', emotionLabel: 'morning_battle', scores: { burnout: 70, guilt: 10, identity_loss: 15, loneliness: 20, hope: 20 } },
         { id: 2, text: '저녁 — 하루를 버티고 나면 탈진이에요', feedback: '하루를 온몸으로 버텨낸 거예요', emotionLabel: 'evening_collapse', scores: { burnout: 65, guilt: 15, identity_loss: 20, loneliness: 25, hope: 15 } },
@@ -57,7 +57,7 @@ const PHASE2_BURNOUT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q7', text: '요즘 나를 위해 한 일이 있다면요?',
+      id: 'p2q7', text: '요즘 나를 위해 한 일이 있다면요?',
       choices: [
         { id: 1, text: '카페에서 혼자 커피 한 잔 마신 것', feedback: '그 시간이 당신에게 소중했을 거예요', emotionLabel: 'small_self_care', scores: { burnout: 40, guilt: 15, identity_loss: 20, loneliness: 25, hope: 45 } },
         { id: 2, text: '생각해보니 없는 것 같아요', feedback: '나를 위한 시간도 필요해요', emotionLabel: 'no_self_care', scores: { burnout: 65, guilt: 20, identity_loss: 40, loneliness: 30, hope: 15 } },
@@ -66,7 +66,7 @@ const PHASE2_BURNOUT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q8', text: '잠들기 전, 이불 속에서 떠오르는 마음이 있다면요?',
+      id: 'p2q8', text: '잠들기 전, 이불 속에서 떠오르는 마음이 있다면요?',
       choices: [
         { id: 1, text: '오늘도 아이한테 미안한 장면이 떠올라요', feedback: '미안한 마음은 사랑의 다른 이름이에요', emotionLabel: 'bedtime_guilt', scores: { burnout: 30, guilt: 70, identity_loss: 15, loneliness: 20, hope: 25 } },
         { id: 2, text: '내일도 똑같겠지, 하는 무력감', feedback: '반복 속 지침, 자연스러운 거예요', emotionLabel: 'tomorrow_dread', scores: { burnout: 70, guilt: 15, identity_loss: 30, loneliness: 25, hope: 10 } },
@@ -80,7 +80,7 @@ const PHASE2_BURNOUT: FallbackPhaseSet = {
 const PHASE2_GUILT: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q5', text: '아이와 함께 있을 때, 문득 이런 생각이 스칠 때가 있나요?',
+      id: 'p2q5', text: '아이와 함께 있을 때, 문득 이런 생각이 스칠 때가 있나요?',
       choices: [
         { id: 1, text: '이 순간을 즐겨야 하는데 왜 힘들기만 하지', feedback: '즐겨야 한다는 압박도 무거운 거예요', emotionLabel: 'joy_pressure', scores: { burnout: 50, guilt: 55, identity_loss: 20, loneliness: 15, hope: 25 } },
         { id: 2, text: '나는 좋은 엄마일까, 자꾸 의심이 돼요', feedback: '의심이 드는 건 진심이기 때문이에요', emotionLabel: 'self_doubt', scores: { burnout: 30, guilt: 65, identity_loss: 30, loneliness: 20, hope: 25 } },
@@ -89,7 +89,7 @@ const PHASE2_GUILT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q6', text: '누군가 "잘하고 있어"라고 말해주면 어떤 기분이 들어요?',
+      id: 'p2q6', text: '누군가 "잘하고 있어"라고 말해주면 어떤 기분이 들어요?',
       choices: [
         { id: 1, text: '울컥해요, 듣고 싶었나 봐요', feedback: '그 울컥함이 마음의 대답이에요', emotionLabel: 'craving_validation', scores: { burnout: 30, guilt: 40, identity_loss: 20, loneliness: 40, hope: 40 } },
         { id: 2, text: '솔직히 믿기지 않아요', feedback: '믿기 어려운 것도 자연스러운 거예요', emotionLabel: 'distrust_praise', scores: { burnout: 35, guilt: 55, identity_loss: 35, loneliness: 30, hope: 20 } },
@@ -98,7 +98,7 @@ const PHASE2_GUILT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q7', text: '아이에게 미안한 마음이 들 때, 어떤 순간이 가장 많아요?',
+      id: 'p2q7', text: '아이에게 미안한 마음이 들 때, 어떤 순간이 가장 많아요?',
       choices: [
         { id: 1, text: '화를 내고 나서 후회할 때', feedback: '후회는 사랑이 남아있다는 증거예요', emotionLabel: 'post_anger_regret', scores: { burnout: 35, guilt: 75, identity_loss: 15, loneliness: 15, hope: 25 } },
         { id: 2, text: '함께 있어도 집중하지 못할 때', feedback: '몸과 마음이 따로 노는 건 지친 거예요', emotionLabel: 'divided_attention', scores: { burnout: 55, guilt: 50, identity_loss: 25, loneliness: 20, hope: 20 } },
@@ -107,7 +107,7 @@ const PHASE2_GUILT: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q8', text: '완벽하지 않아도 괜찮다는 말, 어떻게 들려요?',
+      id: 'p2q8', text: '완벽하지 않아도 괜찮다는 말, 어떻게 들려요?',
       choices: [
         { id: 1, text: '머리로는 알지만 마음이 안 따라가요', feedback: '아는 것과 느끼는 건 다른 거예요', emotionLabel: 'head_heart_gap', scores: { burnout: 35, guilt: 55, identity_loss: 30, loneliness: 20, hope: 30 } },
         { id: 2, text: '누가 그런 말을 해줬으면 좋겠어요', feedback: '들려줄 사람이 그리운 거죠', emotionLabel: 'want_to_hear', scores: { burnout: 25, guilt: 35, identity_loss: 20, loneliness: 55, hope: 35 } },
@@ -121,7 +121,7 @@ const PHASE2_GUILT: FallbackPhaseSet = {
 const PHASE2_LONELINESS: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q5', text: '최근에 누군가와 진짜 마음을 나눈 적이 있나요?',
+      id: 'p2q5', text: '최근에 누군가와 진짜 마음을 나눈 적이 있나요?',
       choices: [
         { id: 1, text: '남편이랑도 형식적인 대화만 해요', feedback: '가까이 있어도 멀게 느껴지는 거죠', emotionLabel: 'shallow_talk', scores: { burnout: 30, guilt: 10, identity_loss: 20, loneliness: 70, hope: 20 } },
         { id: 2, text: '친구한테 톡은 하지만 속 얘기는 못해요', feedback: '속 이야기를 꺼내기 어려운 거죠', emotionLabel: 'surface_friendship', scores: { burnout: 25, guilt: 15, identity_loss: 25, loneliness: 60, hope: 25 } },
@@ -130,7 +130,7 @@ const PHASE2_LONELINESS: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q6', text: 'SNS를 볼 때 어떤 기분이 드나요?',
+      id: 'p2q6', text: 'SNS를 볼 때 어떤 기분이 드나요?',
       choices: [
         { id: 1, text: '다들 행복해 보이는데 나만 아닌 것 같아요', feedback: '보이는 것이 전부가 아니에요', emotionLabel: 'social_envy', scores: { burnout: 30, guilt: 20, identity_loss: 30, loneliness: 55, hope: 20 } },
         { id: 2, text: '연결되어 있는 것 같지만 외로워요', feedback: '디지털 연결이 진짜 연결은 아니죠', emotionLabel: 'digital_loneliness', scores: { burnout: 25, guilt: 10, identity_loss: 25, loneliness: 65, hope: 20 } },
@@ -139,7 +139,7 @@ const PHASE2_LONELINESS: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q7', text: '누군가 다가와주길 바라면서도 벽을 세울 때가 있나요?',
+      id: 'p2q7', text: '누군가 다가와주길 바라면서도 벽을 세울 때가 있나요?',
       choices: [
         { id: 1, text: '네, 다가오면 괜히 밀어내게 돼요', feedback: '밀어내는 것도 자기를 보호하는 거예요', emotionLabel: 'push_pull', scores: { burnout: 25, guilt: 20, identity_loss: 30, loneliness: 60, hope: 25 } },
         { id: 2, text: '먼저 다가가고 싶은데 방법을 모르겠어요', feedback: '방법을 모르는 것도 외로움의 일부예요', emotionLabel: 'connection_difficulty', scores: { burnout: 20, guilt: 15, identity_loss: 25, loneliness: 65, hope: 30 } },
@@ -148,7 +148,7 @@ const PHASE2_LONELINESS: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q8', text: '가장 외로운 순간은 언제인가요?',
+      id: 'p2q8', text: '가장 외로운 순간은 언제인가요?',
       choices: [
         { id: 1, text: '가족 다 모여 있는데도 혼자인 느낌일 때', feedback: '함께 있어도 외로운 것, 가장 큰 외로움이죠', emotionLabel: 'lonely_in_crowd', scores: { burnout: 30, guilt: 10, identity_loss: 25, loneliness: 75, hope: 15 } },
         { id: 2, text: '아이가 잠든 뒤 혼자 남겨진 시간', feedback: '조용한 밤이 가장 외로운 시간이죠', emotionLabel: 'night_loneliness', scores: { burnout: 35, guilt: 10, identity_loss: 20, loneliness: 65, hope: 20 } },
@@ -166,7 +166,7 @@ const PHASE2_DEFAULT = PHASE2_BURNOUT;
 const PHASE3: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q9', text: '평소에 말하지 못한, 가장 솔직한 마음은 뭔가요?',
+      id: 'p3q9', text: '평소에 말하지 못한, 가장 솔직한 마음은 뭔가요?',
       choices: [
         { id: 1, text: '가끔은 모든 걸 놓아버리고 싶어요', feedback: '놓고 싶다는 마음, 자연스러운 거예요', emotionLabel: 'letting_go_wish', scores: { burnout: 65, guilt: 15, identity_loss: 30, loneliness: 30, hope: 15 } },
         { id: 2, text: '나도 누군가한테 보살핌을 받고 싶어요', feedback: '보살핌을 원하는 건 약한 게 아니에요', emotionLabel: 'care_need', scores: { burnout: 35, guilt: 10, identity_loss: 20, loneliness: 65, hope: 25 } },
@@ -175,7 +175,7 @@ const PHASE3: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q10', text: '당신이 가장 무너지는 순간은 어떤 때인가요?',
+      id: 'p3q10', text: '당신이 가장 무너지는 순간은 어떤 때인가요?',
       choices: [
         { id: 1, text: '노력해도 달라지지 않는다고 느낄 때', feedback: '달라지지 않는 느낌, 정말 무력하죠', emotionLabel: 'futility', scores: { burnout: 70, guilt: 20, identity_loss: 35, loneliness: 25, hope: 10 } },
         { id: 2, text: '아이한테 상처를 준 것 같을 때', feedback: '그 마음이 얼마나 무거운지 알아요', emotionLabel: 'child_hurt_guilt', scores: { burnout: 30, guilt: 75, identity_loss: 20, loneliness: 20, hope: 15 } },
@@ -184,7 +184,7 @@ const PHASE3: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q11', text: '혼자서 울어본 적이 있나요? 어떤 울음이었나요?',
+      id: 'p3q11', text: '혼자서 울어본 적이 있나요? 어떤 울음이었나요?',
       choices: [
         { id: 1, text: '소리 없이 울었어요, 들킬까 봐', feedback: '들키지 않으려 애쓴 거죠', emotionLabel: 'silent_crying', scores: { burnout: 45, guilt: 25, identity_loss: 30, loneliness: 55, hope: 15 } },
         { id: 2, text: '갑자기 터져서 나도 놀랐어요', feedback: '그만큼 참아왔다는 뜻이에요', emotionLabel: 'sudden_burst', scores: { burnout: 55, guilt: 20, identity_loss: 25, loneliness: 35, hope: 20 } },
@@ -193,7 +193,7 @@ const PHASE3: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q12', text: '지금 가장 그리운 건 뭔가요?',
+      id: 'p3q12', text: '지금 가장 그리운 건 뭔가요?',
       choices: [
         { id: 1, text: '엄마가 되기 전의 나', feedback: '그때의 나도 지금의 나도 같은 사람이에요', emotionLabel: 'pre_mother_self', scores: { burnout: 35, guilt: 20, identity_loss: 65, loneliness: 25, hope: 25 } },
         { id: 2, text: '아무 걱정 없이 잠들던 밤', feedback: '편안한 잠이 사치가 된 거죠', emotionLabel: 'peaceful_sleep', scores: { burnout: 55, guilt: 10, identity_loss: 20, loneliness: 20, hope: 25 } },
@@ -209,7 +209,7 @@ const PHASE3: FallbackPhaseSet = {
 const PHASE4: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q13', text: '어떤 엄마이고 싶었나요? 그리고 지금은요?',
+      id: 'p4q13', text: '어떤 엄마이고 싶었나요? 그리고 지금은요?',
       choices: [
         { id: 1, text: '항상 웃는 엄마이고 싶었는데, 웃음이 줄었어요', feedback: '웃음이 줄어든 건 에너지가 부족한 거예요', emotionLabel: 'lost_smile', scores: { burnout: 55, guilt: 40, identity_loss: 30, loneliness: 20, hope: 20 } },
         { id: 2, text: '내 엄마와 다른 엄마이고 싶었는데, 닮아가요', feedback: '닮아가는 두려움, 이해해요', emotionLabel: 'becoming_mother', scores: { burnout: 35, guilt: 55, identity_loss: 35, loneliness: 25, hope: 20 } },
@@ -218,7 +218,7 @@ const PHASE4: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q14', text: '당신의 상처가 아이에게 영향을 줄까 봐 걱정되나요?',
+      id: 'p4q14', text: '당신의 상처가 아이에게 영향을 줄까 봐 걱정되나요?',
       choices: [
         { id: 1, text: '네, 그게 가장 무서워요', feedback: '그 두려움 자체가 아이를 지키려는 마음이에요', emotionLabel: 'transmission_terror', scores: { burnout: 40, guilt: 70, identity_loss: 25, loneliness: 20, hope: 15 } },
         { id: 2, text: '이미 영향을 준 것 같아서 미안해요', feedback: '미안함은 바꾸려는 의지의 시작이에요', emotionLabel: 'damage_belief', scores: { burnout: 35, guilt: 80, identity_loss: 25, loneliness: 20, hope: 15 } },
@@ -227,7 +227,7 @@ const PHASE4: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q15', text: '과거의 나에게 해주고 싶은 말이 있다면요?',
+      id: 'p4q15', text: '과거의 나에게 해주고 싶은 말이 있다면요?',
       choices: [
         { id: 1, text: '충분히 잘하고 있었어', feedback: '그때도 지금도 충분한 사람이에요', emotionLabel: 'past_validation', scores: { burnout: 30, guilt: 40, identity_loss: 25, loneliness: 25, hope: 50 } },
         { id: 2, text: '그렇게까지 참지 않아도 됐어', feedback: '참아온 시간이 정말 길었죠', emotionLabel: 'past_endurance', scores: { burnout: 50, guilt: 25, identity_loss: 30, loneliness: 35, hope: 30 } },
@@ -236,7 +236,7 @@ const PHASE4: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q16', text: '지금 이 순간, 당신에게 가장 필요한 건 뭔가요?',
+      id: 'p4q16', text: '지금 이 순간, 당신에게 가장 필요한 건 뭔가요?',
       choices: [
         { id: 1, text: '쉼 — 아무것도 하지 않아도 되는 시간', feedback: '쉼이 가장 필요한 거예요', emotionLabel: 'need_rest', scores: { burnout: 70, guilt: 10, identity_loss: 20, loneliness: 20, hope: 30 } },
         { id: 2, text: '연결 — 나를 이해해주는 한 사람', feedback: '한 사람이면 충분해요', emotionLabel: 'need_connection', scores: { burnout: 25, guilt: 10, identity_loss: 20, loneliness: 65, hope: 30 } },
@@ -252,7 +252,7 @@ const PHASE4: FallbackPhaseSet = {
 const PHASE5: FallbackPhaseSet = {
   questions: [
     {
-      id: 'q17', text: '이 여정을 돌아보면, 어떤 마음이 드나요?',
+      id: 'p5q17', text: '이 여정을 돌아보면, 어떤 마음이 드나요?',
       choices: [
         { id: 1, text: '생각보다 많은 걸 참아왔구나 싶어요', feedback: '인정하는 것만으로도 큰 걸음이에요', emotionLabel: 'self_recognition', scores: { burnout: 40, guilt: 20, identity_loss: 25, loneliness: 25, hope: 45 } },
         { id: 2, text: '나도 돌봄이 필요한 사람이었네요', feedback: '당신도 돌봄받을 자격이 있어요', emotionLabel: 'self_worth', scores: { burnout: 30, guilt: 15, identity_loss: 20, loneliness: 30, hope: 55 } },
@@ -261,7 +261,7 @@ const PHASE5: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q18', text: '지금의 나에게 해주고 싶은 말이 있다면요?',
+      id: 'p5q18', text: '지금의 나에게 해주고 싶은 말이 있다면요?',
       choices: [
         { id: 1, text: '수고했어, 정말 많이', feedback: '당신의 수고를 당신이 인정해주세요', emotionLabel: 'self_comfort', scores: { burnout: 35, guilt: 15, identity_loss: 20, loneliness: 20, hope: 60 } },
         { id: 2, text: '괜찮아, 천천히 가도 돼', feedback: '천천히 가는 것도 앞으로 가는 거예요', emotionLabel: 'gentle_pace', scores: { burnout: 30, guilt: 20, identity_loss: 20, loneliness: 20, hope: 55 } },
@@ -270,7 +270,7 @@ const PHASE5: FallbackPhaseSet = {
       ],
     },
     {
-      id: 'q19', text: '이 동화가 어떤 이야기였으면 좋겠어요?',
+      id: 'p5q19', text: '이 동화가 어떤 이야기였으면 좋겠어요?',
       choices: [
         { id: 1, text: '지친 마음을 안아주는 이야기', feedback: '안아주는 이야기가 될 거예요', emotionLabel: 'comfort_story', scores: { burnout: 40, guilt: 10, identity_loss: 15, loneliness: 25, hope: 55 } },
         { id: 2, text: '잃어버린 나를 다시 찾는 이야기', feedback: '나를 찾는 여정이 될 거예요', emotionLabel: 'finding_self_story', scores: { burnout: 25, guilt: 10, identity_loss: 45, loneliness: 20, hope: 50 } },

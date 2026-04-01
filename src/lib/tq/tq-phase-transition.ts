@@ -46,7 +46,7 @@ const choiceSchema = z.object({
 });
 
 const questionSchema = z.object({
-  id: z.string().regex(/^q\d{1,2}$/),
+  id: z.string().regex(/^p\dq\d{1,2}$/),
   text: z.string().min(10).max(80),
   choices: z.array(choiceSchema).length(4),
 });
@@ -137,7 +137,7 @@ export const PHASE_TRANSITION_SYSTEM_PROMPT = `\
 {
   "questions": [
     {
-      "id": "q{N}",
+      "id": "p{Phase}q{N}",
       "text": "(최대 80자)",
       "choices": [
         {
@@ -202,7 +202,7 @@ const PHASE_DIRECTIVES: Record<number, string> = {
 출력 형식이 다릅니다:
 \`\`\`json
 {
-  "questions": [q17, q18, q19],
+  "questions": [p5q17, p5q18, p5q19],
   "q20_prompt": {
     "title": "마지막 이야기",
     "instruction": "(AI가 생성한 개인화된 초대 문구, 50-100자)",
@@ -229,10 +229,10 @@ ${context}
 
 function getQuestionRange(targetPhase: number): string {
   switch (targetPhase) {
-    case 2: return 'q5, q6, q7, q8';
-    case 3: return 'q9, q10, q11, q12';
-    case 4: return 'q13, q14, q15, q16';
-    case 5: return 'q17, q18, q19';
+    case 2: return 'p2q5, p2q6, p2q7, p2q8';
+    case 3: return 'p3q9, p3q10, p3q11, p3q12';
+    case 4: return 'p4q13, p4q14, p4q15, p4q16';
+    case 5: return 'p5q17, p5q18, p5q19';
     default: return '';
   }
 }

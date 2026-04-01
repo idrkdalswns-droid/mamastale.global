@@ -47,12 +47,12 @@ const requestSchema = z.object({
   }),
 });
 
-// Phase 전환이 일어나는 질문 ID
+// Phase 전환이 일어나는 질문 ID (p{phase}q{num} 형식)
 const PHASE_TRANSITION_QUESTIONS: Record<string, number> = {
-  q4: 2,   // Phase 1 → 2
-  q8: 3,   // Phase 2 → 3
-  q12: 4,  // Phase 3 → 4
-  q16: 5,  // Phase 4 → 5
+  q4: 2,      // Phase 1 → 2 (정적 질문)
+  p2q8: 3,    // Phase 2 → 3
+  p3q12: 4,   // Phase 3 → 4
+  p4q16: 5,   // Phase 4 → 5
 };
 
 // Q1 → 분기 태그 매핑 (choice_id → BranchTag)
@@ -147,7 +147,8 @@ export async function POST(request: NextRequest) {
   });
 
   // ── Q1 답변: Phase 1 내부 분기 (AI 호출 없음) ──
-  if (question_id === "q1" && session.phase === 1) {
+  // q1은 Phase 1 전용 정적 ID — AI 생성 ID는 p{N}q{N} 형식이라 충돌 없음
+  if (question_id === "q1") {
     const branchTag = CHOICE_TO_BRANCH_TAG[choice_id] ?? "warmth";
 
     // 방문 횟수 조회
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Q2, Q3 답변: Phase 1 내부 (다음 질문은 이미 반환됨) ──
-  if ((question_id === "q2" || question_id === "q3") && session.phase === 1) {
+  if (question_id === "q2" || question_id === "q3") {
     await sb.client
       .from("tq_sessions")
       .update({ responses })
@@ -198,9 +199,7 @@ export async function POST(request: NextRequest) {
   // ── Phase 전환 질문 (q4, q8, q12, q16) ──
   const targetPhase = PHASE_TRANSITION_QUESTIONS[question_id];
 
-  // Phase 전환은 해당 phase에서만 유효 (AI 생성 질문 ID 충돌 방지)
-  const expectedPhaseForTransition: Record<string, number> = { q4: 1, q8: 2, q12: 3, q16: 4 };
-  if (targetPhase && session.phase === expectedPhaseForTransition[question_id]) {
+  if (targetPhase) {
     // Phase 업데이트
     await sb.client
       .from("tq_sessions")
