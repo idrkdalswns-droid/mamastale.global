@@ -108,15 +108,25 @@ export function QuestionFlow({ onGenerationStart }: QuestionFlowProps) {
           return;
         }
 
-        // Case b: Phase transition with new questions
+        // Case b: New questions received
         if (data.questions && data.phase) {
-          // Show interstitial
+          const newQuestions: TQQuestion[] = data.questions;
+          const isSamePhase = data.phase === currentPhase;
+
+          if (isSamePhase) {
+            // Phase 1 branch: Q1→Q2-Q4 (no transition animation, advance index)
+            setQuestions(newQuestions);
+            // Q1 was already answered, so this is question 2 within the phase
+            useTQStore.setState({ currentQuestionIndex: 0 });
+            setLoading(false);
+            persist();
+            return;
+          }
+
+          // Phase transition: show interstitial
           setTransitionToPhase(data.phase);
           setTransitionReady(false);
           setTransitioning(true);
-
-          // Prepare new questions in background
-          const newQuestions: TQQuestion[] = data.questions;
 
           // Signal ready after questions are parsed
           setTimeout(() => {

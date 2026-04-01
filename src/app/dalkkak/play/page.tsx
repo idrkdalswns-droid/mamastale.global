@@ -21,6 +21,7 @@ export default function DalkkakPlayPage() {
     currentPhase,
     currentQuestionIndex,
     questions,
+    responses,
     restore,
     setQuestions,
     setStatus,
@@ -140,7 +141,15 @@ export default function DalkkakPlayPage() {
   const phase = TQ_PHASES[currentPhase];
   const phaseRange = phase?.questionRange || [1, 4];
   const totalQuestionsInPhase = phaseRange[1] - phaseRange[0] + 1;
-  const questionInPhase = Math.min(currentQuestionIndex, totalQuestionsInPhase - 1);
+  // Use responses count for current phase to track actual progress
+  // (handles Phase 1 Q1→branch split where question sets change)
+  const phaseResponseCount = responses.filter(
+    (r) => {
+      const qNum = parseInt(r.questionId.replace("q", ""), 10);
+      return qNum >= phaseRange[0] && qNum <= phaseRange[1];
+    },
+  ).length;
+  const questionInPhase = Math.min(phaseResponseCount, totalQuestionsInPhase - 1);
 
   if (loading) {
     return (
