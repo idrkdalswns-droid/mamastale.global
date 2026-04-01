@@ -11,7 +11,7 @@ export function getChoiceImagePath(
   questionId: string,
   choiceId: number,
 ): string | null {
-  const match = questionId.match(/^q(\d+)$/);
+  const match = questionId.match(/^(?:p\d)?q(\d+)$/);
   if (!match) return null;
   const qNum = parseInt(match[1], 10);
   // Only Q1-Q19 have illustrations (Q20 is text input)
