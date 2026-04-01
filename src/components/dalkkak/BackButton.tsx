@@ -21,7 +21,7 @@ export function BackButton() {
     // First question of a phase → can't go back across phase boundary
     const phaseRange = TQ_PHASES[currentPhase]?.questionRange;
     if (phaseRange) {
-      const firstQInPhase = `q${phaseRange[0]}`;
+      const firstQInPhase = currentPhase === 1 ? `q${phaseRange[0]}` : `p${currentPhase}q${phaseRange[0]}`;
       const currentQ = questions[currentQuestionIndex];
       if (currentQ?.id === firstQInPhase) {
         toast(tc("UI.dalkkak.cannotGoBack"), {

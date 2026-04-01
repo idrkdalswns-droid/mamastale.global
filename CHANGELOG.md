@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.59.1] - 2026-04-01
+
+### Fixed
+- 딸깍 동화 submit→generate 아키텍처 수정: Edge Runtime fire-and-forget 문제 해결 (C2+C5)
+- submit 경량화 (검증+상태변경만), generate에서 AI 생성+SSE 스트리밍+RPC 통합
+- Zod regex가 p{N}q{N} 형식 질문 ID를 거부하던 문제 수정 (C1)
+- generate 라우트 내 Supabase fetch 응답 미체크 수정 (C3+C4)
+- BackButton이 Phase 2+ 첫 질문에서 뒤로가기를 차단하지 못하던 문제 수정 (H1)
+- SSE scene 이벤트에서 빈 text 장면 방어 (H5)
+- 결과 페이지에서 빈 장면 필터링 (H6)
+- PDF 다운로드 팝업 차단 시 사용자 피드백 추가 (H10)
+
 ## [1.59.0] - 2026-03-31
 
 ### Added

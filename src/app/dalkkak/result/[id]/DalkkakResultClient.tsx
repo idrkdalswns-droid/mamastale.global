@@ -68,13 +68,15 @@ export default function DalkkakResultClient() {
         }
 
         // Parse generated story into scenes
-        const scenes: Scene[] = (data.story?.scenes || []).map(
-          (s: { title?: string; text: string; sceneNumber?: number }, i: number) => ({
-            sceneLabel: s.title || `장면 ${i + 1}`,
-            text: s.text,
-            imagePrompt: "",
-          }),
-        );
+        const scenes: Scene[] = (data.story?.scenes || [])
+          .filter((s: { text?: string }) => s?.text)
+          .map(
+            (s: { title?: string; text: string; sceneNumber?: number }, i: number) => ({
+              sceneLabel: s.title || `장면 ${i + 1}`,
+              text: s.text,
+              imagePrompt: "",
+            }),
+          );
 
         setResult({
           title: data.story?.title || "나의 딸깍 동화",

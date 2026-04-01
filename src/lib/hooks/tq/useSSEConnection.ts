@@ -91,6 +91,7 @@ export function useSSEConnection(
     es.addEventListener("scene", (e) => {
       try {
         const scene = JSON.parse(e.data) as Scene & { index?: number };
+        if (!scene.text) return;
         const idx = scene.index ?? 0;
         addScene(scene);
         callbacks.onScene?.(scene, idx);

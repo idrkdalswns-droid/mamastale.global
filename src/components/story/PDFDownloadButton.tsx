@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { trackPdfDownload } from "@/lib/utils/analytics";
 import { tc } from "@/lib/i18n/client";
 import { authFetchOnce } from "@/lib/utils/auth-fetch";
@@ -27,6 +28,9 @@ export function PDFDownloadButton({ scenes, title, authorName, coverImage }: PDF
     // Open window IMMEDIATELY during user gesture to avoid Chrome popup blocker.
     // If we await fetch() first, the user gesture context expires and window.open is blocked.
     const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("팝업이 차단되었어요. 브라우저 설정에서 팝업을 허용해 주세요.", { duration: 4000 });
+    }
     if (printWindow) {
       // CTO-FIX: Use DOM API instead of document.write() to avoid XSS vector
       const doc = printWindow.document;
