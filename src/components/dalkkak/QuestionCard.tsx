@@ -26,13 +26,13 @@ export function QuestionCard({
 
   const handleSelect = useCallback(
     (choiceId: number) => {
-      if (disabled || submitting || selectedId !== null) return;
+      if (disabled || submitting) return;
       setSelectedId(choiceId);
 
       // Show feedback after selection animation
       setTimeout(() => setShowFeedback(true), 300);
     },
-    [disabled, submitting, selectedId],
+    [disabled, submitting],
   );
 
   const handleNext = useCallback(() => {
