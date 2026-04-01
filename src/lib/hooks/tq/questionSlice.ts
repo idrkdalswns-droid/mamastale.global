@@ -61,7 +61,9 @@ export const createQuestionSlice: StateCreator<
 
   nextQuestion: () =>
     set((state) => ({
-      currentQuestionIndex: Math.min(state.currentQuestionIndex + 1, state.questions.length - 1),
+      // Allow index to go one past the end so currentQuestion becomes undefined
+      // (triggers TextQuestion in Phase 5 after last MCQ)
+      currentQuestionIndex: Math.min(state.currentQuestionIndex + 1, state.questions.length),
       questionShownAt: Date.now(),
     })),
 
