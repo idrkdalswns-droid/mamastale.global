@@ -23,6 +23,8 @@ const storyPostSchema = z.object({
   authorAlias: z.string().max(50).optional().nullable(),
   coverImage: z.string().max(2048).optional().nullable(),
   topic: z.string().max(50).optional().nullable(),
+  // v1.60.2: Client-provided ticket timestamp fallback (from /api/tickets/use response)
+  ticketTimestamp: z.string().max(100).optional().nullable(),
 });
 
 export const runtime = "edge";
@@ -178,7 +180,7 @@ export async function POST(request: NextRequest) {
       return sb.applyCookies(NextResponse.json({ error: t("Errors.validation.invalidRequestFormat") }, { status: 400 }));
     }
 
-    const { scenes, sessionId, metadata, isPublic, coverImage } = parsed.data;
+    const { scenes, sessionId, metadata, isPublic, coverImage, ticketTimestamp: clientTicketTimestamp } = parsed.data;
     // Server-side input sanitization: enforce max lengths, strip HTML
     const title = typeof parsed.data.title === "string" ? sanitizeText(parsed.data.title.trim().slice(0, 200)) : "";
     const authorAlias = typeof parsed.data.authorAlias === "string" ? sanitizeText(parsed.data.authorAlias.trim().slice(0, 50)) : null;
@@ -203,18 +205,35 @@ export async function POST(request: NextRequest) {
         const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
         const TICKET_WINDOW_MS = 4 * 60 * 60 * 1000; // HOTFIX: 30분 → 4시간 (대화 20~60분 + 여유)
         if (!lastTicketUse) {
-          // 타임스탬프 자체가 없음 = /api/tickets/use 미호출 → 403 유지 (보안)
-          return sb.applyCookies(NextResponse.json(
-            { error: t("Errors.ticket.deductionNotConfirmed") },
-            { status: 403 }
-          ));
+          // v1.60.2: Profile metadata missing — try client-provided timestamp as fallback
+          // This covers the case where /api/tickets/use metadata write failed silently
+          if (clientTicketTimestamp && typeof clientTicketTimestamp === "string") {
+            const clientTs = new Date(clientTicketTimestamp).getTime();
+            if (!isNaN(clientTs) && Date.now() - clientTs <= TICKET_WINDOW_MS) {
+              console.warn("[Stories] Profile metadata missing last_ticket_used_at — using client-provided ticketTimestamp as fallback");
+              verifiedTicketTimestamp = clientTicketTimestamp;
+              ticketVerificationFailed = true; // Flag for review — metadata was inconsistent
+            } else {
+              return sb.applyCookies(NextResponse.json(
+                { error: t("Errors.ticket.deductionNotConfirmed"), code: "ticket_timestamp_missing" },
+                { status: 403 }
+              ));
+            }
+          } else {
+            // 타임스탬프 자체가 없음 + 클라이언트 fallback도 없음 = /api/tickets/use 미호출 → 403 유지 (보안)
+            return sb.applyCookies(NextResponse.json(
+              { error: t("Errors.ticket.deductionNotConfirmed"), code: "ticket_timestamp_missing" },
+              { status: 403 }
+            ));
+          }
+        } else {
+          if (Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
+            // 4시간 초과 — 동화 손실 방지 위해 pending 플래그로 저장
+            console.warn("[Stories] Ticket window exceeded (4h) — saving with pending flag");
+            ticketVerificationFailed = true;
+          }
+          verifiedTicketTimestamp = lastTicketUse;
         }
-        if (Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
-          // 4시간 초과 — 동화 손실 방지 위해 pending 플래그로 저장
-          console.warn("[Stories] Ticket window exceeded (4h) — saving with pending flag");
-          ticketVerificationFailed = true;
-        }
-        verifiedTicketTimestamp = lastTicketUse;
       } catch (ticketCheckErr) {
         // Retry once before flagging
         try {

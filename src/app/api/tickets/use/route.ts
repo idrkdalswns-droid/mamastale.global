@@ -245,12 +245,15 @@ export async function POST(request: NextRequest) {
     // Previously used spread ({ ...metadata, last_ticket_used_at: ... }) which could overwrite
     // concurrent changes (e.g. processed_orders from payment webhook) → data loss.
     // H24-FIX: Metadata update with 1 retry + structured warning
+    // v1.60.2 FIX: Add spread fallback after RPC failure + return timestamp for client-side backup
+    const ticketTimestamp = new Date().toISOString();
+    let metadataUpdated = false;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const { error: rpcErr } = await sb.client.rpc("update_profile_metadata_field", {
           p_user_id: user.id,
           p_key: "last_ticket_used_at",
-          p_value: JSON.stringify(new Date().toISOString()),
+          p_value: JSON.stringify(ticketTimestamp),
         });
         if (rpcErr && rpcErr.code === "PGRST116") {
           // RPC not found — fallback to spread (backward compat)
@@ -258,8 +261,9 @@ export async function POST(request: NextRequest) {
           const fallbackMeta = await readMetadata(user.id);
           await sb.client
             .from("profiles")
-            .update({ metadata: { ...fallbackMeta, last_ticket_used_at: new Date().toISOString() } })
+            .update({ metadata: { ...fallbackMeta, last_ticket_used_at: ticketTimestamp } })
             .eq("id", user.id);
+          metadataUpdated = true;
           break; // Fallback succeeded
         } else if (rpcErr) {
           if (attempt === 0) {
@@ -267,6 +271,8 @@ export async function POST(request: NextRequest) {
             continue; // Retry once
           }
           console.error(`[Tickets/Use] Metadata update failed after retry: code=${rpcErr.code} hint=${rpcErr.hint || "none"}`);
+        } else {
+          metadataUpdated = true;
         }
         break; // Success or final failure
       } catch (err) {
@@ -275,10 +281,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // v1.60.2: If RPC failed, try spread fallback as last resort
+    if (!metadataUpdated) {
+      try {
+        console.warn("[Tickets/Use] RPC failed — attempting spread fallback as last resort");
+        const fallbackMeta = await readMetadata(user.id);
+        await sb.client
+          .from("profiles")
+          .update({ metadata: { ...fallbackMeta, last_ticket_used_at: ticketTimestamp } })
+          .eq("id", user.id);
+        metadataUpdated = true;
+        console.info("[Tickets/Use] Spread fallback succeeded");
+      } catch (spreadErr) {
+        console.error("[Tickets/Use] Spread fallback also failed:", spreadErr instanceof Error ? spreadErr.message : String(spreadErr));
+      }
+    }
+
+    // v1.60.2: Return ticketTimestamp so client can use as fallback for /api/stories
     return sb.applyCookies(NextResponse.json({
       success: true,
       remaining: updated.free_stories_remaining,
       isPremium,
+      ticketTimestamp,
+      metadataUpdated,
     }));
   } catch (error) {
     // R4-FIX: Log error.name instead of error.message to avoid PII leakage

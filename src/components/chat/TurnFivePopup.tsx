@@ -72,6 +72,13 @@ export default function TurnFivePopup({
       });
 
       if (res.ok) {
+        // v1.60.2: Store ticketTimestamp from response as fallback for /api/stories
+        try {
+          const resData = await res.json().catch(() => ({}));
+          if (resData.ticketTimestamp) {
+            sessionStorage.setItem("mamastale_ticket_timestamp", resData.ticketTimestamp);
+          }
+        } catch { /* best-effort */ }
         // V5-FIX #16: Reset submittingRef BEFORE calling onTicketUsed (which unmounts this component)
         submittingRef.current = false;
         // Ticket deducted → lift free trial limit (popup will auto-dismiss)

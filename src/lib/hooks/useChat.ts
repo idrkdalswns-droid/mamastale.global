@@ -412,6 +412,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         try {
           const storyTitle = data.title || "나의 마음 동화";
           const authHeaders = await getAuthHeaders();
+          // v1.60.2: Read ticket timestamp from sessionStorage as fallback
+          let ticketTimestamp: string | undefined;
+          try { ticketTimestamp = sessionStorage.getItem("mamastale_ticket_timestamp") || undefined; } catch { /* noop */ }
           const saveRes = await fetch("/api/stories", {
             method: "POST",
             headers: authHeaders,
@@ -419,6 +422,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               title: storyTitle,
               scenes: data.scenes,
               sessionId: state.sessionId || undefined,
+              ...(ticketTimestamp ? { ticketTimestamp } : {}),
             }),
             signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함 30초 + 여유 5초
           });
@@ -429,13 +433,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
               storySaveError: null,
               completedStoryId: saveData.id || get().completedStoryId,
             });
+            // v1.60.2: Clear ticket timestamp after successful save
+            try { sessionStorage.removeItem("mamastale_ticket_timestamp"); } catch { /* noop */ }
           } else if (saveRes.status === 401) {
             set({ storySaved: false, storySaveError: "login_required" });
             get().persistToStorage(); // Backup for recovery after login/refresh
           } else if (saveRes.status === 403) {
-            // HOTFIX: "no_tickets" vs "ticket_expired" 구분
+            // v1.60.2 FIX: Use code field for reliable error classification (server returns localized error strings)
             const errData = await saveRes.json().catch(() => ({} as Record<string, unknown>));
-            const errType = errData.error === "no_tickets" ? "no_tickets" : "ticket_expired";
+            const errType = errData.code === "no_tickets" ? "no_tickets" : "ticket_expired";
             set({ storySaved: false, storySaveError: errType });
             get().persistToStorage();
           } else {
@@ -698,6 +704,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
               set({ storySaved: true });
               try {
                 const authHeaders = await getAuthHeaders();
+                // v1.60.2: Read ticket timestamp fallback
+                let sseTicketTs: string | undefined;
+                try { sseTicketTs = sessionStorage.getItem("mamastale_ticket_timestamp") || undefined; } catch { /* noop */ }
                 const saveRes = await fetch("/api/stories", {
                   method: "POST",
                   headers: authHeaders,
@@ -705,17 +714,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     title: event.title || "나의 마음 동화",
                     scenes: event.scenes,
                     sessionId: state.sessionId || undefined,
+                    ...(sseTicketTs ? { ticketTimestamp: sseTicketTs } : {}),
                   }),
                   signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
                 });
                 if (saveRes.ok) {
                   const saveData = await saveRes.json();
                   set({ storySaveError: null, completedStoryId: saveData.id || get().completedStoryId });
+                  try { sessionStorage.removeItem("mamastale_ticket_timestamp"); } catch { /* noop */ }
                 } else if (saveRes.status === 401) {
                   set({ storySaved: false, storySaveError: "login_required" });
                   get().persistToStorage();
                 } else if (saveRes.status === 403) {
-                  set({ storySaved: false, storySaveError: "no_tickets" });
+                  // v1.60.2 FIX: Use code field for proper error classification
+                  const sseErrData = await saveRes.json().catch(() => ({} as Record<string, unknown>));
+                  const sseErrType = sseErrData.code === "no_tickets" ? "no_tickets" : "ticket_expired";
+                  set({ storySaved: false, storySaveError: sseErrType });
                   get().persistToStorage();
                 } else {
                   set({ storySaved: false, storySaveError: "save_failed" });
@@ -951,6 +965,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         try {
           // V5-FIX #28: Fresh auth headers (token may have refreshed since first attempt)
           const authHeaders = await getAuthHeaders();
+          // v1.60.2: Include ticket timestamp fallback
+          let retryTicketTs: string | undefined;
+          try { retryTicketTs = sessionStorage.getItem("mamastale_ticket_timestamp") || undefined; } catch { /* noop */ }
           const res = await fetch("/api/stories", {
             method: "POST",
             headers: authHeaders,
@@ -958,6 +975,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               title: "나의 마음 동화",
               scenes: state.completedScenes,
               sessionId: state.sessionId || undefined,
+              ...(retryTicketTs ? { ticketTimestamp: retryTicketTs } : {}),
             }),
             signal: AbortSignal.timeout(35_000), // AI 표지 생성 포함
           });
@@ -973,6 +991,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
             try { localStorage.removeItem(STORAGE_KEY); } catch {}
             // Clear draft too — story is complete
             try { localStorage.removeItem(DRAFT_KEY); } catch {}
+            // v1.60.2: Clear ticket timestamp
+            try { sessionStorage.removeItem("mamastale_ticket_timestamp"); } catch { /* noop */ }
             return true;
           }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.2] - 2026-04-04
+
+### Fixed
+- **P0 동화 저장 403 버그**: `last_ticket_used_at` 메타데이터 업데이트 실패 시 동화 저장 불가 → RPC 실패 후 spread fallback 추가 + 클라이언트 ticketTimestamp 이중 안전장치
+- **티켓 메타데이터 업데이트**: `/api/tickets/use`에서 RPC 실패 시 spread fallback을 최후 수단으로 시도 + 응답에 ticketTimestamp 포함
+- **에러 분류 수정**: `useChat.ts`에서 403 에러 분류가 로컬라이즈된 문자열 비교로 항상 실패 → `code` 필드 기반으로 변경
+
 ## [1.60.1] - 2026-04-04
 
 ### Fixed
