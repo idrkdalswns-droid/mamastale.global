@@ -82,10 +82,24 @@ export async function POST(request: NextRequest) {
   if (existingSession) {
     if (force_new) {
       // 기존 세션 취소 + 티켓 환불
-      await sb.client
-        .from("tq_sessions")
-        .update({ status: "cancelled" })
-        .eq("id", existingSession.id);
+      // v1.60.3 FIX: service role로 UPDATE (RLS가 SELECT/INSERT만 허용)
+      const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const svcUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (svcKey && svcUrl) {
+        await fetch(
+          `${svcUrl}/rest/v1/tq_sessions?id=eq.${existingSession.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: svcKey,
+              Authorization: `Bearer ${svcKey}`,
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ status: "cancelled" }),
+          },
+        );
+      }
 
       // hold된 티켓 환불 (RPC 있으면 사용, 없으면 직접 증가)
       try {

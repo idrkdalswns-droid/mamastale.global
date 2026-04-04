@@ -63,6 +63,39 @@ const CHOICE_TO_BRANCH_TAG: Record<number, BranchTag> = {
   4: "confusion",
 };
 
+// v1.60.3 FIX: service role로 tq_sessions UPDATE (RLS가 SELECT/INSERT만 허용)
+async function updateTQSession(
+  sessionId: string,
+  data: Record<string, unknown>,
+): Promise<boolean> {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serviceKey || !supabaseUrl) return false;
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/tq_sessions?id=eq.${sessionId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify(data),
+      },
+    );
+    if (!res.ok) {
+      console.error("[TQ-NextPhase] updateTQSession failed:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[TQ-NextPhase] updateTQSession error:", err);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const sb = createApiSupabaseClient(request);
   if (!sb)
@@ -161,16 +194,13 @@ export async function POST(request: NextRequest) {
     const branchQuestions = getBranchQuestions(branchTag, vc);
 
     // 세션 업데이트 (응답 저장 + 분기 메타데이터)
-    await sb.client
-      .from("tq_sessions")
-      .update({
-        responses,
-        generated_questions: {
-          phase1_branch: branchTag,
-          visit_count: vc,
-        },
-      })
-      .eq("id", session_id);
+    await updateTQSession(session_id, {
+      responses,
+      generated_questions: {
+        phase1_branch: branchTag,
+        visit_count: vc,
+      },
+    });
 
     return sb.applyCookies(
       NextResponse.json({
@@ -183,10 +213,7 @@ export async function POST(request: NextRequest) {
 
   // ── Q2, Q3 답변: Phase 1 내부 (다음 질문은 이미 반환됨) ──
   if (question_id === "q2" || question_id === "q3") {
-    await sb.client
-      .from("tq_sessions")
-      .update({ responses })
-      .eq("id", session_id);
+    await updateTQSession(session_id, { responses });
 
     return sb.applyCookies(
       NextResponse.json({
@@ -201,10 +228,7 @@ export async function POST(request: NextRequest) {
 
   if (targetPhase) {
     // Phase 업데이트
-    await sb.client
-      .from("tq_sessions")
-      .update({ responses, phase: targetPhase })
-      .eq("id", session_id);
+    await updateTQSession(session_id, { responses, phase: targetPhase });
 
     // 누적 스코어 계산
     const accScores = accumulateScores(responses);
@@ -226,17 +250,14 @@ export async function POST(request: NextRequest) {
       const questions = await callHaikuAgent(input);
 
       // 생성된 질문 저장
-      await sb.client
-        .from("tq_sessions")
-        .update({
-          generated_questions: {
-            ...(typeof session.generated_questions === "object"
-              ? session.generated_questions
-              : {}),
-            [`phase${targetPhase}`]: questions,
-          },
-        })
-        .eq("id", session_id);
+      await updateTQSession(session_id, {
+        generated_questions: {
+          ...(typeof session.generated_questions === "object"
+            ? session.generated_questions
+            : {}),
+          [`phase${targetPhase}`]: questions,
+        },
+      });
 
       return sb.applyCookies(
         NextResponse.json({
@@ -272,10 +293,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 일반 답변 (q5~q7, q9~q11, q13~q15, q17~q19): 응답만 저장 ──
-  await sb.client
-    .from("tq_sessions")
-    .update({ responses })
-    .eq("id", session_id);
+  await updateTQSession(session_id, { responses });
 
   return sb.applyCookies(
     NextResponse.json({

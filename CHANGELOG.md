@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.60.3] - 2026-04-04
+
+### Fixed
+- **P0 딸깍 동화 전면 장애**: `tq_sessions` RLS가 SELECT/INSERT만 허용하여 모든 UPDATE가 조용히 실패 → 답변·감정 프로필·상태 전환이 서버에 저장 안 됨 → 동화 생성 불가
+- **`/api/tq/next-phase`**: 모든 `sb.client` UPDATE를 service role key 직접 fetch로 변경
+- **`/api/tq/submit`**: status→generating UPDATE를 service role key로 변경 + 실패 시 500 반환 (기존: 실패해도 202 반환)
+- **`/api/tq/start`**: force_new 시 기존 세션 cancelled UPDATE를 service role key로 변경
+
 ## [1.60.2] - 2026-04-04
 
 ### Fixed

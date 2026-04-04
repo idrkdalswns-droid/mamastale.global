@@ -120,16 +120,48 @@ export async function POST(request: NextRequest) {
   const { primary, secondary } = classifyEmotionProfile(finalScores);
 
   // status → generating + 감정 프로필 + q20_text 저장
-  await sb.client
-    .from("tq_sessions")
-    .update({
-      status: "generating",
-      q20_text: q20_text ?? null,
-      primary_emotion: primary,
-      secondary_emotion: secondary ?? null,
-      emotion_scores: finalScores,
-    })
-    .eq("id", session_id);
+  // v1.60.3 FIX: service role key로 UPDATE (RLS가 SELECT/INSERT만 허용)
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!serviceKey || !supabaseUrl) {
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: t("Errors.system.configError") },
+        { status: 503 },
+      ),
+    );
+  }
+
+  const updateRes = await fetch(
+    `${supabaseUrl}/rest/v1/tq_sessions?id=eq.${session_id}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        status: "generating",
+        q20_text: q20_text ?? null,
+        primary_emotion: primary,
+        secondary_emotion: secondary ?? null,
+        emotion_scores: finalScores,
+      }),
+    },
+  );
+
+  if (!updateRes.ok) {
+    console.error("[TQ-Submit] Failed to update session:", updateRes.status);
+    return sb.applyCookies(
+      NextResponse.json(
+        { error: t("Errors.story.createFailed") },
+        { status: 500 },
+      ),
+    );
+  }
 
   // 202 즉시 반환 — AI 생성은 GET /api/tq/generate (SSE) 에서 수행
   return sb.applyCookies(
