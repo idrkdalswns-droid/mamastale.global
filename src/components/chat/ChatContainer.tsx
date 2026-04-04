@@ -385,7 +385,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
           storyId={completedStoryId || undefined}
           onViewStory={() => {
             // For non-premium stories, show upgrade CTA before navigating
-            if (!isPremiumStory && user) {
+            if (!isPremiumStory && user && !storySaveError) {
               setShowPremiumUpgrade(true);
             } else {
               onComplete();
@@ -417,6 +417,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             <p className="text-sm text-brown font-medium mb-2">
               {storySaveError === "login_required" ? "동화 저장을 위해 로그인이 필요해요" :
                storySaveError === "no_tickets" ? "티켓이 부족하여 저장할 수 없어요" :
+               storySaveError === "ticket_expired" ? "저장 시간이 초과되었어요. 다시 시도해 주세요." :
                storySaveError === "timeout" ? "저장을 확인하고 있어요..." :
                "동화 저장에 실패했어요"}
             </p>

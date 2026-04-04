@@ -433,7 +433,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
             set({ storySaved: false, storySaveError: "login_required" });
             get().persistToStorage(); // Backup for recovery after login/refresh
           } else if (saveRes.status === 403) {
-            set({ storySaved: false, storySaveError: "no_tickets" });
+            // HOTFIX: "no_tickets" vs "ticket_expired" 구분
+            const errData = await saveRes.json().catch(() => ({} as Record<string, unknown>));
+            const errType = errData.error === "no_tickets" ? "no_tickets" : "ticket_expired";
+            set({ storySaved: false, storySaveError: errType });
             get().persistToStorage();
           } else {
             set({ storySaved: false, storySaveError: "save_failed" });

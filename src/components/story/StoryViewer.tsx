@@ -103,9 +103,10 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
   const hideActions = isLocked || previewMode;
 
   // M-7: Use storyId for localStorage key isolation (prevents title collision)
-  const pageStorageKey = storyId ? `mamastale_last_page_${storyId}` : title ? `mamastale_last_page_${title.slice(0, 40)}` : "";
+  // HOTFIX: 새 동화(storyId 없음)는 항상 처음부터 시작
+  const pageStorageKey = storyId ? `mamastale_last_page_${storyId}` : "";
   const [currentPage, setCurrentPage] = useState(() => {
-    if (!pageStorageKey) return 0;
+    if (!pageStorageKey) return 0; // 새 동화 또는 storyId 없음 → 항상 page 0
     try {
       const saved = parseInt(localStorage.getItem(pageStorageKey) || "0", 10);
       return saved >= 0 && saved < totalPages ? saved : 0;

@@ -573,6 +573,7 @@ export default function Home() {
       <ErrorBoundary fullScreen>
         <StoryViewer
           scenes={completedScenes}
+          storyId={completedStoryId || undefined}
           title={editedTitle || "나의 마음 동화"}
           authorName={user?.user_metadata?.name || undefined}
           coverImage={selectedCover || undefined}

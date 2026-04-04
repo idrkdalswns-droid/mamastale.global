@@ -183,9 +183,13 @@ export default function PremiumUpgradeCTA({
             {trigger === "story_complete" && onViewStory ? (
               <button
                 onClick={onViewStory}
-                className="w-full py-2.5 text-[13px] font-medium text-coral transition-all min-h-[44px]"
+                className="w-full py-3 rounded-full text-[14px] font-semibold text-brown transition-all active:scale-[0.97] min-h-[44px]"
+                style={{
+                  border: "2px solid rgba(90,62,43,0.2)",
+                  background: "rgba(255,255,255,0.8)",
+                }}
               >
-                먼저 내 동화 보러가기 →
+                먼저 내 동화 보러가기
               </button>
             ) : (
               <button

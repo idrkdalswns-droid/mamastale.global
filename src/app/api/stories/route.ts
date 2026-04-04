@@ -201,12 +201,18 @@ export async function POST(request: NextRequest) {
           .single();
         const ticketMeta = (ticketProfile?.metadata as Record<string, unknown>) || {};
         const lastTicketUse = ticketMeta.last_ticket_used_at as string | undefined;
-        const TICKET_WINDOW_MS = 30 * 60 * 1000; // 30 min window
-        if (!lastTicketUse || Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
+        const TICKET_WINDOW_MS = 4 * 60 * 60 * 1000; // HOTFIX: 30분 → 4시간 (대화 20~60분 + 여유)
+        if (!lastTicketUse) {
+          // 타임스탬프 자체가 없음 = /api/tickets/use 미호출 → 403 유지 (보안)
           return sb.applyCookies(NextResponse.json(
             { error: t("Errors.ticket.deductionNotConfirmed") },
             { status: 403 }
           ));
+        }
+        if (Date.now() - new Date(lastTicketUse).getTime() > TICKET_WINDOW_MS) {
+          // 4시간 초과 — 동화 손실 방지 위해 pending 플래그로 저장
+          console.warn("[Stories] Ticket window exceeded (4h) — saving with pending flag");
+          ticketVerificationFailed = true;
         }
         verifiedTicketTimestamp = lastTicketUse;
       } catch (ticketCheckErr) {
@@ -215,9 +221,13 @@ export async function POST(request: NextRequest) {
           const { data: retryProfile } = await sb.client.from("profiles").select("metadata").eq("id", user.id).single();
           const retryMeta = (retryProfile?.metadata as Record<string, unknown>) || {};
           const retryTicketUse = retryMeta.last_ticket_used_at as string | undefined;
-          const TICKET_WINDOW_MS = 30 * 60 * 1000;
-          if (!retryTicketUse || Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
+          const TICKET_WINDOW_MS = 4 * 60 * 60 * 1000; // HOTFIX: 30분 → 4시간
+          if (!retryTicketUse) {
             return sb.applyCookies(NextResponse.json({ error: t("Errors.ticket.verificationFailed") }, { status: 500 }));
+          }
+          if (Date.now() - new Date(retryTicketUse).getTime() > TICKET_WINDOW_MS) {
+            console.warn("[Stories] Ticket window exceeded (4h, retry path) — saving with pending flag");
+            ticketVerificationFailed = true;
           }
           verifiedTicketTimestamp = retryTicketUse;
         } catch {
@@ -344,6 +354,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // HOTFIX: Pre-INSERT CAS clear — 1 티켓 = 1 동화 보장
+    let clearedTimestamp: string | undefined;
+    if (verifiedTicketTimestamp && !isDIY) {
+      try {
+        const { data: currentProfile } = await sb.client
+          .from("profiles").select("metadata").eq("id", user.id).single();
+        const currentMeta = (currentProfile?.metadata as Record<string, unknown>) || {};
+        if (currentMeta.last_ticket_used_at === verifiedTicketTimestamp) {
+          const { last_ticket_used_at: _cleared, ...restMeta } = currentMeta;
+          await sb.client.from("profiles")
+            .update({ metadata: restMeta }).eq("id", user.id);
+          clearedTimestamp = verifiedTicketTimestamp;
+        }
+      } catch (e) {
+        console.warn("[Stories] Pre-INSERT CAS clear failed (non-blocking):", e);
+      }
+    }
+
     // Try insert
     let insertResult = await sb.client
       .from("stories")
@@ -366,6 +394,16 @@ export async function POST(request: NextRequest) {
 
     if (insertResult.error || !insertResult.data) {
       console.error("[Stories] Insert failed: code=", insertResult.error?.code);
+      // HOTFIX: INSERT 실패 시 CAS 타임스탬프 복원
+      if (clearedTimestamp) {
+        try {
+          await sb.client.rpc("update_profile_metadata_field", {
+            p_user_id: user.id,
+            p_key: "last_ticket_used_at",
+            p_value: JSON.stringify(clearedTimestamp),
+          });
+        } catch { /* best-effort restoration */ }
+      }
       // DIY free save: skip ticket rollback for DIY stories
       if (!isDIY) {
         // B2 Fix: 티켓 롤백 with retry + failure tracking
@@ -449,31 +487,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 1.4 FIX: CAS-clear ticket timestamp to prevent reuse within 30min window
-    // Only clears if the timestamp matches what we verified earlier (atomic)
-    // DIY free save: skip CAS ticket clear for DIY stories
-    if (!isDIY && verifiedTicketTimestamp) {
-      try {
-        const { data: currentProfile } = await sb.client
-          .from("profiles")
-          .select("metadata")
-          .eq("id", user.id)
-          .single();
-        const currentMeta = (currentProfile?.metadata as Record<string, unknown>) || {};
-        if (currentMeta.last_ticket_used_at === verifiedTicketTimestamp) {
-          const { ...restMeta } = currentMeta;
-          delete restMeta.last_ticket_used_at;
-          await sb.client
-            .from("profiles")
-            .update({ metadata: restMeta })
-            .eq("id", user.id);
-        }
-        // If timestamp changed, another request already cleared it — safe to skip
-      } catch (casErr) {
-        // Non-critical: worst case allows one extra save in the window
-        console.warn("[Stories] CAS ticket clear failed (non-blocking):", casErr);
-      }
-    }
+    // HOTFIX: Post-INSERT CAS clear removed — now done pre-INSERT (above)
 
     // BS5 Fix: Cover generation fire-and-forget (don't block response)
     const geminiKey = process.env.GEMINI_API_KEY;
