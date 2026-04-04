@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.59.2] - 2026-04-04
+
+### Fixed
+- SSE named event 누락 수정 — 클라이언트 addEventListener가 이벤트를 수신하지 못하던 근본 원인 해결 (B1)
+- scene+text 분리 전송을 단일 이벤트로 병합 (B2)
+- progress 필드명 `scene`→`current` 통일 (B3)
+- done 이벤트에 story_id 포함 — 결과 페이지 네비게이션 복구 (B4)
+- 폴링 응답에 scenes_count 추가 — 인앱 브라우저 진행률 표시 (B5)
+- 재접속 시 이중 환불 방지 — story 존재 확인 후 환불 (B6)
+- Phase 1 Q4 선택지 복붙 오류 3건 수정 (B1/C1/D1 branch) (B7)
+
 ## [1.59.1] - 2026-04-01
 
 ### Fixed
