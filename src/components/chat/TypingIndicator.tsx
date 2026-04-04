@@ -7,9 +7,11 @@ import { PHASES } from "@/lib/constants/phases";
 
 interface TypingIndicatorProps {
   phase: number;
+  /** FE-02: Scene generation progress for Phase 4 */
+  sceneProgress?: { current: number; total: number } | null;
 }
 
-export default function TypingIndicator({ phase }: TypingIndicatorProps) {
+export default function TypingIndicator({ phase, sceneProgress }: TypingIndicatorProps) {
   const p = PHASES[phase];
   const [elapsed, setElapsed] = useState(0);
 
@@ -18,8 +20,15 @@ export default function TypingIndicator({ phase }: TypingIndicatorProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Sprint 8: Enhanced timeout UX — progressive messages
-  const hint = elapsed >= 40 ? "조금 더 걸리고 있어요. 잠시만요..."
+  // FE-02: Phase 4 scene-level progress overrides generic hints
+  const sceneHint = phase === 4 && sceneProgress
+    ? `장면 ${sceneProgress.current}/${sceneProgress.total} 생성 중...`
+    : null;
+
+  // Sprint 8: Enhanced timeout UX — progressive messages (fallback when no scene progress)
+  const hint = sceneHint
+    ? sceneHint
+    : elapsed >= 40 ? "조금 더 걸리고 있어요. 잠시만요..."
     : elapsed >= 25 ? "거의 다 됐어요..."
     : elapsed >= 12 ? "동화를 정성껏 만들고 있어요..."
     : elapsed >= 6 ? "잠시만 기다려 주세요..." : null;

@@ -47,6 +47,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     storySaved,
     storySaveError,
     isPremiumStory,
+    sceneProgress,
     turnCountInCurrentPhase,
     sendMessage,
     initSession,
@@ -138,6 +139,18 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
     window.addEventListener("pagehide", handlePageHide);
     return () => window.removeEventListener("pagehide", handlePageHide);
   }, [guardedSave]);
+
+  // ── FE-02: Warn before leaving during Phase 4 story generation ──
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const state = useChatStore.getState();
+      if (state.currentPhase === 4 && state.isLoading) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // ── DEFENSE LAYER 2: Periodic auto-save every 30s ──
   // Mobile browsers don't reliably fire beforeunload (iOS kills process instantly).
@@ -330,7 +343,7 @@ export function ChatPage({ onComplete, onGoHome, freeTrialMode = false, ticketsR
             <MessageBubble key={m.id || `msg_${m.role}_${idx}`} message={m} currentPhase={currentPhase} />
           ))}
 
-          {isLoading && <TypingIndicator phase={currentPhase} />}
+          {isLoading && <TypingIndicator phase={currentPhase} sceneProgress={sceneProgress} />}
         </div>
       </div>
 

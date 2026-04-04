@@ -342,6 +342,9 @@ export async function POST(request: NextRequest) {
 
         let fullText = "";
         let streamFailed = false;
+        // FE-02: Scene marker detection for Phase 4 progress
+        const SCENE_MARKERS = /\[(INTRO|CONFLICT|ATTEMPT|RESOLUTION|WISDOM)\s*\d\]/;
+        let detectedScenes = 0;
 
         try {
           for await (const event of stream) {
@@ -357,6 +360,16 @@ export async function POST(request: NextRequest) {
               controller.enqueue(encoder.encode(
                 `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
               ));
+              // FE-02: Detect scene markers and emit progress events (Phase 4 only)
+              if (safePhase === 4) {
+                const newSceneCount = (fullText.match(new RegExp(SCENE_MARKERS, "g")) || []).length;
+                if (newSceneCount > detectedScenes) {
+                  detectedScenes = newSceneCount;
+                  controller.enqueue(encoder.encode(
+                    `data: ${JSON.stringify({ type: "scene_progress", current: detectedScenes, total: 10 })}\n\n`
+                  ));
+                }
+              }
             }
           }
         } catch (streamErr) {
@@ -402,6 +415,16 @@ export async function POST(request: NextRequest) {
                     controller.enqueue(encoder.encode(
                       `data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`
                     ));
+                    // FE-02: Scene progress in fallback stream too
+                    if (safePhase === 4) {
+                      const newSceneCount = (fullText.match(new RegExp(SCENE_MARKERS, "g")) || []).length;
+                      if (newSceneCount > detectedScenes) {
+                        detectedScenes = newSceneCount;
+                        controller.enqueue(encoder.encode(
+                          `data: ${JSON.stringify({ type: "scene_progress", current: detectedScenes, total: 10 })}\n\n`
+                        ));
+                      }
+                    }
                   }
                 }
               } finally {

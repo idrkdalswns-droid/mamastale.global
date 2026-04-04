@@ -82,6 +82,8 @@ interface ChatState {
   isFromDraft: boolean;
   /** Whether the completed story was generated with the premium (Opus) model */
   isPremiumStory: boolean;
+  /** FE-02: Phase 4 scene generation progress (0-10) */
+  sceneProgress: { current: number; total: number } | null;
   /** Story Seed — therapeutic anchor tracked across phases */
   storySeed: StorySeedState;
 
@@ -248,6 +250,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   storySaveError: null,
   isFromDraft: false,
   isPremiumStory: false,
+  sceneProgress: null,
   storySeed: {},
 
   initSession: (sessionId: string) => {
@@ -608,6 +611,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
           }
 
+          // FE-02: Update scene generation progress (Phase 4)
+          if (event.type === "scene_progress" && typeof event.current === "number") {
+            set({ sceneProgress: { current: event.current, total: event.total ?? 10 } });
+          }
+
           // P1-4: Append warm redirect message when medical advice is detected
           if (event.type === "safety_redirect" && event.message) {
             // E2E: flush pending rAF before safety message
@@ -621,6 +629,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }
 
           if (event.type === "done") {
+            // FE-02: Clear scene progress on completion
+            set({ sceneProgress: null });
             // E2E: flush pending rAF before done processing (레이스 컨디션 방지)
             if (streamRafId) {
               cancelAnimationFrame(streamRafId);
@@ -1022,6 +1032,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       storySaveError: null,
       isFromDraft: false,
       isPremiumStory: false,
+      sceneProgress: null,
       storySeed: {},
     });
   },

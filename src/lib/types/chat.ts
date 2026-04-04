@@ -58,7 +58,7 @@ export interface StorySeedState {
  * SSE streaming event types for /api/chat/stream
  */
 export interface ChatStreamEvent {
-  type: "meta" | "text" | "done" | "error" | "safety_redirect";
+  type: "meta" | "text" | "done" | "error" | "safety_redirect" | "scene_progress";
   /** Streaming text chunk (for 'text' events) */
   text?: string;
   /** Warm redirect message (for 'safety_redirect' events) */
@@ -85,4 +85,7 @@ export interface ChatStreamEvent {
   medicalRedirected?: boolean;
   /** v1.22.0: AI-generated story title from [TITLE: ...] marker */
   title?: string;
+  /** FE-02: Scene generation progress (for 'scene_progress' events) */
+  current?: number;
+  total?: number;
 }
