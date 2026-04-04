@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.60.0] - 2026-04-04
+
+### Added
+- narrative-safety.ts: 동화 완성 후 유해 서사 8패턴 키워드 검사 (BE-02)
+- crisis-tracker.test.ts: 위기감지 에스컬레이션 12개 시나리오 테스트 (BE-01)
+- tickets.test.ts: CAS 동시성 + 입력 검증 9개 시나리오 테스트 (BE-09)
+- Phase 4 SSE scene_progress 이벤트: 장면 수준 진행률 표시 (FE-02)
+- Phase 4 생성 중 beforeunload 이탈 경고 (FE-02)
+
+### Fixed
+- Stripe 웹훅 인메모리 dedup Map 제거 — DB dedup 단일 소스 오브 트루스 (BE-07)
+- 티켓 증가량 상한(999) 추가 + 음수/0/>10/비정수 입력 에러 (BE-08)
+
 ## [1.59.2] - 2026-04-04
 
 ### Fixed
