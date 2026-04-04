@@ -118,7 +118,12 @@ export async function GET(
   const { generated_questions: _gq, ...sessionData } = session;
   void _gq;
 
+  // 폴링 모드에서 진행률 업데이트용 scenes_count
+  const scenes_count = Array.isArray(session.generated_story)
+    ? session.generated_story.length
+    : 0;
+
   return sb.applyCookies(
-    NextResponse.json({ session: sessionData, current_questions }),
+    NextResponse.json({ session: sessionData, current_questions, scenes_count }),
   );
 }

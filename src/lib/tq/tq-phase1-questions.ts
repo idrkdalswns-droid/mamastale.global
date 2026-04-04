@@ -217,8 +217,8 @@ const BRANCH_QUESTIONS: Record<BranchKey, [Question, Question, Question]> = {
       choices: [
         { id: 1, text: '혼자 방에서 책 읽으며 조용히 지내던 아이', feedback: '그때도 혼자만의 세계가 필요했군요', emotionLabel: 'childhood_solitude', scores: s(20, 10, 30, 50, 35) },
         { id: 2, text: '어른들 눈치 보며 착하게 굴던 아이', feedback: '그 아이의 노력이 지금의 당신을 만들었어요', emotionLabel: 'people_pleasing', scores: s(30, 40, 35, 35, 25) },
-        { id: 3, text: '받지 못한 것들이 생각나면서 서운해질 때', feedback: '서운한 마음도 소중한 감정이에요', emotionLabel: 'emotional_neglect', scores: s(25, 20, 40, 55, 20) },
-        { id: 4, text: '엄마가 왜 그랬는지 알면서도 원망이 남아있을 때', feedback: '이해와 원망은 함께 있을 수 있어요', emotionLabel: 'ambivalent_resentment', scores: s(30, 35, 35, 40, 25) },
+        { id: 3, text: '부족하다고 느꼈지만 티 안 내던 아이', feedback: '참아왔던 그 아이의 마음이 보여요', emotionLabel: 'emotional_neglect', scores: s(25, 20, 40, 55, 20) },
+        { id: 4, text: '엄마 앞에서 괜찮은 척했던 아이', feedback: '괜찮은 척도 하나의 생존 방식이었어요', emotionLabel: 'ambivalent_resentment', scores: s(30, 35, 35, 40, 25) },
       ],
     },
   ],
@@ -281,7 +281,7 @@ const BRANCH_QUESTIONS: Record<BranchKey, [Question, Question, Question]> = {
       choices: [
         { id: 1, text: '"네가 힘든 줄 몰랐어, 미안해"', feedback: '알아봐주길 바랐던 마음, 당연한 거예요', emotionLabel: 'unseen_child', scores: s(30, 25, 25, 55, 25) },
         { id: 2, text: '"다 잘하지 않아도 돼"', feedback: '그때도 지금도 충분한 사람이에요', emotionLabel: 'childhood_pressure', scores: s(40, 45, 30, 25, 30) },
-        { id: 3, text: '나는 달라야지 하면서도 똑같아지는 것 같을 때', feedback: '그 두려움은 더 나은 엄마가 되고 싶은 마음이에요', emotionLabel: 'repetition_fear', scores: s(35, 55, 30, 25, 25) },
+        { id: 3, text: '"너도 힘들었구나, 잘해왔어"', feedback: '그 한마디가 필요했던 거죠', emotionLabel: 'childhood_validation', scores: s(35, 40, 30, 35, 30) },
         { id: 4, text: '그런 기억이 없어요, 혼자 버티는 게 당연했어서', feedback: '혼자 버텨온 시간, 정말 대단한 거예요', emotionLabel: 'self_reliance', scores: s(50, 15, 30, 50, 20) },
       ],
     },
@@ -345,7 +345,7 @@ const BRANCH_QUESTIONS: Record<BranchKey, [Question, Question, Question]> = {
       choices: [
         { id: 1, text: '어른들이 정해준 길만 걸었던 것 같아요', feedback: "그때 잃어버린 '나'를 지금 찾고 있는 거예요", emotionLabel: 'lost_agency', scores: s(25, 15, 60, 30, 25) },
         { id: 2, text: '뭘 잘하는지 물어봐준 사람이 없었어요', feedback: '물어봐주지 않았던 것도 하나의 상처예요', emotionLabel: 'emotional_neglect', scores: s(20, 20, 45, 55, 20) },
-        { id: 3, text: '엄마가 왜 그랬는지 알면서도 원망이 남아있을 때', feedback: '이해와 원망은 함께 있을 수 있어요', emotionLabel: 'ambivalent_resentment', scores: s(30, 35, 35, 40, 25) },
+        { id: 3, text: '뭘 하고 싶은지 몰랐는데, 아무도 물어봐주지 않았어요', feedback: '물어봐주는 사람이 있었다면 달랐을 거예요', emotionLabel: 'unasked_child', scores: s(25, 20, 55, 45, 20) },
         { id: 4, text: '길을 잃은 적은 없었어요, 엄마가 되고 나서 처음', feedback: '처음 겪는 혼란, 충분히 당황스러울 수 있어요', emotionLabel: 'new_confusion', scores: s(35, 20, 50, 25, 30) },
       ],
     },

@@ -140,7 +140,10 @@ export async function GET(request: NextRequest) {
     async start(controller) {
       const send = (data: Record<string, unknown>) => {
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          const eventType = (data.type as string) || "message";
+          controller.enqueue(
+            encoder.encode(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
         } catch {
           // Controller closed (client disconnected)
         }
@@ -164,24 +167,29 @@ export async function GET(request: NextRequest) {
       // 재접속: 기존 장면 먼저 전송
       for (let i = 0; i < existingScenes.length; i++) {
         const scene = existingScenes[i];
-        send({ type: "scene", number: scene.sceneNumber, title: scene.title });
-        send({ type: "text", text: scene.text });
-        send({ type: "progress", scene: scene.sceneNumber, total: 9 });
+        send({ type: "scene", sceneNumber: scene.sceneNumber, title: scene.title, text: scene.text, index: i });
+        send({ type: "progress", current: scene.sceneNumber, total: 9 });
       }
 
-      // 이미 9장면 이상 ���으면 → 완료 처리만
+      // 이미 9장면 이상 있으면 → 완료 처리만
       if (existingScenes.length >= 9) {
         // RPC가 아직 안 됐을 수 있으므로 완료 처리
-        const rpcOk = await completeSession(
+        const storyId = await completeSession(
           supabaseUrl, serviceKey, sessionId, existingScenes,
           session.primary_emotion, session.secondary_emotion, session.emotion_scores,
         );
-        if (rpcOk) {
-          send({ type: "done", scenes: existingScenes.length, primaryEmotion: session.primary_emotion });
+        if (storyId) {
+          send({ type: "done", story_id: storyId, scenes: existingScenes.length, primaryEmotion: session.primary_emotion });
         } else {
-          send({ type: "error", message: t("Errors.story.createFailed") });
-          await updateSessionStatus(supabaseUrl, serviceKey, sessionId, "failed");
-          await refundTicket(supabaseUrl, serviceKey, sessionId);
+          // RPC 실패 → story가 이미 존재하는지 확인 (이중 환불 방지)
+          const existingStoryId = await getStoryIdForSession(supabaseUrl!, serviceKey!, sessionId);
+          if (existingStoryId) {
+            send({ type: "done", story_id: existingStoryId, scenes: existingScenes.length, primaryEmotion: session.primary_emotion });
+          } else {
+            send({ type: "error", message: t("Errors.story.createFailed") });
+            await updateSessionStatus(supabaseUrl, serviceKey, sessionId, "failed");
+            await refundTicket(supabaseUrl, serviceKey, sessionId);
+          }
         }
         controller.close();
         return;
@@ -215,7 +223,7 @@ export async function GET(request: NextRequest) {
 
       // Tier 1: Sonnet
       try {
-        send({ type: "progress", scene: 0, total: 9 });
+        send({ type: "progress", current: 0, total: 9 });
         storyText = await callSonnet(apiKey, userMessage);
       } catch (err) {
         console.warn("[TQ-Generate] Sonnet tier 1 failed:", err instanceof Error ? err.message : err);
@@ -270,19 +278,18 @@ export async function GET(request: NextRequest) {
       for (let i = 0; i < scenes.length; i++) {
         const scene = scenes[i];
         await updateGeneratedStory(supabaseUrl, serviceKey, sessionId, scenes.slice(0, i + 1));
-        send({ type: "scene", number: scene.sceneNumber, title: scene.title });
-        send({ type: "text", text: scene.text });
-        send({ type: "progress", scene: scene.sceneNumber, total: 9 });
+        send({ type: "scene", sceneNumber: scene.sceneNumber, title: scene.title, text: scene.text, index: i });
+        send({ type: "progress", current: scene.sceneNumber, total: 9 });
       }
 
       // tq_complete_session RPC (원자적: story 저장 + 티켓 확정 + 상태 완료)
-      const rpcOk = await completeSession(
+      const storyId = await completeSession(
         supabaseUrl, serviceKey, sessionId, scenes,
         primaryEmotion, secondaryEmotion, scores,
       );
 
-      if (rpcOk) {
-        send({ type: "done", scenes: scenes.length, primaryEmotion });
+      if (storyId) {
+        send({ type: "done", story_id: storyId, scenes: scenes.length, primaryEmotion });
       } else {
         console.error("[TQ-Generate] tq_complete_session RPC failed");
         send({ type: "error", message: t("Errors.story.createFailed") });
@@ -379,13 +386,14 @@ async function completeSession(
   primaryEmotion: string,
   secondaryEmotion: string | null,
   scores: Record<string, number>,
-): Promise<boolean> {
+): Promise<string | null> {
   const storyTitle = scenes[0]?.title ?? "나의 딸깍 동화";
   try {
     const res = await fetch(`${supabaseUrl}/rest/v1/rpc/tq_complete_session`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
       },
@@ -401,12 +409,13 @@ async function completeSession(
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
       console.error("[TQ-Generate] RPC tq_complete_session HTTP error:", res.status, errBody);
-      return false;
+      return null;
     }
-    return true;
+    const storyId = await res.json();
+    return typeof storyId === "string" ? storyId : null;
   } catch (err) {
     console.error("[TQ-Generate] RPC tq_complete_session network error:", err);
-    return false;
+    return null;
   }
 }
 
@@ -469,6 +478,31 @@ async function updateGeneratedStory(
   } catch (err) {
     console.error("[TQ-Generate] updateGeneratedStory error:", err);
     return false;
+  }
+}
+
+async function getStoryIdForSession(
+  supabaseUrl: string,
+  serviceKey: string,
+  sessionId: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/tq_sessions?id=eq.${sessionId}&select=story_id`,
+      {
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const storyId = rows?.[0]?.story_id;
+    return typeof storyId === "string" ? storyId : null;
+  } catch {
+    return null;
   }
 }
 
