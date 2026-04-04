@@ -15,20 +15,8 @@ export const runtime = "edge";
 // ─── Timestamp tolerance: 5 minutes ───
 const TIMESTAMP_TOLERANCE_SEC = 300;
 
-// ─── Event ID deduplication (per-isolate, in-memory) ───
-const processedEvents = new Map<string, number>();
-const DEDUP_TTL_MS = 600_000; // 10 minutes
-
-function isEventProcessed(eventId: string): boolean {
-  const now = Date.now();
-  // Lazy cleanup
-  if (processedEvents.size > 500) {
-    for (const [id, ts] of processedEvents) {
-      if (now - ts > DEDUP_TTL_MS) processedEvents.delete(id);
-    }
-  }
-  return processedEvents.has(eventId);
-}
+// BE-07 FIX: In-memory dedup Map removed — DB dedup (stripe_processed_events) is the single source of truth.
+// Previous in-memory Map was redundant and could grow unbounded under Stripe bulk retries.
 
 // Simple HMAC-based signature verification for Edge Runtime
 async function verifyStripeSignature(
@@ -116,13 +104,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  // ─── Event ID idempotency check (in-memory + DB) ───
-  // In-memory Map은 보조 캐시, DB가 소스 오브 트루스 (v1.22.2 Bug Bounty #1)
-  if (event.id && isEventProcessed(event.id)) {
-    console.info(`[Stripe] Duplicate event skipped (memory): ${event.id}`);
-    return NextResponse.json({ received: true });
-  }
-
+  // ─── Event ID idempotency check (DB only) ───
+  // BE-07 FIX: DB-level dedup is the single source of truth. In-memory Map removed.
   const supabase = createServiceRoleClient();
   if (!supabase) {
     console.error("[Stripe] Service role client unavailable — returning 500 for retry");
@@ -230,7 +213,7 @@ export async function POST(request: NextRequest) {
           } catch (updateErr) {
             console.error("[Stripe] Failed to mark ticket_failed:", updateErr);
           }
-          processedEvents.delete(event.id); // Allow in-memory retry
+          // BE-07: In-memory cache removed — DB dedup handles retry via ticket_failed status
           return NextResponse.json({ error: "Ticket increment failed" }, { status: 500 });
         }
       }
@@ -337,10 +320,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Mark event as processed AFTER successful handling
-  if (event.id) {
-    processedEvents.set(event.id, Date.now());
-  }
-
+  // BE-07: Event already recorded in stripe_processed_events table above (DB dedup)
   return NextResponse.json({ received: true });
 }

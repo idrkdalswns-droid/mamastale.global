@@ -53,7 +53,9 @@ export async function incrementTickets(
       .single();
 
     const currentTickets = profile?.free_stories_remaining ?? 0;
-    const newTotal = Math.max(0, currentTickets + count); // Prevent negative tickets
+    // BE-08 FIX: Upper bound (999) prevents runaway accumulation from repeated webhook retries
+    const MAX_TICKETS = 999;
+    const newTotal = Math.min(MAX_TICKETS, Math.max(0, currentTickets + count));
 
     // CAS guard: only update if value hasn't changed since read
     const { data: updated, error: updateErr } = await supabase
