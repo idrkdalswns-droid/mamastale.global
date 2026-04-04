@@ -34,8 +34,8 @@ export default function DalkkakPlayPage() {
 
   // Guard: ensure session exists
   useEffect(() => {
-    if (sessionId && status === "active") {
-      // Session already in store
+    if (sessionId && (status === "active" || status === "generating")) {
+      // Session already in store (active or awaiting generation)
       setLoading(false);
       return;
     }
@@ -134,7 +134,7 @@ export default function DalkkakPlayPage() {
     }
     persist();
     // Generation screen will be handled by Phase 4-S6
-    router.push(`/dalkkak/play`); // stays on same page, QuestionFlow delegates to GeneratingScreen
+    // No navigation needed — QuestionFlow checks status and renders GeneratingScreen
   }, [sessionId, setStatus, track, persist, router]);
 
   // Calculate question position within phase
