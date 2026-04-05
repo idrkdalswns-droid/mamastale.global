@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.60.4] - 2026-04-05
+
+### Fixed
+- **P0 딸깍 동화 생성 중 킥아웃 버그**: `play/page.tsx` Effect 2가 `"generating"` 상태를 처리하지 않아 동화 생성 중 `/dalkkak` 랜딩으로 강제 이동
+- **서버 상태 분기 블랙리스트→화이트리스트 전환**: `status !== "in_progress"` 일괄 redirect → 각 상태(`in_progress`, `completed`, `generating`, 기타)별 명시적 처리
+- **Effect 2 의존성 배열에 `status` 추가**: generating/completed 상태에서 불필요한 서버 조회 차단
+
 ## [1.60.3] - 2026-04-04
 
 ### Fixed

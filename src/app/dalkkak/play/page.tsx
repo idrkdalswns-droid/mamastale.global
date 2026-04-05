@@ -64,6 +64,9 @@ export default function DalkkakPlayPage() {
   // Fetch current questions from server if not in store
   useEffect(() => {
     if (!sessionId || questions.length > 0 || loading) return;
+    // generating/completed 상태에서는 서버 동기화 불필요
+    // — GeneratingScreen이 SSE로 직접 처리, completed는 이미 결과 페이지로 이동 중
+    if (status === "generating" || status === "completed") return;
 
     (async () => {
       try {
@@ -74,32 +77,46 @@ export default function DalkkakPlayPage() {
           return;
         }
         const data = await res.json();
-        if (data.session?.status !== "in_progress") {
-          if (data.session?.status === "completed" && data.session?.story_id) {
-            router.replace(`/dalkkak/result/${data.session.story_id}`);
-          } else {
-            router.replace("/dalkkak");
+
+        // 화이트리스트: 서버 상태별 명시적 처리
+        const serverStatus = data.session?.status;
+
+        if (serverStatus === "in_progress") {
+          // 정상: 질문 로딩
+          if (data.current_questions && Array.isArray(data.current_questions) && data.current_questions.length > 0) {
+            setQuestions(data.current_questions);
+            // Restore question index within current phase based on server responses
+            const serverResponses = data.session?.responses ?? [];
+            const serverPhase = data.session?.phase ?? 1;
+            const phaseResponses = serverResponses.filter(
+              (r: { phase: number }) => r.phase === serverPhase,
+            );
+            if (phaseResponses.length > 0 && phaseResponses.length < data.current_questions.length) {
+              useTQStore.setState({ currentQuestionIndex: phaseResponses.length });
+            }
           }
           return;
         }
-        if (data.current_questions && Array.isArray(data.current_questions) && data.current_questions.length > 0) {
-          setQuestions(data.current_questions);
-          // Restore question index within current phase based on server responses
-          const serverResponses = data.session?.responses ?? [];
-          const serverPhase = data.session?.phase ?? 1;
-          const phaseResponses = serverResponses.filter(
-            (r: { phase: number }) => r.phase === serverPhase,
-          );
-          if (phaseResponses.length > 0 && phaseResponses.length < data.current_questions.length) {
-            // Jump to next unanswered question in this phase
-            useTQStore.setState({ currentQuestionIndex: phaseResponses.length });
-          }
+
+        if (serverStatus === "completed" && data.session?.story_id) {
+          router.replace(`/dalkkak/result/${data.session.story_id}`);
+          return;
         }
+
+        if (serverStatus === "generating") {
+          // 서버가 generating → 클라이언트도 generating으로 동기화
+          // (early return 가드에서 이미 generating은 처리되지만, 방어적으로 동기화)
+          setStatus("generating");
+          return;
+        }
+
+        // cancelled, failed, unknown → 랜딩으로
+        router.replace("/dalkkak");
       } catch {
         router.replace("/dalkkak");
       }
     })();
-  }, [sessionId, questions.length, loading, getHeaders, setQuestions, router]);
+  }, [sessionId, questions.length, loading, status, getHeaders, setQuestions, setStatus, router]);
 
   // Auto-save on visibility change
   useEffect(() => {
