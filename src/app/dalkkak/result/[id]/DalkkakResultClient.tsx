@@ -10,6 +10,7 @@ import { useTQStore } from "@/lib/hooks/tq/useTQStore";
 import { useTQEvents } from "@/lib/hooks/tq/useTQEvents";
 import { useAuthToken } from "@/lib/hooks/useAuthToken";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { CoverPickerModal } from "@/components/story/CoverPickerModal";
 import type { Scene } from "@/lib/types/story";
 
 interface TQResult {
@@ -37,6 +38,9 @@ export default function DalkkakResultClient() {
   const [result, setResult] = useState<TQResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState<number | null>(null);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const isAuthenticated = !!user;
 
   const tqSessionId = params.id as string;
 
@@ -131,9 +135,27 @@ export default function DalkkakResultClient() {
         title={result.title}
         authorName={user?.user_metadata?.name || undefined}
         storyId={result.storyId || undefined}
+        coverImage={coverImage || undefined}
         onBack={handleBack}
         onBackLabel="딸깍 동화"
+        showCoverCTA={isAuthenticated && !!result.storyId && !coverImage}
+        onSelectCover={() => setShowCoverPicker(true)}
+        onChangeCover={isAuthenticated && !!result.storyId ? () => setShowCoverPicker(true) : undefined}
       />
+      {/* Cover picker modal */}
+      {showCoverPicker && result.storyId && (
+        <CoverPickerModal
+          isOpen={showCoverPicker}
+          storyId={result.storyId}
+          storyTitle={result.title}
+          authorName={user?.user_metadata?.name || undefined}
+          onCoverChange={(coverPath) => {
+            setCoverImage(coverPath);
+            setShowCoverPicker(false);
+          }}
+          onClose={() => setShowCoverPicker(false)}
+        />
+      )}
 
       {/* Post-story content */}
       <div className="pb-20 px-5" style={{ background: "rgb(var(--tq-p5-bg))" }}>

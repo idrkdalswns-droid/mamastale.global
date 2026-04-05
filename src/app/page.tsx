@@ -23,6 +23,7 @@ const ChatPage = dynamic(() => import("@/components/chat/ChatContainer").then(m 
 const StoryViewer = dynamic(() => import("@/components/story/StoryViewer").then(m => ({ default: m.StoryViewer })), { ssr: false });
 const StoryEditor = dynamic(() => import("@/components/story/StoryEditor").then(m => ({ default: m.StoryEditor })), { ssr: false });
 const CoverPicker = dynamic(() => import("@/components/story/CoverPicker").then(m => ({ default: m.CoverPicker })), { ssr: false });
+const CoverPickerModal = dynamic(() => import("@/components/story/CoverPickerModal").then(m => ({ default: m.CoverPickerModal })), { ssr: false });
 const FeedbackWizard = dynamic(() => import("@/components/feedback/FeedbackWizard").then(m => ({ default: m.FeedbackWizard })), { ssr: false });
 const CommunityPage = dynamic(() => import("@/components/feedback/CommunityPage").then(m => ({ default: m.CommunityPage })), { ssr: false });
 
@@ -121,6 +122,7 @@ export default function Home() {
   }, [screen]);
   const [editSaveError, setEditSaveError] = useState(false);
   const [selectedCover, setSelectedCover] = useState<string | null>(null);
+  const [showCoverModal, setShowCoverModal] = useState(false);
   const [showStickyCta, setShowStickyCta] = useState(false);
   const [myStoryCount, setMyStoryCount] = useState<number | null>(null);
   const [communityCount, setCommunityCount] = useState<number | null>(null);
@@ -583,7 +585,23 @@ export default function Home() {
           onNewStory={() => { reset(); clearDraft(); clearTicketSession(); setSelectedCover(null); setEditedTitle(""); setFeedbackDone(false); setShow(false); setScreen("landing"); }}
           ticketsRemaining={ticketsRemaining}
           previewMode={isFirstStoryPreview}
+          showCoverCTA={!selectedCover && !isFirstStoryPreview}
+          onSelectCover={() => setShowCoverModal(true)}
         />
+        {/* Cover picker modal — opened from last page CTA */}
+        {showCoverModal && completedStoryId && (
+          <CoverPickerModal
+            isOpen={showCoverModal}
+            storyId={completedStoryId}
+            storyTitle={editedTitle || "나의 마음 동화"}
+            authorName={user?.user_metadata?.name || undefined}
+            onCoverChange={(coverPath) => {
+              setSelectedCover(coverPath);
+              setShowCoverModal(false);
+            }}
+            onClose={() => setShowCoverModal(false)}
+          />
+        )}
         {/* SIM-FIX(S18): Edit save error toast */}
         {editSaveError && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[120] animate-in fade-in slide-in-from-top-2 duration-300" role="alert" aria-live="assertive">

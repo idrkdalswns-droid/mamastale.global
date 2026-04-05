@@ -510,6 +510,8 @@ export default function LibraryStoryPage() {
       totalScenes={story.total_scenes}
       onUnlock={() => router.push("/pricing")}
       onDelete={() => setShowDeleteConfirm(true)}
+      showCoverCTA={!story.cover_image}
+      onSelectCover={() => setShowCoverPicker(true)}
     />
 
     {/* Cover picker modal (from viewer "표지" button) */}

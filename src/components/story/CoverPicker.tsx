@@ -148,7 +148,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         </button>
 
         <h2 className="font-serif text-xl font-bold text-brown tracking-tight leading-tight">
-          동화의 표지를 골라주세요
+          이 동화에 어울리는 표지를 골라볼까요?
         </h2>
         <motion.p
           className="text-[13px] text-brown-light font-light mt-1.5 leading-relaxed"
@@ -168,7 +168,7 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         <div
-          className="relative w-full max-w-[340px] rounded-2xl overflow-hidden"
+          className="relative w-full max-w-full rounded-2xl overflow-hidden"
           style={{
             aspectRatio: "16 / 10",
             boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
@@ -280,8 +280,8 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
                 onClick={() => handleSelect(img)}
                 className="flex-shrink-0 relative rounded-xl overflow-hidden snap-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/50"
                 style={{
-                  width: 88,
-                  height: 55,
+                  width: 110,
+                  height: 70,
                   opacity: isSelected ? 1 : 0.7,
                   transform: isSelected ? "scale(1.08)" : "scale(1)",
                   boxShadow: isSelected ? "0 0 0 3px #E07A5F" : "none",
@@ -292,8 +292,8 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
                 <Image
                   src={img.path}
                   alt={`${FILTER_LABELS[img.filter]} 표지`}
-                  width={88}
-                  height={55}
+                  width={110}
+                  height={70}
                   className="w-full h-full object-cover object-center"
                   loading="lazy"
                   draggable={false}
@@ -341,9 +341,9 @@ export function CoverPicker({ storyTitle, authorName, onSelect, onSkip }: CoverP
         </button>
         <button
           onClick={onSkip}
-          className="w-full py-2.5 mt-1.5 text-[11px] text-brown-pale font-light transition-all min-h-[44px]"
+          className="w-full py-2.5 mt-1.5 text-[13px] text-brown-pale font-light transition-all min-h-[44px] underline underline-offset-2 decoration-brown-pale/30"
         >
-          표지 없이 진행하기
+          나중에 선택하기
         </button>
       </motion.div>
     </div>

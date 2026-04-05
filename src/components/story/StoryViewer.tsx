@@ -89,9 +89,13 @@ interface StoryViewerProps {
   onDelete?: () => void;
   /** Blind system: story is blinded (scenes 7+ have no text) */
   isBlinded?: boolean;
+  /** Show "select cover" CTA on last page (when cover not yet chosen) */
+  showCoverCTA?: boolean;
+  /** Callback when user clicks cover selection CTA */
+  onSelectCover?: () => void;
 }
 
-export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode, onDelete, isBlinded }: StoryViewerProps) {
+export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName, coverImage, onBack, onBackLabel, onEdit, embedded, isPublished, isPublishing, onPublish, onUnpublish, suggestedTags, isPremium, onNewStory, onChangeCover, storyId, ticketsRemaining, isLocked, totalScenes: totalScenesProp, onUnlock, previewMode, onDelete, isBlinded, showCoverCTA, onSelectCover }: StoryViewerProps) {
   // ── Pagination: 2 scenes per page ──
   const totalPages = useMemo(() => Math.ceil((scenes?.length || 0) / 2), [scenes]);
 
@@ -587,6 +591,28 @@ export const StoryViewer = memo(function StoryViewer({ scenes, title, authorName
                   전체 장면 삽화는 곧 추가될 예정이에요 ✨
                 </p>
               </div>
+
+              {/* Cover selection CTA — shown when cover not yet chosen */}
+              {showCoverCTA && onSelectCover && (
+                <div
+                  className="rounded-2xl p-4 text-center"
+                  style={{ background: "rgba(224,122,95,0.06)", border: "1px solid rgba(224,122,95,0.12)" }}
+                >
+                  <p className="text-[13px] text-brown font-medium mb-3 break-keep">
+                    이 동화에 어울리는 표지를 골라볼까요?
+                  </p>
+                  <button
+                    onClick={onSelectCover}
+                    className="w-full py-3 rounded-full text-[14px] font-medium text-white transition-all active:scale-[0.97]"
+                    style={{
+                      background: "linear-gradient(135deg, #E07A5F, #C96B52)",
+                      boxShadow: "0 4px 16px rgba(224,122,95,0.25)",
+                    }}
+                  >
+                    표지 선택하기
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </motion.div>
